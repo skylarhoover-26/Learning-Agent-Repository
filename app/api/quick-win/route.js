@@ -57,7 +57,8 @@ export async function POST() {
       ],
     });
 
-    const text = response.content[0].text.trim();
+    let text = response.content[0].text.trim();
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const quickWin = JSON.parse(text);
 
     return NextResponse.json({ quickWin });

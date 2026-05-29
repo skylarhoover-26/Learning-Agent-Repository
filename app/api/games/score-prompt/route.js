@@ -57,7 +57,8 @@ export async function POST(request) {
       ],
     });
 
-    const text = response.content[0].text.trim();
+    let text = response.content[0].text.trim();
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const scores = JSON.parse(text);
 
     return NextResponse.json(scores);
