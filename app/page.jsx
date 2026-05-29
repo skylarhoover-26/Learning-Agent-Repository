@@ -9,7 +9,7 @@ import {
 import {
   Sparkles, Target, TrendingUp, Flame, BookOpen,
   MessageCircle, Compass, Star, Trophy, ChevronRight,
-  Search, Briefcase, Plus, Brain, Award, Zap, Library,
+  Search, Briefcase, Plus, Brain, Award, Zap, Library, Gamepad2,
 } from 'lucide-react';
 
 const TIER_LABELS = {
@@ -245,7 +245,7 @@ export default async function Dashboard() {
             <QuickAction href="/chat" icon={MessageCircle} title="Just Chat" subtitle="Ask me anything" />
             <QuickAction href="/lesson" icon={BookOpen} title="Quick Lesson" subtitle="Pick a topic" />
             <QuickAction href="/library" icon={Library} title="Library" subtitle="Browse use cases" />
-            <QuickAction icon={Star} title="Today's Pick" subtitle="Just for you" comingSoon />
+            <QuickAction href="/games" icon={Gamepad2} title="Learning Games" subtitle="Practice AI skills" />
           </div>
         </div>
 
