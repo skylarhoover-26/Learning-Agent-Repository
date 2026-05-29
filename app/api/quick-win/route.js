@@ -23,7 +23,7 @@ function buildSystemPrompt(profile) {
     '- description (string): 1-2 sentences explaining why this is useful and how it saves time',
     '- timeEstimate (string): estimated time like "~2 minutes" or "~4 minutes" — always under 5 minutes',
     '- steps (array of strings): 3-5 numbered step instructions to complete this win',
-    '- prompt (string): the actual copy-paste prompt they can paste into ChatGPT or Claude. It must be COMPLETE — no placeholders like [insert X]. Make it specific and ready to use.',
+    '- prompt (string): the actual copy-paste prompt they can paste into ChatGPT or Claude. It MUST follow the RCTF framework: start with a Role ("You are a..."), then Context (background info), then Task (what to do), then Format (desired output structure). It must be COMPLETE — no placeholders like [insert X]. Make it specific and ready to use.',
     '- expectedResult (string): 1-2 sentences describing what they will get back when they use the prompt',
     '',
     'Rules:',
