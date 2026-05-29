@@ -193,7 +193,7 @@ export default function OnboardingPage() {
       onboarded_at: new Date().toISOString(),
     };
     saveProfile(profile);
-    router.push('/');
+    window.location.href = '/';
   }
 
   const progressPercent = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
