@@ -10,7 +10,8 @@ import {
   MessageCircle, ChevronRight, Award, Zap, Library,
   Gamepad2, Lightbulb, FileText, Trophy,
 } from 'lucide-react';
-import MiniHeatmap, { findDoThisNowSkill } from '@/components/mini-heatmap';
+import MiniHeatmap from '@/components/mini-heatmap';
+import { findDoThisNowSkill } from '@/lib/heatmap-data';
 
 const TIER_LABELS = {
   beginner: { label: 'Beginner', color: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
