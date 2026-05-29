@@ -71,22 +71,22 @@ export default function DiscoverPage() {
               <div className="w-16 h-16 rounded-2xl bg-brand-50 ring-1 ring-brand-100 mx-auto mb-4 flex items-center justify-center">
                 <Search className="w-8 h-8 text-brand" strokeWidth={1.5} />
               </div>
-              <h2 className="text-3xl font-bold text-ink mb-3 tracking-tight">
+              <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-3 tracking-tight">
                 Tell me about your work
               </h2>
-              <p className="text-slate-600 max-w-2xl mx-auto">
+              <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
                 Describe your typical day, a specific task, or something on your plate right now.
                 I'll find specific AI opportunities you can try today.
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 mb-6">
               <textarea
                 value={workDescription}
                 onChange={(e) => setWorkDescription(e.target.value)}
                 placeholder="e.g., I'm a Director of Operations. My typical day is split between status meetings, reviewing team work, planning, and writing executive summaries..."
                 rows={6}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 focus:outline-none resize-none"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 focus:outline-none resize-none"
               />
               <div className="flex items-center justify-between mt-3">
                 <p className="text-xs text-slate-500">
@@ -123,7 +123,7 @@ export default function DiscoverPage() {
                   <button
                     key={i}
                     onClick={() => setWorkDescription(s)}
-                    className="w-full text-left p-4 rounded-xl bg-white border border-slate-200 hover:border-brand-300 hover:bg-brand-50/50 transition-all text-sm text-slate-700"
+                    className="w-full text-left p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-slate-700 transition-all text-sm text-slate-700 dark:text-slate-300"
                   >
                     {s}
                   </button>
@@ -139,7 +139,7 @@ export default function DiscoverPage() {
               <Lightbulb className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs uppercase tracking-wide text-brand-700 font-semibold mb-1">Your work</p>
-                <p className="text-sm text-slate-700 line-clamp-2">{workDescription}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">{workDescription}</p>
               </div>
               <button
                 onClick={reset}
@@ -151,10 +151,10 @@ export default function DiscoverPage() {
             </div>
 
             <div className="mb-5">
-              <h2 className="text-2xl font-bold text-ink">
+              <h2 className="text-2xl font-bold text-ink dark:text-slate-200">
                 Found {opportunities.length} ways AI can help your work
               </h2>
-              <p className="text-slate-600 text-sm mt-1">
+              <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
                 Pick one to try — each opens a hands-on lesson tied to YOUR actual work.
               </p>
             </div>
@@ -164,13 +164,13 @@ export default function DiscoverPage() {
                 const difficulty = DIFFICULTY_STYLES[opp.difficulty] || DIFFICULTY_STYLES.medium;
                 const gradient = CATEGORY_COLORS[opp.category] || 'from-slate-400 to-slate-500';
                 return (
-                  <div key={i} className="bg-white rounded-2xl border border-slate-200 hover:border-brand-300 hover:shadow-md transition-all overflow-hidden">
+                  <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:shadow-md transition-all overflow-hidden">
                     <div className={`h-2 bg-gradient-to-r ${gradient}`} />
                     <div className="p-5">
                       <div className="flex items-start gap-3 mb-3">
                         <span className="text-3xl shrink-0">{opp.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-ink leading-tight mb-1">{opp.title}</h3>
+                          <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1">{opp.title}</h3>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`text-xs font-medium px-2 py-0.5 rounded ${difficulty.color}`}>
                               {difficulty.label}
@@ -184,7 +184,7 @@ export default function DiscoverPage() {
                           </div>
                         </div>
                       </div>
-                      <p className="text-sm text-slate-700 mb-3">{opp.description}</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{opp.description}</p>
                       {opp.whyItHelps && (
                         <div className="text-xs text-slate-500 mb-4 italic">
                           {opp.whyItHelps}

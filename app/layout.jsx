@@ -1,4 +1,5 @@
 import './globals.css';
+import ThemeToggle from '@/components/theme-toggle';
 
 export const metadata = {
   title: 'AI Learning Platform — Housecall Pro',
@@ -7,9 +8,20 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-bg-warm text-ink">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          try {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              document.documentElement.classList.add('dark');
+            }
+          } catch {}
+        ` }} />
+      </head>
+      <body className="min-h-screen bg-bg-warm text-ink dark:bg-slate-900 dark:text-slate-200">
         {children}
+        <ThemeToggle />
       </body>
     </html>
   );

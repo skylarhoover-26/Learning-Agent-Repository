@@ -137,8 +137,8 @@ function LessonContent() {
       <main className="max-w-4xl mx-auto px-6 py-10">
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">📚</div>
-          <h2 className="text-2xl font-bold text-ink mb-2">What do you want to learn?</h2>
-          <p className="text-slate-600">Pick from popular topics or type your own.</p>
+          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">What do you want to learn?</h2>
+          <p className="text-slate-600 dark:text-slate-400">Pick from popular topics or type your own.</p>
         </div>
 
         <div className="mb-8">
@@ -156,20 +156,20 @@ function LessonContent() {
                 onClick={() => setFormat(f.key)}
                 className={`group p-4 rounded-xl border text-left transition-all ${
                   format === f.key
-                    ? 'bg-brand-50 border-brand-300 ring-2 ring-brand-100 shadow-sm'
-                    : 'bg-white border-slate-200 hover:border-brand-200 hover:shadow-card'
+                    ? 'bg-brand-50 dark:bg-brand-900/30 border-brand-300 ring-2 ring-brand-100 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    format === f.key ? 'bg-brand text-white' : 'bg-bg-subtle text-slate-600'
+                    format === f.key ? 'bg-brand text-white' : 'bg-bg-subtle dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                   }`}>
                     <f.icon className="w-4 h-4" />
                   </div>
                   <span className="text-xs text-slate-500 font-medium">{f.duration}</span>
                 </div>
-                <div className="font-bold text-ink">{f.label}</div>
-                <p className="text-xs text-slate-600 mt-0.5">{f.desc}</p>
+                <div className="font-bold text-ink dark:text-slate-200">{f.label}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{f.desc}</p>
               </button>
             ))}
           </div>
@@ -192,11 +192,11 @@ function LessonContent() {
               <button
                 key={i}
                 onClick={() => startLesson(s.topic)}
-                className="group flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-200 hover:border-brand-300 hover:shadow-md transition-all text-left"
+                className="group flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:shadow-md transition-all text-left"
               >
                 <span className="text-2xl">{s.label.split(' ')[0]}</span>
                 <div className="flex-1">
-                  <div className="font-medium text-slate-800 mb-0.5">{s.label.split(' ').slice(1).join(' ')}</div>
+                  <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label.split(' ').slice(1).join(' ')}</div>
                   <div className="text-xs text-slate-500 line-clamp-1">{s.topic}</div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
@@ -205,7 +205,7 @@ function LessonContent() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="text-sm uppercase tracking-wide text-slate-500 mb-3 font-semibold">
             Or type your own
           </h3>
@@ -216,7 +216,7 @@ function LessonContent() {
               onChange={(e) => setCustomTopic(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && customTopic.trim()) startLesson(customTopic.trim()); }}
               placeholder="e.g., 'how to use AI for budget forecasting'"
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
             />
             <button
               onClick={() => customTopic.trim() && startLesson(customTopic.trim())}
@@ -288,9 +288,9 @@ function LessonContent() {
 
       {/* Loading state */}
       {isLoading && slides.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-12 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-brand mx-auto mb-4" />
-          <p className="text-slate-600 font-medium">Generating your lesson...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">Generating your lesson...</p>
           <p className="text-sm text-slate-400 mt-1">{topic}</p>
         </div>
       )}
@@ -344,7 +344,7 @@ function LessonContent() {
             onChange={(e) => setUserInput(e.target.value)}
             placeholder="Type a question or response..."
             disabled={isLoading}
-            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50"
+            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50"
           />
           <button
             type="submit"

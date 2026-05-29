@@ -46,7 +46,7 @@ export function FormattedContent({ text }) {
       elements.push(
         <ul key={`ul-${elements.length}`} className="space-y-1.5 my-3">
           {listItems.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-slate-700">
+            <li key={idx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
               <span className="text-brand mt-1.5 text-xs">●</span>
               <span>{renderInline(item)}</span>
             </li>
@@ -66,7 +66,7 @@ export function FormattedContent({ text }) {
       elements.push(
         <ol key={`ol-${elements.length}`} className="space-y-1.5 my-3">
           {listItems.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-slate-700">
+            <li key={idx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
               <span className="text-brand font-semibold min-w-[1.25rem] text-right mt-0.5">
                 {idx + 1}.
               </span>
@@ -87,7 +87,7 @@ export function FormattedContent({ text }) {
 
     // Regular paragraph
     elements.push(
-      <p key={`p-${elements.length}`} className="text-slate-700 leading-relaxed">
+      <p key={`p-${elements.length}`} className="text-slate-700 dark:text-slate-300 leading-relaxed">
         {renderInline(line)}
       </p>
     );
@@ -112,7 +112,7 @@ function renderInline(text) {
     }
     if (match[2]) {
       parts.push(
-        <strong key={`b-${match.index}`} className="font-semibold text-ink">
+        <strong key={`b-${match.index}`} className="font-semibold text-ink dark:text-slate-200">
           {match[2]}
         </strong>
       );
@@ -120,7 +120,7 @@ function renderInline(text) {
       parts.push(
         <code
           key={`c-${match.index}`}
-          className="bg-slate-100 text-brand-700 px-1.5 py-0.5 rounded text-sm font-mono"
+          className="bg-slate-100 dark:bg-slate-700 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 rounded text-sm font-mono"
         >
           {match[3]}
         </code>
@@ -151,16 +151,16 @@ export function SlideCard({ slide, onButtonClick, isLatest }) {
   const { slideTitle, message, keyPoints, phase, buttons } = slide;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
       {/* Phase badge + title */}
       <div className="px-6 pt-6 pb-4">
         {phase && (
-          <span className="inline-block text-xs font-medium uppercase tracking-wide text-brand bg-brand-50 px-2.5 py-1 rounded-full mb-3">
+          <span className="inline-block text-xs font-medium uppercase tracking-wide text-brand bg-brand-50 dark:bg-brand-900/30 px-2.5 py-1 rounded-full mb-3">
             {PHASE_LABELS[phase] || phase}
           </span>
         )}
         {slideTitle && (
-          <h2 className="text-xl font-bold text-ink">{slideTitle}</h2>
+          <h2 className="text-xl font-bold text-ink dark:text-slate-200">{slideTitle}</h2>
         )}
       </div>
 

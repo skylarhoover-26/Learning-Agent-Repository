@@ -92,7 +92,7 @@ function SkillCell({ skill, isDoThisNow, onSelect, isSelected }) {
       className={`relative text-left rounded-xl border p-3 transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-brand ${
         isSelected
           ? 'border-brand ring-2 ring-brand/30 shadow-card-hover'
-          : 'border-slate-200 shadow-card'
+          : 'border-slate-200 dark:border-slate-700 shadow-card'
       }`}
       aria-label={`${skill.name}: ${skill.mastery}% mastery, studied ${skill.freshness} days ago`}
     >
@@ -125,25 +125,25 @@ function ExpandedView({ skill }) {
   const BadgeIcon = badge.icon;
 
   return (
-    <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-5 animate-fade-in">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-5 animate-fade-in">
       <div className="flex items-center gap-2 mb-3">
         <BadgeIcon className={`w-5 h-5 ${badge.color.split(' ')[0]}`} />
-        <h3 className="font-bold text-ink text-base">{skill.name}</h3>
+        <h3 className="font-bold text-ink dark:text-slate-200 text-base">{skill.name}</h3>
         <span className="text-xs text-slate-400 ml-auto">{skill.category}</span>
       </div>
       <div className="mb-3">
-        <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
           <span>Mastery</span>
           <span className="font-semibold">{skill.mastery}%</span>
         </div>
-        <div className="w-full bg-slate-100 rounded-full h-2.5">
+        <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5">
           <div
             className="bg-brand rounded-full h-2.5 transition-all duration-500"
             style={{ width: `${skill.mastery}%` }}
           />
         </div>
       </div>
-      <div className="flex items-center gap-1.5 text-sm text-slate-600 mb-4">
+      <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 mb-4">
         <Clock className="w-4 h-4" />
         <span>Last studied <strong>{skill.freshness}</strong> days ago</span>
       </div>
@@ -160,13 +160,13 @@ function ExpandedView({ skill }) {
 
 function DiagnosticCard({ icon: Icon, title, color, skills }) {
   return (
-    <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-5">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-5">
       <div className="flex items-center gap-2 mb-3">
         <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
           <Icon className="w-4 h-4" />
         </div>
         <div>
-          <h4 className="font-semibold text-ink text-sm">{title}</h4>
+          <h4 className="font-semibold text-ink dark:text-slate-200 text-sm">{title}</h4>
           <p className="text-xs text-slate-500">{skills.length} skill{skills.length !== 1 ? 's' : ''}</p>
         </div>
       </div>
@@ -176,7 +176,7 @@ function DiagnosticCard({ icon: Icon, title, color, skills }) {
         <ul className="space-y-1.5">
           {skills.map(s => (
             <li key={s.name} className="flex items-center justify-between text-xs">
-              <span className="text-ink font-medium">{s.name}</span>
+              <span className="text-ink dark:text-slate-200 font-medium">{s.name}</span>
               <span className="text-slate-400">{s.mastery}% / {s.freshness}d</span>
             </li>
           ))}
@@ -197,7 +197,7 @@ export default function HeatmapPage() {
   const categories = ['Foundations', 'Application', 'Safety', 'Frontier'];
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Grid3X3}
         title="Knowledge Heatmap"
@@ -206,12 +206,12 @@ export default function HeatmapPage() {
 
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-8">
         {/* Header summary */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-5 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
             <TrendingDown className="w-5 h-5 text-orange-600" />
           </div>
           <div>
-            <p className="font-semibold text-ink text-sm">
+            <p className="font-semibold text-ink dark:text-slate-200 text-sm">
               {staleHighValueCount} high-value cell{staleHighValueCount !== 1 ? 's are' : ' is'} gathering dust
             </p>
             <p className="text-xs text-slate-500">
@@ -247,7 +247,7 @@ export default function HeatmapPage() {
 
         {/* Diagnostic strip */}
         <section>
-          <h2 className="font-bold text-ink text-lg mb-4">Diagnostics</h2>
+          <h2 className="font-bold text-ink dark:text-slate-200 text-lg mb-4">Diagnostics</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <DiagnosticCard
               icon={AlertTriangle}
@@ -271,11 +271,11 @@ export default function HeatmapPage() {
         </section>
 
         {/* Legend */}
-        <section className="bg-white rounded-2xl shadow-card border border-slate-200 p-5">
-          <h2 className="font-semibold text-ink text-sm mb-3">How to read this map</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-600">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-5">
+          <h2 className="font-semibold text-ink dark:text-slate-200 text-sm mb-3">How to read this map</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-400">
             <div>
-              <p className="font-semibold text-ink mb-1.5">Color = Freshness</p>
+              <p className="font-semibold text-ink dark:text-slate-200 mb-1.5">Color = Freshness</p>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 rounded bg-blue-300 inline-block" />
@@ -292,7 +292,7 @@ export default function HeatmapPage() {
               </div>
             </div>
             <div>
-              <p className="font-semibold text-ink mb-1.5">Shape = Status</p>
+              <p className="font-semibold text-ink dark:text-slate-200 mb-1.5">Shape = Status</p>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-600" />

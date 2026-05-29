@@ -129,11 +129,11 @@ export default async function Dashboard() {
         {/* 2. Greeting row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold text-ink tracking-tight">
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight">
               {greetingPrefix}, {displayName} — here&apos;s where you stand.
             </h2>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-sm text-slate-600">{userDept}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{userDept}</span>
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${tier.color}`}>
                 {tier.label}
               </span>
@@ -204,25 +204,25 @@ export default async function Dashboard() {
         {/* 6. Level + Badges */}
         <Link
           href="/achievements"
-          className="group block bg-white rounded-2xl shadow-card border border-slate-200 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all"
+          className="group block bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all"
         >
           <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-5 items-center">
             <div className="flex items-center gap-5">
               <div className="relative shrink-0">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cta-400 to-cta-600 flex items-center justify-center shadow-sm">
-                  <span className="text-2xl font-bold text-ink">{levelProgress.level}</span>
+                  <span className="text-2xl font-bold text-ink dark:text-slate-900">{levelProgress.level}</span>
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white">
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-800">
                   LV
                 </div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2 mb-1">
-                  <h3 className="font-bold text-ink">Level {levelProgress.level}</h3>
+                  <h3 className="font-bold text-ink dark:text-slate-200">Level {levelProgress.level}</h3>
                   <span className="text-sm text-slate-500">&middot; {totalXp.toLocaleString()} XP</span>
                 </div>
                 <div className="flex items-center gap-3 max-w-md">
-                  <div className="flex-1 h-2 bg-bg-subtle rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-cta to-cta-600 transition-all duration-500"
                       style={{ width: `${levelProgress.percent}%` }}
@@ -241,14 +241,14 @@ export default async function Dashboard() {
                     {recentBadges.map(b => (
                       <div
                         key={b.id}
-                        className="w-9 h-9 rounded-full bg-cta-50 ring-2 ring-white flex items-center justify-center text-lg shadow-sm"
+                        className="w-9 h-9 rounded-full bg-cta-50 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-800 flex items-center justify-center text-lg shadow-sm"
                         title={`${b.name}: ${b.description}`}
                       >
                         {b.emoji}
                       </div>
                     ))}
                   </div>
-                  <div className="text-sm text-slate-600 hidden sm:block">
+                  <div className="text-sm text-slate-600 dark:text-slate-400 hidden sm:block">
                     {earnedBadges.length} {earnedBadges.length === 1 ? 'badge' : 'badges'}
                   </div>
                 </>
@@ -267,12 +267,12 @@ export default async function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <Link
             href="/goals"
-            className="group md:col-span-2 bg-white rounded-2xl shadow-card border border-slate-200 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all"
+            className="group md:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-brand" />
-                <h3 className="font-semibold text-ink">Your Goals</h3>
+                <h3 className="font-semibold text-ink dark:text-slate-200">Your Goals</h3>
                 <span className="text-xs text-slate-500">({activeGoals.length})</span>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
@@ -285,12 +285,12 @@ export default async function Dashboard() {
               <div className="space-y-3">
                 {activeGoals.slice(0, 2).map(g => (
                   <div key={g.id}>
-                    <p className="font-medium text-ink mb-1 truncate">{g.title}</p>
+                    <p className="font-medium text-ink dark:text-slate-200 mb-1 truncate">{g.title}</p>
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 h-2 bg-bg-subtle rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
                         <div className="h-full bg-brand transition-all duration-500" style={{ width: `${g.progress_percent}%` }} />
                       </div>
-                      <span className="text-xs font-semibold text-ink w-10 text-right">{g.progress_percent}%</span>
+                      <span className="text-xs font-semibold text-ink dark:text-slate-200 w-10 text-right">{g.progress_percent}%</span>
                     </div>
                   </div>
                 ))}
@@ -301,12 +301,12 @@ export default async function Dashboard() {
             )}
           </Link>
 
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
             <div className="flex items-center gap-2 mb-3">
               <Flame className="w-5 h-5 text-cta-600" />
-              <h3 className="font-semibold text-ink">Current Streak</h3>
+              <h3 className="font-semibold text-ink dark:text-slate-200">Current Streak</h3>
             </div>
-            <div className="text-5xl font-bold text-ink mb-1">{streak}</div>
+            <div className="text-5xl font-bold text-ink dark:text-slate-200 mb-1">{streak}</div>
             <p className="text-sm text-slate-500">
               {streak > 0 ? `Day${streak > 1 ? 's' : ''} in a row` : 'Start a lesson today!'}
             </p>
@@ -314,9 +314,9 @@ export default async function Dashboard() {
         </div>
 
         {/* 8. "What Changed This Week" */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-ink">What Changed This Week</h3>
+            <h3 className="font-semibold text-ink dark:text-slate-200">What Changed This Week</h3>
             <span className="flex items-center gap-1.5 text-xs text-slate-500">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
               Auto-refreshed weekly
@@ -326,12 +326,12 @@ export default async function Dashboard() {
             {WEEKLY_CHANGES.map(change => (
               <div
                 key={change.tag}
-                className={`border-l-4 ${change.borderColor} bg-bg-warm rounded-xl p-4`}
+                className={`border-l-4 ${change.borderColor} bg-bg-warm dark:bg-slate-900 rounded-xl p-4`}
               >
                 <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${change.tagColor} mb-2`}>
                   {change.tag}
                 </span>
-                <p className="text-sm font-semibold text-ink leading-snug mb-2">
+                <p className="text-sm font-semibold text-ink dark:text-slate-200 leading-snug mb-2">
                   {change.headline}
                 </p>
                 <div className="flex items-center justify-between text-xs text-slate-500">
@@ -347,9 +347,9 @@ export default async function Dashboard() {
         </div>
 
         {/* 9. Department leaderboard preview */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-ink">Department Leaderboard</h3>
+            <h3 className="font-semibold text-ink dark:text-slate-200">Department Leaderboard</h3>
             <Link
               href="/leaderboard"
               className="text-sm font-medium text-brand hover:text-brand-600 transition-colors"
@@ -369,14 +369,14 @@ export default async function Dashboard() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-medium truncate ${isUser ? 'text-brand font-semibold' : 'text-ink'}`}>
+                      <span className={`text-sm font-medium truncate ${isUser ? 'text-brand font-semibold' : 'text-ink dark:text-slate-200'}`}>
                         {dept.name} {isUser && '(you)'}
                       </span>
                       <span className="text-xs text-slate-500 shrink-0 ml-2">{dept.xp.toLocaleString()} XP</span>
                     </div>
-                    <div className="h-1.5 bg-bg-subtle rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${isUser ? 'bg-brand' : 'bg-slate-300'}`}
+                        className={`h-full rounded-full transition-all duration-500 ${isUser ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-500'}`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -388,10 +388,10 @@ export default async function Dashboard() {
         </div>
 
         {/* 10. Skills: Strong / Growing / Gaps */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-center gap-2 mb-5">
             <TrendingUp className="w-5 h-5 text-brand" />
-            <h3 className="font-semibold text-ink">Your Skills</h3>
+            <h3 className="font-semibold text-ink dark:text-slate-200">Your Skills</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <SkillColumn label="Strong" dotColor="bg-green-500" items={skills.strong} bgClass="bg-green-50 border-green-100" emptyText="Keep learning to build strong skills" />
@@ -402,14 +402,14 @@ export default async function Dashboard() {
 
         {/* 11. Bottom CTAs */}
         {lastLesson && (
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <BookOpen className="w-5 h-5 text-brand" />
-                  <h3 className="font-semibold text-ink">Pick up where you left off</h3>
+                  <h3 className="font-semibold text-ink dark:text-slate-200">Pick up where you left off</h3>
                 </div>
-                <p className="text-ink mb-1">{shortTopic(lastLesson.topic, 80)}</p>
+                <p className="text-ink dark:text-slate-200 mb-1">{shortTopic(lastLesson.topic, 80)}</p>
                 <p className="text-xs text-slate-500">
                   Last completed {new Date(lastLesson.completed_at).toLocaleDateString()}
                 </p>
@@ -427,16 +427,16 @@ export default async function Dashboard() {
 
         <Link
           href="/quests"
-          className="group block bg-white rounded-2xl border border-slate-200 hover:border-brand-200 hover:shadow-card-hover shadow-card p-6 transition-all"
+          className="group block bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover shadow-card p-6 transition-all"
         >
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-xl bg-cta-50 ring-1 ring-cta-200 flex items-center justify-center text-cta-600 shrink-0">
+              <div className="w-14 h-14 rounded-xl bg-cta-50 dark:bg-slate-700 ring-1 ring-cta-200 dark:ring-slate-600 flex items-center justify-center text-cta-600 shrink-0">
                 <Trophy className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="font-bold text-ink text-lg mb-0.5">Project Quests</h3>
-                <p className="text-sm text-slate-600">
+                <h3 className="font-bold text-ink dark:text-slate-200 text-lg mb-0.5">Project Quests</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   Build something real in 20-60 minutes. Walk away with a working artifact you can use.
                 </p>
               </div>
@@ -454,12 +454,12 @@ function SkillColumn({ label, dotColor, items, bgClass, emptyText }) {
     <div>
       <div className="flex items-center gap-2 mb-3">
         <div className={`w-2 h-2 rounded-full ${dotColor}`} />
-        <span className="text-sm font-medium text-ink">{label}</span>
+        <span className="text-sm font-medium text-ink dark:text-slate-200">{label}</span>
         <span className="text-xs text-slate-400">({items.length})</span>
       </div>
       <div className="space-y-2">
         {items.length > 0 ? items.map((s, i) => (
-          <div key={i} className={`text-sm text-ink px-3 py-2 rounded-lg border ${bgClass}`}>
+          <div key={i} className={`text-sm text-ink dark:text-slate-200 px-3 py-2 rounded-lg border ${bgClass} dark:bg-slate-700 dark:border-slate-600`}>
             {s.length <= 40 ? s : s.substring(0, 37) + '...'}
           </div>
         )) : (
@@ -474,12 +474,12 @@ function QuickAction({ href, icon: Icon, label }) {
   return (
     <Link
       href={href}
-      className="group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-200 bg-white hover:border-brand-200 hover:bg-brand-50 hover:shadow-card transition-all"
+      className="group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:shadow-card transition-all"
     >
-      <div className="w-10 h-10 rounded-lg bg-brand-50 text-brand-600 group-hover:bg-brand group-hover:text-white flex items-center justify-center transition-all">
+      <div className="w-10 h-10 rounded-lg bg-brand-50 dark:bg-slate-700 text-brand-600 dark:text-brand-400 group-hover:bg-brand group-hover:text-white flex items-center justify-center transition-all">
         <Icon className="w-5 h-5" />
       </div>
-      <span className="text-xs font-medium text-ink">{label}</span>
+      <span className="text-xs font-medium text-ink dark:text-slate-200">{label}</span>
     </Link>
   );
 }

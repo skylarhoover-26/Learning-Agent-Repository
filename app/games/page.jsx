@@ -41,7 +41,7 @@ const GAMES = [
 
 export default function GamesHub() {
   return (
-    <div className="min-h-screen bg-bg-subtle">
+    <div className="min-h-screen bg-bg-subtle dark:bg-slate-900">
       <PageHeader
         icon={Gamepad2}
         title="Learning Games"
@@ -49,7 +49,7 @@ export default function GamesHub() {
       />
 
       <main className="max-w-4xl mx-auto px-6 py-8">
-        <p className="text-slate-600 mb-8 text-lg">
+        <p className="text-slate-600 dark:text-slate-400 mb-8 text-lg">
           Sharpen your AI skills with interactive challenges. Pick a game and start playing.
         </p>
 
@@ -58,14 +58,14 @@ export default function GamesHub() {
             <Link
               key={game.slug}
               href={`/games/${game.slug}`}
-              className="group bg-white rounded-2xl shadow-card border border-slate-200 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all flex flex-col"
+              className="group bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all flex flex-col"
             >
-              <div className="w-14 h-14 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-4 group-hover:bg-brand group-hover:text-white transition-all">
+              <div className="w-14 h-14 rounded-xl bg-brand-50 dark:bg-slate-700 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4 group-hover:bg-brand group-hover:text-white transition-all">
                 <game.icon className="w-7 h-7" />
               </div>
 
-              <h3 className="font-bold text-ink text-lg mb-1">{game.title}</h3>
-              <p className="text-sm text-slate-600 mb-4 flex-1">{game.description}</p>
+              <h3 className="font-bold text-ink dark:text-slate-200 text-lg mb-1">{game.title}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 flex-1">{game.description}</p>
 
               <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <span
@@ -74,7 +74,7 @@ export default function GamesHub() {
                   <BarChart3 className="w-3 h-3" />
                   {game.difficulty}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-bg-subtle text-slate-600 ring-1 ring-slate-200">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-bg-subtle dark:bg-slate-700 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-600">
                   <Clock className="w-3 h-3" />
                   {game.time}
                 </span>

@@ -71,13 +71,13 @@ export default function ChatPage() {
         <div className="max-w-3xl mx-auto px-6 py-6 space-y-4">
           {messages.length === 0 && (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-brand-50 ring-1 ring-brand-100 mx-auto mb-4 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 ring-1 ring-brand-100 dark:ring-slate-600 mx-auto mb-4 flex items-center justify-center">
                 <MessageCircle className="w-8 h-8 text-brand" strokeWidth={1.5} />
               </div>
-              <h2 className="text-2xl font-bold text-ink mb-2 tracking-tight">
+              <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
                 What do you want to know about AI?
               </h2>
-              <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
                 I'll adapt to your level and teach by example. Try asking about prompting, agents, or anything you're curious about.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
@@ -85,7 +85,7 @@ export default function ChatPage() {
                   <button
                     key={s}
                     onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                    className="px-4 py-2 text-sm bg-white border border-slate-200 rounded-pill text-ink hover:bg-brand-50 hover:border-brand-200 hover:text-brand transition-all"
+                    className="px-4 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-pill text-ink dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:border-brand-200 hover:text-brand transition-all"
                   >
                     {s}
                   </button>
@@ -100,7 +100,7 @@ export default function ChatPage() {
                 className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                   msg.role === 'user'
                     ? 'bg-brand text-white'
-                    : 'bg-white text-ink border border-slate-200 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm'
                 }`}
               >
                 <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -110,7 +110,7 @@ export default function ChatPage() {
 
           {isLoading && (
             <div className="flex flex-col items-start gap-1">
-              <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white text-ink border border-slate-200 shadow-sm">
+              <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center gap-2 text-slate-500">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Thinking...</span>
@@ -123,7 +123,7 @@ export default function ChatPage() {
         </div>
       </main>
 
-      <footer className="bg-white border-t border-slate-200 sticky bottom-0">
+      <footer className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 sticky bottom-0">
         <div className="max-w-3xl mx-auto px-6 py-4">
           <div className="flex items-end gap-3">
             <textarea
@@ -133,7 +133,7 @@ export default function ChatPage() {
               onKeyDown={handleKeyDown}
               placeholder="Ask anything about AI..."
               rows={1}
-              className="flex-1 resize-none px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 focus:outline-none transition-all max-h-32"
+              className="flex-1 resize-none px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 focus:outline-none transition-all max-h-32"
               disabled={isLoading}
             />
             <button
