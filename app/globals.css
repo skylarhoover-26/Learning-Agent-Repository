@@ -30,3 +30,18 @@ body {
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
 }
+
+@keyframes heatmap-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.animate-heatmap-pulse {
+  animation: heatmap-pulse 1.5s ease-in-out infinite;
+}
