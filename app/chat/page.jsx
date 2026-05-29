@@ -26,7 +26,7 @@ export default function ChatPage() {
     inputRef.current?.focus();
   }, []);
 
-  function sendMessage() {
+  async function sendMessage() {
     const text = input.trim();
     if (!text || isLoading) return;
 
@@ -36,16 +36,24 @@ export default function ChatPage() {
     setInput('');
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Something went wrong');
+      setMessages([...newMessages, { role: 'assistant', content: data.reply }]);
+    } catch (error) {
+      console.error('Chat error:', error);
       setMessages([
         ...newMessages,
-        {
-          role: 'assistant',
-          content: "Great question! This is a demo preview of the AI Learning Platform. Once we wire up the Claude API, I'll be able to give you personalized answers about AI, adapted to your role and experience level.\n\nFor now, explore the dashboard and other pages to see what's coming!",
-        },
+        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
       ]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   }
 
   function handleKeyDown(e) {

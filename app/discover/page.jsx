@@ -14,45 +14,6 @@ const SAMPLE_PROMPTS = [
   "Senior Director of Enablement. I lead a team that builds training. I review their content, run program launches, write executive updates, and meet with stakeholders.",
 ];
 
-const DEMO_OPPORTUNITIES = [
-  {
-    title: 'Auto-draft meeting summaries',
-    description: 'After each meeting, paste your notes and get a structured summary with action items, owners, and deadlines in seconds.',
-    icon: '📝',
-    difficulty: 'easy',
-    category: 'meetings',
-    timeSaved: '15 min/meeting',
-    whyItHelps: 'You mentioned 3-4 meetings a day — that\'s nearly an hour saved daily just on follow-ups.',
-  },
-  {
-    title: 'Generate status report drafts',
-    description: 'Feed AI your raw project data and notes, get a polished executive summary with key metrics, risks, and next steps.',
-    icon: '📊',
-    difficulty: 'easy',
-    category: 'writing',
-    timeSaved: '30 min/week',
-    whyItHelps: 'Turns your bullet points into stakeholder-ready updates.',
-  },
-  {
-    title: 'Analyze project risks from updates',
-    description: 'Paste multiple project status updates and ask AI to identify patterns, flag risks, and suggest prioritization.',
-    icon: '🔍',
-    difficulty: 'medium',
-    category: 'analysis',
-    timeSaved: '20 min/review',
-    whyItHelps: 'Spot issues across projects before they become blockers.',
-  },
-  {
-    title: 'Create quarter-planning frameworks',
-    description: 'Describe your goals and constraints, and get a structured planning template with milestones, dependencies, and resource allocation.',
-    icon: '📅',
-    difficulty: 'medium',
-    category: 'decisions',
-    timeSaved: '2 hours/quarter',
-    whyItHelps: 'Start with a solid framework instead of a blank page.',
-  },
-];
-
 const DIFFICULTY_STYLES = {
   easy: { label: 'Easy', color: 'bg-green-100 text-green-700' },
   medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
@@ -70,18 +31,33 @@ export default function DiscoverPage() {
   const [workDescription, setWorkDescription] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [opportunities, setOpportunities] = useState([]);
 
-  function findOpportunities() {
+  async function findOpportunities() {
     if (!workDescription.trim()) return;
     setIsSearching(true);
-    setTimeout(() => {
-      setIsSearching(false);
+    try {
+      const res = await fetch('/api/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workDescription }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Search failed');
+      setOpportunities(data.opportunities || []);
       setHasSearched(true);
-    }, 1500);
+    } catch (error) {
+      console.error('Discover error:', error);
+      setOpportunities([]);
+      setHasSearched(true);
+    } finally {
+      setIsSearching(false);
+    }
   }
 
   function reset() {
     setHasSearched(false);
+    setOpportunities([]);
   }
 
   return (
@@ -176,7 +152,7 @@ export default function DiscoverPage() {
 
             <div className="mb-5">
               <h2 className="text-2xl font-bold text-ink">
-                Found {DEMO_OPPORTUNITIES.length} ways AI can help your work
+                Found {opportunities.length} ways AI can help your work
               </h2>
               <p className="text-slate-600 text-sm mt-1">
                 Pick one to try — each opens a hands-on lesson tied to YOUR actual work.
@@ -184,7 +160,7 @@ export default function DiscoverPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {DEMO_OPPORTUNITIES.map((opp, i) => {
+              {opportunities.map((opp, i) => {
                 const difficulty = DIFFICULTY_STYLES[opp.difficulty] || DIFFICULTY_STYLES.medium;
                 const gradient = CATEGORY_COLORS[opp.category] || 'from-slate-400 to-slate-500';
                 return (
