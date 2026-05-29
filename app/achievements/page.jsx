@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArrowLeft, Award, Sparkles } from 'lucide-react';
 import { getCurrentLearner, getTotalXp, getLevelProgress, getEarnedBadges, getAllBadgesWithEarnedStatus } from '@/lib/data';
 
-export default function AchievementsPage() {
-  const learner = getCurrentLearner();
+export default async function AchievementsPage() {
+  const learner = await getCurrentLearner();
+  if (!learner) redirect('/onboarding');
   const totalXp = getTotalXp(learner.id);
   const levelProgress = getLevelProgress(totalXp);
   const allBadges = getAllBadgesWithEarnedStatus(learner.id);

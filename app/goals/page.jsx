@@ -1,10 +1,12 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { Target, Plus } from 'lucide-react';
 import { getCurrentLearner, getActiveGoals, calculateGoalProgressForGoal } from '@/lib/data';
 
-export default function GoalsPage() {
-  const learner = getCurrentLearner();
+export default async function GoalsPage() {
+  const learner = await getCurrentLearner();
+  if (!learner) redirect('/onboarding');
   const goals = getActiveGoals(learner.id).map(g => ({
     ...g,
     progress_percent: calculateGoalProgressForGoal(learner.id, g),

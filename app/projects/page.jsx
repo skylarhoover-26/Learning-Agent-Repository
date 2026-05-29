@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { Briefcase, Plus } from 'lucide-react';
 import { getCurrentLearner, getActiveWorkProjects } from '@/lib/data';
@@ -6,8 +7,9 @@ export function getActiveWorkProjectsFromData(learnerId) {
   return getActiveWorkProjects(learnerId);
 }
 
-export default function ProjectsPage() {
-  const learner = getCurrentLearner();
+export default async function ProjectsPage() {
+  const learner = await getCurrentLearner();
+  if (!learner) redirect('/onboarding');
   const projects = getActiveWorkProjects(learner.id);
 
   return (

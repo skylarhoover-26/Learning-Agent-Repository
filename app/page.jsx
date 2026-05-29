@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import {
   getCurrentLearner, getLessonHistory, getRecentKnowledge,
   getActiveWorkProjects, getActiveGoals, calculateGoalProgressForGoal,
@@ -68,21 +69,11 @@ function shortTopic(t, max = 50) {
   return t.length <= max ? t : t.substring(0, max - 1) + '…';
 }
 
-export default function Dashboard() {
-  const learner = getCurrentLearner();
+export default async function Dashboard() {
+  const learner = await getCurrentLearner();
 
   if (!learner) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <div className="max-w-md text-center bg-white rounded-2xl shadow-card p-12 border border-slate-200">
-          <div className="text-6xl mb-4">👋</div>
-          <h1 className="text-2xl font-bold text-ink mb-3">Welcome to AI Learning Platform</h1>
-          <p className="text-slate-600 mb-6">
-            Your personalized AI learning journey starts here.
-          </p>
-        </div>
-      </div>
-    );
+    redirect('/onboarding');
   }
 
   const lessonHistory = getLessonHistory(learner.id);
