@@ -33,6 +33,17 @@ You only need to do these steps once on your computer.
 
 Every time you want to make a change, follow these steps. All commands are run in your terminal.
 
+### Starting a New Session
+
+1. Open your terminal (Terminal on Mac, Git Bash on Windows).
+
+2. Navigate to the project folder. The terminal doesn't remember where you were last time, so you need to do this each time:
+   ```
+   cd Learning-Agent-Repository
+   ```
+
+### Making and Pushing Your Changes
+
 1. Pull the latest code before making changes. This makes sure you have everyone else's recent updates:
    ```
    git pull origin main
