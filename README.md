@@ -2,9 +2,15 @@
 
 Live app: [learning-agent-pearl.vercel.app](https://learning-agent-pearl.vercel.app)
 
+## How It All Works
+
+- **Git** connects your terminal to GitHub. It's how you clone, push, and pull code. (Pre-installed on Mac. Windows users install it from [git-scm.com](https://git-scm.com).)
+- **Node.js** is the engine that runs the app's code. It comes with **npm**, which downloads all the libraries the app depends on (React, Next.js, etc.). Install it from [nodejs.org](https://nodejs.org).
+- **Vercel** is connected directly to the GitHub repo. You don't need to do anything with Vercel — it automatically builds and deploys the app whenever code is pushed to `main`.
+
 ## One-Time Setup
 
-1. Install [Node.js](https://nodejs.org) if you don't have it
+1. Install [Git](https://git-scm.com) (Windows only — Mac has it built in) and [Node.js](https://nodejs.org)
 2. Open your terminal and clone the repo:
    ```
    git clone https://github.com/skylarhoover-26/Learning-Agent-Repository.git
