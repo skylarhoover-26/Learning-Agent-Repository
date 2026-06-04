@@ -136,19 +136,71 @@ Rachel's "AI Coach" prototype is a Slack-first learning system with a web dashbo
 
 ---
 
+## Brian — New Items from AI Academy Prototype
+
+Brian's "AI Academy" prototype is a Next.js/TypeScript app focused on a self-updating curriculum pipeline, scenario-based skill assessment, and a structured lesson player with Claude grading. These items bring features not yet in the current platform.
+
+### BR1. Auto-Refresh Curriculum Pipeline — High
+
+- **What it is:** Automated system that keeps curriculum from going stale. Runs 3x/week via Vercel Cron (Mon/Wed/Fri):
+  1. **Scanner** (`lib/scanner.ts`) — fetches 14 RSS sources (OpenAI blog, Anthropic news, DeepMind, arXiv cs.CL/cs.AI, HuggingFace daily, HN AI, r/LocalLLaMA, etc.) in parallel, upserts new Findings
+  2. **Curator** (`lib/curator.ts`) — sends Findings + existing curriculum titles to Claude Opus, generates structured proposals (NEW MODULE / CONTENT UPDATE / DEPRECATION) with severity, confidence, affected modules, and a patch string
+  3. **Slack Notify** (`lib/slack.ts`) — posts proposal cards to `#approvers` with deep-link to admin dashboard
+  4. **Admin Review** — approvers open `/admin/curriculum`, review proposals + sources + diff, approve/reject
+  5. **Apply Patch** — **TODO in Brian's code** — approved proposals sit at status `approved` but nothing rewrites curriculum content yet
+- **Status:** Steps 1–4 are real and working end-to-end. Step 5 (applying approved patches) is the key gap.
+- **What's needed:** Port scanner + curator to current app. Close the loop by implementing patch application on approval. Replace placeholder Slack approver handles (`@brian.wells`, `@skylar`, `@bridget`) with real ones.
+- **Priority:** High — Brian's handoff calls this "the most valuable next deliverable." Solves the core problem that AI curriculum goes stale every 1–2 weeks.
+
+### BR2. Calibration Onboarding (Scenario-Based Assessment) — Medium
+
+- **What it is:** 3 scenario-based questions in `/onboarding`, each calibrated to a primary skill (privacy, prompting, agents, etc.) with partial credit bleed into related skills. Compares **self-rating** (slider) vs **measured** (quiz answers) to surface calibration gaps. Persists resulting Profile to localStorage.
+- **Status:** Complete in Brian's prototype (`src/components/Onboarding.tsx`).
+- **What's needed:** Port to current app. Replace localStorage with DB-backed profile. Could complement or replace current onboarding flow.
+- **Priority:** Medium — gives a real skill baseline vs self-reported data, which makes the heatmap and recommendations meaningful
+
+### BR3. Structured Lesson Player (5-Step Flow) — Medium
+
+- **What it is:** `LessonPlayer.tsx` — 5-step lesson flow: **Read → Try → Compare → Ship → Reflect**. The "Try" step takes learner input and grades it via Claude (`POST /api/lesson/grade`). The "Compare" step calls Claude to show warm/concise/playful AI variants of the same content. Falls back to canned responses if no API key.
+- **Status:** One lesson exists (`/lesson/customer-followups` — HVAC tech note). The player framework is complete; just needs more lesson content.
+- **What's needed:** Port lesson player component. Create more lessons across personas (non-tech, tech, leader). Wire to Track/Module/Lesson data model.
+- **Priority:** Medium — the current platform has lessons but this structured flow with Claude grading is more interactive
+
+### BR4. Profile Radar + Calibration Chart — Low
+
+- **What it is:** Two visualization components on `/profile`:
+  - `ProfileRadar.tsx` — 6-skill SVG radar chart (privacy, prompting, comms, agents, eval, data)
+  - `CalibrationChart.tsx` — bar chart comparing self-rating vs measured score per skill, sorted by gap
+- **Status:** Complete, reads from localStorage profile set during onboarding.
+- **What's needed:** Port components. Wire to DB-backed profile. Depends on calibration onboarding (BR2).
+- **Priority:** Low — nice-to-have visualization; the heatmap already covers skill visibility
+
+### BR5. Prisma Schema (Brian's Data Model) — Reference
+
+- **What it is:** Full Postgres schema via Prisma covering: Learner, Track, Module, Lesson, Enrollment, Attempt, Source, Finding, Proposal, ApprovalEvent, ProposalFinding (M:N join)
+- **Status:** Complete in `prisma/schema.prisma`. Designed for the auto-refresh pipeline.
+- **What's needed:** Merge relevant models into the Supabase migration (B1/R1). The Source/Finding/Proposal/ApprovalEvent tables are essential if we build BR1.
+- **Priority:** Reference — informs the database design, especially for the auto-refresh pipeline
+
+---
+
 ## Summary by Priority
 
 | Priority | Item | Source | Blocks / Blocked By |
 |----------|------|--------|---------------------|
-| **Critical** | Supabase Database (B1 + R1) | Both | Blocks cross-device, manager features, scoring |
+| **Critical** | Supabase Database (B1 + R1 + BR5) | All three | Blocks cross-device, manager features, scoring, pipeline |
 | **High** | Slack Bot (R2) | Rachel | Independent — adoption driver |
 | **High** | AI Impact Competency Scoring (R3) | Rachel | Blocked by Supabase |
 | **High** | 20-Department Curriculum (R4) | Rachel | Independent — personalization layer |
+| **High** | Auto-Refresh Curriculum Pipeline (BR1) | Brian | Blocked by Supabase; solves curriculum staleness |
 | **Medium** | Manager Dashboard + Competencies Table (R5) | Rachel | Blocked by Supabase + Scoring |
 | **Medium** | Modules 4 and 5 (R6) | Rachel | Independent — content work |
 | **Medium** | 6-Week Check-In Flow (R7) | Rachel | Blocked by Supabase + Scoring |
 | **Medium** | Okta SSO (R8) | Rachel | Independent — required for org rollout |
+| **Medium** | Calibration Onboarding (BR2) | Brian | Independent — scenario-based skill baseline |
+| **Medium** | Structured Lesson Player (BR3) | Brian | Independent — Claude-graded 5-step flow |
 | **Low** | Skill Graph Visualization (B2) | Bridget | Heatmap covers core need |
+| **Low** | Profile Radar + Calibration Chart (BR4) | Brian | Depends on BR2 |
 | **Low** | Interactive Mockup (R9) | Rachel | Demo asset |
 
 ---
@@ -161,4 +213,8 @@ Rachel's "AI Coach" prototype is a Slack-first learning system with a web dashbo
 - **Compliance departments:** Legal, Risk, Finance, Business Solutions get extra data safety warnings in Module 1. Controlled by `HIGH_COMPLIANCE_DEPTS` in `curriculum.js`.
 - **All localStorage items** (quests, reviews, XP, badges, library usage, lesson history) were designed to map cleanly to database tables for migration when Supabase ships.
 - **Slack app status:** IT has the app in review for internal workspace distribution — pending approval.
-- **Rachel's source files** are in the `AI-Coach-Project` zip. Key files: `bot.js`, `modules.js`, `curriculum.js`, `scoring.js`, `lib/claude.js`, `lib/supabase.js`, `supabase-schema.sql`, `dashboard-v2.html`, `mockup.html`.
+- **Rachel's source files** are at `prototypes/rachel/`. Key files: `bot.js`, `modules.js`, `curriculum.js`, `scoring.js`, `lib/claude.js`, `lib/supabase.js`, `supabase-schema.sql`, `dashboard-v2.html`, `mockup.html`.
+- **Brian's source files** are at `prototypes/brian/`. Key files: `src/lib/scanner.ts`, `src/lib/curator.ts`, `src/lib/slack.ts`, `src/components/BriefingDirection.tsx`, `src/components/Onboarding.tsx`, `src/components/LessonPlayer.tsx`, `prisma/schema.prisma`.
+- **Brian's auto-refresh pipeline** is the standout unique feature — no other prototype has curriculum that updates itself. Scans 14 AI news sources, generates proposals via Claude, and routes through Slack-gated approvals.
+- **Slack approver handles** in Brian's code are placeholders (`@brian.wells`, `@skylar`, `@bridget`) — update before deploying.
+- **Brian uses Claude Opus** for both curation and lesson grading (higher quality). Rachel uses Haiku for scoring + Sonnet for content. Consider a tiered model strategy.
