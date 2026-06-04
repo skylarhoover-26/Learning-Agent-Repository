@@ -1,6 +1,6 @@
 # Bridget's Remaining Backlog Items
 
-**Last updated:** 2026-06-04 (updated after voice mode + content pipeline shipped)
+**Last updated:** 2026-06-04 (updated after quests, spaced repetition, library expansion, and image gen decision)
 **Project:** AI Learning Platform (Learning-Agent-Repository)
 **Source:** Bridget's original prototype (`ai-learning-agent.zip`)
 
@@ -34,44 +34,46 @@ Bridget's Next.js prototype was the foundation for the consolidated platform. Mo
 
 ### 5. Supabase Database (Persistent Backend)
 - **Original:** Bridget had a complete Supabase schema ready (`supabase/schema.sql`) for PostgreSQL
-- **Status:** Not connected. All data currently lives in browser cookies (profile only) and hardcoded mock data (everything else). Learner progress, completed lessons, earned badges, and goals are **lost when cookies expire or the browser is cleared**
-- **What's needed:** Supabase project setup, schema migration, API routes updated to read/write from DB instead of mock data, data seeding for demo
-- **Priority consideration:** **Critical blocker.** Without a database, nothing persists. This is the single most important infrastructure item remaining
+- **Status:** Not connected. All data currently lives in browser cookies (profile) and localStorage (quests, reviews, library usage, XP, lesson history, badges). Data persists within a single browser but is **not synced across devices** and is lost if browser storage is cleared.
+- **What's needed:** Supabase project setup, schema migration, API routes updated to read/write from DB instead of localStorage, data seeding for demo
+- **Priority consideration:** **Critical blocker** for multi-device and team-wide features. Single-browser usage works with localStorage for now.
 
-### 6. OpenAI-Specific Features (DALL-E Image Generation)
-- **Original:** Bridget used DALL-E for generating lesson imagery and visual content
-- **Status:** Not ported. The platform switched to Anthropic Claude API for all AI features. Claude does not generate images
-- **What's needed:** Decide whether to add image generation (via a separate service) or rely on static/stock imagery
-- **Priority consideration:** Low — cosmetic enhancement. Static images or Lucide icons work fine for the current UI
+### ~~6. OpenAI-Specific Features (DALL-E Image Generation)~~ — SKIPPED
+- **Decision:** 2026-06-04 — Skipped intentionally. The platform switched to Anthropic Claude and Lucide icons + emojis handle the UI well. Not worth adding a second AI provider for cosmetic imagery.
 
 ---
 
 ## Partially Implemented
 
-### 7. Quests System (Expanded)
-- **Original:** Bridget had 3 detailed quest templates with multi-step guided walkthroughs
-- **Current:** 20 quests exist on the `/quests` page, but they are **display-only mock data** — you can browse them but can't start, track progress through, or complete a quest
-- **What's needed:** Quest state tracking (started/in-progress/completed), step-by-step progression UI, XP reward on completion, persistence (requires database)
+### ~~7. Quests System (Expanded)~~ — DONE
+- **Shipped:** 2026-06-04
+- **Implementation:** 10 detailed quests with multi-step guided walkthroughs. Each quest has step-by-step progression UI with task descriptions, success criteria, and tips. Quest state (started/in-progress/completed) tracked in localStorage. XP awarded on completion. "First quest" badge earned automatically.
+- **Files:** `lib/quest-data.js`, `lib/quest-store.js`, `lib/xp-store.js`, `app/quests/page.jsx`, `app/quests/[id]/page.jsx`
+- **What's remaining:** Persistence is localStorage only — will migrate to Supabase when database is added. Data shapes are designed for DB migration.
 
-### 8. Spaced Repetition System (Expanded)
-- **Original:** Bridget had a full spaced repetition engine with scheduling algorithms
-- **Current:** `/review` page exists with 2 mock quiz cards showing `next_review_at` dates, but the scheduling algorithm is not implemented and cards don't update based on performance
-- **What's needed:** SM-2 or similar scheduling algorithm, card generation from completed lessons, performance tracking (correct/incorrect), review queue management, persistence (requires database)
+### ~~8. Spaced Repetition System (Expanded)~~ — DONE
+- **Shipped:** 2026-06-04
+- **Implementation:** Full SM-2 scheduling algorithm. 20 review cards across 4 categories (Prompt Basics, Prompt Techniques, AI Safety, Workflows). Again/Hard/Good/Easy rating buttons with next-review-interval preview. Performance tracking (accuracy stats). Review queue management surfaces due cards + new cards. XP awarded for correct answers.
+- **Files:** `lib/sm2.js`, `lib/review-data.js`, `lib/review-store.js`, `app/review/page.jsx`
+- **What's remaining:** Card generation from completed lessons (currently a static pool). Persistence is localStorage — will migrate to Supabase.
 
-### 9. Use Case Library (Full Dataset)
-- **Original:** Bridget had 30 fully detailed use cases with starter prompts
-- **Current:** 30 use cases exist on `/library` page and are browsable/filterable — this is largely complete
-- **What's remaining:** Use cases are static. Original concept included community-submitted use cases and usage tracking (which use cases people actually try)
+### ~~9. Use Case Library (Full Dataset)~~ — DONE
+- **Shipped:** 2026-06-04
+- **Implementation:** Expanded from 8 to 30 use cases with detailed starter prompts covering writing, analysis, meetings, and decisions across all roles. localStorage-based usage tracking (tries + copies per use case). "Popular" and "Recent" badges shown on cards.
+- **Files:** `lib/library-store.js`, `app/library/page.jsx`
+- **What's remaining:** Community-submitted use cases (requires database + moderation flow).
 
-### 10. Gamification — Real-Time Progression
-- **Original:** XP, levels, and badges updated in real time as the learner completed activities
-- **Current:** XP system, 10 levels, and 11 badges are all defined and displayed. Dashboard shows the learner's current state from mock data
-- **What's remaining:** Progression doesn't actually happen. Completing a lesson doesn't award XP. Badges aren't earned through activity. Everything is frozen at the mock data state. Requires database + event system to become functional
+### ~~10. Gamification — Real-Time Progression~~ — DONE
+- **Shipped:** 2026-06-04
+- **Implementation:** Completing a lesson awards 50 XP in real time. Streak bonuses (+10 XP) auto-detect consecutive learning days. All 11 badges evaluate dynamically against real activity (lesson count, streak length, level). Celebration toast shows XP earned, level-ups, streak bonuses, and new badges on lesson completion. Dashboard and achievements page read live data instead of mock data. Uses localStorage (per-browser persistence) — database upgrade deferred.
+- **Files:** `lib/progression.js`, `lib/learner-store.js`, `components/progression-provider.jsx`, `components/xp-toast.jsx`, `components/live-stats-pills.jsx`, `components/live-level-badges.jsx`, `components/live-streak-card.jsx`, `components/live-recent-lesson.jsx`, `components/achievements-live.jsx`
+- **Earnable now:** first_lesson, three_lessons, ten_lessons, three_day_streak, seven_day_streak, level_5. Quiz/quest/project/goal badges activate when those systems ship.
 
-### 11. Learner Profile — Full Data Model
-- **Original:** Rich learner profile stored in Supabase with full history
-- **Current:** Profile stored in browser cookies with basic fields (name, department, sub_team, tier, goal). Editable on `/profile` page
-- **What's remaining:** Lesson history, skill evaluations, XP events, badge timestamps, and learning streaks are all in mock data only — not tied to the actual user's activity
+### ~~11. Learner Profile — Full Data Model~~ — DONE
+- **Shipped:** 2026-06-04
+- **Implementation:** Lesson history, XP events, earned badges with timestamps, and learning streaks are now tracked from real user activity and stored in localStorage (keyed by learner ID). Profile identity remains in cookies; activity data is in localStorage. Dashboard shows real "pick up where you left off" from actual completed lessons.
+- **Files:** `lib/learner-store.js`, `components/live-recent-lesson.jsx`, `components/progression-provider.jsx`
+- **What's still mock:** Skill evaluations, goals, and projects remain on mock data. Quiz cards (#8) are now live with SM-2 scheduling.
 
 ---
 
@@ -81,12 +83,12 @@ Bridget's Next.js prototype was the foundation for the consolidated platform. Mo
 |----------|------|--------|
 | ~~Medium~~ | ~~Voice Mode (#1)~~ | **DONE** — 2026-06-04 |
 | ~~Medium~~ | ~~Content Pipeline (#2)~~ | **DONE** — 2026-06-04 |
-| **Critical** | Supabase Database (#5) | Blocks all persistence |
-| **High** | Gamification Real-Time (#10) | Blocked by #5 |
+| ~~**High**~~ | ~~Gamification Real-Time (#10)~~ | **DONE** — 2026-06-04 (localStorage) |
+| ~~**Medium**~~ | ~~Learner Profile Full Data (#11)~~ | **DONE** — 2026-06-04 (localStorage) |
+| **Critical** | Supabase Database (#5) | Blocks cross-device persistence |
 | **High** | Slack Bot (#4) | Independent — adoption driver |
 | **High** | Quest Tracking (#7) | Blocked by #5 |
 | **Medium** | Spaced Repetition Engine (#8) | Blocked by #5 |
-| **Medium** | Learner Profile Full Data (#11) | Blocked by #5 |
 | **Low** | Skill Graph (#3) | Heatmap covers core need |
 | **Low** | Use Case Community Features (#9) | Blocked by #5 |
 | **Low** | Image Generation (#6) | Cosmetic only |
@@ -95,6 +97,7 @@ Bridget's Next.js prototype was the foundation for the consolidated platform. Mo
 
 ## Notes
 
-- Items #7, #8, #10, and #11 are all **blocked by #5 (database)**. Once Supabase is connected, these can be tackled in parallel.
+- Items #10 and #11 shipped using localStorage for persistence. Data is per-browser — upgrading to Supabase (#5) will make progression cross-device and permanent.
+- Items #7 and #8 are still blocked by #5 (database) for proper persistence.
 - The AI provider switch from OpenAI to Anthropic Claude was intentional and is considered complete. Features that relied specifically on OpenAI capabilities (DALL-E, TTS) need alternative solutions.
 - Bridget's original Supabase schema file was at `supabase/schema.sql` in her prototype. That schema should be reviewed and adapted for the current data model before migration.

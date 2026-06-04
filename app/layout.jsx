@@ -1,5 +1,6 @@
 import './globals.css';
 import ThemeToggle from '@/components/theme-toggle';
+import { ProgressionProvider } from '@/components/progression-provider';
 
 export const metadata = {
   title: 'AI Learning Platform — Housecall Pro',
@@ -20,7 +21,9 @@ export default function RootLayout({ children }) {
         ` }} />
       </head>
       <body className="min-h-screen bg-bg-warm text-ink dark:bg-slate-900 dark:text-slate-200">
-        {children}
+        <ProgressionProvider>
+          {children}
+        </ProgressionProvider>
         <ThemeToggle />
       </body>
     </html>

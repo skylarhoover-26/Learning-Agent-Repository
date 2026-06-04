@@ -1,78 +1,137 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
-import { Brain, ChevronRight, Check, X, RotateCcw } from 'lucide-react';
-
-const DEMO_CARDS = [
-  {
-    id: 'qc_001',
-    type: 'multiple_choice',
-    question: 'What makes a prompt "specific" rather than "vague"?',
-    answer: 'Including context, constraints, and desired format',
-    options: [
-      'Using longer sentences',
-      'Including context, constraints, and desired format',
-      'Adding please and thank you',
-      'Using technical jargon',
-    ],
-  },
-  {
-    id: 'qc_002',
-    type: 'short_answer',
-    question: 'Name two things you should include when asking AI to summarize an email thread.',
-    answer: 'The desired length/format and who the summary is for (audience)',
-  },
-];
+import { Brain, ChevronRight, Check, X, RotateCcw, BarChart3, Zap } from 'lucide-react';
+import { QUALITY_BUTTONS, formatNextReview } from '@/lib/sm2';
+import { buildReviewQueue, updateCardAfterReview, getCardState, getReviewStats } from '@/lib/review-store';
+import { addXp } from '@/lib/xp-store';
 
 export default function ReviewPage() {
+  const [queue, setQueue] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [results, setResults] = useState([]);
+  const [sessionResults, setSessionResults] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [mounted, setMounted] = useState(false);
 
-  const card = DEMO_CARDS[currentIdx];
-  const isDone = currentIdx >= DEMO_CARDS.length;
+  useEffect(() => {
+    setMounted(true);
+    setQueue(buildReviewQueue(10));
+    setStats(getReviewStats());
+  }, []);
 
-  function handleOptionSelect(option) {
+  const card = queue[currentIdx];
+  const isDone = currentIdx >= queue.length;
+
+  const handleOptionSelect = useCallback((option) => {
+    if (showAnswer) return;
     setSelectedOption(option);
     setShowAnswer(true);
     const correct = option === card.answer;
-    setResults(prev => [...prev, { cardId: card.id, correct }]);
-  }
+    setSessionResults(prev => [...prev, { cardId: card.id, correct }]);
+  }, [showAnswer, card]);
 
-  function handleReveal() {
+  const handleReveal = useCallback(() => {
     setShowAnswer(true);
-    setResults(prev => [...prev, { cardId: card.id, correct: null }]);
-  }
+  }, []);
 
-  function nextCard() {
+  const handleQualityRating = useCallback((quality) => {
+    if (!card) return;
+    const updated = updateCardAfterReview(card.id, quality);
+    if (quality >= 3) {
+      addXp(5, 'review_correct');
+    }
     setCurrentIdx(prev => prev + 1);
     setShowAnswer(false);
     setSelectedOption(null);
-  }
+  }, [card]);
 
-  function restart() {
+  const restart = useCallback(() => {
+    setQueue(buildReviewQueue(10));
     setCurrentIdx(0);
     setShowAnswer(false);
     setSelectedOption(null);
-    setResults([]);
+    setSessionResults([]);
+    setStats(getReviewStats());
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Brain} title="Review" subtitle="Spaced repetition" />
+      </div>
+    );
   }
 
-  if (isDone) {
-    const correct = results.filter(r => r.correct).length;
+  if (queue.length === 0) {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Brain} title="Review" subtitle="Spaced repetition" />
         <main className="max-w-2xl mx-auto px-6 py-10 text-center">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-10">
+            <div className="text-5xl mb-4">🎯</div>
+            <h2 className="text-2xl font-bold text-ink mb-2">All caught up!</h2>
+            <p className="text-slate-600 mb-6">No cards are due for review right now. Come back later as your cards become due based on the spaced repetition schedule.</p>
+            {stats && (
+              <div className="flex justify-center gap-6 mb-6 text-sm">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-ink">{stats.reviewedCards}</div>
+                  <div className="text-slate-500">Reviewed</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-ink">{stats.masteredCards}</div>
+                  <div className="text-slate-500">Mastered</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-ink">{stats.accuracy}%</div>
+                  <div className="text-slate-500">Accuracy</div>
+                </div>
+              </div>
+            )}
+            <Link href="/" className="px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm">
+              Back to dashboard
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isDone) {
+    const correct = sessionResults.filter(r => r.correct).length;
+    const reviewed = sessionResults.length;
+    const updatedStats = getReviewStats();
+
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Brain} title="Review" subtitle="Session complete" />
+        <main className="max-w-2xl mx-auto px-6 py-10 text-center">
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-10">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold text-ink mb-2">Review Complete!</h2>
-            <p className="text-slate-600 mb-6">You reviewed {DEMO_CARDS.length} cards. {correct} correct.</p>
+            <p className="text-slate-600 mb-6">You reviewed {reviewed} cards this session.</p>
+
+            <div className="flex justify-center gap-6 mb-8">
+              <div className="bg-white rounded-xl border border-slate-200 p-4 min-w-[100px]">
+                <div className="text-2xl font-bold text-ink">{correct}</div>
+                <div className="text-xs text-slate-500">Correct</div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 p-4 min-w-[100px]">
+                <div className="text-2xl font-bold text-ink">{reviewed - correct}</div>
+                <div className="text-xs text-slate-500">To Review</div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 p-4 min-w-[100px]">
+                <div className="text-2xl font-bold text-ink">{updatedStats.accuracy}%</div>
+                <div className="text-xs text-slate-500">All-Time</div>
+              </div>
+            </div>
+
             <div className="flex gap-3 justify-center">
               <button onClick={restart} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-medium">
-                <RotateCcw className="w-4 h-4" /> Review again
+                <RotateCcw className="w-4 h-4" /> Review more
               </button>
               <Link href="/" className="px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm">
                 Back to dashboard
@@ -84,21 +143,42 @@ export default function ReviewPage() {
     );
   }
 
+  const cardState = getCardState(card.id);
+  const isNew = cardState.reviewCount === 0;
+
   return (
     <div className="min-h-screen">
-      <PageHeader icon={Brain} title="Review" subtitle={`Card ${currentIdx + 1} of ${DEMO_CARDS.length}`} />
+      <PageHeader icon={Brain} title="Review" subtitle={`Card ${currentIdx + 1} of ${queue.length}`} />
 
       <main className="max-w-2xl mx-auto px-6 py-10">
-        <div className="flex gap-1 mb-6">
-          {DEMO_CARDS.map((_, i) => (
-            <div key={i} className={`h-1.5 flex-1 rounded-full ${i === currentIdx ? 'bg-brand' : i < currentIdx ? 'bg-brand-200' : 'bg-slate-200'}`} />
-          ))}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex gap-1 flex-1 mr-4">
+            {queue.map((_, i) => (
+              <div key={i} className={`h-1.5 flex-1 rounded-full ${i === currentIdx ? 'bg-brand' : i < currentIdx ? 'bg-brand-200' : 'bg-slate-200'}`} />
+            ))}
+          </div>
+          {stats && (
+            <div className="flex items-center gap-1 text-xs text-slate-500">
+              <BarChart3 className="w-3 h-3" />
+              {stats.accuracy}% accuracy
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-8">
-          <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-4">
-            {card.type === 'multiple_choice' ? 'Multiple Choice' : 'Short Answer'}
-          </p>
+          <div className="flex items-center gap-2 mb-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+              {card.type === 'multiple_choice' ? 'Multiple Choice' : 'Short Answer'}
+            </p>
+            {card.category && (
+              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{card.category}</span>
+            )}
+            {isNew && (
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                <Zap className="w-3 h-3" /> New
+              </span>
+            )}
+          </div>
           <h3 className="text-xl font-bold text-ink mb-6">{card.question}</h3>
 
           {card.type === 'multiple_choice' && card.options && (
@@ -142,21 +222,36 @@ export default function ReviewPage() {
           )}
 
           {showAnswer && card.type === 'short_answer' && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
               <p className="text-sm font-semibold text-green-800 mb-1">Answer:</p>
               <p className="text-sm text-green-700">{card.answer}</p>
             </div>
           )}
 
           {showAnswer && (
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={nextCard}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm"
-              >
-                {currentIdx < DEMO_CARDS.length - 1 ? 'Next Card' : 'Finish'}
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            <div className="mt-6 pt-6 border-t border-slate-100">
+              <p className="text-xs text-slate-500 mb-3 text-center">How well did you know this?</p>
+              <div className="grid grid-cols-4 gap-2">
+                {QUALITY_BUTTONS.map(btn => (
+                  <button
+                    key={btn.key}
+                    onClick={() => handleQualityRating(btn.quality)}
+                    className={`flex flex-col items-center gap-0.5 px-3 py-3 rounded-xl border text-sm font-medium transition-all ${btn.color}`}
+                  >
+                    <span>{btn.label}</span>
+                    <span className="text-xs opacity-70">{btn.sublabel}</span>
+                    <span className="text-[10px] opacity-50 mt-0.5">
+                      {formatNextReview(
+                        btn.quality >= 3
+                          ? cardState.repetitions === 0 ? 1
+                            : cardState.repetitions === 1 ? 6
+                            : Math.round(cardState.interval * cardState.easeFactor)
+                          : 1
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

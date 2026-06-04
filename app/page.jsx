@@ -1,17 +1,20 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
-  getCurrentLearner, getLessonHistory, getActiveGoals,
-  calculateGoalProgressForGoal, getAggregatedSkills, getTotalXp,
-  getLevelProgress, getEarnedBadges,
+  getCurrentLearner, getActiveGoals,
+  calculateGoalProgressForGoal, getAggregatedSkills,
 } from '@/lib/data';
 import {
-  Sparkles, Target, TrendingUp, Flame, BookOpen,
-  MessageCircle, ChevronRight, Award, Zap, Library,
-  Gamepad2, Lightbulb, FileText, Trophy,
+  Sparkles, Target, TrendingUp, BookOpen,
+  MessageCircle, ChevronRight, Library,
+  Gamepad2, Lightbulb, Trophy, GitBranch,
 } from 'lucide-react';
 import MiniHeatmap from '@/components/mini-heatmap';
 import { findDoThisNowSkill } from '@/lib/heatmap-data';
+import LiveStatsPills from '@/components/live-stats-pills';
+import LiveLevelBadges from '@/components/live-level-badges';
+import LiveStreakCard from '@/components/live-streak-card';
+import LiveRecentLesson from '@/components/live-recent-lesson';
 
 const TIER_LABELS = {
   beginner: { label: 'Beginner', color: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
@@ -43,21 +46,6 @@ function getGreetingPrefix() {
   return 'Good evening';
 }
 
-function calculateStreak(history) {
-  if (!history.length) return 0;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const dates = new Set();
-  history.forEach((l) => {
-    const d = new Date(l.completed_at || l.started_at); d.setHours(0, 0, 0, 0);
-    dates.add(d.getTime());
-  });
-  let streak = 0;
-  let cursor = new Date(today);
-  if (!dates.has(cursor.getTime())) cursor.setDate(cursor.getDate() - 1);
-  while (dates.has(cursor.getTime())) { streak++; cursor.setDate(cursor.getDate() - 1); }
-  return streak;
-}
-
 function getSkills(learnerId) {
   const agg = getAggregatedSkills(learnerId);
   const strong = agg.strong.slice(0, 3).map(s => s.skill);
@@ -69,11 +57,6 @@ function getSkills(learnerId) {
   return { strong, growing, gaps };
 }
 
-function shortTopic(t, max = 50) {
-  if (!t) return '';
-  return t.length <= max ? t : t.substring(0, max - 1) + '...';
-}
-
 export default async function Dashboard() {
   const learner = await getCurrentLearner();
 
@@ -81,20 +64,11 @@ export default async function Dashboard() {
     redirect('/onboarding');
   }
 
-  const lessonHistory = getLessonHistory(learner.id);
-  const streak = calculateStreak(lessonHistory);
   const skills = getSkills(learner.id);
-  const lastLesson = lessonHistory[0];
   const activeGoals = getActiveGoals(learner.id).map(g => ({
     ...g,
     progress_percent: calculateGoalProgressForGoal(learner.id, g),
   }));
-  const totalXp = getTotalXp(learner.id);
-  const levelProgress = getLevelProgress(totalXp);
-  const earnedBadges = getEarnedBadges(learner.id);
-  const recentBadges = earnedBadges
-    .sort((a, b) => new Date(b.earned_at) - new Date(a.earned_at))
-    .slice(0, 4);
 
   const tier = TIER_LABELS[learner.tier] || TIER_LABELS.beginner;
   const displayName = learner.display_name || 'there';
@@ -139,18 +113,7 @@ export default async function Dashboard() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {streak > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-semibold bg-cta-50 text-cta-700 ring-1 ring-cta-200">
-                <Flame className="w-3.5 h-3.5" />
-                {streak} day streak
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-50 text-brand-700 ring-1 ring-brand-200">
-              <Zap className="w-3.5 h-3.5" />
-              {totalXp.toLocaleString()} XP
-            </span>
-          </div>
+          <LiveStatsPills />
         </div>
 
         {/* 3. "Do This Now" hero card */}
@@ -195,73 +158,14 @@ export default async function Dashboard() {
           <QuickAction href="/games" icon={Gamepad2} label="Games" />
           <QuickAction href="/quick-win" icon={Lightbulb} label="Quick Win" />
           <QuickAction href="/library" icon={Library} label="Library" />
-          <QuickAction href="/prompts" icon={FileText} label="Prompts" />
+          <QuickAction href="/skill-graph" icon={GitBranch} label="Skill Graph" />
         </div>
 
         {/* 5. Mini heatmap */}
         <MiniHeatmap />
 
         {/* 6. Level + Badges */}
-        <Link
-          href="/achievements"
-          className="group block bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-5 items-center">
-            <div className="flex items-center gap-5">
-              <div className="relative shrink-0">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cta-400 to-cta-600 flex items-center justify-center shadow-sm">
-                  <span className="text-2xl font-bold text-ink dark:text-slate-900">{levelProgress.level}</span>
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-800">
-                  LV
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2 mb-1">
-                  <h3 className="font-bold text-ink dark:text-slate-200">Level {levelProgress.level}</h3>
-                  <span className="text-sm text-slate-500">&middot; {totalXp.toLocaleString()} XP</span>
-                </div>
-                <div className="flex items-center gap-3 max-w-md">
-                  <div className="flex-1 h-2 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-cta to-cta-600 transition-all duration-500"
-                      style={{ width: `${levelProgress.percent}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-slate-500 shrink-0">
-                    {levelProgress.xpToNext} XP to L{levelProgress.level + 1}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {recentBadges.length > 0 ? (
-                <>
-                  <div className="flex -space-x-2">
-                    {recentBadges.map(b => (
-                      <div
-                        key={b.id}
-                        className="w-9 h-9 rounded-full bg-cta-50 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-800 flex items-center justify-center text-lg shadow-sm"
-                        title={`${b.name}: ${b.description}`}
-                      >
-                        {b.emoji}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400 hidden sm:block">
-                    {earnedBadges.length} {earnedBadges.length === 1 ? 'badge' : 'badges'}
-                  </div>
-                </>
-              ) : (
-                <div className="text-sm text-slate-500">
-                  <Award className="w-4 h-4 inline mr-1" />
-                  Earn your first badge
-                </div>
-              )}
-              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
-            </div>
-          </div>
-        </Link>
+        <LiveLevelBadges />
 
         {/* 7. Goals + Streak two-column */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -301,16 +205,7 @@ export default async function Dashboard() {
             )}
           </Link>
 
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Flame className="w-5 h-5 text-cta-600" />
-              <h3 className="font-semibold text-ink dark:text-slate-200">Current Streak</h3>
-            </div>
-            <div className="text-5xl font-bold text-ink dark:text-slate-200 mb-1">{streak}</div>
-            <p className="text-sm text-slate-500">
-              {streak > 0 ? `Day${streak > 1 ? 's' : ''} in a row` : 'Start a lesson today!'}
-            </p>
-          </div>
+          <LiveStreakCard />
         </div>
 
         {/* 8. "What Changed This Week" */}
@@ -400,30 +295,8 @@ export default async function Dashboard() {
           </div>
         </div>
 
-        {/* 11. Bottom CTAs */}
-        {lastLesson && (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="w-5 h-5 text-brand" />
-                  <h3 className="font-semibold text-ink dark:text-slate-200">Pick up where you left off</h3>
-                </div>
-                <p className="text-ink dark:text-slate-200 mb-1">{shortTopic(lastLesson.topic, 80)}</p>
-                <p className="text-xs text-slate-500">
-                  Last completed {new Date(lastLesson.completed_at).toLocaleDateString()}
-                </p>
-              </div>
-              <Link
-                href={`/lesson?topic=${encodeURIComponent(lastLesson.topic)}`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-cta text-ink rounded-pill font-semibold hover:bg-cta-600 transition-all shadow-sm"
-              >
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        )}
+        {/* 11. Recent lesson CTA */}
+        <LiveRecentLesson />
 
         <Link
           href="/quests"

@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
+import XpToast from '@/components/xp-toast';
+import { useProgression } from '@/components/progression-provider';
+import { onLessonComplete } from '@/lib/progression';
+import { getProfileClient } from '@/lib/profile-client';
 import { getCuratedLessons, getCuratedLessonById } from '@/lib/curated-lessons';
 import {
   BookOpen, ChevronRight, ChevronLeft, Zap, BookMarked, Trophy,
@@ -42,6 +46,12 @@ function LessonContent() {
   const [userInput, setUserInput] = useState('');
   const slideRef = useRef(null);
 
+  // Progression state
+  const [progressionResult, setProgressionResult] = useState(null);
+  const lessonStartedAt = useRef(null);
+  const hasRecordedCompletion = useRef(false);
+  const { refresh: refreshProgression } = useProgression() || {};
+
   useEffect(() => {
     setCuratedLessons(getCuratedLessons());
   }, []);
@@ -77,6 +87,9 @@ function LessonContent() {
     setSlides([]);
     setCurrentSlideIdx(0);
     setMessages([]);
+    lessonStartedAt.current = new Date().toISOString();
+    hasRecordedCompletion.current = false;
+    setProgressionResult(null);
 
     try {
       const res = await fetch('/api/lesson/start', {
@@ -117,6 +130,9 @@ function LessonContent() {
     setSlides(lesson.slides);
     setCurrentSlideIdx(0);
     setMessages([]);
+    lessonStartedAt.current = new Date().toISOString();
+    hasRecordedCompletion.current = false;
+    setProgressionResult(null);
   }
 
   async function continueLesson(input) {
@@ -164,6 +180,8 @@ function LessonContent() {
     setError(null);
     setIsCurated(false);
     setCuratedLessons(getCuratedLessons());
+    hasRecordedCompletion.current = false;
+    setProgressionResult(null);
   }
 
   if (view === 'picker') {
@@ -292,13 +310,37 @@ function LessonContent() {
     );
   }
 
+  // --- Progression: record completion ---
+  const handleLessonComplete = useCallback(() => {
+    if (hasRecordedCompletion.current) return;
+    hasRecordedCompletion.current = true;
+    try {
+      const profile = getProfileClient();
+      if (profile?.id && topic) {
+        const result = onLessonComplete(profile.id, topic, lessonStartedAt.current);
+        setProgressionResult(result);
+        refreshProgression?.();
+      }
+    } catch {
+      // progression is best-effort
+    }
+  }, [topic, refreshProgression]);
+
   // --- Lesson view ---
   const currentSlide = slides[currentSlideIdx];
   const isComplete = currentSlide?.phase === 'complete' && currentSlide?.recap;
   const isOnLatestSlide = currentSlideIdx === slides.length - 1;
 
+  useEffect(() => {
+    if (isComplete) {
+      handleLessonComplete();
+    }
+  }, [isComplete, handleLessonComplete]);
+
   return (
     <main className="max-w-3xl mx-auto px-6 py-10">
+      <XpToast result={progressionResult} onDismiss={() => setProgressionResult(null)} />
+
       {/* Slide progress dots */}
       {slides.length > 0 && (
         <div className="flex items-center justify-center gap-2 mb-6">
