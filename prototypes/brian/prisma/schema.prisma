@@ -1,0 +1,139 @@
+// AI Academy schema. Postgres in prod (Neon/Supabase); SQLite for local dev.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Learner {
+  id          String     @id @default(cuid())
+  email       String     @unique
+  name        String
+  department  String
+  persona     String     @default("non-tech")
+  xp          Int        @default(0)
+  streakDays  Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  attempts    Attempt[]
+  enrollments Enrollment[]
+}
+
+model Track {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  persona   String   // non-tech | tech | leader
+  modules   Module[]
+}
+
+model Module {
+  id        String   @id @default(cuid())
+  trackId   String
+  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  title     String
+  level     Int
+  body      String   @db.Text
+  position  Int
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title     String
+  body      String   @db.Text
+  position  Int
+  attempts  Attempt[]
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  learnerId String
+  lessonId  String
+  status    String   @default("not_started") // not_started | in_progress | completed
+  startedAt DateTime?
+  completedAt DateTime?
+  learner   Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  @@unique([learnerId, lessonId])
+}
+
+model Attempt {
+  id        String   @id @default(cuid())
+  learnerId String
+  lessonId  String
+  score     Int
+  rubric    Json?
+  createdAt DateTime @default(now())
+  learner   Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+// Content scanner — sources & raw findings
+model Source {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  url       String
+  kind      String   // blog | rss | arxiv | hn | reddit
+  active    Boolean  @default(true)
+  lastScan  DateTime?
+  findings  Finding[]
+}
+
+model Finding {
+  id          String   @id @default(cuid())
+  sourceId    String
+  source      Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  externalId  String   // dedupe key (URL or arXiv id)
+  title       String
+  url         String
+  publishedAt DateTime?
+  raw         Json
+  scannedAt   DateTime @default(now())
+  proposals   ProposalFinding[]
+  @@unique([sourceId, externalId])
+}
+
+// Proposed curriculum updates from scanner — go through approval
+model Proposal {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   // NEW MODULE | CONTENT UPDATE | DEPRECATION
+  severity    String   // high | med | low
+  summary     String   @db.Text
+  affects     Json     // string[] of lesson titles
+  diffAdded   Int      @default(0)
+  diffEdited  Int      @default(0)
+  diffRemoved Int      @default(0)
+  confidence  Float
+  status      String   @default("pending") // pending | approved | rejected
+  patch       Json?    // proposed content edits
+  createdAt   DateTime @default(now())
+  decidedAt   DateTime?
+  decidedBy   String?
+  findings    ProposalFinding[]
+  events      ApprovalEvent[]
+}
+
+model ProposalFinding {
+  proposalId String
+  findingId  String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  finding    Finding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  @@id([proposalId, findingId])
+}
+
+model ApprovalEvent {
+  id         String   @id @default(cuid())
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  actor      String   // approver email or "AI Curator"
+  action     String   // approved | rejected | edited | flagged | discovered
+  note       String?
+  createdAt  DateTime @default(now())
+}
