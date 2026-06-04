@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Coach — Product Mockup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --hcp-dark: #00205C;
+      --hcp-blue: #0055FF;
+      --hcp-sky: #009FDA;
+      --hcp-light: #9BCBEB;
+      --hcp-bg: #EEF2F7;
+      --slack-bg: #1a1d21;
+      --slack-msg: #222529;
+      --slack-text: #d1d2d3;
+      --slack-muted: #848d97;
+      --slack-border: #2e3035;
+      --slack-primary: #007a5a;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--hcp-bg);
+      min-height: 100vh;
+    }
+
+    /* ── Page Header ── */
+    .page-header {
+      background: var(--hcp-dark);
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .page-header-left h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+    .page-header-left p { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+    .page-header-badge {
+      background: rgba(255,255,255,0.12);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Step Progress Bar ── */
+    .step-bar {
+      background: white;
+      border-bottom: 1px solid #dde3ed;
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .step-dot {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #e5eaf2;
+      color: #9ca3af;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .step-dot.active { background: var(--hcp-blue); color: white; box-shadow: 0 0 0 3px rgba(0,85,255,0.15); }
+    .step-dot.done { background: var(--hcp-sky); color: white; }
+    .step-label { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+    .step-label.active { color: var(--hcp-blue); font-weight: 700; }
+    .step-label.done { color: var(--hcp-sky); }
+    .step-connector { height: 2px; flex: 1; background: #e5eaf2; min-width: 16px; margin: 0 4px; transition: background 0.3s; }
+    .step-connector.done { background: var(--hcp-sky); }
+
+    /* ── Main Layout ── */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 56px 1fr;
+      padding: 20px 32px;
+      gap: 0;
+      align-items: start;
+    }
+    .panel-wrapper { display: flex; flex-direction: column; }
+    .panel-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .panel-label .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .slack-dot { background: #4a154b; }
+    .dash-dot { background: var(--hcp-blue); }
+
+    /* ── Connector ── */
+    .connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 60px;
+      gap: 2px;
+    }
+    .connector-line { width: 2px; height: 30px; background: #dde3ed; }
+    .connector-arrow { color: #dde3ed; font-size: 18px; line-height: 1; }
+    .connector-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #c4cbd8;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      margin: 6px 0;
+    }
+    .connector.syncing .connector-line { background: var(--hcp-blue); }
+    .connector.syncing .connector-arrow { color: var(--hcp-blue); animation: bounce 1s infinite; }
+    .connector.syncing .connector-label { color: var(--hcp-blue); }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+
+    /* ── Slack Panel ── */
+    .slack-panel {
+      background: var(--slack-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+      height: 560px;
+      display: flex;
+      flex-direction: column;
+    }
+    .slack-titlebar {
+      background: #19171d;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--slack-border);
+    }
+    .slack-bot-avatar {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #6c3fc5, #4a154b);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0;
+    }
+    .slack-bot-name { color: white; font-weight: 700; font-size: 13px; }
+    .slack-bot-sub { color: var(--slack-muted); font-size: 11px; }
+    .slack-online { width: 8px; height: 8px; border-radius: 50%; background: #2bac76; margin-left: auto; }
+
+    .slack-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 14px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .slack-messages::-webkit-scrollbar { width: 3px; }
+    .slack-messages::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    .s-msg { display: flex; gap: 9px; padding: 3px 0; align-items: flex-start; }
+    .s-avatar {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800;
+      color: white; flex-shrink: 0; margin-top: 1px;
+    }
+    .s-avatar.bot { background: linear-gradient(135deg, #6c3fc5, #4a154b); }
+    .s-avatar.user { background: linear-gradient(135deg, var(--hcp-sky), var(--hcp-dark)); }
+    .s-body { flex: 1; min-width: 0; }
+    .s-header { display: flex; align-items: baseline; gap: 7px; margin-bottom: 1px; }
+    .s-name { font-size: 13px; font-weight: 700; }
+    .s-name.bot-name { color: white; }
+    .s-name.user-name { color: #e8912d; }
+    .s-time { font-size: 11px; color: var(--slack-muted); }
+    .s-text { font-size: 13px; color: var(--slack-text); line-height: 1.45; }
+    .s-text strong { color: white; font-weight: 700; }
+    .s-text em { color: var(--slack-muted); font-style: italic; font-size: 12px; }
+    .s-text .highlight { color: #1d9bd1; }
+
+    .s-divider { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; }
+    .s-divider-line { flex: 1; height: 1px; background: var(--slack-border); }
+    .s-divider-text { color: var(--slack-muted); font-size: 10px; }
+
+    /* Slack Buttons */
+    .s-btns { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+    .s-btn {
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid;
+      cursor: default;
+    }
+    .s-btn-default { background: transparent; border-color: #5c5f63; color: var(--slack-text); }
+    .s-btn-primary { background: var(--slack-primary); border-color: var(--slack-primary); color: white; }
+    .s-btn-selected { background: #1264a3; border-color: #1264a3; color: white; }
+    .s-btn-plain { background: transparent; border-color: #5c5f63; color: var(--slack-text); font-size: 11px; padding: 2px 7px; }
+
+    .slack-input-bar {
+      padding: 10px 14px;
+      border-top: 1px solid var(--slack-border);
+    }
+    .slack-input-box {
+      background: #2b2d31;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--slack-muted);
+      font-size: 12px;
+      border: 1px solid #3e4044;
+    }
+
+    /* ── Dashboard Panel ── */
+    .dashboard-panel {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      height: 560px;
+      display: flex;
+      flex-direction: column;
+    }
+    .dash-header {
+      background: var(--hcp-dark);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dash-logo { color: white; font-weight: 800; font-size: 13px; }
+    .dash-logo span { color: var(--hcp-sky); }
+    .dash-tabs { display: flex; gap: 2px; margin-left: auto; }
+    .dash-tab {
+      padding: 3px 9px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+    }
+    .dash-tab.active { background: rgba(255,255,255,0.15); color: white; font-weight: 600; }
+    .dash-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      background: var(--hcp-bg);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .dash-body::-webkit-scrollbar { width: 3px; }
+    .dash-body::-webkit-scrollbar-thumb { background: #dde3ed; border-radius: 2px; }
+
+    .d-section-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+    .d-card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px 14px;
+      border: 1px solid #e5eaf2;
+    }
+    .d-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .d-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 13px;
+      flex-shrink: 0;
+    }
+    .d-avatar.filled { background: linear-gradient(135deg, var(--hcp-blue), var(--hcp-sky)); }
+    .d-avatar.empty { background: #e5eaf2; color: #c4cbd8; }
+    .d-name { font-weight: 700; font-size: 13px; color: #1f2937; }
+    .d-role { font-size: 11px; color: #9ca3af; }
+    .d-dept {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .d-dept.filled { background: #eff6ff; color: var(--hcp-blue); }
+    .d-dept.empty { background: #f3f4f6; color: #d1d5db; }
+
+    /* Score rows */
+    .score-rows { display: flex; flex-direction: column; gap: 8px; }
+    .score-row { display: flex; align-items: center; gap: 8px; }
+    .score-icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; }
+    .score-dim { flex: 1; font-size: 12px; color: #374151; font-weight: 500; }
+    .score-bar { flex: 1.5; height: 5px; background: #f3f4f6; border-radius: 3px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.6s ease; }
+    .fill-1 { background: #ef4444; width: 20%; }
+    .fill-2 { background: #f97316; width: 40%; }
+    .fill-3 { background: #eab308; width: 60%; }
+    .fill-4 { background: #22c55e; width: 80%; }
+    .fill-5 { background: #3b82f6; width: 100%; }
+    .score-badge {
+      font-size: 11px; font-weight: 700;
+      padding: 1px 7px; border-radius: 10px;
+      min-width: 40px; text-align: center;
+    }
+    .score-badge.s1 { background: #fef2f2; color: #dc2626; }
+    .score-badge.s2 { background: #fff7ed; color: #ea580c; }
+    .score-badge.s3 { background: #fefce8; color: #ca8a04; }
+    .score-badge.s4 { background: #f0fdf4; color: #16a34a; }
+    .score-badge.empty { background: #f3f4f6; color: #d1d5db; }
+
+    .impact-level-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #f3f4f6;
+    }
+    .impact-level-label { font-size: 11px; color: #9ca3af; font-weight: 600; }
+    .impact-badge {
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 10px;
+    }
+    .impact-badge.high { background: #f0fdf4; color: #166534; }
+    .impact-badge.medium { background: #fef9c3; color: #92400e; }
+    .impact-badge.low { background: #fef2f2; color: #dc2626; }
+    .impact-badge.empty { background: #f3f4f6; color: #d1d5db; }
+
+    /* Module list */
+    .module-list { display: flex; flex-direction: column; gap: 5px; }
+    .mod-item {
+      background: white;
+      border-radius: 6px;
+      padding: 8px 10px;
+      border: 1px solid #e5eaf2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mod-item.active { border-color: var(--hcp-blue); background: #f0f5ff; }
+    .mod-check { font-size: 13px; flex-shrink: 0; }
+    .mod-body { flex: 1; }
+    .mod-title { font-size: 11px; font-weight: 700; color: #1f2937; }
+    .mod-item.active .mod-title { color: var(--hcp-blue); }
+    .mod-desc { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+    .mod-status {
+      font-size: 10px; font-weight: 600;
+      padding: 1px 6px; border-radius: 8px;
+    }
+    .mod-status.in-progress { background: #eff6ff; color: var(--hcp-blue); }
+
+    /* Tasks chips */
+    .task-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .task-chip {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: var(--hcp-blue);
+      font-weight: 600;
+    }
+
+    /* Updated badge */
+    .updated-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #22c55e;
+      font-weight: 600;
+    }
+
+    /* Manager view styles */
+    .mgr-avatar { background: linear-gradient(135deg, #7c3aed, #4338ca); }
+    .view-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 10px;
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .view-badge.learner { background: #eff6ff; color: var(--hcp-blue); }
+    .view-badge.manager { background: #f5f3ff; color: #6d28d9; }
+    .team-table { width: 100%; border-collapse: collapse; }
+    .team-table th {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #9ca3af;
+      padding: 0 8px 8px; text-align: left;
+    }
+    .team-table td { padding: 7px 8px; border-top: 1px solid #f3f4f6; font-size: 12px; }
+    .team-table tr:hover td { background: #fafbfc; }
+    .tm-name { font-weight: 600; color: #1f2937; }
+    .tm-role { font-size: 10px; color: #9ca3af; }
+    .tm-score {
+      font-size: 11px; font-weight: 700;
+      padding: 1px 6px; border-radius: 8px;
+      display: inline-block; min-width: 28px; text-align: center;
+    }
+    .tm-score.s2 { background: #fff7ed; color: #ea580c; }
+    .tm-score.s3 { background: #fefce8; color: #ca8a04; }
+    .tm-score.s4 { background: #f0fdf4; color: #16a34a; }
+    .tm-score.s5 { background: #eff6ff; color: #2563eb; }
+    .tm-score.empty { background: #f3f4f6; color: #d1d5db; }
+    .tm-level {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 8px;
+    }
+    .tm-level.high { background: #f0fdf4; color: #166534; }
+    .tm-level.medium { background: #fef9c3; color: #92400e; }
+    .tm-level.low { background: #fef2f2; color: #dc2626; }
+    .tm-level.empty { background: #f3f4f6; color: #d1d5db; }
+    .tm-new { font-size: 9px; font-weight: 700; background: #eff6ff; color: var(--hcp-blue); padding: 1px 5px; border-radius: 6px; margin-left: 4px; }
+    .score-picker-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .score-picker-label { font-size: 12px; font-weight: 600; color: #374151; width: 110px; flex-shrink: 0; }
+    .score-picker-dots { display: flex; gap: 6px; }
+    .score-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid #e5eaf2; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #9ca3af;
+      transition: all 0.15s;
+    }
+    .score-dot.selected-1 { border-color: #ef4444; background: #ef4444; color: white; }
+    .score-dot.selected-2 { border-color: #f97316; background: #f97316; color: white; }
+    .score-dot.selected-3 { border-color: #eab308; background: #eab308; color: white; }
+    .score-dot.selected-4 { border-color: #22c55e; background: #22c55e; color: white; }
+    .score-dot.selected-5 { border-color: #3b82f6; background: #3b82f6; color: white; }
+    .privacy-banner {
+      background: #f5f3ff; border: 1px solid #ddd6fe;
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 11px; color: #5b21b6;
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .save-btn {
+      background: var(--hcp-blue); color: white;
+      border: none; border-radius: 6px;
+      padding: 8px 16px; font-size: 12px; font-weight: 700;
+      cursor: pointer; margin-top: 12px; width: 100%;
+    }
+    .step-section-divider {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 4px;
+    }
+    .step-section-line { width: 1px; height: 20px; background: #dde3ed; margin: 0 4px; }
+    .step-section-label {
+      font-size: 9px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #c4cbd8; white-space: nowrap;
+    }
+
+    /* Prompt copy box */
+    .prompt-box {
+      background: #1a2332; border: 1px solid #2d4a6b;
+      border-radius: 6px; padding: 9px 11px; margin: 7px 0;
+      font-size: 11.5px; color: #93c5fd; line-height: 1.5;
+      font-family: 'Courier New', monospace;
+    }
+    .prompt-box-label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #64748b; font-weight: 700; margin-bottom: 4px; font-family: inherit;
+    }
+    .try-it-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #4285f4; color: white; padding: 3px 10px;
+      border-radius: 4px; font-size: 12px; font-weight: 600;
+      margin: 4px 0; cursor: default;
+    }
+    /* Game UI */
+    .game-opt {
+      background: #2b2d31; border: 1px solid #3e4044;
+      border-radius: 6px; padding: 8px 10px; margin-top: 6px;
+      font-size: 12px; color: var(--slack-text); line-height: 1.45;
+    }
+    .game-opt.correct { border-color: #2bac76; background: #1a2e24; }
+    .game-opt.wrong   { border-color: #e74c3c; background: #2e1a1a; opacity: 0.7; }
+    .game-score-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #1c2e1e; color: #86efac; border-radius: 10px;
+      padding: 3px 10px; font-size: 11px; font-weight: 700; margin-top: 6px;
+    }
+    /* Challenge / streak */
+    .challenge-slack {
+      background: #2b2d31; border: 1px solid #3e4044;
+      border-radius: 8px; padding: 10px 12px; margin-top: 8px;
+    }
+    .streak-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #3d2600; color: #f97316; padding: 3px 10px;
+      border-radius: 10px; font-size: 11px; font-weight: 700;
+      border: 1px solid #7c3502; margin-top: 6px;
+    }
+    /* Dashboard game / streak cards */
+    .d-game-result {
+      background: white; border-radius: 8px; padding: 10px 14px;
+      border: 1px solid #e5eaf2; display: flex; align-items: center; gap: 12px;
+    }
+    .d-game-icon { font-size: 22px; }
+    .d-game-score-big { font-size: 20px; font-weight: 800; color: var(--hcp-dark); }
+    .d-game-label { font-size: 10px; color: #9ca3af; }
+    .d-streak-card {
+      background: linear-gradient(135deg,#fff7ed,#fef3c7);
+      border: 1px solid #fed7aa; border-radius: 8px;
+      padding: 10px 14px; display: flex; align-items: center; gap: 12px;
+    }
+    .d-streak-num { font-size: 24px; font-weight: 800; color: #ea580c; }
+    .d-streak-lbl { font-size: 11px; color: #92400e; font-weight: 600; }
+    .d-quick-win {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 8px; padding: 10px 12px; font-size: 11px; color: #166534;
+    }
+
+    /* Empty state */
+    .d-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      text-align: center;
+      color: #d1d5db;
+      gap: 8px;
+    }
+    .d-empty-icon { font-size: 28px; }
+    .d-empty-text { font-size: 12px; line-height: 1.5; }
+
+    /* Step content visibility */
+    .step-content { display: none; }
+    .step-content.visible { display: flex; flex-direction: column; gap: 0; }
+    .step-slack { display: none; }
+    .step-slack.visible { display: flex; flex-direction: column; gap: 0; }
+
+    /* ── Nav Bar ── */
+    .nav-bar {
+      background: white;
+      border-top: 1px solid #dde3ed;
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-btn {
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nav-back { background: white; color: #6b7280; border: 1px solid #dde3ed; }
+    .nav-back:hover:not(:disabled) { background: #f9fafb; }
+    .nav-next { background: var(--hcp-blue); color: white; border: none; }
+    .nav-next:hover:not(:disabled) { background: #0044cc; }
+    .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .nav-step-info { font-size: 12px; color: #9ca3af; text-align: center; }
+    .nav-step-label { font-weight: 700; color: #374151; }
+
+    /* Annotation */
+    .s-annotation {
+      background: #1c2e1e;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 11px;
+      color: #86efac;
+      margin-top: 6px;
+      display: flex; gap: 5px; align-items: flex-start;
+    }
+
+    .d-annotation {
+      background: #fefce8;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 11px;
+      color: #92400e;
+      display: flex; gap: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>🤖 AI Coach — Product Mockup</h1>
+    <p>How the Slack bot connects to the web dashboard · Demo flow: Sarah Kim, Marketing</p>
+  </div>
+  <div class="page-header-badge">Draft v1.0</div>
+</div>
+
+<!-- Step Progress Bar -->
+<div class="step-bar" id="stepBar">
+  <div class="step-item" onclick="goToStep(1)">
+    <div class="step-dot active" id="dot-1">1</div>
+    <div class="step-label active" id="lbl-1">Welcome</div>
+  </div>
+  <div class="step-connector" id="conn-1"></div>
+  <div class="step-item" onclick="goToStep(2)">
+    <div class="step-dot" id="dot-2">2</div>
+    <div class="step-label" id="lbl-2">Profile Setup</div>
+  </div>
+  <div class="step-connector" id="conn-2"></div>
+  <div class="step-item" onclick="goToStep(3)">
+    <div class="step-dot" id="dot-3">3</div>
+    <div class="step-label" id="lbl-3">Impact Questions</div>
+  </div>
+  <div class="step-connector" id="conn-3"></div>
+  <div class="step-item" onclick="goToStep(4)">
+    <div class="step-dot" id="dot-4">4</div>
+    <div class="step-label" id="lbl-4">Learning Plan</div>
+  </div>
+  <div class="step-connector" id="conn-4"></div>
+  <div class="step-item" onclick="goToStep(5)">
+    <div class="step-dot" id="dot-5">5</div>
+    <div class="step-label" id="lbl-5">Module 1</div>
+  </div>
+  <div class="step-connector" id="conn-5"></div>
+  <div class="step-item" onclick="goToStep(6)">
+    <div class="step-dot" id="dot-6">6</div>
+    <div class="step-label" id="lbl-6">Module 2</div>
+  </div>
+  <div class="step-connector" id="conn-6"></div>
+  <div class="step-item" onclick="goToStep(7)">
+    <div class="step-dot" id="dot-7">7</div>
+    <div class="step-label" id="lbl-7">Prompt Game</div>
+  </div>
+  <div class="step-connector" id="conn-7"></div>
+  <div class="step-item" onclick="goToStep(8)">
+    <div class="step-dot" id="dot-8">8</div>
+    <div class="step-label" id="lbl-8">Challenge</div>
+  </div>
+  <div class="step-connector" id="conn-8"></div>
+  <div class="step-item" onclick="goToStep(9)">
+    <div class="step-dot" id="dot-9">9</div>
+    <div class="step-label" id="lbl-9">Check-In</div>
+  </div>
+  <div class="step-section-divider">
+    <div class="step-section-line"></div>
+    <div class="step-section-label">Manager View</div>
+    <div class="step-section-line"></div>
+  </div>
+  <div class="step-connector" id="conn-9"></div>
+  <div class="step-item" onclick="goToStep(10)">
+    <div class="step-dot" id="dot-10">10</div>
+    <div class="step-label" id="lbl-10">Team Overview</div>
+  </div>
+  <div class="step-connector" id="conn-10"></div>
+  <div class="step-item" onclick="goToStep(11)">
+    <div class="step-dot" id="dot-11">11</div>
+    <div class="step-label" id="lbl-11">Mgr Scoring</div>
+  </div>
+  <div class="step-connector" id="conn-11"></div>
+  <div class="step-item" onclick="goToStep(12)">
+    <div class="step-dot" id="dot-12">12</div>
+    <div class="step-label" id="lbl-12">Team Dashboard</div>
+  </div>
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+  <!-- LEFT: Slack Panel -->
+  <div class="panel-wrapper">
+    <div class="panel-label"><div class="dot slack-dot"></div>Slack — Direct Message</div>
+    <div class="slack-panel">
+      <div class="slack-titlebar">
+        <div class="slack-bot-avatar">🤖</div>
+        <div>
+          <div class="slack-bot-name">AI Coach</div>
+          <div class="slack-bot-sub">App · AI Skills &amp; Impact</div>
+        </div>
+        <div class="slack-online"></div>
+      </div>
+      <div class="slack-messages" id="slackMessages">
+        <!-- Step content rendered by JS -->
+      </div>
+      <div class="slack-input-bar">
+        <div class="slack-input-box">Message AI Coach</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Connector -->
+  <div class="connector" id="connector">
+    <div class="connector-line"></div>
+    <div class="connector-arrow">▼</div>
+    <div class="connector-label">syncs to</div>
+    <div class="connector-line"></div>
+  </div>
+
+  <!-- RIGHT: Dashboard Panel -->
+  <div class="panel-wrapper">
+    <div class="panel-label"><div class="dot dash-dot"></div>Web Dashboard</div>
+    <div class="dashboard-panel">
+      <div class="dash-header">
+        <div class="dash-logo">AI <span>Coach</span> Dashboard</div>
+        <div class="dash-tabs">
+          <div class="dash-tab active">My Progress</div>
+          <div class="dash-tab">My Team</div>
+        </div>
+      </div>
+      <div class="dash-body" id="dashBody">
+        <!-- Dashboard content rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav Bar -->
+<div class="nav-bar">
+  <button class="nav-btn nav-back" id="btnBack" onclick="prevStep()" disabled>← Back</button>
+  <div class="nav-step-info">
+    <div class="nav-step-label" id="stepLabel">Step 1 of 12 — Welcome</div>
+    <div id="stepDesc" style="margin-top:2px">User receives first DM from AI Coach</div>
+  </div>
+  <button class="nav-btn nav-next" id="btnNext" onclick="nextStep()">Next →</button>
+</div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 12;
+
+const stepMeta = [
+  { label: 'Step 1 — Welcome',              desc: '👤 Learner View — User receives first DM from AI Coach',                                      view: 'learner' },
+  { label: 'Step 2 — Profile Setup',        desc: '👤 Learner View — User selects department, tasks, and AI starting point',                      view: 'learner' },
+  { label: 'Step 3 — Impact Questions',     desc: '👤 Learner View — Bot asks 4 scoring questions — Claude analyzes free-text answers',           view: 'learner' },
+  { label: 'Step 4 — Learning Plan',        desc: '👤 Learner View — Bot generates a personalized 5-module learning path',                        view: 'learner' },
+  { label: 'Step 5 — Module 1',             desc: '👤 Learner View — AI Foundations — what AI is good at, what to avoid, the output formula',    view: 'learner' },
+  { label: 'Step 6 — Module 2: Try It Now', desc: '👤 Learner View — Personalized Gemini prompt + copy-paste template for Sarah\'s top task',    view: 'learner' },
+  { label: 'Step 7 — Spot the Bad Prompt',  desc: '👤 Learner View — Interactive game: pick the better prompt, see why it wins',                  view: 'learner' },
+  { label: 'Step 8 — Weekly Challenge',     desc: '👤 Learner View — Task-specific challenge tied to Sarah\'s work — streak tracking begins',     view: 'learner' },
+  { label: 'Step 9 — 6-Week Check-In',      desc: '👤 Learner View — Auto-triggered when Sarah DMs after 6 weeks — scores update instantly',     view: 'learner' },
+  { label: 'Step 10 — Team Overview',       desc: '👔 Manager View — Manager sees team onboarding status and self-scores',                        view: 'manager' },
+  { label: 'Step 11 — Manager Scoring',     desc: '👔 Manager View — Manager enters competency scores for each team member',                      view: 'manager' },
+  { label: 'Step 12 — Team Dashboard',      desc: '👔 Manager View — Complete team picture with self + manager scores side by side',              view: 'manager' },
+];
+
+// ── Slack content per step ──────────────────────────────────────────────────
+
+const slackSteps = {
+
+  1: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Today</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:04 AM</span></div>
+        <div class="s-text">👋 Hey <strong>Sarah!</strong> I'm your AI Coach.<br><br>
+        I'm here to help you grow with AI — not just learn about it, but actually use it to do better work and drive real impact.<br><br>
+        Before I build your personalized learning plan, I'd like to understand where you are right now. This takes about <strong>5 minutes</strong>, and your answers shape everything — so the more honest you are, the more useful your plan will be.<br><br>
+        Ready to get started?</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-primary">Let's go</div>
+          <div class="s-btn s-btn-default">Remind me later</div>
+        </div>
+      </div>
+    </div>`,
+
+  2: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Today</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:04 AM</span></div>
+        <div class="s-text">Which team are you on? This helps me tailor your learning plan to work you actually do.</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-plain">Analytics</div><div class="s-btn s-btn-plain">Business Dev</div><div class="s-btn s-btn-plain">Business Solutions</div><div class="s-btn s-btn-plain">Customer Success</div>
+          <div class="s-btn s-btn-plain">Enablement</div><div class="s-btn s-btn-plain">Engineering</div><div class="s-btn s-btn-plain">Finance</div>
+          <div class="s-btn s-btn-selected">Marketing</div>
+          <div class="s-btn s-btn-plain">People</div><div class="s-btn s-btn-plain">Product</div><div class="s-btn s-btn-plain">Sales</div><div class="s-btn s-btn-plain">+ more</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:05 AM</span></div>
+        <div class="s-text">Before we dive in — how would you describe your relationship with AI tools right now?</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-plain">Just getting started</div>
+          <div class="s-btn s-btn-selected">Curious &amp; experimenting</div>
+          <div class="s-btn s-btn-plain">Regular user</div>
+          <div class="s-btn s-btn-plain">Power user</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:05 AM</span></div>
+        <div class="s-text">What does most of your typical week look like? Pick the <strong>3 tasks</strong> that take up the most of your time.</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-selected">✓ Writing content</div>
+          <div class="s-btn s-btn-selected">✓ Research &amp; market analysis</div>
+          <div class="s-btn s-btn-selected">✓ Campaign briefing</div>
+          <div class="s-btn s-btn-plain">Performance reporting</div>
+          <div class="s-btn s-btn-plain">SEO &amp; keyword content</div>
+          <div class="s-btn s-btn-plain">Copywriting variations</div>
+        </div>
+        <div class="s-btns" style="margin-top:4px">
+          <div class="s-btn s-btn-primary">Done — 3 selected</div>
+        </div>
+      </div>
+    </div>`,
+
+  3: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Today</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:07 AM</span></div>
+        <div class="s-text">Now let's look at the impact AI is having on your own work.<br><br><strong>Which of these best describes how AI affects your day-to-day output?</strong></div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-plain">Haven't used it meaningfully yet</div>
+          <div class="s-btn s-btn-plain">Tried things — no real change yet</div>
+          <div class="s-btn s-btn-selected">Saving real time on specific tasks</div>
+          <div class="s-btn s-btn-plain">AI has genuinely changed my output</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:08 AM</span></div>
+        <div class="s-text">Now let's think about your teammates.<br><br><strong>Which best describes what's happening on your team with AI?</strong></div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-plain">Figuring it out individually</div>
+          <div class="s-btn s-btn-selected">A few of us use it, but we rarely share</div>
+          <div class="s-btn s-btn-plain">I sometimes help colleagues try things</div>
+          <div class="s-btn s-btn-plain">I actively coach my team on AI</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:08 AM</span></div>
+        <div class="s-text"><strong>Can you connect your AI usage to any team goals or broader business outcomes?</strong></div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-plain">Not really</div>
+          <div class="s-btn s-btn-selected">Loosely — some connection</div>
+          <div class="s-btn s-btn-plain">Yes — specific results</div>
+          <div class="s-btn s-btn-plain">Definitely — others use my practices</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:09 AM</span></div>
+        <div class="s-text"><strong>When it comes to understanding and experimenting with AI — which feels most like you?</strong></div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-plain">Still learning what's out there</div>
+          <div class="s-btn s-btn-selected">Consistent user — not experimenting much</div>
+          <div class="s-btn s-btn-plain">Actively trying new things</div>
+          <div class="s-btn s-btn-plain">I go deep — others come to me</div>
+        </div>
+        <div class="s-annotation">⏳ Claude is analyzing your answers and generating your learning plan…</div>
+      </div>
+    </div>`,
+
+  4: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Today</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:09 AM</span></div>
+        <div class="s-text">Here's your AI Impact profile, <strong>Sarah</strong>:<br><br>
+        📊 <strong>Personal Impact:</strong> Fully Successful (3/5)<br>
+        👥 <strong>Team Impact:</strong> Still Developing (2/5)<br>
+        🏢 <strong>Org Impact:</strong> Still Developing (2/5)<br>
+        🧠 <strong>AI Development:</strong> Fully Successful (3/5)<br><br>
+        <strong>Overall AI Impact Level: Medium</strong><br><br>
+        Based on your role in Marketing and where you are right now, I've put together a 5-module learning path for you.<br><br>
+        <strong>Your Learning Path:</strong><br>
+        ✅ <strong>Module 1: AI Foundations</strong> — What AI can (and can't) do — with examples from Marketing<br>
+        ⬜ <strong>Module 2: AI for Your Core Tasks</strong> — Your quick win: use AI for "Writing content" this week<br>
+        ⬜ <strong>Module 3: Prompting That Works</strong> — Build prompts for "Research &amp; market analysis" you can reuse<br>
+        ⬜ <strong>Module 4: Building and Automating</strong> — Create a repeatable AI workflow for "Campaign briefing"<br>
+        ⬜ <strong>Module 5: Measuring Impact</strong> — Connect your AI use to a team goal and show the before/after<br><br>
+        You can work through these at your own pace. I'll check in every 6 weeks.<br><br>
+        <strong>Want to start Module 1 now?</strong></div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-primary">Start Module 1</div>
+          <div class="s-btn s-btn-default">Save for later</div>
+        </div>
+      </div>
+    </div>`,
+
+  5: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Today</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:10 AM</span></div>
+        <div class="s-text"><strong>Module 1: AI Foundations</strong> 🧠<br><br>
+        Let's start with what AI actually is — and what it isn't. This is the foundation that makes everything else click.<br><br>
+        <strong>What AI is good at:</strong><br>
+        • Drafting, summarizing, researching, and structuring<br>
+        • Brainstorming options and approaches quickly<br>
+        • Writing variations and alternatives<br>
+        • Repurposing content across formats<br><br>
+        <strong>What AI is NOT good at:</strong><br>
+        • Real-time or proprietary data<br>
+        • Precise financial calculations (always verify)<br>
+        • Personal judgment calls without full context<br><br>
+        <strong>The formula for useful output:</strong><br>
+        <em>Clear context + Specific ask + Desired format = Better output</em><br><br>
+        <strong>Your quick task:</strong> You told me your top tasks are Writing content, Research &amp; market analysis, and Campaign briefing. For each one — what part is mostly writing, summarizing, or structuring? That's where we start in Module 2.</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-primary">Yes — let's go to Module 2</div>
+          <div class="s-btn s-btn-default">Come back later</div>
+        </div>
+      </div>
+    </div>`,
+
+  6: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Today</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:12 AM</span></div>
+        <div class="s-text"><strong>Module 2: AI for Your Core Tasks</strong> 🚀<br><br>
+        Time to actually do it — not just learn about it. Your quick win this week: <strong>Writing content</strong>. Most marketing content starts with a blank-page problem. AI fixes that.<br><br>
+        Open Gemini and paste this prompt. Just replace the brackets with your real context — takes under 30 seconds:
+        </div>
+        <div class="prompt-box-label" style="margin-top:8px;color:#64748b;font-size:10px;font-family:inherit;text-transform:uppercase;letter-spacing:.08em;font-weight:700">📋 Copy-paste prompt</div>
+        <div class="prompt-box">"Write a 200-word LinkedIn post announcing [our new feature] to small business owners. Lead with the pain point of [problem it solves]. Conversational tone, no jargon. End with a question to drive comments."</div>
+        <div style="margin-top:6px"><span class="try-it-link">🔗 Open Gemini for Google Workspace →</span></div>
+        <div class="s-btns" style="margin-top:8px">
+          <div class="s-btn s-btn-primary">✓ I tried it — here's what happened</div>
+          <div class="s-btn s-btn-default">Save for later</div>
+        </div>
+        <div class="s-annotation">💡 The Gemini link opens in a new tab pre-loaded with your workspace account — no login required if you're already signed into Google</div>
+      </div>
+    </div>`,
+
+  7: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Today</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:20 AM</span></div>
+        <div class="s-text">🎯 <strong>Spot the Bad Prompt</strong><br><br>
+        A quick game to sharpen your prompting instincts. Which of these would get you more useful output?<br><br>
+        <strong>Prompt A</strong></div>
+        <div class="game-opt wrong">Write me some marketing copy</div>
+        <div class="s-text" style="margin-top:8px"><strong>Prompt B</strong></div>
+        <div class="game-opt correct">Write a 150-word email subject line and preview text for our Q3 campaign. Audience: CFOs at mid-market companies. Goal: drive clicks to our ROI calculator. Tone: direct, no fluff.</div>
+        <div class="s-btns" style="margin-top:8px">
+          <div class="s-btn s-btn-default">Prompt A</div>
+          <div class="s-btn s-btn-selected">✓ Prompt B — more context!</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:20 AM</span></div>
+        <div class="s-text">✅ <strong>Correct!</strong> Prompt B wins because it gives the AI:<br>
+        • A specific length and format<br>
+        • A defined audience (CFOs, mid-market)<br>
+        • A clear goal (drive clicks)<br>
+        • A tone direction (direct, no fluff)<br><br>
+        Prompt A gives you generic copy you'll rewrite from scratch. Prompt B gives you something usable.<br><br>
+        <strong>Round 2/3 — try this one:</strong> Which prompt would generate better research output for a competitive analysis?</div>
+        <div class="game-opt wrong">Tell me about our competitors</div>
+        <div class="game-opt correct">List the top 5 competitors to [our product] in the US SMB payroll market. For each: key differentiator, pricing model, and one weakness. Format as a table.</div>
+        <div class="s-btns" style="margin-top:8px">
+          <div class="s-btn s-btn-default">First one</div>
+          <div class="s-btn s-btn-selected">✓ Second — structured ask!</div>
+        </div>
+        <div class="game-score-pill">🎯 Score so far: 2/2 correct</div>
+      </div>
+    </div>`,
+
+  8: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Today</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:28 AM</span></div>
+        <div class="s-text">🏆 <strong>Game complete — 4/5 correct!</strong><br><br>
+        Strong prompting instincts, Sarah. The two things that separate your good picks from weak prompts: <em>audience specificity</em> and <em>output format</em>. Keep those in every prompt and you'll get usable output almost every time.<br><br>
+        Now here's your <strong>weekly challenge</strong> to put it into practice:</div>
+        <div class="challenge-slack">
+          <div style="font-size:12px;font-weight:700;color:white;margin-bottom:6px">📌 This week: Content Variations</div>
+          <div style="font-size:12px;color:var(--slack-text);line-height:1.5">Use AI to write <strong>3 variations</strong> of copy for an upcoming piece of content — a social post, email subject line, or campaign headline.<br><br>
+          Then: pick the best one and write <em>one sentence</em> about why it's better. That reflection is what builds real AI judgment.<br><br>
+          ⏱️ Est. time: 15 min &nbsp;·&nbsp; 📌 Tied to: Writing content, Campaign briefing</div>
+        </div>
+        <div class="s-btns" style="margin-top:8px">
+          <div class="s-btn s-btn-primary">✓ I did it!</div>
+          <div class="s-btn s-btn-default">Skip this week</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar user">SK</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name user-name">Sarah Kim</span><span class="s-time">3:45 PM</span></div>
+        <div class="s-text">Done! Used it for our newsletter subject lines — the third variation was way better. Shorter and more direct.</div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:6px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">3:46 PM</span></div>
+        <div class="s-text">🔥 <strong>Week 1 complete!</strong> That reflection — noticing <em>why</em> one version was better — is exactly how AI judgment develops. You're not just using AI faster, you're getting better at it.<br><br>
+        Next challenge drops in 7 days. Keep the streak going!</div>
+        <div class="streak-pill">🔥 Current streak: 1 week</div>
+      </div>
+    </div>`,
+
+  9: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">6 weeks later</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar user">SK</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name user-name">Sarah Kim</span><span class="s-time">2:14 PM</span></div>
+        <div class="s-text">Hey, quick question about prompting for briefs</div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:6px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">2:14 PM</span></div>
+        <div class="s-text">Hey Sarah! It's been a little while — before we get into it, mind if I do a quick <strong>2-minute check-in</strong> on your AI progress? Your answers update your scores on the dashboard.</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-primary">Sure, let's do it</div>
+          <div class="s-btn s-btn-default">Skip for now</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">2:15 PM</span></div>
+        <div class="s-text"><strong>Since we last talked, has the way you use AI in your own work changed?</strong></div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-plain">Not much — about the same</div>
+          <div class="s-btn s-btn-plain">Yes — using it more consistently</div>
+          <div class="s-btn s-btn-selected">Yes — using it for things I wasn't doing before</div>
+          <div class="s-btn s-btn-plain">Yes — delivered a real AI-driven outcome</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">2:16 PM</span></div>
+        <div class="s-text">Here's where you stand now, Sarah:<br><br>
+        📊 <strong>Personal Impact:</strong> 3 → <strong>4</strong> ↑<br>
+        👥 <strong>Team Impact:</strong> 2 → <strong>3</strong> ↑<br>
+        🏢 <strong>Org Impact:</strong> 2 → 2 →<br>
+        🧠 <strong>AI Development:</strong> 3 → 3 →<br><br>
+        🎉 Nice growth since last time — keep building on it.<br><br>
+        Your dashboard has been updated. Talk soon!</div>
+      </div>
+    </div>`,
+
+  10: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Manager view — Dave Chen</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:32 AM</span></div>
+        <div class="s-text">👋 Hey <strong>Dave!</strong> A quick heads-up — <strong>3 of your team members</strong> have just completed their AI onboarding, including Sarah Kim.<br><br>Their self-scores are now live on your team dashboard. When you're ready, you can add your manager scores alongside theirs.<br><br>You can view your team's full dashboard anytime — the link is in your pinned messages.</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-primary">Open team dashboard</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:10px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">10:33 AM</span></div>
+        <div class="s-text">Also — have you done your own onboarding yet? I'd love to build <em>your</em> learning plan too. Takes about 5 minutes.</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-primary">Start my onboarding</div>
+          <div class="s-btn s-btn-default">Remind me later</div>
+        </div>
+      </div>
+    </div>
+    <div class="s-annotation">💡 Managers get the same onboarding flow as their team — they're learners too, and their scores appear on the dashboard alongside their direct reports</div>`,
+
+  11: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Manager view — Dave Chen</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">2:00 PM</span></div>
+        <div class="s-text">👔 The dashboard now has a <strong>My Team</strong> tab where you can add your manager competency scores.<br><br>These sit alongside each person's self-scores so you both have visibility — not just one or the other.<br><br>A few things worth knowing:<br>• <strong>Only scores are shared</strong> — the text of their free-text answers is private to each person<br>• Manager scores are only visible to you and the person themselves<br>• Scores can be updated each time you do a talent or performance review</div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:8px">
+      <div class="s-avatar user" style="background:linear-gradient(135deg,#7c3aed,#4338ca)">DC</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name user-name" style="color:#a78bfa">Dave Chen</span><span class="s-time">2:04 PM</span></div>
+        <div class="s-text">Got it — just added scores for Sarah. Gave her a 4 on personal impact, felt right given what I've seen from her lately</div>
+      </div>
+    </div>
+    <div class="s-msg" style="margin-top:6px">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">2:04 PM</span></div>
+        <div class="s-text">✅ Saved! Sarah's dashboard now shows both her self-score and your manager score side by side. She can see the full picture — but not your written notes, only the score.<br><br>You have <strong>5 more team members</strong> without manager scores yet. Want to score them now?</div>
+        <div class="s-btns">
+          <div class="s-btn s-btn-primary">Score remaining team</div>
+          <div class="s-btn s-btn-default">Do it later</div>
+        </div>
+      </div>
+    </div>`,
+
+  12: `
+    <div class="s-divider"><div class="s-divider-line"></div><div class="s-divider-text">Manager view — Dave Chen</div><div class="s-divider-line"></div></div>
+    <div class="s-msg">
+      <div class="s-avatar bot">🤖</div>
+      <div class="s-body">
+        <div class="s-header"><span class="s-name bot-name">AI Coach</span><span class="s-time">3:15 PM</span></div>
+        <div class="s-text">🎉 Nice work, Dave — you've scored all 6 team members.<br><br>Here's your team summary:<br><br>
+        📊 <strong>Team avg Impact Level:</strong> Medium<br>
+        ⬆️ <strong>Highest scorer:</strong> Alex Chen (High)<br>
+        🎯 <strong>Most growth opportunity:</strong> Maya Patel (Low → coaching recommended)<br>
+        📚 <strong>Modules in progress:</strong> 4 of 6 members actively learning<br><br>
+        The full breakdown is on your dashboard. I'll flag if anyone's scores shift significantly at their next check-in.</div>
+      </div>
+    </div>
+    <div class="s-annotation">💡 Manager scores update the dashboard immediately — no approval or sync needed. Learners see the update the next time they open the dashboard</div>`
+};
+
+// ── Dashboard content per step ──────────────────────────────────────────────
+
+const dashSteps = {
+
+  1: `
+    <div class="d-section-title">Learner Profile</div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar empty">?</div>
+        <div>
+          <div class="d-name" style="color:#d1d5db">Awaiting onboarding</div>
+          <div class="d-role" style="color:#e5eaf2">—</div>
+        </div>
+        <div class="d-dept empty">—</div>
+      </div>
+    </div>
+    <div class="d-section-title">AI Impact Scores</div>
+    <div class="d-card">
+      <div class="score-rows">
+        <div class="score-row"><span class="score-icon">📊</span><span class="score-dim">Personal Impact</span><div class="score-bar"><div class="score-bar-fill"></div></div><span class="score-badge empty">—</span></div>
+        <div class="score-row"><span class="score-icon">👥</span><span class="score-dim">Team Impact</span><div class="score-bar"><div class="score-bar-fill"></div></div><span class="score-badge empty">—</span></div>
+        <div class="score-row"><span class="score-icon">🏢</span><span class="score-dim">Org Impact</span><div class="score-bar"><div class="score-bar-fill"></div></div><span class="score-badge empty">—</span></div>
+        <div class="score-row"><span class="score-icon">🧠</span><span class="score-dim">AI Development</span><div class="score-bar"><div class="score-bar-fill"></div></div><span class="score-badge empty">—</span></div>
+      </div>
+      <div class="impact-level-row"><span class="impact-level-label">Overall Impact Level</span><span class="impact-badge empty">Not scored</span></div>
+    </div>
+    <div class="d-empty"><div class="d-empty-icon">💬</div><div class="d-empty-text">Scores and learning plan appear here<br>after the Slack onboarding is complete</div></div>`,
+
+  2: `
+    <div class="d-section-title">Learner Profile <span style="color:#22c55e;font-size:10px;font-weight:700;margin-left:6px">● Updating from Slack</span></div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div>
+          <div class="d-name">Sarah Kim</div>
+          <div class="d-role">Marketing</div>
+        </div>
+        <div class="d-dept filled">Marketing</div>
+      </div>
+      <div class="task-chips">
+        <div class="task-chip">Writing content</div>
+        <div class="task-chip">Research &amp; market analysis</div>
+        <div class="task-chip">Campaign briefing</div>
+      </div>
+    </div>
+    <div class="d-annotation">💡 Top tasks saved from Slack — will be used to personalize all 5 modules</div>
+    <div class="d-section-title">AI Impact Scores</div>
+    <div class="d-card">
+      <div class="score-rows">
+        <div class="score-row"><span class="score-icon">📊</span><span class="score-dim">Personal Impact</span><div class="score-bar"><div class="score-bar-fill"></div></div><span class="score-badge empty">—</span></div>
+        <div class="score-row"><span class="score-icon">👥</span><span class="score-dim">Team Impact</span><div class="score-bar"><div class="score-bar-fill"></div></div><span class="score-badge empty">—</span></div>
+        <div class="score-row"><span class="score-icon">🏢</span><span class="score-dim">Org Impact</span><div class="score-bar"><div class="score-bar-fill"></div></div><span class="score-badge empty">—</span></div>
+        <div class="score-row"><span class="score-icon">🧠</span><span class="score-dim">AI Development</span><div class="score-bar"><div class="score-bar-fill"></div></div><span class="score-badge empty">—</span></div>
+      </div>
+      <div class="impact-level-row"><span class="impact-level-label">Overall Impact Level</span><span class="impact-badge empty">Scoring in progress…</span></div>
+    </div>`,
+
+  3: `
+    <div class="d-section-title">Learner Profile</div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div><div class="d-name">Sarah Kim</div><div class="d-role">Marketing</div></div>
+        <div class="d-dept filled">Marketing</div>
+      </div>
+      <div class="task-chips">
+        <div class="task-chip">Writing content</div>
+        <div class="task-chip">Research &amp; market analysis</div>
+        <div class="task-chip">Campaign briefing</div>
+      </div>
+    </div>
+    <div class="d-section-title">AI Impact Scores <span style="color:#f59e0b;font-size:10px;font-weight:700;margin-left:6px">● Calculating…</span></div>
+    <div class="d-card">
+      <div class="score-rows">
+        <div class="score-row"><span class="score-icon">📊</span><span class="score-dim">Personal Impact</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+        <div class="score-row"><span class="score-icon">👥</span><span class="score-dim">Team Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🏢</span><span class="score-dim">Org Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🧠</span><span class="score-dim">AI Development</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+      </div>
+      <div class="impact-level-row"><span class="impact-level-label">Overall Impact Level</span><span class="impact-badge medium">Medium</span></div>
+    </div>
+    <div class="d-annotation">🤖 Free-text answers are analyzed by Claude — only the score is saved to the dashboard, not the text itself</div>`,
+
+  4: `
+    <div class="d-section-title">Learner Profile</div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div><div class="d-name">Sarah Kim</div><div class="d-role">Marketing</div></div>
+        <div class="d-dept filled">Marketing</div>
+      </div>
+      <div class="task-chips">
+        <div class="task-chip">Writing content</div>
+        <div class="task-chip">Research &amp; market analysis</div>
+        <div class="task-chip">Campaign briefing</div>
+      </div>
+    </div>
+    <div class="d-section-title">AI Impact Scores</div>
+    <div class="d-card">
+      <div class="score-rows">
+        <div class="score-row"><span class="score-icon">📊</span><span class="score-dim">Personal Impact</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+        <div class="score-row"><span class="score-icon">👥</span><span class="score-dim">Team Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🏢</span><span class="score-dim">Org Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🧠</span><span class="score-dim">AI Development</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+      </div>
+      <div class="impact-level-row"><span class="impact-level-label">Overall Impact Level</span><span class="impact-badge medium">Medium</span></div>
+    </div>
+    <div class="d-section-title">Learning Plan — 5 Modules</div>
+    <div class="module-list">
+      <div class="mod-item active"><span class="mod-check">✅</span><div class="mod-body"><div class="mod-title">Module 1: AI Foundations</div><div class="mod-desc">What AI can (and can't) do — with examples from Marketing</div></div><span class="mod-status in-progress">Next up</span></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 2: AI for Your Core Tasks</div><div class="mod-desc">Quick win: use AI for "Writing content" this week</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 3: Prompting That Works</div><div class="mod-desc">Build prompts for "Research &amp; market analysis" you can reuse</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 4: Building and Automating</div><div class="mod-desc">Repeatable AI workflow for "Campaign briefing"</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 5: Measuring Impact</div><div class="mod-desc">Connect AI use to a team goal — show the before/after</div></div></div>
+    </div>`,
+
+  5: `
+    <div class="d-section-title">Learner Profile</div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div><div class="d-name">Sarah Kim</div><div class="d-role">Marketing</div></div>
+        <div class="d-dept filled">Marketing</div>
+      </div>
+    </div>
+    <div class="d-section-title">AI Impact Scores</div>
+    <div class="d-card">
+      <div class="score-rows">
+        <div class="score-row"><span class="score-icon">📊</span><span class="score-dim">Personal Impact</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+        <div class="score-row"><span class="score-icon">👥</span><span class="score-dim">Team Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🏢</span><span class="score-dim">Org Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🧠</span><span class="score-dim">AI Development</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+      </div>
+      <div class="impact-level-row"><span class="impact-level-label">Overall Impact Level</span><span class="impact-badge medium">Medium</span></div>
+    </div>
+    <div class="d-section-title">Learning Plan — Module Progress</div>
+    <div class="module-list">
+      <div class="mod-item active"><span class="mod-check">🔵</span><div class="mod-body"><div class="mod-title">Module 1: AI Foundations</div><div class="mod-desc">In progress — AI Foundations content delivered</div></div><span class="mod-status in-progress">In Progress</span></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 2: AI for Your Core Tasks</div><div class="mod-desc">Unlocks after Module 1 complete</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 3: Prompting That Works</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 4: Building and Automating</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 5: Measuring Impact</div></div></div>
+    </div>`,
+
+  6: `
+    <div class="d-section-title">Learner Profile</div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div><div class="d-name">Sarah Kim</div><div class="d-role">Marketing</div></div>
+        <div class="d-dept filled">Marketing</div>
+      </div>
+    </div>
+    <div class="d-section-title">AI Impact Scores</div>
+    <div class="d-card">
+      <div class="score-rows">
+        <div class="score-row"><span class="score-icon">📊</span><span class="score-dim">Personal Impact</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+        <div class="score-row"><span class="score-icon">👥</span><span class="score-dim">Team Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🏢</span><span class="score-dim">Org Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🧠</span><span class="score-dim">AI Development</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+      </div>
+      <div class="impact-level-row"><span class="impact-level-label">Overall Impact Level</span><span class="impact-badge medium">Medium</span></div>
+    </div>
+    <div class="d-section-title">Learning Plan</div>
+    <div class="module-list">
+      <div class="mod-item"><span class="mod-check">✅</span><div class="mod-body"><div class="mod-title">Module 1: AI Foundations</div><div class="mod-desc">Complete</div></div></div>
+      <div class="mod-item active"><span class="mod-check">🔵</span><div class="mod-body"><div class="mod-title">Module 2: AI for Your Core Tasks</div><div class="mod-desc">Try It Now active — Writing content prompt sent</div></div><span class="mod-status in-progress">In Progress</span></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 3: Prompting That Works</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 4: Building and Automating</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 5: Measuring Impact</div></div></div>
+    </div>
+    <div class="d-quick-win">🎯 <strong>Quick win prompt sent to Gemini</strong> — Sarah gets a copy-paste template tied to "Writing content" the moment Module 2 opens</div>`,
+
+  7: `
+    <div class="d-section-title">Learner Profile</div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div><div class="d-name">Sarah Kim</div><div class="d-role">Marketing</div></div>
+        <div class="d-dept filled">Marketing</div>
+      </div>
+    </div>
+    <div class="d-section-title">AI Impact Scores</div>
+    <div class="d-card">
+      <div class="score-rows">
+        <div class="score-row"><span class="score-icon">📊</span><span class="score-dim">Personal Impact</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+        <div class="score-row"><span class="score-icon">👥</span><span class="score-dim">Team Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🏢</span><span class="score-dim">Org Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5</span></div>
+        <div class="score-row"><span class="score-icon">🧠</span><span class="score-dim">AI Development</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5</span></div>
+      </div>
+      <div class="impact-level-row"><span class="impact-level-label">Overall Impact Level</span><span class="impact-badge medium">Medium</span></div>
+    </div>
+    <div class="d-section-title">Activity — Spot the Bad Prompt</div>
+    <div class="d-game-result">
+      <div class="d-game-icon">🎯</div>
+      <div style="flex:1">
+        <div class="d-game-score-big">4 / 5</div>
+        <div class="d-game-label">Spot the Bad Prompt · Module 3 game</div>
+        <div style="margin-top:4px;font-size:10px;color:#374151;font-weight:600">Prompting Instincts: <span style="color:#16a34a">Strong</span></div>
+      </div>
+      <span class="score-badge s4" style="align-self:flex-start">+80%</span>
+    </div>
+    <div class="d-section-title" style="margin-top:8px">Learning Plan</div>
+    <div class="module-list">
+      <div class="mod-item"><span class="mod-check">✅</span><div class="mod-body"><div class="mod-title">Module 1: AI Foundations</div><div class="mod-desc">Complete</div></div></div>
+      <div class="mod-item"><span class="mod-check">✅</span><div class="mod-body"><div class="mod-title">Module 2: AI for Your Core Tasks</div><div class="mod-desc">Complete — tried Gemini for Writing content</div></div></div>
+      <div class="mod-item active"><span class="mod-check">🔵</span><div class="mod-body"><div class="mod-title">Module 3: Prompting That Works</div><div class="mod-desc">Spot the Bad Prompt game complete</div></div><span class="mod-status in-progress">In Progress</span></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 4: Building and Automating</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 5: Measuring Impact</div></div></div>
+    </div>`,
+
+  8: `
+    <div class="d-section-title">Learner Profile</div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div><div class="d-name">Sarah Kim</div><div class="d-role">Marketing</div></div>
+        <div class="d-dept filled">Marketing</div>
+      </div>
+    </div>
+    <div class="d-section-title">This Week's Challenge</div>
+    <div class="d-card" style="border-color:#bbf7d0;background:#f0fdf4">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:16px">✅</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#166534">Content Variations — Complete</div>
+          <div style="font-size:10px;color:#4ade80">Completed today</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#166534;line-height:1.5">"Used it for newsletter subject lines — the third variation was better. Shorter and more direct."</div>
+    </div>
+    <div class="d-section-title">Weekly Streak</div>
+    <div class="d-streak-card">
+      <div style="font-size:28px">🔥</div>
+      <div>
+        <div class="d-streak-num">1</div>
+        <div class="d-streak-lbl">Week streak — keep it going!</div>
+      </div>
+    </div>
+    <div class="d-section-title" style="margin-top:8px">Learning Plan</div>
+    <div class="module-list">
+      <div class="mod-item"><span class="mod-check">✅</span><div class="mod-body"><div class="mod-title">Module 1: AI Foundations</div><div class="mod-desc">Complete</div></div></div>
+      <div class="mod-item"><span class="mod-check">✅</span><div class="mod-body"><div class="mod-title">Module 2: AI for Your Core Tasks</div><div class="mod-desc">Complete</div></div></div>
+      <div class="mod-item active"><span class="mod-check">🔵</span><div class="mod-body"><div class="mod-title">Module 3: Prompting That Works</div><div class="mod-desc">Challenge complete — weekly cadence started</div></div><span class="mod-status in-progress">In Progress</span></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 4: Building and Automating</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 5: Measuring Impact</div></div></div>
+    </div>`,
+
+  9: `
+    <div class="d-section-title">Learner Profile</div>
+    <div class="d-card">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div><div class="d-name">Sarah Kim</div><div class="d-role">Marketing</div></div>
+        <div class="d-dept filled">Marketing</div>
+      </div>
+    </div>
+    <div class="d-section-title">AI Impact Scores <span class="updated-badge">✓ Updated from check-in</span></div>
+    <div class="d-card">
+      <div class="score-rows">
+        <div class="score-row"><span class="score-icon">📊</span><span class="score-dim">Personal Impact</span><div class="score-bar"><div class="score-bar-fill fill-4"></div></div><span class="score-badge s4">4/5 ↑</span></div>
+        <div class="score-row"><span class="score-icon">👥</span><span class="score-dim">Team Impact</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5 ↑</span></div>
+        <div class="score-row"><span class="score-icon">🏢</span><span class="score-dim">Org Impact</span><div class="score-bar"><div class="score-bar-fill fill-2"></div></div><span class="score-badge s2">2/5 →</span></div>
+        <div class="score-row"><span class="score-icon">🧠</span><span class="score-dim">AI Development</span><div class="score-bar"><div class="score-bar-fill fill-3"></div></div><span class="score-badge s3">3/5 →</span></div>
+      </div>
+      <div class="impact-level-row"><span class="impact-level-label">Overall Impact Level</span><span class="impact-badge medium">Medium → trending High</span></div>
+    </div>
+    <div class="d-annotation">📅 Check-ins trigger automatically when the user DMs the bot after 6+ weeks — no reminders sent, no manual scheduling needed</div>
+    <div class="d-section-title">Learning Plan</div>
+    <div class="module-list">
+      <div class="mod-item"><span class="mod-check">✅</span><div class="mod-body"><div class="mod-title">Module 1: AI Foundations</div><div class="mod-desc">Complete</div></div></div>
+      <div class="mod-item active"><span class="mod-check">🔵</span><div class="mod-body"><div class="mod-title">Module 2: AI for Your Core Tasks</div><div class="mod-desc">In progress</div></div><span class="mod-status in-progress">In Progress</span></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 3: Prompting That Works</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 4: Building and Automating</div></div></div>
+      <div class="mod-item"><span class="mod-check">⬜</span><div class="mod-body"><div class="mod-title">Module 5: Measuring Impact</div></div></div>
+    </div>`,
+
+  10: `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="d-section-title" style="margin:0">Team Overview</div>
+      <span class="view-badge manager">👔 Manager View</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="d-card" style="text-align:center;padding:10px">
+        <div style="font-size:22px;font-weight:800;color:var(--hcp-dark)">6</div>
+        <div style="font-size:10px;color:#9ca3af;margin-top:2px">Team Members</div>
+      </div>
+      <div class="d-card" style="text-align:center;padding:10px">
+        <div style="font-size:22px;font-weight:800;color:#eab308">Medium</div>
+        <div style="font-size:10px;color:#9ca3af;margin-top:2px">Avg Impact Level</div>
+      </div>
+      <div class="d-card" style="text-align:center;padding:10px">
+        <div style="font-size:22px;font-weight:800;color:#22c55e">2</div>
+        <div style="font-size:10px;color:#9ca3af;margin-top:2px">High Performers</div>
+      </div>
+      <div class="d-card" style="text-align:center;padding:10px">
+        <div style="font-size:22px;font-weight:800;color:var(--hcp-blue)">4</div>
+        <div style="font-size:10px;color:#9ca3af;margin-top:2px">Actively Learning</div>
+      </div>
+    </div>
+    <div class="d-section-title">Team Members — Self Scores</div>
+    <div class="d-card" style="padding:10px 12px">
+      <table class="team-table">
+        <thead><tr>
+          <th>Name</th><th>P</th><th>T</th><th>O</th><th>D</th><th>Level</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><div class="tm-name">Sarah Kim<span class="tm-new">NEW</span></div><div class="tm-role">Marketing</div></td><td><span class="tm-score s3">3</span></td><td><span class="tm-score s2">2</span></td><td><span class="tm-score s2">2</span></td><td><span class="tm-score s3">3</span></td><td><span class="tm-level medium">Medium</span></td></tr>
+          <tr><td><div class="tm-name">Alex Chen</div><div class="tm-role">Product</div></td><td><span class="tm-score s5">5</span></td><td><span class="tm-score s4">4</span></td><td><span class="tm-score s4">4</span></td><td><span class="tm-score s4">4</span></td><td><span class="tm-level high">High</span></td></tr>
+          <tr><td><div class="tm-name">Jordan Lee</div><div class="tm-role">Analytics</div></td><td><span class="tm-score s3">3</span></td><td><span class="tm-score s3">3</span></td><td><span class="tm-score s2">2</span></td><td><span class="tm-score s4">4</span></td><td><span class="tm-level medium">Medium</span></td></tr>
+          <tr><td><div class="tm-name">Maya Patel</div><div class="tm-role">Customer Success</div></td><td><span class="tm-score s2">2</span></td><td><span class="tm-score s2">2</span></td><td><span class="tm-score s2">2</span></td><td><span class="tm-score s2">2</span></td><td><span class="tm-level low">Low</span></td></tr>
+          <tr><td><div class="tm-name">Chris Wang</div><div class="tm-role">Sales</div></td><td><span class="tm-score s4">4</span></td><td><span class="tm-score s3">3</span></td><td><span class="tm-score s3">3</span></td><td><span class="tm-score s3">3</span></td><td><span class="tm-level high">High</span></td></tr>
+          <tr><td><div class="tm-name">Priya Nair</div><div class="tm-role">Marketing</div></td><td><span class="tm-score s3">3</span></td><td><span class="tm-score s2">2</span></td><td><span class="tm-score s2">2</span></td><td><span class="tm-score s3">3</span></td><td><span class="tm-level medium">Medium</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="d-annotation">👔 Manager scores not entered yet — click "My Team" tab to add yours alongside each self-score</div>`,
+
+  11: `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="d-section-title" style="margin:0">Manager Scoring — Sarah Kim</div>
+      <span class="view-badge manager">👔 Manager View</span>
+    </div>
+    <div class="d-card" style="margin-bottom:10px">
+      <div class="d-profile">
+        <div class="d-avatar filled">SK</div>
+        <div><div class="d-name">Sarah Kim</div><div class="d-role">Marketing · Self-scored: Medium</div></div>
+      </div>
+    </div>
+    <div class="privacy-banner" style="margin-bottom:12px">
+      🔒 <span>Only scores are shared with managers — the text of Sarah's answers is private to her. You're scoring based on what you observe directly.</span>
+    </div>
+    <div class="d-card">
+      <div class="d-section-title" style="margin-bottom:10px">Your Manager Score</div>
+      <div class="score-picker-row">
+        <div class="score-picker-label">📊 Personal Impact</div>
+        <div class="score-picker-dots">
+          <div class="score-dot">1</div><div class="score-dot">2</div><div class="score-dot">3</div><div class="score-dot selected-4">4</div><div class="score-dot">5</div>
+        </div>
+      </div>
+      <div class="score-picker-row">
+        <div class="score-picker-label">👥 Team Impact</div>
+        <div class="score-picker-dots">
+          <div class="score-dot">1</div><div class="score-dot">2</div><div class="score-dot selected-3">3</div><div class="score-dot">4</div><div class="score-dot">5</div>
+        </div>
+      </div>
+      <div class="score-picker-row">
+        <div class="score-picker-label">🏢 Org Impact</div>
+        <div class="score-picker-dots">
+          <div class="score-dot">1</div><div class="score-dot selected-2">2</div><div class="score-dot">3</div><div class="score-dot">4</div><div class="score-dot">5</div>
+        </div>
+      </div>
+      <div class="score-picker-row" style="margin-bottom:0">
+        <div class="score-picker-label">🧠 AI Development</div>
+        <div class="score-picker-dots">
+          <div class="score-dot">1</div><div class="score-dot">2</div><div class="score-dot selected-3">3</div><div class="score-dot">4</div><div class="score-dot">5</div>
+        </div>
+      </div>
+      <button class="save-btn">Save Manager Scores</button>
+    </div>`,
+
+  12: `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="d-section-title" style="margin:0">Full Team Picture</div>
+      <span class="view-badge manager">👔 Manager View</span>
+    </div>
+    <div class="d-section-title">Sarah Kim — Self vs. Manager Scores</div>
+    <div class="d-card" style="margin-bottom:10px">
+      <div class="score-rows">
+        <div class="score-row">
+          <span class="score-icon">📊</span>
+          <span class="score-dim">Personal Impact</span>
+          <span class="score-badge s3" style="font-size:10px">S: 3</span>
+          <span class="score-badge s4" style="font-size:10px;background:#e0e7ff;color:#3730a3">M: 4</span>
+        </div>
+        <div class="score-row">
+          <span class="score-icon">👥</span>
+          <span class="score-dim">Team Impact</span>
+          <span class="score-badge s2" style="font-size:10px">S: 2</span>
+          <span class="score-badge s3" style="font-size:10px;background:#e0e7ff;color:#3730a3">M: 3</span>
+        </div>
+        <div class="score-row">
+          <span class="score-icon">🏢</span>
+          <span class="score-dim">Org Impact</span>
+          <span class="score-badge s2" style="font-size:10px">S: 2</span>
+          <span class="score-badge s2" style="font-size:10px;background:#e0e7ff;color:#3730a3">M: 2</span>
+        </div>
+        <div class="score-row">
+          <span class="score-icon">🧠</span>
+          <span class="score-dim">AI Development</span>
+          <span class="score-badge s3" style="font-size:10px">S: 3</span>
+          <span class="score-badge s3" style="font-size:10px;background:#e0e7ff;color:#3730a3">M: 3</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:#9ca3af">
+        <span><span style="background:#fefce8;color:#ca8a04;padding:1px 6px;border-radius:6px;font-weight:700">S</span> = Self-score</span>
+        <span><span style="background:#e0e7ff;color:#3730a3;padding:1px 6px;border-radius:6px;font-weight:700">M</span> = Manager score</span>
+      </div>
+    </div>
+    <div class="d-section-title">All Team Members — Combined Scores</div>
+    <div class="d-card" style="padding:10px 12px">
+      <table class="team-table">
+        <thead><tr><th>Name</th><th>Personal</th><th>Team</th><th>Level</th></tr></thead>
+        <tbody>
+          <tr><td><div class="tm-name">Sarah Kim</div></td><td><span class="tm-score s3">S:3</span> <span class="tm-score s4" style="background:#e0e7ff;color:#3730a3">M:4</span></td><td><span class="tm-score s2">S:2</span> <span class="tm-score s3" style="background:#e0e7ff;color:#3730a3">M:3</span></td><td><span class="tm-level medium">Medium</span></td></tr>
+          <tr><td><div class="tm-name">Alex Chen</div></td><td><span class="tm-score s5">S:5</span> <span class="tm-score s4" style="background:#e0e7ff;color:#3730a3">M:4</span></td><td><span class="tm-score s4">S:4</span> <span class="tm-score s4" style="background:#e0e7ff;color:#3730a3">M:4</span></td><td><span class="tm-level high">High</span></td></tr>
+          <tr><td><div class="tm-name">Jordan Lee</div></td><td><span class="tm-score s3">S:3</span> <span class="tm-score s3" style="background:#e0e7ff;color:#3730a3">M:3</span></td><td><span class="tm-score s3">S:3</span> <span class="tm-score s2" style="background:#e0e7ff;color:#3730a3">M:2</span></td><td><span class="tm-level medium">Medium</span></td></tr>
+          <tr><td><div class="tm-name">Maya Patel</div></td><td><span class="tm-score s2">S:2</span> <span class="tm-score s2" style="background:#e0e7ff;color:#3730a3">M:2</span></td><td><span class="tm-score s2">S:2</span> <span class="tm-score s2" style="background:#e0e7ff;color:#3730a3">M:2</span></td><td><span class="tm-level low">Low</span></td></tr>
+          <tr><td><div class="tm-name">Chris Wang</div></td><td><span class="tm-score s4">S:4</span> <span class="tm-score s4" style="background:#e0e7ff;color:#3730a3">M:4</span></td><td><span class="tm-score s3">S:3</span> <span class="tm-score s3" style="background:#e0e7ff;color:#3730a3">M:3</span></td><td><span class="tm-level high">High</span></td></tr>
+          <tr><td><div class="tm-name">Priya Nair</div></td><td><span class="tm-score s3">S:3</span> <span class="tm-score s3" style="background:#e0e7ff;color:#3730a3">M:3</span></td><td><span class="tm-score s2">S:2</span> <span class="tm-score s2" style="background:#e0e7ff;color:#3730a3">M:2</span></td><td><span class="tm-level medium">Medium</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="d-annotation">📅 Scores update automatically after each 6-week check-in — no manual re-entry needed unless manager wants to adjust</div>`
+};
+
+// ── Step Navigation ─────────────────────────────────────────────────────────
+
+function render() {
+  document.getElementById('slackMessages').innerHTML = slackSteps[currentStep];
+  document.getElementById('dashBody').innerHTML = dashSteps[currentStep];
+
+  // Update step bar
+  for (let i = 1; i <= totalSteps; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    const lbl = document.getElementById(`lbl-${i}`);
+    if (!dot) continue;
+    dot.className = 'step-dot' + (i === currentStep ? ' active' : i < currentStep ? ' done' : '');
+    lbl.className = 'step-label' + (i === currentStep ? ' active' : i < currentStep ? ' done' : '');
+    const conn = document.getElementById(`conn-${i}`);
+    if (conn) conn.className = 'step-connector' + (i < currentStep ? ' done' : '');
+  }
+
+  // Flip dashboard tab label for manager steps
+  const isManager = currentStep >= 10;
+  document.querySelector('.dash-tab.active').textContent = isManager ? 'My Team' : 'My Progress';
+  document.querySelector('.dash-tab:not(.active)').textContent = isManager ? 'My Progress' : 'My Team';
+
+  // Update connector state
+  const connector = document.getElementById('connector');
+  connector.className = 'connector' + ((currentStep >= 2 && currentStep <= 6) || currentStep === 11 ? ' syncing' : '');
+
+  // Update nav
+  document.getElementById('btnBack').disabled = currentStep === 1;
+  document.getElementById('btnNext').disabled = currentStep === totalSteps;
+  const meta = stepMeta[currentStep - 1];
+  document.getElementById('stepLabel').textContent = meta.label;
+  document.getElementById('stepDesc').textContent = meta.desc;
+
+  // Update Slack titlebar persona based on view
+  const botSub = document.querySelector('.slack-bot-sub');
+  if (isManager) {
+    document.querySelector('.slack-bot-name').textContent = 'AI Coach';
+    botSub.textContent = 'App · Manager Notifications';
+  } else {
+    document.querySelector('.slack-bot-name').textContent = 'AI Coach';
+    botSub.textContent = 'App · AI Skills & Impact';
+  }
+
+  // Scroll Slack messages to bottom
+  const msgs = document.getElementById('slackMessages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function nextStep() { if (currentStep < totalSteps) { currentStep++; render(); } }
+function prevStep() { if (currentStep > 1) { currentStep--; render(); } }
+function goToStep(n) { currentStep = n; render(); }
+
+// Keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') nextStep();
+  if (e.key === 'ArrowLeft') prevStep();
+});
+
+render();
+</script>
+</body>
+</html>

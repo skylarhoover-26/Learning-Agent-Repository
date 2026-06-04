@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Learning Companion — Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #EEF2F7;
+            color: #00205C;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, #00205C 0%, #0055FF 100%);
+            color: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .logo {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+        .header-right { display: flex; align-items: center; gap: 14px; }
+        .user-name { font-weight: 600; font-size: 14px; }
+        .user-role { font-size: 12px; opacity: 0.75; }
+        .avatar {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 14px;
+        }
+
+        /* ── Nav ── */
+        .nav {
+            background: white;
+            border-bottom: 1px solid #e8eaf0;
+            padding: 0 32px;
+            display: flex;
+        }
+        .nav-tab {
+            padding: 14px 20px;
+            font-size: 14px; font-weight: 500;
+            color: #6b7280;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .nav-tab:hover { color: #00205C; }
+        .nav-tab.active { color: #00205C; border-bottom-color: #0055FF; font-weight: 600; }
+
+        /* ── Layout ── */
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .section-title { font-size: 20px; font-weight: 700; color: #00205C; margin-bottom: 4px; }
+        .section-subtitle { font-size: 14px; color: #6b7280; margin-bottom: 20px; }
+
+        /* ── Cards ── */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border: 1px solid #eaecf0;
+        }
+        .card-title {
+            font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: #6b7280; margin-bottom: 14px;
+        }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+        /* ── Stat cards ── */
+        .stat-value { font-size: 30px; font-weight: 700; color: #00205C; line-height: 1; margin-bottom: 4px; }
+        .stat-label { font-size: 13px; color: #6b7280; }
+
+        /* ── Proficiency meter ── */
+        .proficiency-header {
+            display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;
+        }
+        .proficiency-level { font-size: 22px; font-weight: 700; color: #00205C; }
+        .proficiency-score { font-size: 14px; color: #6b7280; }
+        .bar-track { height: 10px; background: #E8EEF4; border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+        .bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #0055FF, #009FDA); }
+        .proficiency-labels {
+            display: flex; justify-content: space-between;
+            font-size: 11px; color: #9ca3af;
+        }
+
+        /* ── Modules ── */
+        .module-list { display: flex; flex-direction: column; gap: 14px; }
+        .module-item { display: flex; align-items: center; gap: 12px; }
+        .module-icon {
+            width: 26px; height: 26px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; flex-shrink: 0;
+        }
+        .icon-done     { background: #d1fae5; color: #059669; }
+        .icon-progress { background: #dbeafe; color: #0055FF; }
+        .icon-locked   { background: #f3f4f6; color: #9ca3af; }
+
+        .module-info { flex: 1; }
+        .module-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+        .module-name.muted { color: #9ca3af; }
+        .mini-track { height: 5px; background: #f0f2f5; border-radius: 99px; overflow: hidden; }
+        .mini-fill { height: 100%; border-radius: 99px; }
+        .fill-green { background: #34d399; }
+        .fill-blue  { background: #0055FF; }
+        .fill-gray  { background: #e5e7eb; }
+        .module-pct { font-size: 12px; font-weight: 600; color: #6b7280; min-width: 36px; text-align: right; }
+
+        /* ── Topics ── */
+        .topics-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            padding: 5px 12px; border-radius: 99px;
+            font-size: 13px; font-weight: 500;
+        }
+        .chip-blue   { background: #dbeafe; color: #00205C; }
+        .chip-yellow { background: #FFF3CD; color: #7A5000; }
+        .chip-legend { margin-top: 12px; font-size: 12px; color: #9ca3af; display: flex; gap: 16px; }
+
+        /* ── Activity ── */
+        .activity-list { display: flex; flex-direction: column; gap: 14px; }
+        .activity-item { display: flex; align-items: flex-start; gap: 12px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #0055FF; margin-top: 5px; flex-shrink: 0; }
+        .activity-text { font-size: 14px; color: #374151; }
+        .activity-date { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+        /* ── Privacy banner ── */
+        .privacy-banner {
+            background: #EBF4FF; border: 1px solid #9BCBEB;
+            border-radius: 8px; padding: 12px 16px;
+            font-size: 13px; color: #00205C;
+            margin-bottom: 20px;
+        }
+
+        /* ── Team table ── */
+        .team-table { width: 100%; border-collapse: collapse; }
+        .team-table th {
+            text-align: left; font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: #6b7280; padding: 10px 14px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .team-table td {
+            padding: 14px 14px; font-size: 14px;
+            border-bottom: 1px solid #f3f4f6; vertical-align: middle;
+        }
+        .team-table tr:last-child td { border-bottom: none; }
+        .member-name { font-weight: 500; }
+        .member-role { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+        .lvl-beginner     { background: #fef9c3; color: #854d0e; }
+        .lvl-developing   { background: #fce7f3; color: #9d174d; }
+        .lvl-intermediate { background: #dbeafe; color: #0055FF; }
+        .lvl-advanced     { background: #d1fae5; color: #065f46; }
+
+        .tbl-bar-track { height: 6px; background: #E8EEF4; border-radius: 99px; overflow: hidden; width: 90px; }
+        .tbl-bar-fill  { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #0055FF, #009FDA); }
+
+        .st-ontrack    { background: #d1fae5; color: #065f46; }
+        .st-notstarted { background: #f3f4f6; color: #6b7280; }
+        .st-nudge      { background: #fee2e2; color: #991b1b; }
+        .st-completed  { background: #ede9fe; color: #5b21b6; }
+
+        /* ── AI Impact Competencies ── */
+        .comp-legend {
+            display: flex; flex-wrap: wrap; align-items: center;
+            gap: 10px; margin-bottom: 18px;
+            padding: 12px 14px;
+            background: #EEF2F7; border-radius: 8px;
+        }
+        .comp-legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #6b7280; }
+        .comp-legend-divider { margin-left: auto; font-size: 11px; color: #9ca3af; }
+
+        .sdot {
+            width: 24px; height: 24px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700; flex-shrink: 0;
+        }
+        .s1 { background: #fee2e2; color: #991b1b; }
+        .s2 { background: #ffedd5; color: #9a3412; }
+        .s3 { background: #fef9c3; color: #854d0e; }
+        .s4 { background: #d1fae5; color: #065f46; }
+        .s5 { background: #ede9fe; color: #5b21b6; }
+
+        .comp-table { width: 100%; border-collapse: collapse; }
+        .comp-table th {
+            font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.4px;
+            color: #6b7280; padding: 10px 12px;
+            border-bottom: 2px solid #e5e7eb;
+            text-align: center; vertical-align: bottom;
+        }
+        .comp-table th.left { text-align: left; }
+        .comp-table td {
+            padding: 14px 12px; border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle; text-align: center;
+        }
+        .comp-table td.left { text-align: left; }
+        .comp-table tr:last-child td { border-bottom: none; }
+        .comp-table tr:hover td { background: #fafafa; }
+
+        .th-main { font-size: 11px; font-weight: 600; color: #374151; text-transform: none; letter-spacing: 0; }
+        .th-sub  { font-size: 10px; color: #9ca3af; font-weight: 400; margin-top: 2px; text-transform: none; letter-spacing: 0; }
+
+        .score-pair {
+            display: flex; align-items: center;
+            justify-content: center; gap: 5px;
+        }
+        .score-lbl { font-size: 10px; color: #9ca3af; }
+        .score-sep { font-size: 12px; color: #d1d5db; }
+
+        .impact-badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+        .impact-low    { background: #9BCBEB; color: #00205C; }
+        .impact-medium { background: #009FDA; color: white; }
+        .impact-high   { background: #0055FF; color: white; }
+
+        /* ── Edit mode ── */
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+        .card-header .card-title { margin-bottom: 0; }
+        .edit-actions { display: flex; gap: 8px; }
+
+        .btn-rate {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 14px; border-radius: 8px;
+            background: #00205C; color: white;
+            border: none; font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: background 0.2s; white-space: nowrap;
+        }
+        .btn-rate:hover { background: #0055FF; }
+        .btn-save { background: #059669 !important; }
+        .btn-save:hover { background: #047857 !important; }
+        .btn-cancel { background: white !important; color: #6b7280 !important; border: 1px solid #e5e7eb !important; }
+        .btn-cancel:hover { background: #f9fafb !important; }
+
+        .score-picker { display: flex; gap: 3px; align-items: center; }
+        .spick {
+            width: 26px; height: 26px; border-radius: 50%;
+            border: 2px solid #e5e7eb; background: white; color: #9ca3af;
+            font-size: 11px; font-weight: 700; cursor: pointer;
+            transition: all 0.15s; padding: 0; line-height: 1;
+        }
+        .spick:hover { border-color: #6b7280; color: #374151; transform: scale(1.1); }
+        .spick.sel-1 { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .spick.sel-2 { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
+        .spick.sel-3 { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+        .spick.sel-4 { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+        .spick.sel-5 { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+
+        .last-scored { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+        .last-scored.pending { color: #B8860B; }
+
+        .review-reminder {
+            background: #fffbeb; border: 1px solid #fcd34d;
+            border-radius: 8px; padding: 11px 16px;
+            font-size: 13px; color: #92400e;
+            margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center; gap: 12px;
+        }
+
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: #00205C; color: white;
+            padding: 12px 20px; border-radius: 10px;
+            font-size: 14px; font-weight: 500;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.3s ease; z-index: 1000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* learner self-score card */
+        .self-comp-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .self-comp-card {
+            background: #EEF2F7; border-radius: 10px;
+            padding: 16px; text-align: center;
+        }
+        .self-comp-title { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 2px; }
+        .self-comp-sub   { font-size: 11px; color: #9ca3af; margin-bottom: 12px; }
+        .self-score-row  { display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .self-score-big  {
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 700;
+        }
+        .self-score-label { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+        .score-pair-vertical { text-align: center; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="header-left">
+        <div class="logo">🤖</div>
+        <h1>AI Learning Companion</h1>
+    </div>
+    <div class="header-right">
+        <div>
+            <div class="user-name">Rachel Zugelder</div>
+            <div class="user-role">Learning &amp; Development</div>
+        </div>
+        <div class="avatar">RZ</div>
+    </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav">
+    <div class="nav-tab active" onclick="showView('learner', this)">📊 My Progress</div>
+    <div class="nav-tab" onclick="showView('manager', this)">👥 My Team</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     LEARNER VIEW
+═══════════════════════════════════════ -->
+<div id="view-learner" class="view active">
+    <div class="container">
+        <div class="section-title">My Learning Dashboard</div>
+        <div class="section-subtitle">Track your AI proficiency journey</div>
+
+        <!-- Stat row -->
+        <div class="grid-3">
+            <div class="card">
+                <div class="card-title">Modules Completed</div>
+                <div class="stat-value">2 <span style="font-size:16px;color:#9BCBEB;">/ 5</span></div>
+                <div class="stat-label">Learning plan progress</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Topics Covered</div>
+                <div class="stat-value">8</div>
+                <div class="stat-label">Across all sessions</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Days Active</div>
+                <div class="stat-value">12</div>
+                <div class="stat-label">Last active: today</div>
+            </div>
+        </div>
+
+        <!-- Proficiency + Learning Plan -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">AI Proficiency Level</div>
+                <div class="proficiency-header">
+                    <div class="proficiency-level">Intermediate</div>
+                    <div class="proficiency-score">58 / 100</div>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:58%"></div>
+                </div>
+                <div class="proficiency-labels">
+                    <span>Beginner</span>
+                    <span>Developing</span>
+                    <span>Intermediate</span>
+                    <span>Advanced</span>
+                    <span>Expert</span>
+                </div>
+                <div style="margin-top:16px;font-size:13px;color:#00205C;background:#EBF4FF;border-radius:8px;padding:10px 14px;border-left:3px solid #0055FF;">
+                    📈 Up from <strong>Developing</strong> when you started — great progress!
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Learning Plan — 5-Module Path</div>
+                <div class="module-list">
+                    <div class="module-item">
+                        <div class="module-icon icon-done">✓</div>
+                        <div class="module-info">
+                            <div class="module-name">1. AI Fundamentals</div>
+                            <div class="mini-track"><div class="mini-fill fill-green" style="width:100%"></div></div>
+                        </div>
+                        <div class="module-pct" style="color:#059669;">100%</div>
+                    </div>
+                    <div class="module-item">
+                        <div class="module-icon icon-done">✓</div>
+                        <div class="module-info">
+                            <div class="module-name">2. Prompt Engineering</div>
+                            <div class="mini-track"><div class="mini-fill fill-green" style="width:100%"></div></div>
+                        </div>
+                        <div class="module-pct" style="color:#059669;">100%</div>
+                    </div>
+                    <div class="module-item">
+                        <div class="module-icon icon-progress">→</div>
+                        <div class="module-info">
+                            <div class="module-name">3. AI Tools for Your Role</div>
+                            <div class="mini-track"><div class="mini-fill fill-blue" style="width:60%"></div></div>
+                        </div>
+                        <div class="module-pct" style="color:#2563eb;">60%</div>
+                    </div>
+                    <div class="module-item">
+                        <div class="module-icon icon-locked">🔒</div>
+                        <div class="module-info">
+                            <div class="module-name muted">4. Advanced AI Applications</div>
+                            <div class="mini-track"><div class="mini-fill fill-gray" style="width:0%"></div></div>
+                        </div>
+                        <div class="module-pct">—</div>
+                    </div>
+                    <div class="module-item">
+                        <div class="module-icon icon-locked">🔒</div>
+                        <div class="module-info">
+                            <div class="module-name muted">5. AI Strategy &amp; Ethics</div>
+                            <div class="mini-track"><div class="mini-fill fill-gray" style="width:0%"></div></div>
+                        </div>
+                        <div class="module-pct">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Impact Self-Assessment -->
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-title">My AI Impact Score</div>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Your self-assessed scores across four impact dimensions, alongside your manager's assessment. Scores reflect how AI is changing what you can produce and deliver — not just what you've learned.</p>
+            <div class="self-comp-grid">
+                <!-- Personal Impact -->
+                <div class="self-comp-card">
+                    <div class="self-comp-title">Personal Impact</div>
+                    <div class="self-comp-sub">Productivity &amp; output quality</div>
+                    <div class="self-score-row">
+                        <div>
+                            <div class="self-score-big s3" style="margin:0 auto;">3</div>
+                            <div class="self-score-label">You</div>
+                        </div>
+                        <div style="font-size:18px;color:#d1d5db;">/</div>
+                        <div>
+                            <div class="self-score-big s3" style="margin:0 auto;">3</div>
+                            <div class="self-score-label">Manager</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;font-size:11px;color:#854d0e;background:#fef9c3;border-radius:6px;padding:4px 8px;">Fully Successful</div>
+                </div>
+                <!-- Team Impact -->
+                <div class="self-comp-card">
+                    <div class="self-comp-title">Team Impact</div>
+                    <div class="self-comp-sub">Enabling &amp; coaching others</div>
+                    <div class="self-score-row">
+                        <div>
+                            <div class="self-score-big s2" style="margin:0 auto;">2</div>
+                            <div class="self-score-label">You</div>
+                        </div>
+                        <div style="font-size:18px;color:#d1d5db;">/</div>
+                        <div>
+                            <div class="self-score-big s3" style="margin:0 auto;">3</div>
+                            <div class="self-score-label">Manager</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;font-size:11px;color:#9a3412;background:#ffedd5;border-radius:6px;padding:4px 8px;">Still Developing</div>
+                </div>
+                <!-- Org Impact -->
+                <div class="self-comp-card">
+                    <div class="self-comp-title">Org Impact</div>
+                    <div class="self-comp-sub">OKR alignment &amp; scale</div>
+                    <div class="self-score-row">
+                        <div>
+                            <div class="self-score-big s2" style="margin:0 auto;">2</div>
+                            <div class="self-score-label">You</div>
+                        </div>
+                        <div style="font-size:18px;color:#d1d5db;">/</div>
+                        <div>
+                            <div class="self-score-big s2" style="margin:0 auto;">2</div>
+                            <div class="self-score-label">Manager</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;font-size:11px;color:#9a3412;background:#ffedd5;border-radius:6px;padding:4px 8px;">Still Developing</div>
+                </div>
+                <!-- AI Development -->
+                <div class="self-comp-card">
+                    <div class="self-comp-title">AI Development</div>
+                    <div class="self-comp-sub">Knowledge &amp; experimentation</div>
+                    <div class="self-score-row">
+                        <div>
+                            <div class="self-score-big s4" style="margin:0 auto;">4</div>
+                            <div class="self-score-label">You</div>
+                        </div>
+                        <div style="font-size:18px;color:#d1d5db;">/</div>
+                        <div>
+                            <div class="self-score-big s3" style="margin:0 auto;">3</div>
+                            <div class="self-score-label">Manager</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;font-size:11px;color:#065f46;background:#d1fae5;border-radius:6px;padding:4px 8px;">Often Exceeds</div>
+                </div>
+            </div>
+            <!-- Score legend -->
+            <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:#6b7280;padding-top:12px;border-top:1px solid #f0f2f5;">
+                <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#fee2e2;margin-right:4px;vertical-align:middle;"></span>1 – Needs Improving</span>
+                <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ffedd5;margin-right:4px;vertical-align:middle;"></span>2 – Still Developing</span>
+                <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#fef9c3;margin-right:4px;vertical-align:middle;"></span>3 – Fully Successful</span>
+                <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#d1fae5;margin-right:4px;vertical-align:middle;"></span>4 – Often Exceeds</span>
+                <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ede9fe;margin-right:4px;vertical-align:middle;"></span>5 – Role Model</span>
+            </div>
+        </div>
+
+        <!-- Topics + Activity -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Topics Learned</div>
+                <div class="topics-wrap">
+                    <span class="chip chip-blue">Large Language Models</span>
+                    <span class="chip chip-blue">ChatGPT &amp; Claude</span>
+                    <span class="chip chip-blue">Prompt Writing</span>
+                    <span class="chip chip-blue">Zero-shot Prompting</span>
+                    <span class="chip chip-blue">Few-shot Prompting</span>
+                    <span class="chip chip-blue">AI in the Workplace</span>
+                    <span class="chip chip-yellow">AI Automation Tools</span>
+                    <span class="chip chip-yellow">AI for Data Analysis</span>
+                </div>
+                <div class="chip-legend">
+                    <span>🔵 Completed</span>
+                    <span>🟡 In progress</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Recent Activity</div>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <div class="dot"></div>
+                        <div>
+                            <div class="activity-text">Completed Module 2: Prompt Engineering</div>
+                            <div class="activity-date">Today</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="dot"></div>
+                        <div>
+                            <div class="activity-text">Started Module 3: AI Tools for Your Role</div>
+                            <div class="activity-date">Today</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="dot"></div>
+                        <div>
+                            <div class="activity-text">Explored AI Automation Tools via companion chat</div>
+                            <div class="activity-date">Yesterday</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="dot"></div>
+                        <div>
+                            <div class="activity-text">Completed Module 1: AI Fundamentals</div>
+                            <div class="activity-date">Apr 30</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="dot"></div>
+                        <div>
+                            <div class="activity-text">Completed onboarding &amp; learning plan created</div>
+                            <div class="activity-date">Apr 28</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     MANAGER VIEW
+═══════════════════════════════════════ -->
+<div id="view-manager" class="view">
+    <div class="container">
+        <div class="section-title">My Team's Progress</div>
+        <div class="section-subtitle">Direct reports — AI learning overview</div>
+
+        <div class="privacy-banner">
+            🔒 <strong>Privacy note:</strong> You can see your team's progress, proficiency levels, and topics covered. Individual questions and conversations are private to each learner and are never visible here.
+        </div>
+
+        <!-- Team stats -->
+        <div class="grid-3">
+            <div class="card">
+                <div class="card-title">Team Members</div>
+                <div class="stat-value">6</div>
+                <div class="stat-label">Direct reports</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Active This Month</div>
+                <div class="stat-value">5 <span style="font-size:16px;color:#9BCBEB;">/ 6</span></div>
+                <div class="stat-label">83% engagement rate</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Team Avg. Proficiency</div>
+                <div class="stat-value" style="font-size:22px;">Developing</div>
+                <div class="stat-label">Trending up this month</div>
+            </div>
+        </div>
+
+        <!-- Team table -->
+        <div class="card">
+            <div class="card-title">Team Members</div>
+            <table class="team-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Proficiency</th>
+                        <th>Plan Progress</th>
+                        <th>Topics Covered</th>
+                        <th>Last Active</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="member-name">Alex Chen</div>
+                            <div class="member-role">Product Manager</div>
+                        </td>
+                        <td><span class="badge lvl-advanced">Advanced</span></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="tbl-bar-track"><div class="tbl-bar-fill" style="width:80%"></div></div>
+                                <span style="font-size:12px;color:#6b7280;">80%</span>
+                            </div>
+                        </td>
+                        <td>14</td>
+                        <td style="color:#6b7280;font-size:13px;">Today</td>
+                        <td><span class="badge st-ontrack">On Track</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="member-name">Jordan Mills</div>
+                            <div class="member-role">Operations Lead</div>
+                        </td>
+                        <td><span class="badge lvl-intermediate">Intermediate</span></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="tbl-bar-track"><div class="tbl-bar-fill" style="width:60%"></div></div>
+                                <span style="font-size:12px;color:#6b7280;">60%</span>
+                            </div>
+                        </td>
+                        <td>9</td>
+                        <td style="color:#6b7280;font-size:13px;">Yesterday</td>
+                        <td><span class="badge st-ontrack">On Track</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="member-name">Sam Torres</div>
+                            <div class="member-role">Marketing Specialist</div>
+                        </td>
+                        <td><span class="badge lvl-developing">Developing</span></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="tbl-bar-track"><div class="tbl-bar-fill" style="width:40%"></div></div>
+                                <span style="font-size:12px;color:#6b7280;">40%</span>
+                            </div>
+                        </td>
+                        <td>6</td>
+                        <td style="color:#6b7280;font-size:13px;">May 3</td>
+                        <td><span class="badge st-ontrack">On Track</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="member-name">Dana Kim</div>
+                            <div class="member-role">Data Analyst</div>
+                        </td>
+                        <td><span class="badge lvl-intermediate">Intermediate</span></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="tbl-bar-track"><div class="tbl-bar-fill" style="width:55%"></div></div>
+                                <span style="font-size:12px;color:#6b7280;">55%</span>
+                            </div>
+                        </td>
+                        <td>10</td>
+                        <td style="color:#6b7280;font-size:13px;">May 2</td>
+                        <td><span class="badge st-ontrack">On Track</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="member-name">Chris Nguyen</div>
+                            <div class="member-role">Customer Success</div>
+                        </td>
+                        <td><span class="badge lvl-beginner">Beginner</span></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="tbl-bar-track"><div class="tbl-bar-fill" style="width:20%"></div></div>
+                                <span style="font-size:12px;color:#6b7280;">20%</span>
+                            </div>
+                        </td>
+                        <td>3</td>
+                        <td style="color:#6b7280;font-size:13px;">Apr 28</td>
+                        <td><span class="badge st-nudge">Needs Nudge</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="member-name">Morgan Lee</div>
+                            <div class="member-role">HR Business Partner</div>
+                        </td>
+                        <td><span class="badge lvl-beginner">Beginner</span></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="tbl-bar-track"><div class="tbl-bar-fill" style="width:0%"></div></div>
+                                <span style="font-size:12px;color:#6b7280;">0%</span>
+                            </div>
+                        </td>
+                        <td>0</td>
+                        <td style="color:#9ca3af;font-size:13px;">Never</td>
+                        <td><span class="badge st-notstarted">Not Started</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- AI Impact Competencies — editable -->
+        <div class="card" style="margin-top:16px;">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">AI Impact Competencies</div>
+                    <p style="font-size:13px;color:#6b7280;max-width:680px;">Tracks how team members are driving measurable business value through AI. Each dimension is scored 1–5 by the employee (S) and their manager (M). Manager scores are entered here or via the Slack bot quarterly check-in.</p>
+                </div>
+                <div id="comp-edit-btn"></div>
+            </div>
+
+
+            <div class="comp-legend">
+                <div class="comp-legend-item"><div class="sdot s1">1</div> Needs Improving</div>
+                <div class="comp-legend-item"><div class="sdot s2">2</div> Still Developing</div>
+                <div class="comp-legend-item"><div class="sdot s3">3</div> Fully Successful</div>
+                <div class="comp-legend-item"><div class="sdot s4">4</div> Often Exceeds</div>
+                <div class="comp-legend-item"><div class="sdot s5">5</div> Role Model</div>
+                <div class="comp-legend-divider">S&nbsp;=&nbsp;Self&nbsp;&nbsp;|&nbsp;&nbsp;M&nbsp;=&nbsp;Manager (editable)</div>
+            </div>
+
+            <table class="comp-table">
+                <thead>
+                    <tr>
+                        <th class="left" style="width:190px;">Team Member</th>
+                        <th>
+                            <div class="th-main">Personal Impact</div>
+                            <div class="th-sub">Productivity &amp; output quality</div>
+                        </th>
+                        <th>
+                            <div class="th-main">Team Impact</div>
+                            <div class="th-sub">Coaching &amp; enabling others</div>
+                        </th>
+                        <th>
+                            <div class="th-main">Org Impact</div>
+                            <div class="th-sub">OKR alignment &amp; scale</div>
+                        </th>
+                        <th>
+                            <div class="th-main">AI Development</div>
+                            <div class="th-sub">Knowledge &amp; experimentation</div>
+                        </th>
+                        <th>
+                            <div class="th-main">AI Impact Level</div>
+                            <div class="th-sub">Calculated from M scores</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="comp-tbody">
+                    <!-- Rendered by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    // ── Tab navigation ──
+    function showView(view, el) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('view-' + view).classList.add('active');
+        el.classList.add('active');
+    }
+
+    // ── Competency scoring system ──
+
+    const DEFAULT_SCORES = {
+        'alex':   { name: 'Alex Chen',    role: 'Product Manager',     self: {p:5,t:4,o:4,d:4}, mgr: {p:4,t:4,o:3,d:5}, lastScored: null },
+        'jordan': { name: 'Jordan Mills', role: 'Operations Lead',     self: {p:3,t:3,o:3,d:3}, mgr: {p:3,t:3,o:2,d:3}, lastScored: null },
+        'sam':    { name: 'Sam Torres',   role: 'Marketing Specialist',self: {p:3,t:2,o:2,d:3}, mgr: {p:2,t:2,o:2,d:3}, lastScored: null },
+        'dana':   { name: 'Dana Kim',     role: 'Data Analyst',        self: {p:4,t:3,o:3,d:4}, mgr: {p:4,t:3,o:3,d:4}, lastScored: null },
+        'chris':  { name: 'Chris Nguyen', role: 'Customer Success',    self: {p:2,t:2,o:1,d:2}, mgr: {p:1,t:2,o:1,d:2}, lastScored: null },
+        'morgan': { name: 'Morgan Lee',   role: 'HR Business Partner', self: {p:1,t:1,o:1,d:1}, mgr: {p:1,t:1,o:1,d:1}, lastScored: null }
+    };
+
+    let scoreData    = {};
+    let editMode     = false;
+    let workingScores = {};   // unsaved edits in progress
+
+    // ── Persistence ──
+    function loadScores() {
+        const saved = localStorage.getItem('ai_comp_scores');
+        if (saved) {
+            scoreData = JSON.parse(saved);
+            // Fill in any new team members not yet in localStorage
+            Object.keys(DEFAULT_SCORES).forEach(id => {
+                if (!scoreData[id]) scoreData[id] = JSON.parse(JSON.stringify(DEFAULT_SCORES[id]));
+            });
+        } else {
+            scoreData = JSON.parse(JSON.stringify(DEFAULT_SCORES));
+        }
+    }
+
+    function persistScores() {
+        localStorage.setItem('ai_comp_scores', JSON.stringify(scoreData));
+    }
+
+    // ── Edit actions ──
+    function enterEditMode() {
+        editMode = true;
+        workingScores = {};
+        renderCompTable();
+    }
+
+    function cancelEdit() {
+        editMode = false;
+        workingScores = {};
+        renderCompTable();
+    }
+
+    function saveScores() {
+        // Apply working scores to saved data
+        Object.keys(workingScores).forEach(id => {
+            Object.assign(scoreData[id].mgr, workingScores[id]);
+            scoreData[id].lastScored = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        });
+        persistScores();
+        editMode = false;
+        workingScores = {};
+        renderCompTable();
+        showToast('✓ Scores saved');
+    }
+
+    function setMScore(id, dim, val) {
+        if (!workingScores[id]) workingScores[id] = {};
+        workingScores[id][dim] = val;
+        renderCompTable();
+    }
+
+    // ── Score helpers ──
+    function getMScore(id, dim) {
+        return (workingScores[id] && workingScores[id][dim] !== undefined)
+            ? workingScores[id][dim]
+            : scoreData[id].mgr[dim];
+    }
+
+    function calcImpact(mgr) {
+        const avg = (mgr.p + mgr.t + mgr.o + mgr.d) / 4;
+        if (avg >= 3.5) return { label: 'High',   cls: 'impact-high' };
+        if (avg >= 2.5) return { label: 'Medium', cls: 'impact-medium' };
+        return           { label: 'Low',    cls: 'impact-low' };
+    }
+
+    function sdot(score) {
+        return `<div class="sdot s${score}">${score}</div>`;
+    }
+
+    function picker(id, dim) {
+        const cur = getMScore(id, dim);
+        const btns = [1,2,3,4,5].map(i =>
+            `<button class="spick ${cur === i ? 'sel-'+i : ''}"
+                     onclick="setMScore('${id}','${dim}',${i})"
+                     title="Score ${i} — ${scoreLabelFor(i)}">${i}</button>`
+        ).join('');
+        return `<div class="score-picker">${btns}</div>`;
+    }
+
+    function scoreLabelFor(n) {
+        return ['','Needs Improving','Still Developing','Fully Successful','Often Exceeds','Role Model'][n];
+    }
+
+    // ── Render ──
+    function renderCompTable() {
+        const tbody   = document.getElementById('comp-tbody');
+        const editBtn = document.getElementById('comp-edit-btn');
+
+        // Edit/save button area
+        if (editMode) {
+            editBtn.innerHTML =
+                `<div class="edit-actions">
+                    <button class="btn-rate btn-save" onclick="saveScores()">💾 Save Scores</button>
+                    <button class="btn-rate btn-cancel" onclick="cancelEdit()">Cancel</button>
+                </div>`;
+        } else {
+            editBtn.innerHTML =
+                `<button class="btn-rate" onclick="enterEditMode()">✏️ Rate My Team</button>`;
+        }
+
+        // Table rows
+        let html = '';
+        Object.keys(scoreData).forEach(id => {
+            const p = scoreData[id];
+            const mNow = { p: getMScore(id,'p'), t: getMScore(id,'t'), o: getMScore(id,'o'), d: getMScore(id,'d') };
+            const impact = calcImpact(mNow);
+
+            const lastScoredHtml = p.lastScored
+                ? `<div class="last-scored">Manager scored: ${p.lastScored}</div>`
+                : `<div class="last-scored pending">⚠ Not yet scored by manager</div>`;
+
+            const renderM = dim => editMode ? picker(id, dim) : sdot(getMScore(id, dim));
+
+            html += `
+            <tr>
+                <td class="left">
+                    <div class="member-name">${p.name}</div>
+                    <div class="member-role">${p.role}</div>
+                    ${lastScoredHtml}
+                </td>
+                <td><div class="score-pair"><span class="score-lbl">S</span>${sdot(p.self.p)}<span class="score-sep">/</span>${renderM('p')}<span class="score-lbl">M</span></div></td>
+                <td><div class="score-pair"><span class="score-lbl">S</span>${sdot(p.self.t)}<span class="score-sep">/</span>${renderM('t')}<span class="score-lbl">M</span></div></td>
+                <td><div class="score-pair"><span class="score-lbl">S</span>${sdot(p.self.o)}<span class="score-sep">/</span>${renderM('o')}<span class="score-lbl">M</span></div></td>
+                <td><div class="score-pair"><span class="score-lbl">S</span>${sdot(p.self.d)}<span class="score-sep">/</span>${renderM('d')}<span class="score-lbl">M</span></div></td>
+                <td><span class="impact-badge ${impact.cls}">${impact.label}</span></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // ── Toast notification ──
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // ── Init ──
+    loadScores();
+    renderCompTable();
+</script>
+
+</body>
+</html>
