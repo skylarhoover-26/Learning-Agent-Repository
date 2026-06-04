@@ -85,19 +85,19 @@ Bridget's Next.js prototype was the foundation for the consolidated platform. Mo
 | ~~Medium~~ | ~~Content Pipeline (#2)~~ | **DONE** — 2026-06-04 |
 | ~~**High**~~ | ~~Gamification Real-Time (#10)~~ | **DONE** — 2026-06-04 (localStorage) |
 | ~~**Medium**~~ | ~~Learner Profile Full Data (#11)~~ | **DONE** — 2026-06-04 (localStorage) |
+| ~~**High**~~ | ~~Quest Tracking (#7)~~ | **DONE** — 2026-06-04 (10 quests, localStorage) |
+| ~~**Medium**~~ | ~~Spaced Repetition (#8)~~ | **DONE** — 2026-06-04 (SM-2, 20 cards, localStorage) |
+| ~~**Low**~~ | ~~Use Case Library (#9)~~ | **DONE** — 2026-06-04 (30 use cases + tracking) |
+| ~~**Low**~~ | ~~Image Generation (#6)~~ | **SKIPPED** — not needed |
 | **Critical** | Supabase Database (#5) | Blocks cross-device persistence |
 | **High** | Slack Bot (#4) | Independent — adoption driver |
-| **High** | Quest Tracking (#7) | Blocked by #5 |
-| **Medium** | Spaced Repetition Engine (#8) | Blocked by #5 |
 | **Low** | Skill Graph (#3) | Heatmap covers core need |
-| **Low** | Use Case Community Features (#9) | Blocked by #5 |
-| **Low** | Image Generation (#6) | Cosmetic only |
 
 ---
 
 ## Notes
 
-- Items #10 and #11 shipped using localStorage for persistence. Data is per-browser — upgrading to Supabase (#5) will make progression cross-device and permanent.
-- Items #7 and #8 are still blocked by #5 (database) for proper persistence.
-- The AI provider switch from OpenAI to Anthropic Claude was intentional and is considered complete. Features that relied specifically on OpenAI capabilities (DALL-E, TTS) need alternative solutions.
-- Bridget's original Supabase schema file was at `supabase/schema.sql` in her prototype. That schema should be reviewed and adapted for the current data model before migration.
+- All originally database-blocked items (#7, #8, #10, #11) are now functional using localStorage. Supabase (#5) remains the blocker for cross-device sync and team-wide features.
+- The AI provider switch from OpenAI to Anthropic Claude is complete. DALL-E image generation was intentionally skipped.
+- Bridget's original Supabase schema file was at `supabase/schema.sql`. Schema should be adapted for the current data model (including quest_progress, review_card_state, library_usage tables) before migration.
+- All localStorage data shapes were designed to map cleanly to database tables for easy migration.
