@@ -7,7 +7,7 @@ import {
 import {
   Sparkles, Target, TrendingUp, BookOpen,
   MessageCircle, ChevronRight, Library,
-  Gamepad2, Lightbulb, Trophy, GitBranch,
+  Gamepad2, Lightbulb, Trophy, GitBranch, BarChart3,
 } from 'lucide-react';
 import MiniHeatmap from '@/components/mini-heatmap';
 import { findDoThisNowSkill } from '@/lib/heatmap-data';
@@ -152,13 +152,14 @@ export default async function Dashboard() {
         )}
 
         {/* 4. Quick actions strip */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
           <QuickAction href="/chat" icon={MessageCircle} label="Chat" />
           <QuickAction href="/lesson" icon={BookOpen} label="Lesson" />
           <QuickAction href="/games" icon={Gamepad2} label="Games" />
           <QuickAction href="/quick-win" icon={Lightbulb} label="Quick Win" />
           <QuickAction href="/library" icon={Library} label="Library" />
           <QuickAction href="/skill-graph" icon={GitBranch} label="Skill Graph" />
+          <QuickAction href="/manager" icon={BarChart3} label="Manager" />
         </div>
 
         {/* 5. Mini heatmap */}

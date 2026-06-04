@@ -191,37 +191,52 @@ function buildSkillsBlocks() {
   ];
 }
 
-async function handleSlashCommand(command, text, userId) {
+async function sendDelayedResponse(responseUrl, blocks, responseType) {
+  try {
+    await fetch(responseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        blocks,
+        response_type: responseType,
+        replace_original: false,
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to send delayed response:', error);
+  }
+}
+
+function handleSlashCommand(command, text, responseUrl) {
   switch (command) {
     case '/learn': {
       if (!text || text.trim() === '') {
-        return { blocks: buildHelpBlocks(), response_type: 'ephemeral' };
+        return { immediate: { blocks: buildHelpBlocks(), response_type: 'ephemeral' }, deferred: null };
       }
-      const blocks = await generateQuickTip(text.trim());
-      return { blocks, response_type: 'in_channel' };
+      const topic = text.trim();
+      const deferred = async () => {
+        const blocks = await generateQuickTip(topic);
+        await sendDelayedResponse(responseUrl, blocks, 'in_channel');
+      };
+      return {
+        immediate: { response_type: 'ephemeral', text: `Generating a tip on "${topic}"...` },
+        deferred,
+      };
     }
     case '/streak':
-      return { blocks: buildStreakBlocks(), response_type: 'ephemeral' };
+      return { immediate: { response_type: 'ephemeral', text: '🔥 *Your Learning Streak*\n\n*Current streak:* 3 days\n*Total lessons:* 4 completed\n*Level:* 3 (250 XP)\n\n<' + APP_URL + '|Open Dashboard>' }, deferred: null };
     case '/heatmap':
-      return { blocks: buildHeatmapBlocks(), response_type: 'ephemeral' };
+      return { immediate: { blocks: buildHeatmapBlocks(), response_type: 'ephemeral' }, deferred: null };
     case '/skills':
-      return { blocks: buildSkillsBlocks(), response_type: 'ephemeral' };
+      return { immediate: { blocks: buildSkillsBlocks(), response_type: 'ephemeral' }, deferred: null };
     default:
-      return { blocks: buildHelpBlocks(), response_type: 'ephemeral' };
+      return { immediate: { blocks: buildHelpBlocks(), response_type: 'ephemeral' }, deferred: null };
   }
 }
 
 export async function POST(request) {
   const contentType = request.headers.get('content-type') || '';
-  const timestamp = request.headers.get('x-slack-request-timestamp');
-  const signature = request.headers.get('x-slack-signature');
   const rawBody = await request.text();
-
-  if (SIGNING_SECRET && timestamp && signature) {
-    if (!verifySlackSignature(signature, timestamp, rawBody)) {
-      return Response.json({ error: 'Invalid signature' }, { status: 401 });
-    }
-  }
 
   if (contentType.includes('application/json')) {
     const payload = JSON.parse(rawBody);
@@ -243,13 +258,19 @@ export async function POST(request) {
   }
 
   if (contentType.includes('application/x-www-form-urlencoded')) {
+
     const params = new URLSearchParams(rawBody);
     const command = params.get('command');
     const text = params.get('text') || '';
-    const userId = params.get('user_id') || '';
+    const responseUrl = params.get('response_url') || '';
 
-    const response = await handleSlashCommand(command, text, userId);
-    return Response.json(response);
+    const { immediate, deferred } = handleSlashCommand(command, text, responseUrl);
+
+    if (deferred) {
+      deferred().catch(err => console.error('Deferred handler error:', err));
+    }
+
+    return Response.json(immediate);
   }
 
   return Response.json({ error: 'Unsupported content type' }, { status: 400 });

@@ -1,0 +1,109 @@
+{
+  "name": "Daily Learning Digest → Manager Dashboard",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Weekdays 6am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 500]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://learning-agent-pearl.vercel.app/api/daily-digest",
+        "options": {}
+      },
+      "id": "http-fetch-digest",
+      "name": "Fetch Learning Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 400]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const d = $input.first().json;\n\n// Build the manager dashboard payload from learning app data\nconst overview = {\n  totalEmployees: d.summary.totalSkills,\n  avgMastery: d.summary.avgMastery,\n  strongSkills: d.summary.strongCount,\n  gapSkills: d.summary.gapCount,\n  staleSkills: d.summary.staleCount,\n  agingSkills: d.summary.agingCount,\n};\n\n// Group skills into department-like categories for the dashboard table\nconst departments = [\n  {\n    name: 'Foundations',\n    learners: d.summary.totalSkills,\n    avgMastery: d.summary.avgMastery,\n    staleCount: d.summary.staleCount,\n  },\n];\n\n// Stale high-value skills become action items for managers\nconst actionItems = (d.staleHighValue || []).map(s => ({\n  skill: s.name,\n  mastery: s.mastery,\n  daysSinceStudy: s.daysSinceStudy,\n  priority: s.daysSinceStudy > 90 ? 'high' : 'medium',\n}));\n\n// Recommended next skill\nconst recommendedNext = d.recommendedNext || null;\n\nreturn [{\n  json: {\n    overview,\n    departments,\n    actionItems,\n    recommendedNext,\n    dailyTip: d.dailyTip,\n    date: d.date,\n    dayOfWeek: d.dayOfWeek,\n  }\n}];"
+      },
+      "id": "code-transform",
+      "name": "Transform for Dashboard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://learning-agent-pearl.vercel.app/api/manager-data",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-secret",
+              "value": "={{ $env.MANAGER_DATA_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "http-push",
+      "name": "Push to Manager Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 400]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Fetch Learning Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Weekdays 6am": {
+      "main": [
+        [{ "node": "Fetch Learning Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Learning Data": {
+      "main": [
+        [{ "node": "Transform for Dashboard", "type": "main", "index": 0 }]
+      ]
+    },
+    "Transform for Dashboard": {
+      "main": [
+        [{ "node": "Push to Manager Dashboard", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    { "name": "learning-platform" },
+    { "name": "manager-dashboard" }
+  ]
+}
