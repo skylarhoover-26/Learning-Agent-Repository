@@ -1,6 +1,6 @@
 # Bridget's Remaining Backlog Items
 
-**Last updated:** 2026-06-04
+**Last updated:** 2026-06-04 (updated after voice mode + content pipeline shipped)
 **Project:** AI Learning Platform (Learning-Agent-Repository)
 **Source:** Bridget's original prototype (`ai-learning-agent.zip`)
 
@@ -10,17 +10,15 @@ Bridget's Next.js prototype was the foundation for the consolidated platform. Mo
 
 ## Not Yet Implemented
 
-### 1. Voice Mode (Text-to-Speech for Lessons)
-- **Original:** Bridget's prototype used OpenAI TTS to read lesson slides aloud
-- **Status:** Not ported. The current app has no audio/voice capability
-- **What's needed:** TTS integration (likely via Anthropic or a third-party TTS API), audio player UI on lesson slides, play/pause controls
-- **Priority consideration:** Accessibility win; also valuable for on-the-go learning
+### ~~1. Voice Mode (Text-to-Speech for Lessons)~~ — DONE
+- **Shipped:** 2026-06-04
+- **Implementation:** Browser Web Speech API with play/pause/stop controls on every lesson slide and recap card. Strips markdown before reading. No external API or dependency needed.
+- **Files:** `lib/use-tts.js`, `components/lesson-slide.jsx`
 
-### 2. Content Pipeline (Admin Lesson Creation Tool)
-- **Original:** Bridget had tooling for admins to author and publish new lesson content
-- **Status:** The current `/admin` page shows a curriculum moderation UI with mock proposals, but it is not wired to actually create, edit, or publish lesson content
-- **What's needed:** Admin authoring flow (create/edit lesson templates, set topics, define slide structures), approval workflow connected to real data, publish-to-live pipeline
-- **Priority consideration:** Currently all lesson content is AI-generated on-the-fly via Claude. A content pipeline would allow curated, vetted lessons alongside AI-generated ones
+### ~~2. Content Pipeline (Admin Lesson Creation Tool)~~ — DONE
+- **Shipped:** 2026-06-04
+- **Implementation:** "Curated Lessons" tab on `/admin` with full authoring form (topic, format, multi-slide builder with key points). Stored in localStorage. Curated lessons appear on the `/lesson` picker in a dedicated section and deliver slides instantly without calling Claude.
+- **Files:** `lib/curated-lessons.js`, `app/admin/page.jsx`, `app/lesson/page.jsx`
 
 ### 3. Skill Graph Visualization
 - **Original:** Bridget had a more complex skill graph showing relationships between skills and learning paths
@@ -79,15 +77,15 @@ Bridget's Next.js prototype was the foundation for the consolidated platform. Mo
 
 ## Summary by Priority
 
-| Priority | Item | Blocker? |
-|----------|------|----------|
-| **Critical** | Supabase Database (#5) | Yes — blocks all persistence |
+| Priority | Item | Status |
+|----------|------|--------|
+| ~~Medium~~ | ~~Voice Mode (#1)~~ | **DONE** — 2026-06-04 |
+| ~~Medium~~ | ~~Content Pipeline (#2)~~ | **DONE** — 2026-06-04 |
+| **Critical** | Supabase Database (#5) | Blocks all persistence |
 | **High** | Gamification Real-Time (#10) | Blocked by #5 |
 | **High** | Slack Bot (#4) | Independent — adoption driver |
 | **High** | Quest Tracking (#7) | Blocked by #5 |
 | **Medium** | Spaced Repetition Engine (#8) | Blocked by #5 |
-| **Medium** | Content Pipeline (#2) | Independent |
-| **Medium** | Voice Mode (#1) | Independent |
 | **Medium** | Learner Profile Full Data (#11) | Blocked by #5 |
 | **Low** | Skill Graph (#3) | Heatmap covers core need |
 | **Low** | Use Case Community Features (#9) | Blocked by #5 |

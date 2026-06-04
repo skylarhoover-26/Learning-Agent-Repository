@@ -5,9 +5,10 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
+import { getCuratedLessons, getCuratedLessonById } from '@/lib/curated-lessons';
 import {
   BookOpen, ChevronRight, ChevronLeft, Zap, BookMarked, Trophy,
-  Loader2, Send,
+  Loader2, Send, Star,
 } from 'lucide-react';
 
 const SUGGESTED_TOPICS = [
@@ -23,11 +24,14 @@ function LessonContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialTopic = searchParams.get('topic');
+  const initialCuratedId = searchParams.get('curated');
 
-  const [view, setView] = useState(initialTopic ? 'lesson' : 'picker');
+  const [view, setView] = useState(initialTopic || initialCuratedId ? 'lesson' : 'picker');
   const [topic, setTopic] = useState(initialTopic || '');
   const [customTopic, setCustomTopic] = useState('');
   const [format, setFormat] = useState('standard');
+  const [curatedLessons, setCuratedLessons] = useState([]);
+  const [isCurated, setIsCurated] = useState(false);
 
   // Lesson state
   const [slides, setSlides] = useState([]);
@@ -38,12 +42,25 @@ function LessonContent() {
   const [userInput, setUserInput] = useState('');
   const slideRef = useRef(null);
 
+  useEffect(() => {
+    setCuratedLessons(getCuratedLessons());
+  }, []);
+
   // Auto-scroll to slide card on slide change
   useEffect(() => {
     if (slideRef.current) {
       slideRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [currentSlideIdx]);
+
+  // If we arrive with a curated lesson ID, load it directly
+  const hasStartedCurated = useRef(false);
+  useEffect(() => {
+    if (initialCuratedId && !hasStartedCurated.current && slides.length === 0) {
+      hasStartedCurated.current = true;
+      startCuratedLesson(initialCuratedId);
+    }
+  }, [initialCuratedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // If we arrive with a topic from URL, kick off the lesson
   const hasStarted = useRef(false);
@@ -84,7 +101,22 @@ function LessonContent() {
   function startLesson(t) {
     setTopic(t);
     setView('lesson');
+    setIsCurated(false);
     fetchStartLesson(t);
+  }
+
+  function startCuratedLesson(id) {
+    const lesson = getCuratedLessonById(id);
+    if (!lesson) {
+      setError('Curated lesson not found');
+      return;
+    }
+    setTopic(lesson.topic);
+    setView('lesson');
+    setIsCurated(true);
+    setSlides(lesson.slides);
+    setCurrentSlideIdx(0);
+    setMessages([]);
   }
 
   async function continueLesson(input) {
@@ -130,6 +162,8 @@ function LessonContent() {
     setMessages([]);
     setCurrentSlideIdx(0);
     setError(null);
+    setIsCurated(false);
+    setCuratedLessons(getCuratedLessons());
   }
 
   if (view === 'picker') {
@@ -182,6 +216,33 @@ function LessonContent() {
             <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
+
+        {curatedLessons.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-sm uppercase tracking-wide text-slate-500 mb-3 font-semibold flex items-center gap-2">
+              <Star className="w-4 h-4 text-amber-500" />
+              Curated Lessons
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {curatedLessons.map((lesson) => (
+                <button
+                  key={lesson.id}
+                  onClick={() => startCuratedLesson(lesson.id)}
+                  className="group flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200 dark:border-amber-800 hover:border-amber-300 hover:shadow-md transition-all text-left"
+                >
+                  <span className="text-2xl">📖</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5 truncate">{lesson.topic}</div>
+                    <div className="text-xs text-slate-500">
+                      {lesson.slides?.length || 0} slide{(lesson.slides?.length || 0) !== 1 ? 's' : ''} · Curated
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mb-8">
           <h3 className="text-sm uppercase tracking-wide text-slate-500 mb-3 font-semibold">
@@ -335,8 +396,21 @@ function LessonContent() {
         </div>
       )}
 
-      {/* Free-text input */}
-      {slides.length > 0 && !isComplete && (
+      {/* Curated lesson: next slide button */}
+      {isCurated && slides.length > 0 && !isComplete && currentSlideIdx < slides.length - 1 && (
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => setCurrentSlideIdx((i) => i + 1)}
+            className="px-6 py-3 rounded-xl bg-brand text-white font-medium hover:bg-brand-600 transition-all flex items-center gap-2"
+          >
+            Next Slide
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Free-text input (AI-generated lessons only) */}
+      {!isCurated && slides.length > 0 && !isComplete && (
         <form onSubmit={handleSubmitInput} className="mt-4 flex gap-2">
           <input
             type="text"

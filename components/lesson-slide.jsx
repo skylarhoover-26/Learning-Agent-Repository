@@ -1,6 +1,7 @@
 'use client';
 
-import { CheckCircle, Lightbulb } from 'lucide-react';
+import { CheckCircle, Lightbulb, Volume2, Pause, Square } from 'lucide-react';
+import { useTts } from '@/lib/use-tts';
 
 /**
  * Renders a markdown-ish string into React elements.
@@ -147,21 +148,65 @@ const PHASE_LABELS = {
   complete: 'Complete',
 };
 
+function TtsButton({ text }) {
+  const { isSpeaking, isPaused, toggle, stop } = useTts();
+
+  const speakableText = [text].flat().filter(Boolean).join('. ');
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => toggle(speakableText)}
+        className={`p-1.5 rounded-lg transition-all ${
+          isSpeaking && !isPaused
+            ? 'bg-brand text-white'
+            : 'text-slate-400 hover:text-brand hover:bg-brand-50 dark:hover:bg-brand-900/30'
+        }`}
+        aria-label={isSpeaking && !isPaused ? 'Pause reading' : isPaused ? 'Resume reading' : 'Read aloud'}
+        title={isSpeaking && !isPaused ? 'Pause' : isPaused ? 'Resume' : 'Read aloud'}
+      >
+        {isSpeaking && !isPaused ? (
+          <Pause className="w-4 h-4" />
+        ) : (
+          <Volume2 className="w-4 h-4" />
+        )}
+      </button>
+      {(isSpeaking || isPaused) && (
+        <button
+          onClick={stop}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+          aria-label="Stop reading"
+          title="Stop"
+        >
+          <Square className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function SlideCard({ slide, onButtonClick, isLatest }) {
   const { slideTitle, message, keyPoints, phase, buttons } = slide;
 
+  const fullText = [message, ...(keyPoints || [])].filter(Boolean).join('. ');
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
-      {/* Phase badge + title */}
+      {/* Phase badge + title + TTS */}
       <div className="px-6 pt-6 pb-4">
-        {phase && (
-          <span className="inline-block text-xs font-medium uppercase tracking-wide text-brand bg-brand-50 dark:bg-brand-900/30 px-2.5 py-1 rounded-full mb-3">
-            {PHASE_LABELS[phase] || phase}
-          </span>
-        )}
-        {slideTitle && (
-          <h2 className="text-xl font-bold text-ink dark:text-slate-200">{slideTitle}</h2>
-        )}
+        <div className="flex items-start justify-between">
+          <div>
+            {phase && (
+              <span className="inline-block text-xs font-medium uppercase tracking-wide text-brand bg-brand-50 dark:bg-brand-900/30 px-2.5 py-1 rounded-full mb-3">
+                {PHASE_LABELS[phase] || phase}
+              </span>
+            )}
+            {slideTitle && (
+              <h2 className="text-xl font-bold text-ink dark:text-slate-200">{slideTitle}</h2>
+            )}
+          </div>
+          <TtsButton text={fullText} />
+        </div>
       </div>
 
       {/* Message body */}
@@ -206,14 +251,26 @@ export function SlideCard({ slide, onButtonClick, isLatest }) {
 }
 
 export function RecapCard({ recap, onPickAnother, onDashboard }) {
+  const recapText = [
+    'Lesson complete.',
+    recap.topic,
+    ...(recap.keyPoints || []),
+    recap.applyTip ? `Try this next: ${recap.applyTip}` : null,
+  ].filter(Boolean).join('. ');
+
   return (
     <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl border border-emerald-200 shadow-card overflow-hidden">
-      <div className="px-6 pt-6 pb-4 text-center">
-        <div className="text-5xl mb-3">🎉</div>
-        <h2 className="text-2xl font-bold text-ink mb-1">Lesson Complete!</h2>
-        {recap.topic && (
-          <p className="text-slate-600">{recap.topic}</p>
-        )}
+      <div className="px-6 pt-6 pb-4">
+        <div className="flex justify-end mb-2">
+          <TtsButton text={recapText} />
+        </div>
+        <div className="text-center">
+          <div className="text-5xl mb-3">🎉</div>
+          <h2 className="text-2xl font-bold text-ink mb-1">Lesson Complete!</h2>
+          {recap.topic && (
+            <p className="text-slate-600">{recap.topic}</p>
+          )}
+        </div>
       </div>
 
       {recap.keyPoints && recap.keyPoints.length > 0 && (
