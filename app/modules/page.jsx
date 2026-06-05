@@ -1,9 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { MODULES } from '@/lib/modules-data';
+import {
+  getModuleProgress, isSectionRead, markSectionRead,
+  saveQuizAnswer, markModuleComplete,
+} from '@/lib/module-store';
 import {
   GraduationCap, ChevronRight, ChevronLeft,
   Check, BookOpen, Zap, Wand2, Cog, BarChart3,
@@ -15,6 +19,11 @@ const MODULE_ICONS = [BookOpen, Zap, Wand2, Cog, BarChart3];
 export default function ModulesPage() {
   const [selectedModule, setSelectedModule] = useState(null);
   const [expandedSection, setExpandedSection] = useState(0);
+  const [progressVersion, setProgressVersion] = useState(0);
+
+  const refreshProgress = useCallback(() => {
+    setProgressVersion((v) => v + 1);
+  }, []);
 
   if (selectedModule !== null) {
     const mod = MODULES[selectedModule];
@@ -37,6 +46,7 @@ export default function ModulesPage() {
             module={mod}
             expandedSection={expandedSection}
             setExpandedSection={setExpandedSection}
+            onProgressChange={refreshProgress}
           />
         </main>
       </div>
@@ -55,6 +65,11 @@ export default function ModulesPage() {
         <div className="space-y-4">
           {MODULES.map((mod, i) => {
             const Icon = MODULE_ICONS[i];
+            // progressVersion is used to trigger re-reads from localStorage
+            const progress = progressVersion >= 0 ? getModuleProgress(mod.num) : null; // eslint-disable-line no-unused-expressions
+            const totalSections = mod.sections.length;
+            const readCount = progress?.sectionsRead?.length || 0;
+            const pct = totalSections > 0 ? Math.round((readCount / totalSections) * 100) : 0;
             return (
               <button
                 key={mod.num}
@@ -71,6 +86,16 @@ export default function ModulesPage() {
                         Module {mod.num}
                       </span>
                       <span className="text-xs text-slate-400">&middot; {mod.duration}</span>
+                      {progress?.completed && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                          <Check className="w-3 h-3" /> Complete
+                        </span>
+                      )}
+                      {!progress?.completed && readCount > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 text-xs font-semibold">
+                          {pct}% In Progress
+                        </span>
+                      )}
                     </div>
                     <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-0.5 tracking-tight">{mod.title}</h3>
                     <p className="text-sm text-slate-600 dark:text-slate-400">{mod.subtitle}</p>
@@ -86,14 +111,54 @@ export default function ModulesPage() {
   );
 }
 
-function ModuleDetail({ module: mod, expandedSection, setExpandedSection }) {
+function ModuleDetail({ module: mod, expandedSection, setExpandedSection, onProgressChange }) {
+  const [sectionReadState, setSectionReadState] = useState(() =>
+    mod.sections.map((_, i) => isSectionRead(mod.num, i))
+  );
+
+  function handleExpandSection(idx) {
+    const willExpand = expandedSection !== idx;
+    setExpandedSection(willExpand ? idx : -1);
+    if (willExpand && !sectionReadState[idx]) {
+      markSectionRead(mod.num, idx);
+      setSectionReadState((prev) => {
+        const next = [...prev];
+        next[idx] = true;
+        return next;
+      });
+      onProgressChange?.();
+    }
+  }
+
+  function handleNextSection(currentIdx) {
+    const nextIdx = currentIdx + 1;
+    setExpandedSection(nextIdx);
+    if (nextIdx < mod.sections.length && !sectionReadState[nextIdx]) {
+      markSectionRead(mod.num, nextIdx);
+      setSectionReadState((prev) => {
+        const next = [...prev];
+        next[nextIdx] = true;
+        return next;
+      });
+      onProgressChange?.();
+    }
+  }
+
+  const handleActivityDone = useCallback(() => {
+    const allRead = mod.sections.every((_, i) => isSectionRead(mod.num, i));
+    if (allRead) {
+      markModuleComplete(mod.num);
+      onProgressChange?.();
+    }
+  }, [mod.num, mod.sections, onProgressChange]);
+
   return (
     <div className="space-y-6">
       {/* Sections */}
       <div className="space-y-3">
         {mod.sections.map((section, i) => {
           const isExpanded = expandedSection === i;
-          const isDone = i < expandedSection;
+          const isDone = sectionReadState[i];
 
           return (
             <div
@@ -101,7 +166,7 @@ function ModuleDetail({ module: mod, expandedSection, setExpandedSection }) {
               className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden"
             >
               <button
-                onClick={() => setExpandedSection(isExpanded ? -1 : i)}
+                onClick={() => handleExpandSection(i)}
                 className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
               >
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
@@ -136,7 +201,7 @@ function ModuleDetail({ module: mod, expandedSection, setExpandedSection }) {
                     )}
                     <div className="flex justify-end mt-3">
                       <button
-                        onClick={() => setExpandedSection(i + 1)}
+                        onClick={() => handleNextSection(i)}
                         className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-600 transition-colors"
                       >
                         {i < mod.sections.length - 1 ? 'Next section' : 'Go to activity'}
@@ -153,15 +218,23 @@ function ModuleDetail({ module: mod, expandedSection, setExpandedSection }) {
 
       {/* Activity */}
       {mod.activity && (
-        <ActivityCard activity={mod.activity} />
+        <ActivityCard activity={mod.activity} moduleNum={mod.num} onActivityDone={handleActivityDone} />
       )}
     </div>
   );
 }
 
-function ActivityCard({ activity }) {
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [showResult, setShowResult] = useState(false);
+function ActivityCard({ activity, moduleNum, onActivityDone }) {
+  const storedProgress = getModuleProgress(moduleNum);
+  const [selectedAnswer, setSelectedAnswer] = useState(storedProgress?.quizAnswer);
+  const [showResult, setShowResult] = useState(storedProgress?.quizAnswer !== null && storedProgress?.quizAnswer !== undefined);
+
+  function handleQuizAnswer(answerIdx) {
+    setSelectedAnswer(answerIdx);
+    setShowResult(true);
+    saveQuizAnswer(moduleNum, answerIdx);
+    onActivityDone?.();
+  }
 
   if (activity.type === 'quiz') {
     return (
@@ -178,7 +251,7 @@ function ActivityCard({ activity }) {
             return (
               <button
                 key={i}
-                onClick={() => { setSelectedAnswer(i); setShowResult(true); }}
+                onClick={() => handleQuizAnswer(i)}
                 disabled={showResult}
                 className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all ${
                   isCorrect

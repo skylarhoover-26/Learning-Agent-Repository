@@ -10,6 +10,7 @@ import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete } from '@/lib/progression';
 import { getProfileClient } from '@/lib/profile-client';
 import { getCuratedLessons, getCuratedLessonById } from '@/lib/curated-lessons';
+import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
 import {
   BookOpen, ChevronRight, ChevronLeft, Zap, BookMarked, Trophy,
   Loader2, Send, Star,
@@ -46,6 +47,10 @@ function LessonContent() {
   const [userInput, setUserInput] = useState('');
   const slideRef = useRef(null);
 
+  // Saved lesson state (for resume banner)
+  const [savedLesson, setSavedLesson] = useState(null);
+  const debounceSaveRef = useRef(null);
+
   // Progression state
   const [progressionResult, setProgressionResult] = useState(null);
   const lessonStartedAt = useRef(null);
@@ -54,7 +59,35 @@ function LessonContent() {
 
   useEffect(() => {
     setCuratedLessons(getCuratedLessons());
+    const saved = getSavedLesson();
+    if (saved) {
+      setSavedLesson(saved);
+    }
   }, []);
+
+  // Debounce-save lesson state when in lesson view
+  useEffect(() => {
+    if (view !== 'lesson' || slides.length === 0) return;
+    if (debounceSaveRef.current) {
+      clearTimeout(debounceSaveRef.current);
+    }
+    debounceSaveRef.current = setTimeout(() => {
+      saveLessonState({
+        topic,
+        format,
+        slides,
+        currentSlideIdx,
+        messages,
+        isCurated,
+        lessonStartedAt: lessonStartedAt.current,
+      });
+    }, 500);
+    return () => {
+      if (debounceSaveRef.current) {
+        clearTimeout(debounceSaveRef.current);
+      }
+    };
+  }, [view, slides, currentSlideIdx, messages, topic, format, isCurated]);
 
   // Auto-scroll to slide card on slide change
   useEffect(() => {
@@ -172,6 +205,7 @@ function LessonContent() {
   }
 
   function resetToPickerView() {
+    clearSavedLesson();
     setView('picker');
     setTopic('');
     setSlides([]);
@@ -185,8 +219,50 @@ function LessonContent() {
   }
 
   if (view === 'picker') {
+    function resumeSavedLesson() {
+      if (!savedLesson) return;
+      setTopic(savedLesson.topic);
+      setFormat(savedLesson.format || 'standard');
+      setSlides(savedLesson.slides || []);
+      setCurrentSlideIdx(savedLesson.currentSlideIdx || 0);
+      setMessages(savedLesson.messages || []);
+      setIsCurated(savedLesson.isCurated || false);
+      lessonStartedAt.current = savedLesson.lessonStartedAt || new Date().toISOString();
+      hasRecordedCompletion.current = false;
+      setProgressionResult(null);
+      setView('lesson');
+      setSavedLesson(null);
+    }
+
+    function dismissSavedLesson() {
+      clearSavedLesson();
+      setSavedLesson(null);
+    }
+
     return (
       <main className="max-w-4xl mx-auto px-6 py-10">
+        {savedLesson && (
+          <div className="mb-8 bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800 rounded-xl p-4 flex items-center justify-between gap-4">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              You have a lesson in progress: <strong className="text-ink dark:text-slate-200">{savedLesson.topic}</strong>
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={resumeSavedLesson}
+                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-600 transition-all"
+              >
+                Resume
+              </button>
+              <button
+                onClick={dismissSavedLesson}
+                className="px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+              >
+                Start Fresh
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">📚</div>
           <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">What do you want to learn?</h2>
@@ -314,6 +390,7 @@ function LessonContent() {
   const handleLessonComplete = useCallback(() => {
     if (hasRecordedCompletion.current) return;
     hasRecordedCompletion.current = true;
+    clearSavedLesson();
     try {
       const profile = getProfileClient();
       if (profile?.id && topic) {

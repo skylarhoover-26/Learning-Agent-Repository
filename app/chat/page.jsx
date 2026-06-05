@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
-import { MessageCircle, Send, Loader2 } from 'lucide-react';
+import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-store';
+import { MessageCircle, Send, Loader2, Trash2 } from 'lucide-react';
 
 const SUGGESTIONS = [
   'How do I write a good prompt?',
@@ -23,6 +24,7 @@ export default function ChatPage() {
   }, [messages, isLoading]);
 
   useEffect(() => {
+    setMessages(getChatHistory());
     inputRef.current?.focus();
   }, []);
 
@@ -44,7 +46,9 @@ export default function ChatPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Something went wrong');
-      setMessages([...newMessages, { role: 'assistant', content: data.reply }]);
+      const updatedMessages = [...newMessages, { role: 'assistant', content: data.reply }];
+      setMessages(updatedMessages);
+      saveChatHistory(updatedMessages);
     } catch (error) {
       console.error('Chat error:', error);
       setMessages([
@@ -144,6 +148,15 @@ export default function ChatPage() {
             >
               <Send className="w-5 h-5" />
             </button>
+            {messages.length > 0 && (
+              <button
+                onClick={() => { clearChatHistory(); setMessages([]); }}
+                className="p-3 rounded-xl bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all"
+                aria-label="Clear chat"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
           </div>
           <p className="text-xs text-slate-400 mt-2 text-center">
             Press Enter to send · Shift+Enter for new line

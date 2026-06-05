@@ -1,86 +1,15 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import {
-  Search, CheckCircle2, XCircle, ChevronRight, RotateCcw,
+  Search, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy, AlertCircle,
 } from 'lucide-react';
-
-const ROUNDS = [
-  {
-    id: 1,
-    context:
-      'A colleague asked: "When was the first iPhone released and what were its key features?"',
-    sentences: [
-      'The first iPhone was announced by Steve Jobs on January 9, 2007.',
-      'It was released to the public on June 29, 2007.',
-      'The original iPhone featured a 3.5-inch touchscreen display.',
-      'It ran on the iOS operating system from day one, which was called "iPhone OS" at launch.',
-      'The first iPhone included a built-in App Store where users could download third-party apps.',
-      'It was available exclusively on AT&T (then Cingular) in the United States.',
-      'The base model came with 4GB of storage and was priced at $499.',
-    ],
-    hallucinations: [4],
-    explanations: {
-      4: 'The App Store did not launch with the original iPhone. It was introduced later with iPhone OS 2.0 in July 2008. The original iPhone only ran Apple\'s built-in apps.',
-    },
-  },
-  {
-    id: 2,
-    context:
-      'You asked an AI: "Explain how large language models work in simple terms."',
-    sentences: [
-      'Large language models (LLMs) are trained on massive amounts of text data from the internet.',
-      'They learn patterns in language by predicting what word comes next in a sequence.',
-      'The training process uses neural networks with billions of parameters.',
-      'LLMs store a complete database of facts that they look up when answering questions.',
-      'They can generate human-like text by building responses one token at a time.',
-      'Popular examples include GPT-4, Claude, and Gemini.',
-      'LLMs can sometimes produce confident-sounding but incorrect information.',
-    ],
-    hallucinations: [3],
-    explanations: {
-      3: 'LLMs do NOT store a database of facts. They learn statistical patterns across language. This is why they can "hallucinate" - they generate plausible-sounding text based on patterns, not by looking up verified facts.',
-    },
-  },
-  {
-    id: 3,
-    context:
-      'A team member asked AI: "Give me a summary of best practices for running effective meetings."',
-    sentences: [
-      'Always send an agenda at least 24 hours before the meeting.',
-      'Keep meetings to 30 minutes or less when possible - research shows attention drops sharply after that.',
-      'Start every meeting with a 10-minute icebreaker to build team rapport, as recommended by Harvard Business Review.',
-      'Assign a note-taker at the start to capture action items.',
-      'End with clear next steps and owners for each action item.',
-      'Send a follow-up summary within 24 hours of the meeting.',
-      'Studies by Microsoft show that back-to-back meetings increase stress and reduce focus.',
-    ],
-    hallucinations: [2],
-    explanations: {
-      2: 'Harvard Business Review has not specifically recommended starting "every" meeting with a 10-minute icebreaker. While icebreakers can be useful in some contexts, a blanket 10-minute icebreaker for every meeting is not a widely cited best practice and would be counterproductive for short meetings.',
-    },
-  },
-  {
-    id: 4,
-    context:
-      'You asked: "What are the key differences between ChatGPT and Claude?"',
-    sentences: [
-      'ChatGPT is made by OpenAI, while Claude is made by Anthropic.',
-      'Both are large language models that can generate text, answer questions, and help with tasks.',
-      'Claude was specifically designed with a focus on being helpful, harmless, and honest.',
-      'ChatGPT uses the GPT architecture, while Claude is built on a completely different transformer variant called RLHF-Net.',
-      'Both models can make mistakes and produce hallucinations.',
-      'ChatGPT launched publicly in November 2022 and quickly gained millions of users.',
-      'Claude emphasizes longer context windows and careful, nuanced responses.',
-    ],
-    hallucinations: [3],
-    explanations: {
-      3: 'There is no transformer variant called "RLHF-Net." RLHF (Reinforcement Learning from Human Feedback) is a training technique, not a model architecture. Both ChatGPT and Claude use transformer-based architectures. The AI fabricated a technical-sounding name.',
-    },
-  },
-];
+import ROUNDS from './rounds';
+import {
+  saveGameResult, getGameStats, getInProgress, saveInProgress, clearInProgress,
+} from '@/lib/game-store';
 
 function getSentenceStyle(idx, flagged, revealed, isHallucination) {
   if (!revealed) {
@@ -107,9 +36,55 @@ export default function HallucinationHunt() {
   const [roundIdx, setRoundIdx] = useState(0);
   const [flagged, setFlagged] = useState(new Set());
   const [revealed, setRevealed] = useState(false);
+  const [completedRounds, setCompletedRounds] = useState([]);
+  const [gameComplete, setGameComplete] = useState(false);
+  const [resumeAvailable, setResumeAvailable] = useState(false);
+  const [savedProgress, setSavedProgress] = useState(null);
+  const [stats, setStats] = useState({ gamesPlayed: 0, bestScore: 0 });
+  const savedRef = useRef(false);
 
   const round = ROUNDS[roundIdx];
   const hallucinationSet = new Set(round.hallucinations);
+
+  // Load stats and check for in-progress on mount
+  useEffect(() => {
+    try {
+      setStats(getGameStats('hallucination-hunt'));
+      const progress = getInProgress('hallucination-hunt');
+      if (progress) {
+        setSavedProgress(progress);
+        setResumeAvailable(true);
+      }
+    } catch {
+      // localStorage not available
+    }
+  }, []);
+
+  function handleResume() {
+    if (!savedProgress) return;
+    setRoundIdx(savedProgress.roundIdx);
+    setCompletedRounds(savedProgress.completedRounds || []);
+    setFlagged(new Set(savedProgress.currentFlagged || []));
+    setRevealed(false);
+    setResumeAvailable(false);
+    setSavedProgress(null);
+  }
+
+  function handleStartFresh() {
+    try {
+      clearInProgress('hallucination-hunt');
+    } catch {
+      // localStorage not available
+    }
+    setRoundIdx(0);
+    setFlagged(new Set());
+    setRevealed(false);
+    setCompletedRounds([]);
+    setGameComplete(false);
+    setResumeAvailable(false);
+    setSavedProgress(null);
+    savedRef.current = false;
+  }
 
   const toggleFlag = useCallback(
     (idx) => {
@@ -129,23 +104,184 @@ export default function HallucinationHunt() {
 
   function handleCheck() {
     setRevealed(true);
+
+    // Calculate round result
+    const currentHallucinationSet = new Set(round.hallucinations);
+    const caught = [...flagged].filter((i) => currentHallucinationSet.has(i)).length;
+    const missed = round.hallucinations.length - caught;
+    const falseFlags = [...flagged].filter((i) => !currentHallucinationSet.has(i)).length;
+
+    const roundResult = {
+      roundId: round.id,
+      caught,
+      missed,
+      falseFlags,
+      totalHallucinations: round.hallucinations.length,
+    };
+
+    const updatedCompleted = [...completedRounds, roundResult];
+    setCompletedRounds(updatedCompleted);
+
+    // Save in-progress state
+    try {
+      saveInProgress('hallucination-hunt', {
+        roundIdx,
+        completedRounds: updatedCompleted,
+        currentFlagged: [...flagged],
+      });
+    } catch {
+      // localStorage not available
+    }
   }
 
   function handleNextRound() {
-    setRoundIdx((prev) => (prev + 1) % ROUNDS.length);
+    const nextIdx = roundIdx + 1;
+
+    if (nextIdx >= ROUNDS.length) {
+      // Game complete
+      setGameComplete(true);
+      return;
+    }
+
+    setRoundIdx(nextIdx);
     setFlagged(new Set());
     setRevealed(false);
+
+    // Update in-progress
+    try {
+      saveInProgress('hallucination-hunt', {
+        roundIdx: nextIdx,
+        completedRounds,
+        currentFlagged: [],
+      });
+    } catch {
+      // localStorage not available
+    }
   }
+
+  // Save final result when game completes
+  useEffect(() => {
+    if (!gameComplete || savedRef.current) return;
+    savedRef.current = true;
+    try {
+      const totalCaught = completedRounds.reduce((sum, r) => sum + r.caught, 0);
+      const totalHallucinations = completedRounds.reduce((sum, r) => sum + r.totalHallucinations, 0);
+      saveGameResult('hallucination-hunt', {
+        score: totalCaught,
+        total: totalHallucinations,
+        perRound: completedRounds,
+      });
+      clearInProgress('hallucination-hunt');
+      setStats(getGameStats('hallucination-hunt'));
+    } catch {
+      // localStorage not available
+    }
+  }, [gameComplete, completedRounds]);
 
   function handleReplay() {
     setFlagged(new Set());
     setRevealed(false);
   }
 
-  // score calculation
+  function handlePlayAgain() {
+    setRoundIdx(0);
+    setFlagged(new Set());
+    setRevealed(false);
+    setCompletedRounds([]);
+    setGameComplete(false);
+    savedRef.current = false;
+    try {
+      clearInProgress('hallucination-hunt');
+    } catch {
+      // localStorage not available
+    }
+  }
+
+  // score calculation for current round
   const caught = [...flagged].filter((i) => hallucinationSet.has(i)).length;
   const missed = round.hallucinations.length - caught;
   const falseFlags = [...flagged].filter((i) => !hallucinationSet.has(i)).length;
+
+  // Game completion screen
+  if (gameComplete) {
+    const totalCaught = completedRounds.reduce((sum, r) => sum + r.caught, 0);
+    const totalHallucinations = completedRounds.reduce((sum, r) => sum + r.totalHallucinations, 0);
+    const pct = totalHallucinations > 0 ? Math.round((totalCaught / totalHallucinations) * 100) : 0;
+
+    return (
+      <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
+        <PageHeader
+          icon={Search}
+          title="Hallucination Hunt"
+          subtitle="Final Results"
+        />
+        <main className="max-w-3xl mx-auto px-6 py-8">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-cta-50 flex items-center justify-center mx-auto mb-4">
+              <Trophy className="w-8 h-8 text-cta-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2">
+              {totalCaught} / {totalHallucinations} Hallucinations Found
+            </h2>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-2">{pct}% accuracy across {ROUNDS.length} rounds</p>
+
+            <div className="flex items-center justify-center gap-4 mb-6 text-sm text-slate-500 dark:text-slate-400">
+              <span>Best Score: <strong className="text-ink dark:text-slate-200">{stats.bestScore}/{totalHallucinations}</strong></span>
+              <span className="w-px h-4 bg-slate-300 dark:bg-slate-600" />
+              <span>Games Played: <strong className="text-ink dark:text-slate-200">{stats.gamesPlayed}</strong></span>
+            </div>
+
+            {/* Per-round breakdown */}
+            <div className="text-left space-y-3 mb-6">
+              {completedRounds.map((r, i) => (
+                <div
+                  key={i}
+                  className={`p-3 rounded-xl border text-sm ${
+                    r.caught === r.totalHallucinations && r.falseFlags === 0
+                      ? 'bg-green-50 border-green-200'
+                      : r.caught > 0
+                      ? 'bg-orange-50 border-orange-200'
+                      : 'bg-red-50 border-red-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {r.caught === r.totalHallucinations && r.falseFlags === 0 ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+                    )}
+                    <span className="font-medium text-ink dark:text-slate-200">
+                      Round {i + 1}
+                    </span>
+                    <span className="ml-auto text-slate-600 dark:text-slate-400">
+                      {r.caught}/{r.totalHallucinations} caught
+                      {r.falseFlags > 0 && `, ${r.falseFlags} false flag${r.falseFlags > 1 ? 's' : ''}`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={handlePlayAgain}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Play Again
+              </button>
+              <Link
+                href="/games"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:bg-slate-700 transition-all"
+              >
+                All Games
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
@@ -156,6 +292,34 @@ export default function HallucinationHunt() {
       />
 
       <main className="max-w-3xl mx-auto px-6 py-8">
+        {/* Resume banner */}
+        {resumeAvailable && savedProgress && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-brand-200 dark:border-brand-700 p-4 mb-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-brand shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-ink dark:text-slate-200">
+                  You have a game in progress (Round {(savedProgress.roundIdx || 0) + 1} of {ROUNDS.length}).
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleResume}
+                  className="px-4 py-1.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
+                >
+                  Resume
+                </button>
+                <button
+                  onClick={handleStartFresh}
+                  className="px-4 py-1.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle transition-all"
+                >
+                  Start Fresh
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Round info */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-center gap-2 mb-3">
@@ -266,7 +430,7 @@ export default function HallucinationHunt() {
                 onClick={handleNextRound}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
               >
-                Next Round
+                {roundIdx + 1 >= ROUNDS.length ? 'See Final Results' : 'Next Round'}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

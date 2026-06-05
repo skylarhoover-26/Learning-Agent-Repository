@@ -1,54 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import {
-  Swords, ChevronRight, RotateCcw, Loader2, Lightbulb,
+  Swords, ChevronRight, RotateCcw, Loader2, Lightbulb, Trophy, AlertCircle,
 } from 'lucide-react';
-
-const SCENARIOS = [
-  {
-    id: 1,
-    department: 'Customer Success',
-    title: 'Summarize a customer complaint email',
-    context:
-      'You received a long, emotional email from a customer about a billing issue, a missed appointment, and poor communication. You need a concise summary for your team lead.',
-    task: 'Write a prompt that would get an AI to produce a clear, actionable summary of the complaint email.',
-  },
-  {
-    id: 2,
-    department: 'People / HR',
-    title: 'Draft a job posting for a new role',
-    context:
-      'Your team is hiring a Senior Customer Success Manager. The role requires 3+ years in SaaS, strong communication skills, and CRM experience. The posting should feel welcoming and inclusive.',
-    task: 'Write a prompt that would get an AI to draft a compelling, inclusive job posting.',
-  },
-  {
-    id: 3,
-    department: 'Sales',
-    title: 'Analyze quarterly sales data',
-    context:
-      'You have Q1 sales numbers across 4 regions. Revenue is up 12% overall, but the West region dropped 8%. Leadership wants to understand why and what to do.',
-    task: 'Write a prompt that would get an AI to analyze this data and surface insights for leadership.',
-  },
-  {
-    id: 4,
-    department: 'Enablement',
-    title: 'Create a training outline for a new feature',
-    context:
-      'Your company just launched an AI-powered scheduling feature. You need to train 200+ field service pros on how to use it. Many are not tech-savvy.',
-    task: 'Write a prompt that would get an AI to create a clear, practical training outline.',
-  },
-  {
-    id: 5,
-    department: 'Operations',
-    title: 'Write a project status update for leadership',
-    context:
-      'You are managing a CRM migration. It is 60% complete, 1 week behind schedule due to a data mapping issue (now resolved). Two milestones are coming up next week.',
-    task: 'Write a prompt that would get an AI to draft a concise, professional status update for the exec team.',
-  },
-];
+import {
+  saveGameResult, getGameStats, getInProgress, saveInProgress, clearInProgress,
+} from '@/lib/game-store';
+import SCENARIOS from './scenarios';
 
 function ScoreBar({ label, score, feedback, animate }) {
   const pct = (score / 5) * 100;
@@ -79,8 +40,50 @@ export default function PromptBattle() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [animate, setAnimate] = useState(false);
+  const [completedScenarios, setCompletedScenarios] = useState([]);
+  const [gameOver, setGameOver] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [showResume, setShowResume] = useState(false);
 
-  const scenario = SCENARIOS[scenarioIdx];
+  // Check for in-progress state and load stats on mount
+  useEffect(() => {
+    try {
+      const s = getGameStats('prompt-battle');
+      if (s && s.gamesPlayed > 0) {
+        setStats(s);
+      }
+      const progress = getInProgress('prompt-battle');
+      if (progress && progress.scenarioIdx !== undefined) {
+        setShowResume(true);
+      }
+    } catch {
+      // localStorage unavailable
+    }
+  }, []);
+
+  function handleResume() {
+    try {
+      const progress = getInProgress('prompt-battle');
+      if (progress) {
+        setScenarioIdx(progress.scenarioIdx);
+        setCompletedScenarios(progress.completedScenarios || []);
+      }
+    } catch {
+      // localStorage unavailable
+    }
+    setShowResume(false);
+  }
+
+  function handleStartFresh() {
+    try {
+      clearInProgress('prompt-battle');
+    } catch {
+      // localStorage unavailable
+    }
+    setShowResume(false);
+    setScenarioIdx(0);
+    setCompletedScenarios([]);
+  }
 
   async function handleSubmit() {
     if (!prompt.trim()) return;
@@ -88,6 +91,8 @@ export default function PromptBattle() {
     setError(null);
     setScores(null);
     setAnimate(false);
+
+    const scenario = SCENARIOS[scenarioIdx];
 
     try {
       const res = await fetch('/api/games/score-prompt', {
@@ -106,6 +111,33 @@ export default function PromptBattle() {
       const data = await res.json();
       setScores(data);
 
+      // Calculate total score for this scenario
+      const scenarioScore =
+        (data.clarity?.score ?? 0) +
+        (data.specificity?.score ?? 0) +
+        (data.effectiveness?.score ?? 0);
+
+      const updatedCompleted = [
+        ...completedScenarios,
+        {
+          scenarioId: scenario.id,
+          scenarioTitle: scenario.title,
+          score: scenarioScore,
+          maxScore: 15,
+        },
+      ];
+      setCompletedScenarios(updatedCompleted);
+
+      // Save in-progress
+      try {
+        saveInProgress('prompt-battle', {
+          scenarioIdx,
+          completedScenarios: updatedCompleted,
+        });
+      } catch {
+        // localStorage unavailable
+      }
+
       // trigger bar animation after a small delay
       setTimeout(() => setAnimate(true), 100);
     } catch (err) {
@@ -123,12 +155,109 @@ export default function PromptBattle() {
   }
 
   function handleNextScenario() {
-    setScenarioIdx((prev) => (prev + 1) % SCENARIOS.length);
+    const nextIdx = scenarioIdx + 1;
+    if (nextIdx >= SCENARIOS.length) {
+      // All scenarios completed
+      setGameOver(true);
+      const totalScore = completedScenarios.reduce((sum, s) => sum + s.score, 0);
+      try {
+        saveGameResult('prompt-battle', {
+          score: totalScore,
+          perScenario: completedScenarios,
+        });
+        clearInProgress('prompt-battle');
+        const s = getGameStats('prompt-battle');
+        setStats(s);
+      } catch {
+        // localStorage unavailable
+      }
+      return;
+    }
+    setScenarioIdx(nextIdx);
     setPrompt('');
     setScores(null);
     setAnimate(false);
     setError(null);
   }
+
+  function handlePlayAgain() {
+    setScenarioIdx(0);
+    setPrompt('');
+    setScores(null);
+    setAnimate(false);
+    setError(null);
+    setCompletedScenarios([]);
+    setGameOver(false);
+  }
+
+  // Game over / results screen
+  if (gameOver) {
+    const totalScore = completedScenarios.reduce((sum, s) => sum + s.score, 0);
+    const maxTotal = completedScenarios.length * 15;
+    const pct = maxTotal > 0 ? Math.round((totalScore / maxTotal) * 100) : 0;
+
+    return (
+      <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
+        <PageHeader
+          icon={Swords}
+          title="Prompt Battle"
+          subtitle="Results"
+        />
+        <main className="max-w-3xl mx-auto px-6 py-8">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-cta-50 flex items-center justify-center mx-auto mb-4">
+              <Trophy className="w-8 h-8 text-cta-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2">
+              {totalScore} / {maxTotal}
+            </h2>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-2">
+              {pct}% across {completedScenarios.length} scenarios
+            </p>
+
+            {stats && (
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                Best: {stats.bestScore} &middot; Played: {stats.gamesPlayed}
+              </p>
+            )}
+
+            {/* Per-scenario breakdown */}
+            <div className="text-left space-y-3 mb-6">
+              {completedScenarios.map((s, i) => (
+                <div
+                  key={i}
+                  className="p-3 rounded-xl border border-slate-200 bg-bg-subtle dark:bg-slate-700 dark:border-slate-600 text-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-ink dark:text-slate-200">{s.scenarioTitle}</span>
+                    <span className="font-bold text-ink dark:text-slate-200">{s.score}/{s.maxScore}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={handlePlayAgain}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Play Again
+              </button>
+              <Link
+                href="/games"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:hover:bg-slate-700 transition-all"
+              >
+                All Games
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const scenario = SCENARIOS[scenarioIdx];
 
   return (
     <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
@@ -139,6 +268,48 @@ export default function PromptBattle() {
       />
 
       <main className="max-w-3xl mx-auto px-6 py-8">
+        {/* Resume banner */}
+        {showResume && (
+          <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-brand shrink-0" />
+              <p className="text-sm text-ink dark:text-slate-200">
+                You have an unfinished game. Pick up where you left off?
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleResume}
+                className="px-4 py-1.5 bg-brand text-white rounded-pill text-sm font-semibold hover:bg-brand-600 transition-all"
+              >
+                Resume
+              </button>
+              <button
+                onClick={handleStartFresh}
+                className="px-4 py-1.5 border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 rounded-pill text-sm font-semibold hover:bg-bg-subtle transition-all"
+              >
+                Start Fresh
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Progress indicator */}
+        <div className="flex items-center gap-1 mb-6">
+          {SCENARIOS.map((_, i) => (
+            <div
+              key={i}
+              className={`flex-1 h-1.5 rounded-full transition-all ${
+                i < scenarioIdx
+                  ? 'bg-green-500'
+                  : i === scenarioIdx
+                  ? 'bg-brand'
+                  : 'bg-slate-200 dark:bg-slate-600'
+              }`}
+            />
+          ))}
+        </div>
+
         {/* Scenario card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-center gap-2 mb-3">
@@ -239,10 +410,19 @@ export default function PromptBattle() {
                 onClick={handleNextScenario}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
               >
-                Next Scenario
+                {scenarioIdx + 1 >= SCENARIOS.length ? 'See Results' : 'Next Scenario'}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Stats */}
+        {stats && stats.gamesPlayed > 0 && !showResume && (
+          <div className="text-center mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Best: {stats.bestScore} &middot; Played: {stats.gamesPlayed}
+            </p>
           </div>
         )}
 

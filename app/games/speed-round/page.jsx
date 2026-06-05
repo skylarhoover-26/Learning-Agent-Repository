@@ -7,6 +7,7 @@ import {
   Timer, ChevronRight, RotateCcw, CheckCircle2, XCircle, Trophy,
 } from 'lucide-react';
 import ALL_QUESTIONS from './questions';
+import { saveGameResult, getGameStats } from '@/lib/game-store';
 
 const TIMER_SECONDS = 15;
 const QUESTIONS_PER_GAME = 10;
@@ -61,10 +62,39 @@ export default function SpeedRound() {
   const [secondsLeft, setSecondsLeft] = useState(TIMER_SECONDS);
   const [results, setResults] = useState([]);
   const [gameOver, setGameOver] = useState(false);
+  const [stats, setStats] = useState({ gamesPlayed: 0, bestScore: 0 });
   const timerRef = useRef(null);
   const advanceRef = useRef(null);
+  const savedRef = useRef(false);
 
   const currentQ = questions[qIdx];
+
+  // Load stats on mount
+  useEffect(() => {
+    try {
+      const s = getGameStats('speed-round');
+      setStats(s);
+    } catch {
+      // localStorage not available
+    }
+  }, []);
+
+  // Save result when game ends
+  useEffect(() => {
+    if (!gameOver || savedRef.current) return;
+    savedRef.current = true;
+    try {
+      const score = results.filter((r) => r.correct).length;
+      saveGameResult('speed-round', {
+        score,
+        total: QUESTIONS_PER_GAME,
+        perQuestion: results,
+      });
+      setStats(getGameStats('speed-round'));
+    } catch {
+      // localStorage not available
+    }
+  }, [gameOver, results]);
 
   const advanceToNext = useCallback(() => {
     if (advanceRef.current) {
@@ -128,6 +158,7 @@ export default function SpeedRound() {
     setSecondsLeft(TIMER_SECONDS);
     setResults([]);
     setGameOver(false);
+    savedRef.current = false;
   }
 
   // Game over screen
@@ -151,7 +182,13 @@ export default function SpeedRound() {
             <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2">
               {correctCount} / {questions.length}
             </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-400 mb-6">{pct}% correct</p>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-2">{pct}% correct</p>
+
+            <div className="flex items-center justify-center gap-4 mb-6 text-sm text-slate-500 dark:text-slate-400">
+              <span>Best Score: <strong className="text-ink dark:text-slate-200">{stats.bestScore}/{QUESTIONS_PER_GAME}</strong></span>
+              <span className="w-px h-4 bg-slate-300 dark:bg-slate-600" />
+              <span>Games Played: <strong className="text-ink dark:text-slate-200">{stats.gamesPlayed}</strong></span>
+            </div>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-3 bg-green-50 rounded-xl border border-green-200">
