@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Sparkles, ChevronRight, ChevronLeft, User,
-  Building2, Zap, Target, Check, Briefcase,
+  Building2, Zap, Target, Check, Briefcase, Mail,
 } from 'lucide-react';
 import { saveProfile, generateLearnerId } from '@/lib/profile-client';
 import {
@@ -62,7 +62,9 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState('forward');
 
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [department, setDepartment] = useState('');
   const [subTeam, setSubTeam] = useState(null);
   const [showSubTeams, setShowSubTeams] = useState(false);
@@ -73,7 +75,12 @@ export default function OnboardingPage() {
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
   const canAdvance = useCallback(() => {
-    if (step === 1) return name.trim().length > 0;
+    if (step === 1) {
+      return firstName.trim().length > 0
+        && lastName.trim().length > 0
+        && email.trim().length > 0
+        && email.includes('@');
+    }
     if (step === 2) {
       if (!department) return false;
       if (SUB_TEAMS[department] && !subTeam) return false;
@@ -83,7 +90,7 @@ export default function OnboardingPage() {
     if (step === 4) return tier.length > 0;
     if (step === 5) return goal.length > 0;
     return false;
-  }, [step, name, department, subTeam, topTasks, tier, goal]);
+  }, [step, firstName, lastName, email, department, subTeam, topTasks, tier, goal]);
 
   function goNext() {
     if (!canAdvance()) return;
@@ -144,9 +151,13 @@ export default function OnboardingPage() {
   }
 
   function handleFinish(selectedGoal) {
+    const trimmedEmail = email.trim().toLowerCase();
     const profile = {
-      id: generateLearnerId(),
-      display_name: name.trim(),
+      id: trimmedEmail,
+      display_name: `${firstName.trim()} ${lastName.trim()}`,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      email: trimmedEmail,
       department,
       sub_team: subTeam || null,
       top_tasks: topTasks,
@@ -211,8 +222,12 @@ export default function OnboardingPage() {
         >
           {step === 1 && (
             <StepWelcome
-              name={name}
-              onNameChange={setName}
+              firstName={firstName}
+              lastName={lastName}
+              email={email}
+              onFirstNameChange={setFirstName}
+              onLastNameChange={setLastName}
+              onEmailChange={setEmail}
               onNext={goNext}
               canAdvance={canAdvance()}
             />
@@ -261,7 +276,7 @@ export default function OnboardingPage() {
 
 /* ---------- Step Components ---------- */
 
-function StepWelcome({ name, onNameChange, onNext, canAdvance }) {
+function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastNameChange, onEmailChange, onNext, canAdvance }) {
   function handleKeyDown(e) {
     if (e.key === 'Enter' && canAdvance) {
       onNext();
@@ -279,22 +294,57 @@ function StepWelcome({ name, onNameChange, onNext, canAdvance }) {
       <p className="text-slate-600 mb-8 max-w-md mx-auto">
         Your personalized journey to mastering AI starts here. Let's get to know you.
       </p>
-      <div className="max-w-sm mx-auto mb-6">
-        <label htmlFor="name-input" className="block text-sm font-medium text-ink mb-2 text-left">
-          What's your name?
-        </label>
-        <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            id="name-input"
-            type="text"
-            value={name}
-            onChange={e => onNameChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Your first name"
-            autoFocus
-            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
-          />
+      <div className="max-w-sm mx-auto space-y-4 mb-6">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="first-name-input" className="block text-sm font-medium text-ink mb-1.5 text-left">
+              First name
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                id="first-name-input"
+                type="text"
+                value={firstName}
+                onChange={e => onFirstNameChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="First"
+                autoFocus
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="last-name-input" className="block text-sm font-medium text-ink mb-1.5 text-left">
+              Last name
+            </label>
+            <input
+              id="last-name-input"
+              type="text"
+              value={lastName}
+              onChange={e => onLastNameChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Last"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
+            />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="email-input" className="block text-sm font-medium text-ink mb-1.5 text-left">
+            Work email
+          </label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              id="email-input"
+              type="email"
+              value={email}
+              onChange={e => onEmailChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="you@housecallpro.com"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
+            />
+          </div>
         </div>
       </div>
       <button
