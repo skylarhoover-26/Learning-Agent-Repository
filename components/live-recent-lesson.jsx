@@ -24,7 +24,7 @@ export default function LiveRecentLesson() {
             <h3 className="font-semibold text-ink dark:text-slate-200">Pick up where you left off</h3>
           </div>
           <p className="text-ink dark:text-slate-200 mb-1">{shortTopic(lastLesson.topic)}</p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Last completed {new Date(lastLesson.completed_at).toLocaleDateString()}
           </p>
         </div>

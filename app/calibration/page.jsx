@@ -79,7 +79,7 @@ export default function CalibrationPage() {
 
   if (completed) {
     return (
-      <div className="min-h-screen bg-bg-warm">
+      <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader
           icon={Crosshair}
           title="Skill Calibration"
@@ -102,29 +102,29 @@ export default function CalibrationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Crosshair}
         title="Skill Calibration"
         subtitle="6 scenarios, then rate yourself — we'll show the gap"
       />
 
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-2xl mx-auto px-6">
-          <div className="h-1 bg-bg-subtle rounded-full overflow-hidden my-3">
+          <div className="h-1 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden my-3">
             <div
               className="h-full bg-brand rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
           <div className="flex items-center justify-between pb-3">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Step {step + 1} of {TOTAL_STEPS}
             </p>
             {step > 0 && (
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-brand transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
               >
                 <ChevronLeft className="w-3 h-3" />
                 Back
@@ -177,7 +177,7 @@ export default function CalibrationPage() {
 
 function WelcomeStep({ onNext }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
       <div className="bg-gradient-to-br from-brand to-brand-700 text-white p-8 rounded-t-2xl">
         <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-pill mb-3">
           <Crosshair className="w-3.5 h-3.5" />
@@ -188,11 +188,11 @@ function WelcomeStep({ onNext }) {
         </h2>
       </div>
       <div className="p-8">
-        <p className="text-slate-600 mb-4 leading-relaxed">
+        <p className="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
           We use this once, then your home screen, lessons, and updates all adapt to{' '}
           <strong>your role</strong> and <strong>your gaps</strong>. No right answers — just honest signal.
         </p>
-        <ul className="text-sm text-slate-500 space-y-2 mb-6">
+        <ul className="text-sm text-slate-500 dark:text-slate-400 space-y-2 mb-6">
           <li>6 scenarios from real Housecall Pro situations</li>
           <li>A self-rating step we compare to your measured score</li>
           <li>You'll see your profile and calibration gaps</li>
@@ -222,11 +222,11 @@ function ScenarioStep({ scenario, questionNumber, totalQuestions, selectedAnswer
         </span>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6">
-        <p className="text-sm text-slate-700 leading-relaxed">{scenario.setup}</p>
+      <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 mb-6">
+        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{scenario.setup}</p>
       </div>
 
-      <h3 className="text-xl font-bold text-ink mb-4 tracking-tight">{scenario.prompt}</h3>
+      <h3 className="text-xl font-bold text-ink dark:text-slate-200 mb-4 tracking-tight">{scenario.prompt}</h3>
 
       <div className="space-y-3">
         {scenario.answers.map((answer, i) => {
@@ -238,11 +238,11 @@ function ScenarioStep({ scenario, questionNumber, totalQuestions, selectedAnswer
               className={`w-full flex items-start gap-3 px-5 py-4 rounded-xl border text-left transition-all ${
                 isSelected
                   ? 'bg-brand text-white border-brand shadow-sm'
-                  : 'bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50'
+                  : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
               }`}
             >
               <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                isSelected ? 'border-white bg-white/20' : 'border-slate-300'
+                isSelected ? 'border-white bg-white/20' : 'border-slate-300 dark:border-slate-600'
               }`}>
                 {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
               </span>
@@ -261,15 +261,15 @@ function SelfRateStep({ selfRating, onRatingChange }) {
   return (
     <div>
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-ink tracking-tight mb-2">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
           How would you rate yourself?
         </h2>
-        <p className="text-slate-600 text-sm">
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
           Be honest — the gap between what you think and what we measured is the most valuable insight.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6 space-y-6">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 space-y-6">
         {SKILL_KEYS.map(key => {
           const value = selfRating[key];
           const labelIdx = Math.min(4, Math.floor(value * 5));
@@ -280,7 +280,7 @@ function SelfRateStep({ selfRating, onRatingChange }) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Icon className="w-4 h-4 text-brand" />
-                  <span className="text-sm font-semibold text-ink">{SKILL_LABELS[key]}</span>
+                  <span className="text-sm font-semibold text-ink dark:text-slate-200">{SKILL_LABELS[key]}</span>
                 </div>
                 <span className="text-xs font-bold text-brand">{ratingLabels[labelIdx]}</span>
               </div>
@@ -313,11 +313,11 @@ function ResultsView({ skills, selfRating }) {
   return (
     <div className="space-y-6">
       {/* Calibration Chart */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-brand via-[#009FDA] to-[#0055FF]" />
         <div className="p-6">
-          <h3 className="text-lg font-bold text-ink mb-1">Self vs. Measured</h3>
-          <p className="text-sm text-slate-500 mb-6">
+          <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">Self vs. Measured</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
             The gap between your self-assessment and scenario performance.
           </p>
 
@@ -332,8 +332,8 @@ function ResultsView({ skills, selfRating }) {
                 <div key={key}>
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-slate-500" />
-                      <span className="text-sm font-medium text-ink">{SKILL_LABELS[key]}</span>
+                      <Icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                      <span className="text-sm font-medium text-ink dark:text-slate-200">{SKILL_LABELS[key]}</span>
                     </div>
                     <span className={`text-xs font-bold ${
                       Math.abs(delta) < 10 ? 'text-green-600' :
@@ -343,7 +343,7 @@ function ResultsView({ skills, selfRating }) {
                        delta > 0 ? `Overrated by ${delta}` : `Underrated by ${Math.abs(delta)}`}
                     </span>
                   </div>
-                  <div className="relative h-6 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="relative h-6 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className="absolute h-full bg-brand/30 rounded-full transition-all duration-700"
                       style={{ width: `${self}%` }}
@@ -353,7 +353,7 @@ function ResultsView({ skills, selfRating }) {
                       style={{ width: `${measured}%` }}
                     />
                     <div className="absolute inset-0 flex items-center justify-end pr-2">
-                      <span className="text-[10px] font-bold text-ink">
+                      <span className="text-[10px] font-bold text-ink dark:text-slate-200">
                         {measured}/100
                       </span>
                     </div>
@@ -367,7 +367,7 @@ function ResultsView({ skills, selfRating }) {
             })}
           </div>
 
-          <div className="mt-6 flex gap-3 text-xs text-slate-500">
+          <div className="mt-6 flex gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm bg-brand" /> Measured
             </span>
@@ -384,21 +384,21 @@ function ResultsView({ skills, selfRating }) {
           <div className="flex items-center gap-2 text-green-700 text-xs font-bold uppercase tracking-wide mb-2">
             <Award className="w-4 h-4" /> Strongest
           </div>
-          <p className="text-sm font-bold text-ink">{SKILL_LABELS[top.k]}</p>
-          <p className="text-xs text-slate-600">{Math.round(top.v * 100)}/100 mastery</p>
+          <p className="text-sm font-bold text-ink dark:text-slate-200">{SKILL_LABELS[top.k]}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">{Math.round(top.v * 100)}/100 mastery</p>
         </div>
         <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
           <div className="flex items-center gap-2 text-amber-700 text-xs font-bold uppercase tracking-wide mb-2">
             <TrendingUp className="w-4 h-4" /> Biggest gap
           </div>
-          <p className="text-sm font-bold text-ink">{SKILL_LABELS[bottom.k]}</p>
-          <p className="text-xs text-slate-600">{Math.round(bottom.v * 100)}/100 mastery</p>
+          <p className="text-sm font-bold text-ink dark:text-slate-200">{SKILL_LABELS[bottom.k]}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">{Math.round(bottom.v * 100)}/100 mastery</p>
         </div>
       </div>
 
       {/* Radar Chart */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6">
-        <h3 className="text-sm font-semibold text-ink mb-4">Skill Profile</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
+        <h3 className="text-sm font-semibold text-ink dark:text-slate-200 mb-4">Skill Profile</h3>
         <RadarChart skills={skills} />
       </div>
     </div>

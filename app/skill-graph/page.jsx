@@ -157,7 +157,7 @@ function DetailPanel({ node, unlocks, prerequisites }) {
             <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md ${
               node.mastery >= 70 ? 'bg-green-50 text-green-700' :
               node.mastery >= 40 ? 'bg-blue-50 text-blue-700' :
-              'bg-slate-100 text-slate-600'
+              'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
             }`}>
               {getMasteryLabel(node.mastery)}
             </span>
@@ -166,7 +166,7 @@ function DetailPanel({ node, unlocks, prerequisites }) {
         </div>
         <div className="text-right shrink-0">
           <p className="text-2xl font-bold text-ink dark:text-slate-200">{node.mastery}%</p>
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+          <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
             <Clock className="w-3 h-3" />
             <span>{node.freshness}d ago</span>
           </div>
@@ -282,7 +282,7 @@ export default function SkillGraphPage() {
               <p className="font-semibold text-ink dark:text-slate-200 text-sm">
                 Recommended next: <strong>{recommendedNode.name}</strong>
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 All prerequisites met — this skill unlocks {unlockIds.size > 0 ? `${getUnlockedBy(recommendedId, GRAPH_EDGES).size} more skill${getUnlockedBy(recommendedId, GRAPH_EDGES).size !== 1 ? 's' : ''}` : 'new capabilities'}
               </p>
             </div>

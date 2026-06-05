@@ -18,7 +18,7 @@ export default function LiveStreakCard() {
         <h3 className="font-semibold text-ink dark:text-slate-200">Current Streak</h3>
       </div>
       <div className="text-5xl font-bold text-ink dark:text-slate-200 mb-1">{prog.streak}</div>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         {prog.streak > 0 ? `Day${prog.streak > 1 ? 's' : ''} in a row` : 'Start a lesson today!'}
       </p>
     </div>

@@ -73,21 +73,21 @@ export default function ReviewPage() {
         <main className="max-w-2xl mx-auto px-6 py-10 text-center">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-10">
             <div className="text-5xl mb-4">🎯</div>
-            <h2 className="text-2xl font-bold text-ink mb-2">All caught up!</h2>
-            <p className="text-slate-600 mb-6">No cards are due for review right now. Come back later as your cards become due based on the spaced repetition schedule.</p>
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">All caught up!</h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">No cards are due for review right now. Come back later as your cards become due based on the spaced repetition schedule.</p>
             {stats && (
               <div className="flex justify-center gap-6 mb-6 text-sm">
                 <div className="text-center">
-                  <div className="text-xl font-bold text-ink">{stats.reviewedCards}</div>
-                  <div className="text-slate-500">Reviewed</div>
+                  <div className="text-xl font-bold text-ink dark:text-slate-200">{stats.reviewedCards}</div>
+                  <div className="text-slate-500 dark:text-slate-400">Reviewed</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-bold text-ink">{stats.masteredCards}</div>
-                  <div className="text-slate-500">Mastered</div>
+                  <div className="text-xl font-bold text-ink dark:text-slate-200">{stats.masteredCards}</div>
+                  <div className="text-slate-500 dark:text-slate-400">Mastered</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-bold text-ink">{stats.accuracy}%</div>
-                  <div className="text-slate-500">Accuracy</div>
+                  <div className="text-xl font-bold text-ink dark:text-slate-200">{stats.accuracy}%</div>
+                  <div className="text-slate-500 dark:text-slate-400">Accuracy</div>
                 </div>
               </div>
             )}
@@ -111,26 +111,26 @@ export default function ReviewPage() {
         <main className="max-w-2xl mx-auto px-6 py-10 text-center">
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-10">
             <div className="text-5xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-ink mb-2">Review Complete!</h2>
-            <p className="text-slate-600 mb-6">You reviewed {reviewed} cards this session.</p>
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">Review Complete!</h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">You reviewed {reviewed} cards this session.</p>
 
             <div className="flex justify-center gap-6 mb-8">
-              <div className="bg-white rounded-xl border border-slate-200 p-4 min-w-[100px]">
-                <div className="text-2xl font-bold text-ink">{correct}</div>
-                <div className="text-xs text-slate-500">Correct</div>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 min-w-[100px]">
+                <div className="text-2xl font-bold text-ink dark:text-slate-200">{correct}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Correct</div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-4 min-w-[100px]">
-                <div className="text-2xl font-bold text-ink">{reviewed - correct}</div>
-                <div className="text-xs text-slate-500">To Review</div>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 min-w-[100px]">
+                <div className="text-2xl font-bold text-ink dark:text-slate-200">{reviewed - correct}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">To Review</div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-4 min-w-[100px]">
-                <div className="text-2xl font-bold text-ink">{updatedStats.accuracy}%</div>
-                <div className="text-xs text-slate-500">All-Time</div>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 min-w-[100px]">
+                <div className="text-2xl font-bold text-ink dark:text-slate-200">{updatedStats.accuracy}%</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">All-Time</div>
               </div>
             </div>
 
             <div className="flex gap-3 justify-center">
-              <button onClick={restart} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-medium">
+              <button onClick={restart} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-medium">
                 <RotateCcw className="w-4 h-4" /> Review more
               </button>
               <Link href="/" className="px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm">
@@ -158,20 +158,20 @@ export default function ReviewPage() {
             ))}
           </div>
           {stats && (
-            <div className="flex items-center gap-1 text-xs text-slate-500">
+            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
               <BarChart3 className="w-3 h-3" />
               {stats.accuracy}% accuracy
             </div>
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8">
           <div className="flex items-center gap-2 mb-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">
               {card.type === 'multiple_choice' ? 'Multiple Choice' : 'Short Answer'}
             </p>
             {card.category && (
-              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{card.category}</span>
+              <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded">{card.category}</span>
             )}
             {isNew && (
               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded inline-flex items-center gap-1">
@@ -179,14 +179,14 @@ export default function ReviewPage() {
               </span>
             )}
           </div>
-          <h3 className="text-xl font-bold text-ink mb-6">{card.question}</h3>
+          <h3 className="text-xl font-bold text-ink dark:text-slate-200 mb-6">{card.question}</h3>
 
           {card.type === 'multiple_choice' && card.options && (
             <div className="space-y-2 mb-6">
               {card.options.map((option, i) => {
                 const isSelected = selectedOption === option;
                 const isCorrect = option === card.answer;
-                let style = 'bg-white border-slate-200 hover:border-brand-200 hover:bg-brand-50/50';
+                let style = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50/50';
                 if (showAnswer && isCorrect) style = 'bg-green-50 border-green-300 ring-1 ring-green-200';
                 else if (showAnswer && isSelected && !isCorrect) style = 'bg-red-50 border-red-300 ring-1 ring-red-200';
 
@@ -199,12 +199,12 @@ export default function ReviewPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        showAnswer && isCorrect ? 'border-green-500 bg-green-500' : showAnswer && isSelected ? 'border-red-500 bg-red-500' : 'border-slate-300'
+                        showAnswer && isCorrect ? 'border-green-500 bg-green-500' : showAnswer && isSelected ? 'border-red-500 bg-red-500' : 'border-slate-300 dark:border-slate-600'
                       }`}>
                         {showAnswer && isCorrect && <Check className="w-3.5 h-3.5 text-white" />}
                         {showAnswer && isSelected && !isCorrect && <X className="w-3.5 h-3.5 text-white" />}
                       </div>
-                      <span className="text-sm text-ink">{option}</span>
+                      <span className="text-sm text-ink dark:text-slate-200">{option}</span>
                     </div>
                   </button>
                 );
@@ -230,7 +230,7 @@ export default function ReviewPage() {
 
           {showAnswer && (
             <div className="mt-6 pt-6 border-t border-slate-100">
-              <p className="text-xs text-slate-500 mb-3 text-center">How well did you know this?</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 text-center">How well did you know this?</p>
               <div className="grid grid-cols-4 gap-2">
                 {QUALITY_BUTTONS.map(btn => (
                   <button

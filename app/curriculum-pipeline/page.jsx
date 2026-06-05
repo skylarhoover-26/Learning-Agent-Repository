@@ -15,7 +15,7 @@ import {
 const SEVERITY_STYLES = {
   high: 'bg-red-50 text-red-700 ring-1 ring-red-200',
   med: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-  low: 'bg-slate-50 text-slate-600 ring-1 ring-slate-200',
+  low: 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200',
 };
 
 const TYPE_ICONS = {
@@ -92,7 +92,7 @@ export default function CurriculumPipelinePage() {
   const pendingCount = proposals.filter(p => p.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Rss}
         title="Curriculum Pipeline"
@@ -126,7 +126,7 @@ export default function CurriculumPipelinePage() {
             )}
           </button>
 
-          <div className="flex items-center gap-4 ml-auto text-sm text-slate-500">
+          <div className="flex items-center gap-4 ml-auto text-sm text-slate-500 dark:text-slate-400">
             <span>{findings.length} findings</span>
             <span>{proposals.length} proposals ({pendingCount} pending)</span>
           </div>
@@ -147,7 +147,7 @@ export default function CurriculumPipelinePage() {
         {/* Proposals */}
         {proposals.length > 0 && (
           <div>
-            <h2 className="text-lg font-bold text-ink mb-4">Proposals</h2>
+            <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-4">Proposals</h2>
             <div className="space-y-3">
               {proposals.map(proposal => {
                 const TypeIcon = TYPE_ICONS[proposal.type] || FileText;
@@ -156,16 +156,16 @@ export default function CurriculumPipelinePage() {
                 return (
                   <div
                     key={proposal.id}
-                    className="bg-white rounded-xl border border-slate-200 shadow-card overflow-hidden"
+                    className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden"
                   >
                     <button
                       onClick={() => setExpandedProposal(isExpanded ? null : proposal.id)}
-                      className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-50 transition-all"
+                      className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
                     >
-                      <TypeIcon className="w-5 h-5 text-slate-500 shrink-0" />
+                      <TypeIcon className="w-5 h-5 text-slate-500 dark:text-slate-400 shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-semibold text-sm text-ink truncate">{proposal.title}</span>
+                          <span className="font-semibold text-sm text-ink dark:text-slate-200 truncate">{proposal.title}</span>
                           <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${SEVERITY_STYLES[proposal.severity] || ''}`}>
                             {proposal.severity}
                           </span>
@@ -173,7 +173,7 @@ export default function CurriculumPipelinePage() {
                             {proposal.status}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 truncate">{proposal.summary}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{proposal.summary}</p>
                       </div>
                       {isExpanded ? (
                         <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
@@ -186,32 +186,32 @@ export default function CurriculumPipelinePage() {
                       <div className="px-4 pb-4 border-t border-slate-100">
                         <div className="pt-3 space-y-3">
                           <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Type</p>
-                            <p className="text-sm text-ink">{proposal.type}</p>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Type</p>
+                            <p className="text-sm text-ink dark:text-slate-200">{proposal.type}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Rationale</p>
-                            <p className="text-sm text-slate-700">{proposal.summary}</p>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Rationale</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-300">{proposal.summary}</p>
                           </div>
                           {proposal.affects?.length > 0 && (
                             <div>
-                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Affects</p>
+                              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Affects</p>
                               <div className="flex flex-wrap gap-1">
                                 {proposal.affects.map((a, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-700">{a}</span>
+                                  <span key={i} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-300">{a}</span>
                                 ))}
                               </div>
                             </div>
                           )}
                           {proposal.confidence && (
                             <div>
-                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Confidence</p>
-                              <p className="text-sm text-ink">{Math.round(proposal.confidence * 100)}%</p>
+                              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Confidence</p>
+                              <p className="text-sm text-ink dark:text-slate-200">{Math.round(proposal.confidence * 100)}%</p>
                             </div>
                           )}
                           {proposal.source_findings?.length > 0 && (
                             <div>
-                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Sources</p>
+                              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Sources</p>
                               <div className="space-y-1">
                                 {proposal.source_findings.map((f, i) => (
                                   <a
@@ -258,11 +258,11 @@ export default function CurriculumPipelinePage() {
         {/* Recent Findings */}
         {findings.length > 0 && (
           <div>
-            <h2 className="text-lg font-bold text-ink mb-4">Recent Findings</h2>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-card divide-y divide-slate-100">
+            <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-4">Recent Findings</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-card divide-y divide-slate-100 dark:divide-slate-700">
               {findings.slice(0, 20).map((finding, i) => (
                 <div key={finding.externalId || i} className="px-4 py-3 flex items-start gap-3">
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded shrink-0 mt-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded shrink-0 mt-0.5">
                     {finding.sourceName}
                   </span>
                   <div className="flex-1 min-w-0">
@@ -270,7 +270,7 @@ export default function CurriculumPipelinePage() {
                       href={finding.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-medium text-ink hover:text-brand transition-colors line-clamp-1"
+                      className="text-sm font-medium text-ink dark:text-slate-200 hover:text-brand transition-colors line-clamp-1"
                     >
                       {finding.title}
                     </a>

@@ -37,7 +37,7 @@ export default function LeaderboardPage() {
   const userRank = userRow?.rank ?? null;
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Trophy}
         title="Leaderboard & Updates"
@@ -49,14 +49,14 @@ export default function LeaderboardPage() {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-5 h-5 text-brand" />
-            <h2 className="text-lg font-bold text-ink">Department Leaderboard</h2>
+            <h2 className="text-lg font-bold text-ink dark:text-slate-200">Department Leaderboard</h2>
           </div>
 
           {DEPARTMENTS.length > 0 ? (
-            <div className="bg-white rounded-xl shadow-card overflow-x-auto">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card overflow-x-auto">
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
-                  <tr className="border-b border-bg-subtle text-left text-xs text-ink/50 uppercase tracking-wide">
+                  <tr className="border-b border-bg-subtle text-left text-xs text-ink/50 dark:text-slate-300/50 uppercase tracking-wide">
                     <th className="px-4 py-3 w-16">Rank</th>
                     <th className="px-4 py-3">Department</th>
                     <th className="px-4 py-3 text-center">Learners</th>
@@ -72,14 +72,14 @@ export default function LeaderboardPage() {
                     const rowBg = isUser
                       ? 'bg-brand-50 border-l-4 border-brand'
                       : dept.rank % 2 === 0
-                        ? 'bg-bg-warm'
-                        : 'bg-white';
+                        ? 'bg-bg-warm dark:bg-slate-900'
+                        : 'bg-white dark:bg-slate-800';
                     return (
                       <tr key={dept.rank} className={`${rowBg} transition-colors`}>
                         <td className="px-4 py-3 text-center text-base">
                           {isTop3 ? getRankMedal(dept.rank) : dept.rank}
                         </td>
-                        <td className={`px-4 py-3 ${isTop3 ? 'font-bold' : 'font-medium'} text-ink`}>
+                        <td className={`px-4 py-3 ${isTop3 ? 'font-bold' : 'font-medium'} text-ink dark:text-slate-200`}>
                           {dept.name}
                           {isUser && (
                             <span className="ml-2 text-[10px] font-bold bg-brand text-white px-1.5 py-0.5 rounded-pill uppercase tracking-wide">
@@ -87,12 +87,12 @@ export default function LeaderboardPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center text-ink/70">{dept.learners}</td>
-                        <td className={`px-4 py-3 text-right ${isTop3 ? 'font-bold text-ink' : 'text-ink/70'}`}>
+                        <td className="px-4 py-3 text-center text-ink/70 dark:text-slate-300/70">{dept.learners}</td>
+                        <td className={`px-4 py-3 text-right ${isTop3 ? 'font-bold text-ink dark:text-slate-200' : 'text-ink/70'}`}>
                           {dept.totalXp.toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-center text-ink/70">{dept.avgLevel.toFixed(1)}</td>
-                        <td className="px-4 py-3 text-ink/70">{dept.topPerformer}</td>
+                        <td className="px-4 py-3 text-center text-ink/70 dark:text-slate-300/70">{dept.avgLevel.toFixed(1)}</td>
+                        <td className="px-4 py-3 text-ink/70 dark:text-slate-300/70">{dept.topPerformer}</td>
                       </tr>
                     );
                   })}
@@ -100,10 +100,10 @@ export default function LeaderboardPage() {
               </table>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-card p-10 text-center">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card p-10 text-center">
               <Trophy className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm font-medium text-ink mb-1">No leaderboard data yet</p>
-              <p className="text-xs text-slate-500">Rankings will appear as team members complete lessons and earn XP.</p>
+              <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No leaderboard data yet</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Rankings will appear as team members complete lessons and earn XP.</p>
             </div>
           )}
         </section>
@@ -112,7 +112,7 @@ export default function LeaderboardPage() {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-brand" />
-            <h2 className="text-lg font-bold text-ink">What Changed This Week</h2>
+            <h2 className="text-lg font-bold text-ink dark:text-slate-200">What Changed This Week</h2>
           </div>
 
           {UPDATES.length > 0 ? (
@@ -122,17 +122,17 @@ export default function LeaderboardPage() {
                 return (
                   <div
                     key={update.topic}
-                    className={`bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow border-l-4 ${update.borderColor} p-5`}
+                    className={`bg-white dark:bg-slate-800 rounded-xl shadow-card hover:shadow-card-hover transition-shadow border-l-4 ${update.borderColor} p-5`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <span className={`inline-block text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-pill mb-2 ${update.tagColor}`}>
                           {update.tag}
                         </span>
-                        <h3 className="font-bold text-ink text-[15px] leading-snug mb-1">
+                        <h3 className="font-bold text-ink dark:text-slate-200 text-[15px] leading-snug mb-1">
                           {update.title}
                         </h3>
-                        <p className="text-sm text-ink/60 leading-relaxed mb-3">
+                        <p className="text-sm text-ink/60 dark:text-slate-300/60 leading-relaxed mb-3">
                           {update.description}
                         </p>
                       </div>
@@ -142,10 +142,10 @@ export default function LeaderboardPage() {
               })}
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-card p-10 text-center">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card p-10 text-center">
               <Sparkles className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm font-medium text-ink mb-1">No updates yet</p>
-              <p className="text-xs text-slate-500">Updates will appear when the curriculum pipeline detects relevant AI news.</p>
+              <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No updates yet</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Updates will appear when the curriculum pipeline detects relevant AI news.</p>
             </div>
           )}
         </section>

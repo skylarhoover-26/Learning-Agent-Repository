@@ -89,7 +89,7 @@ export default function DiscoverPage() {
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 focus:outline-none resize-none"
               />
               <div className="flex items-center justify-between mt-3">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {workDescription.length === 0 && 'Even a few sentences works.'}
                   {workDescription.length > 0 && workDescription.length < 30 && 'A bit more detail will help me find better opportunities...'}
                   {workDescription.length >= 30 && 'Looks good — ready to find AI opportunities'}
@@ -115,7 +115,7 @@ export default function DiscoverPage() {
             </div>
 
             <div>
-              <h3 className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-3">
+              <h3 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
                 Or start from one of these examples
               </h3>
               <div className="space-y-2">
@@ -176,7 +176,7 @@ export default function DiscoverPage() {
                               {difficulty.label}
                             </span>
                             {opp.timeSaved && (
-                              <span className="text-xs text-slate-500 inline-flex items-center gap-1">
+                              <span className="text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 Saves {opp.timeSaved}
                               </span>
@@ -186,7 +186,7 @@ export default function DiscoverPage() {
                       </div>
                       <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{opp.description}</p>
                       {opp.whyItHelps && (
-                        <div className="text-xs text-slate-500 mb-4 italic">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mb-4 italic">
                           {opp.whyItHelps}
                         </div>
                       )}

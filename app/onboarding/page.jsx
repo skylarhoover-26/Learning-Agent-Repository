@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Sparkles, ChevronRight, ChevronLeft, User,
-  Building2, Zap, Target, Check, Briefcase, Mail, Loader2,
+  Building2, Zap, Target, Check, Briefcase, Mail, Loader2, Plus,
 } from 'lucide-react';
 import { saveProfile, generateLearnerId } from '@/lib/profile-client';
 import {
@@ -73,6 +73,8 @@ export default function OnboardingPage() {
   const [subTeam, setSubTeam] = useState(null);
   const [showSubTeams, setShowSubTeams] = useState(false);
   const [topTasks, setTopTasks] = useState([]);
+  const [customTask, setCustomTask] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [tier, setTier] = useState('');
   const [goal, setGoal] = useState('');
 
@@ -207,7 +209,7 @@ export default function OnboardingPage() {
   const progressPercent = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-bg-warm flex flex-col">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex flex-col">
       {/* Header */}
       <header className="bg-ink text-white">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-3">
@@ -224,22 +226,22 @@ export default function OnboardingPage() {
       </header>
 
       {/* Progress bar */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-3xl mx-auto px-6">
-          <div className="h-1 bg-bg-subtle rounded-full overflow-hidden my-3">
+          <div className="h-1 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden my-3">
             <div
               className="h-full bg-brand rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
           <div className="flex items-center justify-between pb-3">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Step {step} of {TOTAL_STEPS}
             </p>
             {step > 1 && (
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-brand transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
               >
                 <ChevronLeft className="w-3 h-3" />
                 Back
@@ -298,6 +300,19 @@ export default function OnboardingPage() {
               tasks={availableTasks}
               selected={topTasks}
               onToggle={handleTaskToggle}
+              customTask={customTask}
+              onCustomTaskChange={setCustomTask}
+              showCustomInput={showCustomInput}
+              onAddCustomTask={() => {
+                const trimmed = customTask.trim();
+                if (trimmed && !topTasks.includes(trimmed) && topTasks.length < 3) {
+                  setTopTasks(prev => [...prev, trimmed]);
+                  setCustomTask('');
+                  setShowCustomInput(false);
+                }
+              }}
+              onShowCustomInput={() => setShowCustomInput(true)}
+              onHideCustomInput={() => { setShowCustomInput(false); setCustomTask(''); }}
               onNext={goNext}
               canAdvance={canAdvance()}
             />
@@ -334,10 +349,10 @@ function StepReturning({ email, onEmailChange, onLookup, loading, error, onSwitc
       <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand mb-6 shadow-card">
         <Sparkles className="w-10 h-10 text-white" strokeWidth={2} />
       </div>
-      <h2 className="text-3xl font-bold text-ink mb-2 tracking-tight">
+      <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
         Welcome back!
       </h2>
-      <p className="text-slate-600 mb-8 max-w-md mx-auto">
+      <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
         Enter your work email to pick up where you left off.
       </p>
       <div className="max-w-sm mx-auto mb-6">
@@ -350,7 +365,7 @@ function StepReturning({ email, onEmailChange, onLookup, loading, error, onSwitc
             onKeyDown={handleKeyDown}
             placeholder="you@housecallpro.com"
             autoFocus
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
           />
         </div>
         {error && (
@@ -371,7 +386,7 @@ function StepReturning({ email, onEmailChange, onLookup, loading, error, onSwitc
       <div className="mt-6">
         <button
           onClick={onSwitchToNew}
-          className="text-sm text-slate-500 hover:text-brand transition-colors"
+          className="text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
         >
           New here? Create an account
         </button>
@@ -392,16 +407,16 @@ function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastName
       <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand mb-6 shadow-card">
         <Sparkles className="w-10 h-10 text-white" strokeWidth={2} />
       </div>
-      <h2 className="text-3xl font-bold text-ink mb-2 tracking-tight">
+      <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
         Welcome to the AI Learning Platform
       </h2>
-      <p className="text-slate-600 mb-8 max-w-md mx-auto">
+      <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
         Your personalized journey to mastering AI starts here. Let's get to know you.
       </p>
       <div className="max-w-sm mx-auto space-y-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="first-name-input" className="block text-sm font-medium text-ink mb-1.5 text-left">
+            <label htmlFor="first-name-input" className="block text-sm font-medium text-ink dark:text-slate-200 mb-1.5 text-left">
               First name
             </label>
             <div className="relative">
@@ -414,12 +429,12 @@ function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastName
                 onKeyDown={handleKeyDown}
                 placeholder="First"
                 autoFocus
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
               />
             </div>
           </div>
           <div>
-            <label htmlFor="last-name-input" className="block text-sm font-medium text-ink mb-1.5 text-left">
+            <label htmlFor="last-name-input" className="block text-sm font-medium text-ink dark:text-slate-200 mb-1.5 text-left">
               Last name
             </label>
             <input
@@ -429,12 +444,12 @@ function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastName
               onChange={e => onLastNameChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Last"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
             />
           </div>
         </div>
         <div>
-          <label htmlFor="email-input" className="block text-sm font-medium text-ink mb-1.5 text-left">
+          <label htmlFor="email-input" className="block text-sm font-medium text-ink dark:text-slate-200 mb-1.5 text-left">
             Work email
           </label>
           <div className="relative">
@@ -446,7 +461,7 @@ function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastName
               onChange={e => onEmailChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="you@housecallpro.com"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
             />
           </div>
         </div>
@@ -462,7 +477,7 @@ function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastName
       <div className="mt-6">
         <button
           onClick={onSwitchToReturning}
-          className="text-sm text-slate-500 hover:text-brand transition-colors"
+          className="text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
         >
           Already have an account? Sign in with email
         </button>
@@ -478,10 +493,10 @@ function StepDepartment({ selected, onSelect }) {
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-brand-50 mb-4">
           <Building2 className="w-7 h-7 text-brand" />
         </div>
-        <h2 className="text-2xl font-bold text-ink mb-1 tracking-tight">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
           What department are you in?
         </h2>
-        <p className="text-slate-600 text-sm">
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
           We'll tailor your learning path to your team's needs.
         </p>
       </div>
@@ -493,7 +508,7 @@ function StepDepartment({ selected, onSelect }) {
             className={`text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
               selected === dept
                 ? 'bg-brand text-white border-brand shadow-sm'
-                : 'bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50'
+                : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
             }`}
           >
             {dept}
@@ -511,10 +526,10 @@ function StepSubTeam({ department, teams, selected, onSelect }) {
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-brand-50 mb-4">
           <Building2 className="w-7 h-7 text-brand" />
         </div>
-        <h2 className="text-2xl font-bold text-ink mb-1 tracking-tight">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
           Which team in {department}?
         </h2>
-        <p className="text-slate-600 text-sm">
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
           This helps us find the most relevant AI use cases for you.
         </p>
       </div>
@@ -526,7 +541,7 @@ function StepSubTeam({ department, teams, selected, onSelect }) {
             className={`text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
               selected === team
                 ? 'bg-brand text-white border-brand shadow-sm'
-                : 'bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50'
+                : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
             }`}
           >
             {team}
@@ -537,24 +552,26 @@ function StepSubTeam({ department, teams, selected, onSelect }) {
   );
 }
 
-function StepTopTasks({ department, tasks, selected, onToggle, onNext, canAdvance }) {
+function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCustomTaskChange, showCustomInput, onAddCustomTask, onShowCustomInput, onHideCustomInput, onNext, canAdvance }) {
+  const atLimit = selected.length >= 3;
+
   return (
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-cta-50 mb-4">
           <Briefcase className="w-7 h-7 text-cta-700" />
         </div>
-        <h2 className="text-2xl font-bold text-ink mb-1 tracking-tight">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
           What are your top tasks?
         </h2>
-        <p className="text-slate-600 text-sm">
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
           Pick up to 3 tasks you do most in {department}. We'll personalize your quick wins and learning path.
         </p>
       </div>
       <div className="space-y-2 max-w-lg mx-auto mb-6">
         {tasks.map(task => {
           const isSelected = selected.includes(task);
-          const isDisabled = !isSelected && selected.length >= 3;
+          const isDisabled = !isSelected && atLimit;
           return (
             <button
               key={task}
@@ -564,14 +581,14 @@ function StepTopTasks({ department, tasks, selected, onToggle, onNext, canAdvanc
                 isSelected
                   ? 'bg-brand text-white border-brand shadow-sm'
                   : isDisabled
-                  ? 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed'
-                  : 'bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50'
+                  ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border-slate-100 cursor-not-allowed'
+                  : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
               }`}
             >
               <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
                 isSelected
-                  ? 'bg-white border-white'
-                  : 'border-slate-300'
+                  ? 'bg-white dark:bg-slate-800 border-white'
+                  : 'border-slate-300 dark:border-slate-600'
               }`}>
                 {isSelected && <Check className="w-3.5 h-3.5 text-brand" />}
               </div>
@@ -579,9 +596,62 @@ function StepTopTasks({ department, tasks, selected, onToggle, onNext, canAdvanc
             </button>
           );
         })}
+
+        {selected.filter(t => !tasks.includes(t)).map(task => (
+          <button
+            key={task}
+            onClick={() => onToggle(task)}
+            className="w-full flex items-center gap-4 px-5 py-3.5 rounded-xl border text-left transition-all bg-brand text-white border-brand shadow-sm"
+          >
+            <div className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 bg-white dark:bg-slate-800 border-white">
+              <Check className="w-3.5 h-3.5 text-brand" />
+            </div>
+            <span className="font-medium text-sm">{task}</span>
+          </button>
+        ))}
+
+        {showCustomInput ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={customTask}
+              onChange={e => onCustomTaskChange(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') onAddCustomTask(); if (e.key === 'Escape') onHideCustomInput(); }}
+              placeholder="Describe your task..."
+              autoFocus
+              className="flex-1 px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm"
+            />
+            <button
+              onClick={onAddCustomTask}
+              disabled={!customTask.trim() || atLimit}
+              className="px-4 py-3.5 rounded-xl bg-brand text-white font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:bg-brand/90"
+            >
+              Add
+            </button>
+            <button
+              onClick={onHideCustomInput}
+              className="px-3 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onShowCustomInput}
+            disabled={atLimit}
+            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl border border-dashed text-left transition-all ${
+              atLimit
+                ? 'border-slate-100 text-slate-400 cursor-not-allowed'
+                : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-brand-200 hover:text-brand hover:bg-brand-50'
+            }`}
+          >
+            <Plus className="w-5 h-5 shrink-0" />
+            <span className="font-medium text-sm">Something else not listed here</span>
+          </button>
+        )}
       </div>
       <div className="text-center">
-        <p className="text-xs text-slate-500 mb-4">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
           {selected.length}/3 selected{selected.length === 0 ? ' — pick at least 1' : ''}
         </p>
         <button
@@ -604,10 +674,10 @@ function StepTier({ selected, onSelect }) {
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-cta-50 mb-4">
           <Zap className="w-7 h-7 text-cta-700" />
         </div>
-        <h2 className="text-2xl font-bold text-ink mb-1 tracking-tight">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
           How would you describe your AI experience?
         </h2>
-        <p className="text-slate-600 text-sm">
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
           No wrong answer — this sets your starting point.
         </p>
       </div>
@@ -619,13 +689,13 @@ function StepTier({ selected, onSelect }) {
             className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
               selected === t.id
                 ? 'bg-brand text-white border-brand shadow-sm'
-                : 'bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50'
+                : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
             }`}
           >
             <span className="text-2xl shrink-0">{t.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className="font-semibold">{t.label}</p>
-              <p className={`text-sm ${selected === t.id ? 'text-white/80' : 'text-slate-500'}`}>
+              <p className={`text-sm ${selected === t.id ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
                 {t.description}
               </p>
             </div>
@@ -646,10 +716,10 @@ function StepGoal({ selected, onSelect }) {
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-green-50 mb-4">
           <Target className="w-7 h-7 text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold text-ink mb-1 tracking-tight">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
           What's your main goal?
         </h2>
-        <p className="text-slate-600 text-sm">
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
           Pick what excites you most — you can always change it later.
         </p>
       </div>
@@ -661,7 +731,7 @@ function StepGoal({ selected, onSelect }) {
             className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
               selected === g
                 ? 'bg-brand text-white border-brand shadow-sm'
-                : 'bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50'
+                : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
             }`}
           >
             <div className="flex-1 min-w-0">

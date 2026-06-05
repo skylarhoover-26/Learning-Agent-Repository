@@ -95,6 +95,9 @@ export async function POST(request) {
     }
 
     const systemPrompt = buildSystemPrompt(profile);
+    const userMessage = requestedTask
+      ? `Give me one quick AI win specifically for this task: "${requestedTask}". Make the prompt directly usable for this task.`
+      : 'Give me one quick AI win I can do right now. Make it different from common suggestions — surprise me with something useful.';
     const response = await getClient().messages.create({
       model: MODEL,
       max_tokens: 800,
@@ -102,7 +105,7 @@ export async function POST(request) {
       messages: [
         {
           role: 'user',
-          content: 'Give me one quick AI win I can do right now. Make it different from common suggestions — surprise me with something useful.',
+          content: userMessage,
         },
       ],
     });

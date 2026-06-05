@@ -30,18 +30,18 @@ export default function QuestsPage() {
       <PageHeader icon={Trophy} title="Project Quests" subtitle="Build something real in 20-60 minutes" />
 
       <main className="max-w-4xl mx-auto px-6 py-10">
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-8">
           <div className="flex items-start gap-3">
             <div className="w-12 h-12 rounded-xl bg-cta-50 ring-1 ring-cta-200 flex items-center justify-center text-cta-600 shrink-0">
               <Trophy className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h2 className="font-bold text-ink mb-1">Quests are guided projects</h2>
-              <p className="text-sm text-slate-600">
+              <h2 className="font-bold text-ink dark:text-slate-200 mb-1">Quests are guided projects</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Each quest walks you through building a real artifact — a prompt library, a workflow, or a tool — that you can use immediately.
                 Complete steps to earn XP and badges.
               </p>
-              <div className="flex gap-4 mt-3 text-xs text-slate-500">
+              <div className="flex gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400">
                 <span>{completedCount} of {QUESTS.length} quests completed</span>
                 <span>{totalXp} XP earned</span>
                 <span>{totalXpAvailable} XP available</span>
@@ -70,10 +70,10 @@ function QuestCard({ quest, progress }) {
   return (
     <Link
       href={`/quests/${quest.id}`}
-      className={`group block bg-white rounded-2xl border shadow-card transition-all overflow-hidden ${
+      className={`group block bg-white dark:bg-slate-800 rounded-2xl border shadow-card transition-all overflow-hidden ${
         isCompleted
           ? 'border-green-200 bg-green-50/30'
-          : 'border-slate-200 hover:border-brand-200 hover:shadow-card-hover'
+          : 'border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover'
       }`}
     >
       <div className="p-6">
@@ -81,32 +81,32 @@ function QuestCard({ quest, progress }) {
           <span className="text-4xl shrink-0">{quest.icon}</span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-ink text-lg">{quest.title}</h3>
+              <h3 className="font-bold text-ink dark:text-slate-200 text-lg">{quest.title}</h3>
               {isCompleted && <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />}
             </div>
-            <p className="text-sm text-slate-600 mb-3">{quest.description}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{quest.description}</p>
             <div className="flex items-center gap-3 flex-wrap mb-4">
               <span className={`text-xs font-medium px-2 py-0.5 rounded ${quest.difficultyColor}`}>
                 {quest.difficulty}
               </span>
-              <span className="text-xs text-slate-500 inline-flex items-center gap-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-1">
                 <Clock className="w-3 h-3" /> {quest.duration}
               </span>
-              <span className="text-xs text-slate-500 inline-flex items-center gap-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-1">
                 <Star className="w-3 h-3" /> {quest.steps.length} steps
               </span>
-              <span className="text-xs text-slate-500 inline-flex items-center gap-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-1">
                 <Trophy className="w-3 h-3" /> {quest.xpReward} XP
               </span>
             </div>
 
             {isInProgress && (
               <div className="mb-4">
-                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                   <span>Step {progress.completedSteps} of {progress.totalSteps}</span>
                   <span>{progress.percent}%</span>
                 </div>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-brand rounded-full transition-all"
                     style={{ width: `${progress.percent}%` }}

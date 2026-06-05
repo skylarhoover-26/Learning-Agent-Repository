@@ -58,16 +58,16 @@ function ScoreBar({ label, score, feedback, animate }) {
   return (
     <div className="mb-4">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-semibold text-ink">{label}</span>
-        <span className="text-sm font-bold text-ink">{score}/5</span>
+        <span className="text-sm font-semibold text-ink dark:text-slate-200">{label}</span>
+        <span className="text-sm font-bold text-ink dark:text-slate-200">{score}/5</span>
       </div>
-      <div className="h-3 bg-bg-subtle rounded-full overflow-hidden mb-1">
+      <div className="h-3 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden mb-1">
         <div
           className={`h-full rounded-full transition-all duration-1000 ease-out ${barColor}`}
           style={{ width: animate ? `${pct}%` : '0%' }}
         />
       </div>
-      <p className="text-xs text-slate-600">{feedback}</p>
+      <p className="text-xs text-slate-600 dark:text-slate-400">{feedback}</p>
     </div>
   );
 }
@@ -131,7 +131,7 @@ export default function PromptBattle() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-subtle">
+    <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
       <PageHeader
         icon={Swords}
         title="Prompt Battle"
@@ -140,32 +140,32 @@ export default function PromptBattle() {
 
       <main className="max-w-3xl mx-auto px-6 py-8">
         {/* Scenario card */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-brand-50 text-brand-700 ring-1 ring-brand-200">
               {scenario.department}
             </span>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               Scenario {scenarioIdx + 1} of {SCENARIOS.length}
             </span>
           </div>
-          <h2 className="text-xl font-bold text-ink mb-2">{scenario.title}</h2>
-          <p className="text-slate-600 mb-3">{scenario.context}</p>
-          <p className="text-sm font-medium text-ink">{scenario.task}</p>
+          <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">{scenario.title}</h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-3">{scenario.context}</p>
+          <p className="text-sm font-medium text-ink dark:text-slate-200">{scenario.task}</p>
         </div>
 
         {/* Prompt input */}
         {!scores && (
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
             <label
               htmlFor="user-prompt"
-              className="block text-sm font-semibold text-ink mb-2"
+              className="block text-sm font-semibold text-ink dark:text-slate-200 mb-2"
             >
               Your prompt
             </label>
             <textarea
               id="user-prompt"
-              className="w-full h-36 px-4 py-3 border border-slate-300 rounded-xl text-ink text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
+              className="w-full h-36 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-ink dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
               placeholder="Type the prompt you would give to an AI..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -198,8 +198,8 @@ export default function PromptBattle() {
 
         {/* Scores */}
         {scores && (
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-6">
-            <h3 className="font-bold text-ink text-lg mb-4">Your Scores</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
+            <h3 className="font-bold text-ink dark:text-slate-200 text-lg mb-4">Your Scores</h3>
 
             <ScoreBar
               label="Clarity"
@@ -223,14 +223,14 @@ export default function PromptBattle() {
             {scores.overallTip && (
               <div className="mt-4 p-4 bg-brand-50 border border-brand-200 rounded-xl flex items-start gap-3">
                 <Lightbulb className="w-5 h-5 text-brand shrink-0 mt-0.5" />
-                <p className="text-sm text-ink">{scores.overallTip}</p>
+                <p className="text-sm text-ink dark:text-slate-200">{scores.overallTip}</p>
               </div>
             )}
 
             <div className="flex items-center gap-3 mt-6">
               <button
                 onClick={handleTryAgain}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 text-ink font-semibold text-sm hover:bg-bg-subtle transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:bg-slate-700 transition-all"
               >
                 <RotateCcw className="w-4 h-4" />
                 Try Again

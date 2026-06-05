@@ -67,19 +67,19 @@ export default function AchievementsLive() {
       <main className="max-w-4xl mx-auto px-6 py-10">
         <div className="bg-gradient-to-br from-cta-400 to-cta-600 rounded-2xl p-8 mb-8 text-center">
           <div className="w-24 h-24 rounded-3xl bg-white/20 mx-auto mb-4 flex items-center justify-center backdrop-blur-sm">
-            <span className="text-4xl font-bold text-ink">{levelProgress.level}</span>
+            <span className="text-4xl font-bold text-ink dark:text-slate-200">{levelProgress.level}</span>
           </div>
-          <h2 className="text-2xl font-bold text-ink mb-1">Level {levelProgress.level}</h2>
-          <p className="text-ink/70 mb-4">{totalXp.toLocaleString()} XP total</p>
+          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1">Level {levelProgress.level}</h2>
+          <p className="text-ink/70 dark:text-slate-300/70 mb-4">{totalXp.toLocaleString()} XP total</p>
           <div className="max-w-sm mx-auto">
             <div className="flex items-center gap-3">
               <div className="flex-1 h-3 bg-white/30 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-white transition-all duration-500 rounded-full"
+                  className="h-full bg-white dark:bg-slate-800 transition-all duration-500 rounded-full"
                   style={{ width: `${levelProgress.percent}%` }}
                 />
               </div>
-              <span className="text-sm font-semibold text-ink">{levelProgress.xpToNext} XP to go</span>
+              <span className="text-sm font-semibold text-ink dark:text-slate-200">{levelProgress.xpToNext} XP to go</span>
             </div>
           </div>
         </div>
@@ -87,11 +87,11 @@ export default function AchievementsLive() {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-ink dark:text-slate-200">Badges</h3>
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               {badgesEarned.length} / {ALL_BADGES.length} earned
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {lessonHistory.length} lesson{lessonHistory.length !== 1 ? 's' : ''} completed
           </p>
         </div>
@@ -108,7 +108,7 @@ export default function AchievementsLive() {
             >
               <div className="text-4xl mb-2">{badge.emoji}</div>
               <h4 className="font-bold text-ink dark:text-slate-200 text-sm mb-1">{badge.name}</h4>
-              <p className="text-xs text-slate-500">{badge.description}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{badge.description}</p>
               {badge.earned && (
                 <div className="mt-2">
                   <div className="inline-flex items-center gap-1 text-xs text-cta-700 dark:text-cta-300 font-medium">

@@ -183,17 +183,17 @@ export default function CheckInPage() {
 
   if (!previousScores) {
     return (
-      <div className="min-h-screen bg-bg-warm">
+      <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader
           icon={RefreshCw}
           title="6-Week Check-In"
           subtitle="Track your AI progress over time"
         />
         <main className="max-w-2xl mx-auto px-6 py-10 text-center">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-10">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10">
             <RefreshCw className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-ink mb-2">No previous scores found</h2>
-            <p className="text-sm text-slate-500 mb-6">
+            <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">No previous scores found</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
               Complete the AI Impact Assessment first so we have a baseline to compare against.
             </p>
             <button
@@ -211,7 +211,7 @@ export default function CheckInPage() {
 
   if (completed && newScores) {
     return (
-      <div className="min-h-screen bg-bg-warm">
+      <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader
           icon={RefreshCw}
           title="6-Week Check-In"
@@ -236,29 +236,29 @@ export default function CheckInPage() {
   const progressPercent = (step / totalSteps) * 100;
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={RefreshCw}
         title="6-Week Check-In"
         subtitle="Quick progress update — takes ~2 minutes"
       />
 
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-2xl mx-auto px-6">
-          <div className="h-1 bg-bg-subtle rounded-full overflow-hidden my-3">
+          <div className="h-1 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden my-3">
             <div
               className="h-full bg-brand rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
           <div className="flex items-center justify-between pb-3">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Question {step + 1} of {totalSteps}
             </p>
             {step > 0 && (
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-brand transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
               >
                 <ChevronLeft className="w-3 h-3" /> Back
               </button>
@@ -273,7 +273,7 @@ export default function CheckInPage() {
             <QuestionCard question={currentQuestion} onSelect={handleOptionSelect} />
           ) : (
             <div className="max-w-lg mx-auto">
-              <h2 className="text-xl font-bold text-ink tracking-tight mb-4 text-center">
+              <h2 className="text-xl font-bold text-ink dark:text-slate-200 tracking-tight mb-4 text-center">
                 {currentQuestion.followUp.question}
               </h2>
               <textarea
@@ -282,7 +282,7 @@ export default function CheckInPage() {
                 placeholder="Describe what you accomplished..."
                 rows={4}
                 autoFocus
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand text-sm leading-relaxed resize-none"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand text-sm leading-relaxed resize-none"
               />
               <div className="text-center mt-6">
                 <button
@@ -316,7 +316,7 @@ function QuestionCard({ question, onSelect }) {
           <Icon className="w-4 h-4" />
           {label}
         </div>
-        <h2 className="text-2xl font-bold text-ink tracking-tight">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight">
           {question.question}
         </h2>
       </div>
@@ -325,7 +325,7 @@ function QuestionCard({ question, onSelect }) {
           <button
             key={option.value}
             onClick={() => onSelect(option)}
-            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50"
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50"
           >
             <span className="w-8 h-8 rounded-lg bg-brand-50 text-brand font-bold text-sm flex items-center justify-center shrink-0">
               {option.value}
@@ -343,14 +343,14 @@ function CheckInResults({ previous, current }) {
   const anyImproved = dimensions.some(d => (current[d] || 0) > (previous[d] || 0));
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
       <div className="h-2 bg-gradient-to-r from-brand via-[#009FDA] to-[#0055FF]" />
       <div className="p-8">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-ink tracking-tight mb-2">
+          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
             {anyImproved ? 'Nice growth since last time!' : "Your scores haven't changed — that's okay."}
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {anyImproved
               ? 'Keep building on the momentum.'
               : 'Focus on completing the next module in your learning path.'}
@@ -368,21 +368,21 @@ function CheckInResults({ previous, current }) {
             return (
               <div
                 key={dim}
-                className="flex items-center gap-4 p-4 rounded-xl bg-bg-warm border border-slate-100"
+                className="flex items-center gap-4 p-4 rounded-xl bg-bg-warm dark:bg-slate-900 border border-slate-100"
               >
                 <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
                   <Icon className="w-5 h-5 text-brand" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-ink">
+                    <span className="text-sm font-semibold text-ink dark:text-slate-200">
                       {DIMENSION_LABELS[dim]}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-slate-500">{prev}</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">{prev}</span>
                     <ArrowRight className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm font-bold text-ink">{curr}</span>
+                    <span className="text-sm font-bold text-ink dark:text-slate-200">{curr}</span>
                     {delta !== 0 && (
                       <span className={`inline-flex items-center gap-1 text-xs font-bold ${
                         delta > 0 ? 'text-green-600' : 'text-red-500'
@@ -394,7 +394,7 @@ function CheckInResults({ previous, current }) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-slate-500">{SCORE_LABELS[curr] || ''}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{SCORE_LABELS[curr] || ''}</span>
                 </div>
               </div>
             );

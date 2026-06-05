@@ -21,9 +21,9 @@ export default function MiniHeatmap() {
   const categories = ['Foundations', 'Application', 'Safety', 'Frontier'];
 
   return (
-    <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-ink">Knowledge Heatmap</h3>
+        <h3 className="font-semibold text-ink dark:text-slate-200">Knowledge Heatmap</h3>
         <Link
           href="/heatmap"
           className="text-sm font-medium text-brand hover:text-brand-600 transition-colors"
@@ -56,10 +56,10 @@ export default function MiniHeatmap() {
               }`}
               title={`${skill.name}: ${skill.mastery}% mastery, ${skill.freshness}d since last study`}
             >
-              <p className="text-[11px] font-semibold text-ink leading-tight truncate">
+              <p className="text-[11px] font-semibold text-ink dark:text-slate-200 leading-tight truncate">
                 {skill.name}
               </p>
-              <p className="text-[10px] text-ink/70 font-medium mt-0.5">
+              <p className="text-[10px] text-ink/70 dark:text-slate-300/70 font-medium mt-0.5">
                 {skill.mastery}%
               </p>
             </div>
@@ -68,7 +68,7 @@ export default function MiniHeatmap() {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 text-[10px] text-slate-500">
+      <div className="flex items-center gap-4 mt-4 text-[10px] text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-blue-300 inline-block" />
           <span>Fresh (&lt;14d)</span>

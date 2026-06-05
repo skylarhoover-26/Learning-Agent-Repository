@@ -22,7 +22,7 @@ const TIER_LABELS = {
   practitioner: { label: 'Practitioner', color: 'bg-brand-50 text-brand-700 ring-1 ring-brand-200' },
   power_user: { label: 'Power User', color: 'bg-cta-50 text-cta-700 ring-1 ring-cta-200' },
   builder: { label: 'Builder', color: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200' },
-  developer: { label: 'Developer', color: 'bg-slate-100 text-ink ring-1 ring-slate-300' },
+  developer: { label: 'Developer', color: 'bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200 ring-1 ring-slate-300' },
 };
 
 const DEPT_LEADERBOARD = [];
@@ -172,12 +172,12 @@ export default async function Dashboard() {
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-brand" />
                 <h3 className="font-semibold text-ink dark:text-slate-200">Your Goals</h3>
-                <span className="text-xs text-slate-500">({activeGoals.length})</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">({activeGoals.length})</span>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
             </div>
             {activeGoals.length === 0 ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Set a goal to track your progress &rarr;
               </p>
             ) : (
@@ -194,7 +194,7 @@ export default async function Dashboard() {
                   </div>
                 ))}
                 {activeGoals.length > 2 && (
-                  <p className="text-xs text-slate-500">+ {activeGoals.length - 2} more</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">+ {activeGoals.length - 2} more</p>
                 )}
               </div>
             )}
@@ -214,7 +214,7 @@ export default async function Dashboard() {
               Scan for updates &rarr;
             </Link>
           </div>
-          <p className="text-sm text-slate-500 italic">
+          <p className="text-sm text-slate-500 dark:text-slate-400 italic">
             No updates yet. Use the Curriculum Pipeline to scan AI news sources and generate updates.
           </p>
         </div>
@@ -230,7 +230,7 @@ export default async function Dashboard() {
               View full leaderboard &rarr;
             </Link>
           </div>
-          <p className="text-sm text-slate-500 italic">
+          <p className="text-sm text-slate-500 dark:text-slate-400 italic">
             Leaderboard data will appear as team members complete lessons and earn XP.
           </p>
         </div>
@@ -244,7 +244,7 @@ export default async function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <SkillColumn label="Strong" dotColor="bg-green-500" items={skills.strong} bgClass="bg-green-50 border-green-100" emptyText="Keep learning to build strong skills" />
             <SkillColumn label="Growing" dotColor="bg-cta-500" items={skills.growing} bgClass="bg-cta-50 border-cta-100" emptyText="Try a new topic" />
-            <SkillColumn label="Gaps" dotColor="bg-slate-400" items={skills.gaps} bgClass="bg-bg-subtle border-slate-200" emptyText="No gaps identified" />
+            <SkillColumn label="Gaps" dotColor="bg-slate-400" items={skills.gaps} bgClass="bg-bg-subtle dark:bg-slate-700 border-slate-200 dark:border-slate-700" emptyText="No gaps identified" />
           </div>
         </div>
 

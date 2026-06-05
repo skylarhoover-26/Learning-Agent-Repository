@@ -87,7 +87,7 @@ function getSentenceStyle(idx, flagged, revealed, isHallucination) {
     if (flagged) {
       return 'bg-orange-50 border-orange-300 ring-1 ring-orange-200';
     }
-    return 'bg-white border-slate-200 hover:border-brand-200 hover:bg-brand-50 cursor-pointer';
+    return 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50 cursor-pointer';
   }
 
   // revealed
@@ -100,7 +100,7 @@ function getSentenceStyle(idx, flagged, revealed, isHallucination) {
   if (!isHallucination && flagged) {
     return 'bg-orange-50 border-orange-300 ring-1 ring-orange-200'; // false flag
   }
-  return 'bg-white border-slate-200'; // correct skip
+  return 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'; // correct skip
 }
 
 export default function HallucinationHunt() {
@@ -148,7 +148,7 @@ export default function HallucinationHunt() {
   const falseFlags = [...flagged].filter((i) => !hallucinationSet.has(i)).length;
 
   return (
-    <div className="min-h-screen bg-bg-subtle">
+    <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
       <PageHeader
         icon={Search}
         title="Hallucination Hunt"
@@ -157,17 +157,17 @@ export default function HallucinationHunt() {
 
       <main className="max-w-3xl mx-auto px-6 py-8">
         {/* Round info */}
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-brand-50 text-brand-700 ring-1 ring-brand-200">
               Round {roundIdx + 1} of {ROUNDS.length}
             </span>
           </div>
-          <h2 className="text-lg font-bold text-ink mb-2">
+          <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-2">
             Fact-check this AI response
           </h2>
-          <p className="text-sm text-slate-600 mb-1">{round.context}</p>
-          <p className="text-xs text-slate-500">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{round.context}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Click sentences you think are hallucinations, then check your answers.
           </p>
         </div>
@@ -182,7 +182,7 @@ export default function HallucinationHunt() {
                 key={idx}
                 onClick={() => toggleFlag(idx)}
                 disabled={revealed}
-                className={`w-full text-left px-4 py-3 rounded-xl border text-sm text-ink transition-all ${style}`}
+                className={`w-full text-left px-4 py-3 rounded-xl border text-sm text-ink dark:text-slate-200 transition-all ${style}`}
               >
                 <div className="flex items-start gap-3">
                   <span className="text-xs text-slate-400 font-mono mt-0.5 shrink-0">
@@ -219,8 +219,8 @@ export default function HallucinationHunt() {
         )}
 
         {revealed && (
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-6">
-            <h3 className="font-bold text-ink text-lg mb-4">Results</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
+            <h3 className="font-bold text-ink dark:text-slate-200 text-lg mb-4">Results</h3>
 
             <div className="grid grid-cols-3 gap-4 mb-5">
               <div className="text-center p-3 bg-green-50 rounded-xl border border-green-200">
@@ -242,12 +242,12 @@ export default function HallucinationHunt() {
               {round.hallucinations.map((idx) => (
                 <div
                   key={idx}
-                  className="p-4 bg-bg-subtle rounded-xl border border-slate-200"
+                  className="p-4 bg-bg-subtle dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700"
                 >
-                  <p className="text-sm font-semibold text-ink mb-1">
+                  <p className="text-sm font-semibold text-ink dark:text-slate-200 mb-1">
                     Sentence {idx + 1}: &ldquo;{round.sentences[idx]}&rdquo;
                   </p>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     {round.explanations[idx]}
                   </p>
                 </div>
@@ -257,7 +257,7 @@ export default function HallucinationHunt() {
             <div className="flex items-center gap-3 mt-6">
               <button
                 onClick={handleReplay}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 text-ink font-semibold text-sm hover:bg-bg-subtle transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:bg-slate-700 transition-all"
               >
                 <RotateCcw className="w-4 h-4" />
                 Replay Round

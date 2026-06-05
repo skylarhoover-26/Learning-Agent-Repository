@@ -112,7 +112,7 @@ export default function GettingStartedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-warm flex flex-col">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex flex-col">
       {/* Header */}
       <header className="bg-ink text-white">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -138,7 +138,7 @@ export default function GettingStartedPage() {
       </header>
 
       {/* Progress dots */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-3xl mx-auto px-6 py-3">
           <div className="flex items-center gap-2">
             {TUTORIAL_STEPS.map((_, i) => (
@@ -167,14 +167,14 @@ export default function GettingStartedPage() {
           {/* Welcome message on first step */}
           {currentStep === 0 && displayName && (
             <div className="text-center mb-6">
-              <p className="text-lg text-slate-600">
-                Welcome, <span className="font-semibold text-ink">{displayName}</span>! Here's a quick tour of what you can do.
+              <p className="text-lg text-slate-600 dark:text-slate-400">
+                Welcome, <span className="font-semibold text-ink dark:text-slate-200">{displayName}</span>! Here's a quick tour of what you can do.
               </p>
             </div>
           )}
 
           {/* Step card */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
             <div className={`${step.color} p-6 flex items-center gap-4`}>
               <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
                 <Icon className="w-7 h-7 text-white" />
@@ -185,7 +185,7 @@ export default function GettingStartedPage() {
             </div>
 
             <div className="p-6">
-              <p className="text-slate-700 leading-relaxed mb-5">
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-5">
                 {step.description}
               </p>
 
@@ -213,7 +213,7 @@ export default function GettingStartedPage() {
             {currentStep > 0 ? (
               <button
                 onClick={() => setCurrentStep(prev => prev - 1)}
-                className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand transition-colors"
+                className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" /> Previous
               </button>

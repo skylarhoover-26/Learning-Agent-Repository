@@ -51,8 +51,8 @@ export default function ThemeToggle() {
         </>
       ) : (
         <>
-          <Moon className="w-4 h-4 text-slate-600" />
-          <span className="text-xs font-semibold text-slate-500">Dark</span>
+          <Moon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Dark</span>
         </>
       )}
     </button>

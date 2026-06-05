@@ -194,7 +194,7 @@ function LessonContent() {
         </div>
 
         <div className="mb-8">
-          <h3 className="text-sm uppercase tracking-wide text-slate-500 mb-3 font-semibold">
+          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             How deep do you want to go?
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -218,7 +218,7 @@ function LessonContent() {
                   }`}>
                     <f.icon className="w-4 h-4" />
                   </div>
-                  <span className="text-xs text-slate-500 font-medium">{f.duration}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{f.duration}</span>
                 </div>
                 <div className="font-bold text-ink dark:text-slate-200">{f.label}</div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{f.desc}</p>
@@ -237,7 +237,7 @@ function LessonContent() {
 
         {curatedLessons.length > 0 && (
           <div className="mb-8">
-            <h3 className="text-sm uppercase tracking-wide text-slate-500 mb-3 font-semibold flex items-center gap-2">
+            <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold flex items-center gap-2">
               <Star className="w-4 h-4 text-amber-500" />
               Curated Lessons
             </h3>
@@ -251,7 +251,7 @@ function LessonContent() {
                   <span className="text-2xl">📖</span>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5 truncate">{lesson.topic}</div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
                       {lesson.slides?.length || 0} slide{(lesson.slides?.length || 0) !== 1 ? 's' : ''} · Curated
                     </div>
                   </div>
@@ -263,7 +263,7 @@ function LessonContent() {
         )}
 
         <div className="mb-8">
-          <h3 className="text-sm uppercase tracking-wide text-slate-500 mb-3 font-semibold">
+          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             Suggested for you
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -276,7 +276,7 @@ function LessonContent() {
                 <span className="text-2xl">{s.label.split(' ')[0]}</span>
                 <div className="flex-1">
                   <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label.split(' ').slice(1).join(' ')}</div>
-                  <div className="text-xs text-slate-500 line-clamp-1">{s.topic}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.topic}</div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
               </button>
@@ -285,7 +285,7 @@ function LessonContent() {
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-          <h3 className="text-sm uppercase tracking-wide text-slate-500 mb-3 font-semibold">
+          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             Or type your own
           </h3>
           <div className="flex gap-2">
@@ -370,7 +370,7 @@ function LessonContent() {
           <button
             onClick={() => setCurrentSlideIdx((i) => Math.max(0, i - 1))}
             disabled={currentSlideIdx === 0}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-brand disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
             <ChevronLeft className="w-4 h-4" />
             Previous
@@ -381,7 +381,7 @@ function LessonContent() {
           <button
             onClick={() => setCurrentSlideIdx((i) => Math.min(slides.length - 1, i + 1))}
             disabled={currentSlideIdx === slides.length - 1}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-brand disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
             Next
             <ChevronRight className="w-4 h-4" />
@@ -432,7 +432,7 @@ function LessonContent() {
 
       {/* Loading indicator for continuation */}
       {isLoading && slides.length > 0 && (
-        <div className="flex items-center justify-center gap-2 mt-4 text-slate-500">
+        <div className="flex items-center justify-center gap-2 mt-4 text-slate-500 dark:text-slate-400">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span className="text-sm">Thinking...</span>
         </div>
@@ -477,7 +477,7 @@ function LessonContent() {
         <div className="mt-6 text-center">
           <button
             onClick={resetToPickerView}
-            className="text-sm text-slate-400 hover:text-slate-600 transition-all"
+            className="text-sm text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-all"
           >
             Exit lesson
           </button>
@@ -491,7 +491,7 @@ export default function LessonPage() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={BookOpen} title="Quick Lesson" subtitle="Pick a topic — 3-5 minute hands-on lesson" />
-      <Suspense fallback={<div className="max-w-4xl mx-auto px-6 py-10 text-center text-slate-500">Loading...</div>}>
+      <Suspense fallback={<div className="max-w-4xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
         <LessonContent />
       </Suspense>
     </div>

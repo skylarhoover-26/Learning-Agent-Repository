@@ -47,7 +47,7 @@ function TimerRing({ secondsLeft, total }) {
           strokeDashoffset={offset}
         />
       </svg>
-      <span className="absolute text-xl font-bold text-ink">{secondsLeft}</span>
+      <span className="absolute text-xl font-bold text-ink dark:text-slate-200">{secondsLeft}</span>
     </div>
   );
 }
@@ -137,21 +137,21 @@ export default function SpeedRound() {
     const pct = Math.round((correctCount / questions.length) * 100);
 
     return (
-      <div className="min-h-screen bg-bg-subtle">
+      <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
         <PageHeader
           icon={Timer}
           title="Speed Round"
           subtitle="Results"
         />
         <main className="max-w-2xl mx-auto px-6 py-8">
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-8 text-center mb-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
             <div className="w-16 h-16 rounded-2xl bg-cta-50 flex items-center justify-center mx-auto mb-4">
               <Trophy className="w-8 h-8 text-cta-600" />
             </div>
-            <h2 className="text-3xl font-bold text-ink mb-2">
+            <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2">
               {correctCount} / {questions.length}
             </h2>
-            <p className="text-lg text-slate-600 mb-6">{pct}% correct</p>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-6">{pct}% correct</p>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-3 bg-green-50 rounded-xl border border-green-200">
@@ -190,9 +190,9 @@ export default function SpeedRound() {
                         <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                       )}
                       <div>
-                        <p className="font-medium text-ink">{q.q}</p>
+                        <p className="font-medium text-ink dark:text-slate-200">{q.q}</p>
                         {!r?.correct && (
-                          <p className="text-xs text-slate-600 mt-1">
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                             {q.explanation}
                           </p>
                         )}
@@ -213,7 +213,7 @@ export default function SpeedRound() {
               </button>
               <Link
                 href="/games"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 text-ink font-semibold text-sm hover:bg-bg-subtle transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:bg-slate-700 transition-all"
               >
                 All Games
               </Link>
@@ -225,7 +225,7 @@ export default function SpeedRound() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-subtle">
+    <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
       <PageHeader
         icon={Timer}
         title="Speed Round"
@@ -251,9 +251,9 @@ export default function SpeedRound() {
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-ink flex-1 pr-4">
+            <h2 className="text-lg font-bold text-ink dark:text-slate-200 flex-1 pr-4">
               {currentQ.q}
             </h2>
             <TimerRing secondsLeft={secondsLeft} total={TIMER_SECONDS} />
@@ -262,7 +262,7 @@ export default function SpeedRound() {
           <div className="space-y-3">
             {currentQ.options.map((option, optIdx) => {
               let style =
-                'bg-white border-slate-200 hover:border-brand-200 hover:bg-brand-50 cursor-pointer';
+                'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50 cursor-pointer';
 
               if (selected !== null) {
                 if (optIdx === currentQ.correct) {
@@ -270,7 +270,7 @@ export default function SpeedRound() {
                 } else if (optIdx === selected && selected !== currentQ.correct) {
                   style = 'bg-red-50 border-red-300 ring-1 ring-red-200';
                 } else {
-                  style = 'bg-white border-slate-200 opacity-60';
+                  style = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60';
                 }
               }
 
@@ -279,10 +279,10 @@ export default function SpeedRound() {
                   key={optIdx}
                   onClick={() => handleAnswer(optIdx)}
                   disabled={selected !== null}
-                  className={`w-full text-left px-4 py-3 rounded-xl border text-sm text-ink transition-all ${style}`}
+                  className={`w-full text-left px-4 py-3 rounded-xl border text-sm text-ink dark:text-slate-200 transition-all ${style}`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-full bg-bg-subtle border border-slate-200 flex items-center justify-center text-xs font-semibold text-slate-600 shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-bg-subtle dark:bg-slate-700 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-400 shrink-0">
                       {String.fromCharCode(65 + optIdx)}
                     </span>
                     <span className="flex-1">{option}</span>
@@ -301,7 +301,7 @@ export default function SpeedRound() {
           </div>
 
           {selected !== null && (
-            <div className="mt-4 p-3 bg-bg-subtle rounded-xl border border-slate-200 text-sm text-slate-600">
+            <div className="mt-4 p-3 bg-bg-subtle dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400">
               {currentQ.explanation}
             </div>
           )}

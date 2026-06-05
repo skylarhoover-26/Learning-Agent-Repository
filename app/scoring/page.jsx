@@ -172,7 +172,7 @@ export default function ScoringPage() {
 
   if (completed) {
     return (
-      <div className="min-h-screen bg-bg-warm">
+      <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader
           icon={BarChart3}
           title="AI Impact Assessment"
@@ -195,29 +195,29 @@ export default function ScoringPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={BarChart3}
         title="AI Impact Assessment"
         subtitle="Understand your AI impact across 4 dimensions"
       />
 
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-2xl mx-auto px-6">
-          <div className="h-1 bg-bg-subtle rounded-full overflow-hidden my-3">
+          <div className="h-1 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden my-3">
             <div
               className="h-full bg-brand rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
           <div className="flex items-center justify-between pb-3">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Question {step + 1} of {totalSteps}
             </p>
             {step > 0 && (
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-brand transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
               >
                 <ChevronLeft className="w-3 h-3" />
                 Back
@@ -260,7 +260,7 @@ function QuestionCard({ question, onSelect }) {
           <Icon className="w-4 h-4" />
           {label}
         </div>
-        <h2 className="text-2xl font-bold text-ink tracking-tight">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight">
           {question.question}
         </h2>
       </div>
@@ -269,7 +269,7 @@ function QuestionCard({ question, onSelect }) {
           <button
             key={option.value}
             onClick={() => onSelect(option)}
-            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50"
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50"
           >
             <span className="w-8 h-8 rounded-lg bg-brand-50 text-brand font-bold text-sm flex items-center justify-center shrink-0">
               {option.value}
@@ -286,10 +286,10 @@ function FollowUpCard({ question, text, onTextChange, onSubmit, isScoring }) {
   return (
     <div className="max-w-lg mx-auto">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-ink tracking-tight mb-2">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
           {question}
         </h2>
-        <p className="text-slate-600 text-sm">
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
           The more specific you are, the more accurate your score will be.
         </p>
       </div>
@@ -299,7 +299,7 @@ function FollowUpCard({ question, text, onTextChange, onSubmit, isScoring }) {
         placeholder="Describe what you've done..."
         rows={4}
         autoFocus
-        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none"
+        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none"
       />
       <div className="text-center mt-6">
         <button
@@ -329,11 +329,11 @@ function ResultsCard({ scores, previousScores }) {
   const dimensions = ['personal', 'team', 'org', 'development'];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
       <div className="h-2 bg-gradient-to-r from-brand via-[#009FDA] to-[#0055FF]" />
       <div className="p-8">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-ink tracking-tight mb-3">
+          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-3">
             Your AI Impact Profile
           </h2>
           <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-bold ${overall.color}`}>
@@ -352,14 +352,14 @@ function ResultsCard({ scores, previousScores }) {
             return (
               <div
                 key={dim}
-                className="flex items-center gap-4 p-4 rounded-xl bg-bg-warm border border-slate-100"
+                className="flex items-center gap-4 p-4 rounded-xl bg-bg-warm dark:bg-slate-900 border border-slate-100"
               >
                 <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
                   <Icon className="w-5 h-5 text-brand" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-ink">
+                    <span className="text-sm font-semibold text-ink dark:text-slate-200">
                       {DIMENSION_LABELS[dim]}
                     </span>
                     {delta !== null && delta !== 0 && (
@@ -375,9 +375,9 @@ function ResultsCard({ scores, previousScores }) {
                         style={{ width: `${(score / 5) * 100}%` }}
                       />
                     </div>
-                    <span className="text-sm font-bold text-ink w-6 text-right">{score}</span>
+                    <span className="text-sm font-bold text-ink dark:text-slate-200 w-6 text-right">{score}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">{label}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{label}</p>
                 </div>
               </div>
             );

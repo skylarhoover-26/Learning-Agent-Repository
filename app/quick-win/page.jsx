@@ -73,7 +73,7 @@ export default function QuickWinPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Zap}
         title="Quick AI Win"
@@ -123,22 +123,22 @@ function InitialCard({ department, tasks, topTasks, onStart }) {
 
   return (
     <div className="text-center">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-10 max-w-xl mx-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 max-w-xl mx-auto">
         <div className="w-16 h-16 rounded-2xl bg-cta-50 ring-1 ring-cta-200 mx-auto mb-6 flex items-center justify-center">
           <Zap className="w-8 h-8 text-cta-700" strokeWidth={1.5} />
         </div>
 
-        <h2 className="text-3xl font-bold text-ink mb-3 tracking-tight">
+        <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-3 tracking-tight">
           Get a Quick AI Win
         </h2>
-        <p className="text-slate-600 max-w-md mx-auto mb-6 leading-relaxed">
+        <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
           Pick a task to get a <strong>ready-to-use AI prompt</strong> you can try right now.
           Takes under 5 minutes.
         </p>
 
         {displayTasks.length > 0 && (
           <div className="mb-6">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
               Pick a task
             </p>
             <div className="flex flex-wrap justify-center gap-2">
@@ -149,7 +149,7 @@ function InitialCard({ department, tasks, topTasks, onStart }) {
                   className={`px-4 py-2 rounded-pill text-sm font-medium transition-all ${
                     i < topTasks.length
                       ? 'bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100'
-                      : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      : 'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                   }`}
                 >
                   {task}
@@ -168,8 +168,8 @@ function InitialCard({ department, tasks, topTasks, onStart }) {
         </button>
 
         {department && (
-          <p className="text-sm text-slate-500 mt-6">
-            Based on your role in <span className="font-medium text-ink">{department}</span>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-6">
+            Based on your role in <span className="font-medium text-ink dark:text-slate-200">{department}</span>
           </p>
         )}
       </div>
@@ -180,15 +180,15 @@ function InitialCard({ department, tasks, topTasks, onStart }) {
 function LoadingCard() {
   return (
     <div className="text-center">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-10 max-w-xl mx-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 max-w-xl mx-auto">
         <div className="w-16 h-16 rounded-2xl bg-brand-50 ring-1 ring-brand-100 mx-auto mb-6 flex items-center justify-center animate-pulse">
           <Sparkles className="w-8 h-8 text-brand" strokeWidth={1.5} />
         </div>
         <Loader2 className="w-6 h-6 text-brand animate-spin mx-auto mb-4" />
-        <p className="text-lg font-semibold text-ink mb-1">
+        <p className="text-lg font-semibold text-ink dark:text-slate-200 mb-1">
           Finding something perfect for you...
         </p>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Personalizing to your role and goals
         </p>
       </div>
@@ -199,7 +199,7 @@ function LoadingCard() {
 function ErrorCard({ error, onRetry }) {
   return (
     <div className="text-center">
-      <div className="bg-white rounded-2xl border border-red-200 shadow-card p-10 max-w-xl mx-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-red-200 shadow-card p-10 max-w-xl mx-auto">
         <p className="text-red-600 font-medium mb-4">{error}</p>
         <button
           onClick={onRetry}
@@ -219,14 +219,14 @@ function ResultCard({ quickWin, copied, onCopy, onTryAnother }) {
   return (
     <div className="space-y-6">
       {/* Main Win Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
         {/* Header accent */}
         <div className="h-2 bg-gradient-to-r from-cta via-cta-400 to-brand" />
 
         <div className="p-6 sm:p-8">
           {/* Title + Time Badge */}
           <div className="flex items-start justify-between gap-4 mb-4">
-            <h2 className="text-2xl font-bold text-ink tracking-tight leading-tight">
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight leading-tight">
               {title}
             </h2>
             {timeEstimate && (
@@ -239,7 +239,7 @@ function ResultCard({ quickWin, copied, onCopy, onTryAnother }) {
 
           {/* Description */}
           {description && (
-            <p className="text-slate-600 leading-relaxed mb-6">
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
               {description}
             </p>
           )}
@@ -247,7 +247,7 @@ function ResultCard({ quickWin, copied, onCopy, onTryAnother }) {
           {/* Steps */}
           {steps && steps.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
+              <h3 className="text-sm font-semibold text-ink dark:text-slate-200 uppercase tracking-wide mb-3">
                 Steps
               </h3>
               <ol className="space-y-3">
@@ -256,7 +256,7 @@ function ResultCard({ quickWin, copied, onCopy, onTryAnother }) {
                     <span className="w-6 h-6 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                       {i + 1}
                     </span>
-                    <span className="text-slate-700 leading-relaxed">{step}</span>
+                    <span className="text-slate-700 dark:text-slate-300 leading-relaxed">{step}</span>
                   </li>
                 ))}
               </ol>
@@ -267,12 +267,12 @@ function ResultCard({ quickWin, copied, onCopy, onTryAnother }) {
           {prompt && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-ink uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-ink dark:text-slate-200 uppercase tracking-wide">
                   Your Prompt
                 </h3>
                 <button
                   onClick={onCopy}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-slate-100 hover:bg-slate-200 text-slate-700"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300"
                 >
                   {copied ? (
                     <>
@@ -297,7 +297,7 @@ function ResultCard({ quickWin, copied, onCopy, onTryAnother }) {
           {expectedResult && (
             <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 mb-6">
               <p className="text-sm font-semibold text-brand-800 mb-1">What you'll get</p>
-              <p className="text-sm text-slate-700 leading-relaxed">{expectedResult}</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{expectedResult}</p>
             </div>
           )}
 
@@ -305,7 +305,7 @@ function ResultCard({ quickWin, copied, onCopy, onTryAnother }) {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
             <button
               onClick={onTryAnother}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-slate-200 bg-white text-ink font-semibold text-sm hover:bg-slate-50 transition-all"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
             >
               <RefreshCw className="w-4 h-4" />
               Try Another

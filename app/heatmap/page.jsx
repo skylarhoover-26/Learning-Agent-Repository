@@ -109,11 +109,11 @@ function SkillCell({ skill, isDoThisNow, onSelect, isSelected }) {
             </span>
           )}
         </div>
-        <p className="text-xs font-semibold text-ink leading-tight mb-1 line-clamp-2">
+        <p className="text-xs font-semibold text-ink dark:text-slate-200 leading-tight mb-1 line-clamp-2">
           {skill.name}
         </p>
-        <p className="text-[11px] text-ink/70 font-medium">{skill.mastery}% mastery</p>
-        <p className="text-[10px] text-ink/50">{skill.freshness}d ago</p>
+        <p className="text-[11px] text-ink/70 dark:text-slate-300/70 font-medium">{skill.mastery}% mastery</p>
+        <p className="text-[10px] text-ink/50 dark:text-slate-300/50">{skill.freshness}d ago</p>
       </div>
     </button>
   );
@@ -167,7 +167,7 @@ function DiagnosticCard({ icon: Icon, title, color, skills }) {
         </div>
         <div>
           <h4 className="font-semibold text-ink dark:text-slate-200 text-sm">{title}</h4>
-          <p className="text-xs text-slate-500">{skills.length} skill{skills.length !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{skills.length} skill{skills.length !== 1 ? 's' : ''}</p>
         </div>
       </div>
       {skills.length === 0 ? (
@@ -214,7 +214,7 @@ export default function HeatmapPage() {
             <p className="font-semibold text-ink dark:text-slate-200 text-sm">
               {staleHighValueCount} high-value cell{staleHighValueCount !== 1 ? 's are' : ' is'} gathering dust
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Skills you know well but haven&apos;t reviewed recently. A quick refresher keeps them sharp.
             </p>
           </div>

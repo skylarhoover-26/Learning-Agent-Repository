@@ -59,7 +59,7 @@ export default function QuestDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-500 mb-4">Quest not found</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-4">Quest not found</p>
           <Link href="/quests" className="text-brand hover:underline">Back to quests</Link>
         </div>
       </div>
@@ -81,11 +81,11 @@ export default function QuestDetailPage() {
         <main className="max-w-2xl mx-auto px-6 py-10">
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-10 text-center">
             <div className="text-6xl mb-4"><PartyPopper className="w-16 h-16 mx-auto text-green-500" /></div>
-            <h2 className="text-2xl font-bold text-ink mb-2">Quest Complete!</h2>
-            <p className="text-slate-600 mb-2">{quest.title}</p>
-            <div className="inline-flex items-center gap-2 bg-white border border-green-200 rounded-full px-4 py-2 mb-6">
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">Quest Complete!</h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-2">{quest.title}</p>
+            <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-green-200 rounded-full px-4 py-2 mb-6">
               <Trophy className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm font-bold text-ink">+{quest.xpReward} XP earned</span>
+              <span className="text-sm font-bold text-ink dark:text-slate-200">+{quest.xpReward} XP earned</span>
             </div>
             <div className="flex gap-3 justify-center">
               <Link
@@ -96,7 +96,7 @@ export default function QuestDetailPage() {
               </Link>
               <Link
                 href="/"
-                className="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-medium"
+                className="px-5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-medium"
               >
                 Dashboard
               </Link>
@@ -120,17 +120,17 @@ export default function QuestDetailPage() {
       <main className="max-w-4xl mx-auto px-6 py-10">
         <Link
           href="/quests"
-          className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-6"
+          className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 mb-6"
         >
           <ArrowLeft className="w-4 h-4" /> All quests
         </Link>
 
         <div className="mb-6">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5">
             <span>{completedStepCount} of {quest.steps.length} steps completed</span>
             <span>{progressPercent}%</span>
           </div>
-          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-brand rounded-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
@@ -139,8 +139,8 @@ export default function QuestDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-          <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-4 h-fit">
-            <h3 className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-3 px-1">Steps</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-4 h-fit">
+            <h3 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3 px-1">Steps</h3>
             <div className="space-y-1">
               {quest.steps.map((s, idx) => {
                 const completed = questState?.completedSteps?.includes(idx);
@@ -152,7 +152,7 @@ export default function QuestDetailPage() {
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-all ${
                       active
                         ? 'bg-brand-50 text-brand font-medium ring-1 ring-brand-100'
-                        : 'text-slate-600 hover:bg-slate-50'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }`}
                   >
                     {completed ? (
@@ -168,20 +168,20 @@ export default function QuestDetailPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-8">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8">
               <div className="flex items-start gap-3 mb-6">
                 <div className="w-10 h-10 rounded-lg bg-brand-50 ring-1 ring-brand-100 flex items-center justify-center text-brand shrink-0">
                   <Target className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-ink mb-1">{step.title}</h2>
-                  <p className="text-sm text-slate-600">{step.description}</p>
+                  <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-1">{step.title}</h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{step.description}</p>
                 </div>
               </div>
 
-              <div className="bg-bg-warm border border-slate-200 rounded-xl p-5 mb-6">
-                <h3 className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-2">Your Task</h3>
-                <p className="text-sm text-ink whitespace-pre-line">{step.task}</p>
+              <div className="bg-bg-warm dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 mb-6">
+                <h3 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-2">Your Task</h3>
+                <p className="text-sm text-ink dark:text-slate-200 whitespace-pre-line">{step.task}</p>
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-6">
@@ -211,7 +211,7 @@ export default function QuestDetailPage() {
                 <button
                   onClick={() => setActiveStepIdx(Math.max(0, activeStepIdx - 1))}
                   disabled={activeStepIdx === 0}
-                  className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                  className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                 >
                   <ChevronLeft className="w-4 h-4" /> Previous
                 </button>
@@ -220,7 +220,7 @@ export default function QuestDetailPage() {
                   activeStepIdx < quest.steps.length - 1 ? (
                     <button
                       onClick={() => setActiveStepIdx(activeStepIdx + 1)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-slate-100 text-slate-700 font-medium text-sm hover:bg-slate-200 transition-all"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
                     >
                       Next Step <ChevronRight className="w-4 h-4" />
                     </button>

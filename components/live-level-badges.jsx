@@ -51,7 +51,7 @@ export default function LiveLevelBadges() {
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
               <h3 className="font-bold text-ink dark:text-slate-200">Level {levelProgress.level}</h3>
-              <span className="text-sm text-slate-500">&middot; {prog.totalXp.toLocaleString()} XP</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">&middot; {prog.totalXp.toLocaleString()} XP</span>
             </div>
             <div className="flex items-center gap-3 max-w-md">
               <div className="flex-1 h-2 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
@@ -60,7 +60,7 @@ export default function LiveLevelBadges() {
                   style={{ width: `${levelProgress.percent}%` }}
                 />
               </div>
-              <span className="text-xs text-slate-500 shrink-0">
+              <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">
                 {levelProgress.xpToNext} XP to L{levelProgress.level + 1}
               </span>
             </div>
@@ -85,7 +85,7 @@ export default function LiveLevelBadges() {
               </div>
             </>
           ) : (
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-slate-500 dark:text-slate-400">
               <Award className="w-4 h-4 inline mr-1" />
               Earn your first badge
             </div>

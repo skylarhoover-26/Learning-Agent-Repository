@@ -91,24 +91,24 @@ export default function LibraryPage() {
       <PageHeader icon={Library} title="Use Case Library" subtitle={`${USE_CASES.length} concrete ways to use AI at work`} />
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-brand-50 ring-1 ring-brand-100 flex items-center justify-center text-brand shrink-0">
               <Library className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <h2 className="font-bold text-ink mb-1">Browse what AI can actually do</h2>
-              <p className="text-sm text-slate-600">
+              <h2 className="font-bold text-ink dark:text-slate-200 mb-1">Browse what AI can actually do</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Each use case has a copy-paste prompt you can use right now, or click <strong>Try it</strong> to walk through it as a lesson.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card border border-slate-200 p-5 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-5 mb-6">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex-1 min-w-[200px]">
-              <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-1.5 block">Search</label>
+              <label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-1.5 block">Search</label>
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -116,18 +116,18 @@ export default function LibraryPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Try: 'email', 'meeting', 'analyze'..."
-                  className="w-full pl-10 pr-9 py-2 rounded-lg border border-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm"
+                  className="w-full pl-10 pr-9 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm"
                 />
                 {search && (
-                  <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-400">
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
             </div>
             <div className="min-w-[180px]">
-              <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-1.5 block">Role</label>
-              <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm bg-white">
+              <label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-1.5 block">Role</label>
+              <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm bg-white dark:bg-slate-800">
                 <option value="all">All roles</option>
                 {Object.entries(ROLES).map(([key, r]) => (
                   <option key={key} value={key}>{r.emoji} {r.label}</option>
@@ -135,8 +135,8 @@ export default function LibraryPage() {
               </select>
             </div>
             <div className="min-w-[180px]">
-              <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-1.5 block">Category</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm bg-white">
+              <label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-1.5 block">Category</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm bg-white dark:bg-slate-800">
                 <option value="all">All categories</option>
                 {Object.entries(CATEGORIES).map(([key, c]) => (
                   <option key={key} value={key}>{c.emoji} {c.label}</option>
@@ -144,14 +144,14 @@ export default function LibraryPage() {
               </select>
             </div>
           </div>
-          <p className="text-xs text-slate-500 mt-3">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
             Showing <strong>{filtered.length}</strong> of {USE_CASES.length} use cases
           </p>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
-            <p className="text-slate-500">No use cases match your filters. Try clearing some.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 p-10 text-center">
+            <p className="text-slate-500 dark:text-slate-400">No use cases match your filters. Try clearing some.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -194,15 +194,15 @@ function UseCaseCard({ uc, isPopular, isRecent }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 hover:border-brand-200 hover:shadow-card-hover shadow-card transition-all overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover shadow-card transition-all overflow-hidden">
       <div className="p-5">
         <div className="flex items-start gap-3 mb-3">
           <span className="text-3xl shrink-0">{uc.icon}</span>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-ink leading-tight mb-1">{uc.title}</h3>
+            <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1">{uc.title}</h3>
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-xs font-medium px-2 py-0.5 rounded ${difficulty.color}`}>{difficulty.label}</span>
-              {cat.emoji && <span className="text-xs text-slate-500">{cat.emoji} {cat.label}</span>}
+              {cat.emoji && <span className="text-xs text-slate-500 dark:text-slate-400">{cat.emoji} {cat.label}</span>}
               {isPopular && (
                 <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded inline-flex items-center gap-0.5">
                   <TrendingUp className="w-3 h-3" /> Popular
@@ -216,9 +216,9 @@ function UseCaseCard({ uc, isPopular, isRecent }) {
             </div>
           </div>
         </div>
-        <p className="text-sm text-slate-700 mb-3">{uc.description}</p>
+        <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{uc.description}</p>
         {uc.timeSaved && (
-          <p className="text-xs text-slate-500 mb-4 inline-flex items-center gap-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 inline-flex items-center gap-1">
             <Clock className="w-3 h-3" /> Saves {uc.timeSaved}
           </p>
         )}
@@ -232,21 +232,21 @@ function UseCaseCard({ uc, isPopular, isRecent }) {
           </Link>
           <button
             onClick={() => setShowPrompt(!showPrompt)}
-            className="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm transition-all"
+            className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm transition-all"
           >
             Prompt
           </button>
         </div>
         {showPrompt && (
-          <div className="mt-3 bg-bg-warm border border-slate-200 rounded-lg p-3">
+          <div className="mt-3 bg-bg-warm dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
             <div className="flex items-start justify-between gap-2 mb-2">
-              <span className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Copy-paste prompt</span>
-              <button onClick={copyPrompt} className="text-xs text-slate-500 hover:text-slate-800 inline-flex items-center gap-1">
+              <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">Copy-paste prompt</span>
+              <button onClick={copyPrompt} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 inline-flex items-center gap-1">
                 {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
                 {copied ? 'Copied' : 'Copy'}
               </button>
             </div>
-            <pre className="whitespace-pre-wrap text-xs font-mono text-slate-700 leading-relaxed">{uc.starterPrompt}</pre>
+            <pre className="whitespace-pre-wrap text-xs font-mono text-slate-700 dark:text-slate-300 leading-relaxed">{uc.starterPrompt}</pre>
           </div>
         )}
       </div>

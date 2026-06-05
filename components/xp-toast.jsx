@@ -45,7 +45,7 @@ export default function XpToast({ result, onDismiss }) {
           </div>
           <div>
             <div className="font-bold text-ink dark:text-slate-200">+{result.xpAwarded} XP</div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
               {result.totalXp.toLocaleString()} XP total
             </div>
           </div>

@@ -81,7 +81,7 @@ export default function StructuredLessonPage() {
   const progressPercent = (stepIdx / (STEPS.length - 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={BookOpen}
         title="Structured Lesson"
@@ -89,7 +89,7 @@ export default function StructuredLessonPage() {
       />
 
       {/* Step indicator */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-3xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between gap-2">
             {STEPS.map((s, i) => {
@@ -103,7 +103,7 @@ export default function StructuredLessonPage() {
                       ? 'bg-brand text-white'
                       : isDone
                       ? 'bg-green-50 text-green-700'
-                      : 'bg-slate-100 text-slate-400'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
                   }`}>
                     {isDone ? (
                       <Check className="w-3 h-3" />
@@ -173,14 +173,14 @@ export default function StructuredLessonPage() {
 function ReadStep({ onNext }) {
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-8">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-50 text-brand-700 text-xs font-bold uppercase tracking-wide mb-4">
           <Eye className="w-3.5 h-3.5" /> Step 1: Read
         </div>
-        <h2 className="text-2xl font-bold text-ink tracking-tight mb-4">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-4">
           Turn a messy tech note into a customer message
         </h2>
-        <p className="text-slate-600 leading-relaxed mb-6">
+        <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
           Home service technicians write quick shorthand notes after every job. These notes are
           accurate but not customer-friendly. Your job: rewrite this note into a message the
           customer would actually want to read.
@@ -197,7 +197,7 @@ function ReadStep({ onNext }) {
 
         <div className="bg-brand-50 border border-brand-100 rounded-xl p-4">
           <p className="text-sm font-semibold text-brand-800 mb-1">What makes a good rewrite?</p>
-          <ul className="text-sm text-slate-700 space-y-1">
+          <ul className="text-sm text-slate-700 dark:text-slate-300 space-y-1">
             <li>Explain what you found and what you did (no jargon)</li>
             <li>Mention the recommended next step</li>
             <li>Keep it friendly and brief (2-3 sentences)</li>
@@ -221,18 +221,18 @@ function ReadStep({ onNext }) {
 function TryStep({ submission, setSubmission, grade, grading, onSubmit, onNext, onBack }) {
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-8">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-cta-50 text-cta-700 text-xs font-bold uppercase tracking-wide mb-4">
           <Pencil className="w-3.5 h-3.5" /> Step 2: Try
         </div>
-        <h2 className="text-xl font-bold text-ink tracking-tight mb-2">
+        <h2 className="text-xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
           Write your customer message
         </h2>
-        <p className="text-sm text-slate-600 mb-4">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
           Rewrite the technician's note as a friendly message to the customer (Mrs. Henderson).
         </p>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 text-xs text-slate-600 font-mono">
+        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 mb-4 text-xs text-slate-600 dark:text-slate-400 font-mono">
           {TECH_NOTE}
         </div>
 
@@ -241,7 +241,7 @@ function TryStep({ submission, setSubmission, grade, grading, onSubmit, onNext, 
           onChange={e => setSubmission(e.target.value)}
           placeholder="Hi Mrs. Henderson..."
           rows={5}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none"
         />
 
         {!grade && (
@@ -271,8 +271,8 @@ function TryStep({ submission, setSubmission, grade, grading, onSubmit, onNext, 
             <div className="flex items-center gap-4">
               <ScoreRing score={grade.score} />
               <div>
-                <p className="text-lg font-bold text-ink">{grade.score}/100</p>
-                <p className="text-sm text-slate-500">
+                <p className="text-lg font-bold text-ink dark:text-slate-200">{grade.score}/100</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {grade.score >= 80 ? 'Excellent work!' :
                    grade.score >= 60 ? 'Good start — room to improve.' :
                    'Keep practicing — you\'ll get there.'}
@@ -282,11 +282,11 @@ function TryStep({ submission, setSubmission, grade, grading, onSubmit, onNext, 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="bg-green-50 border border-green-100 rounded-xl p-4">
                 <p className="text-xs font-bold text-green-700 uppercase tracking-wide mb-1">Strength</p>
-                <p className="text-sm text-slate-700">{grade.strength}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{grade.strength}</p>
               </div>
               <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
                 <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-1">To improve</p>
-                <p className="text-sm text-slate-700">{grade.improvement}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{grade.improvement}</p>
               </div>
             </div>
           </div>
@@ -296,7 +296,7 @@ function TryStep({ submission, setSubmission, grade, grading, onSubmit, onNext, 
       <div className="flex justify-between">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand transition-colors"
+          className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
         >
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
@@ -317,39 +317,39 @@ function TryStep({ submission, setSubmission, grade, grading, onSubmit, onNext, 
 function CompareStep({ userMessage, tones, loading, onNext, onBack }) {
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-8">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wide mb-4">
           <GitCompare className="w-3.5 h-3.5" /> Step 3: Compare
         </div>
-        <h2 className="text-xl font-bold text-ink tracking-tight mb-2">
+        <h2 className="text-xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
           Compare your version with AI alternatives
         </h2>
-        <p className="text-sm text-slate-600 mb-6">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
           Here's what AI wrote in three different tones. Notice how the same information lands differently.
         </p>
 
         {/* User's version */}
         <div className="mb-6">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Your version</p>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-            <p className="text-sm text-slate-700 leading-relaxed">{userMessage}</p>
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Your version</p>
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{userMessage}</p>
           </div>
         </div>
 
         {/* AI versions */}
         {loading ? (
-          <div className="flex items-center justify-center py-8 gap-2 text-slate-500">
+          <div className="flex items-center justify-center py-8 gap-2 text-slate-500 dark:text-slate-400">
             <Loader2 className="w-5 h-5 animate-spin" />
             <span className="text-sm">Generating AI versions...</span>
           </div>
         ) : (
           <div className="space-y-4">
             {(tones || []).map((tone, i) => (
-              <div key={i} className={`rounded-xl border p-4 ${TONE_COLORS[tone.tone] || 'bg-slate-50 border-slate-200'}`}>
+              <div key={i} className={`rounded-xl border p-4 ${TONE_COLORS[tone.tone] || 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'}`}>
                 <p className="text-xs font-bold uppercase tracking-wide mb-2 opacity-80">
                   {tone.tone}
                 </p>
-                <p className="text-sm text-ink leading-relaxed mb-2">{tone.message}</p>
+                <p className="text-sm text-ink dark:text-slate-200 leading-relaxed mb-2">{tone.message}</p>
                 <p className="text-xs opacity-70 italic">{tone.whyItWorks}</p>
               </div>
             ))}
@@ -358,7 +358,7 @@ function CompareStep({ userMessage, tones, loading, onNext, onBack }) {
       </div>
 
       <div className="flex justify-between">
-        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand transition-colors">
+        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors">
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
         <button
@@ -382,14 +382,14 @@ function ShipStep({ tones, userMessage, choice, setChoice, onNext, onBack }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-8">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-green-50 text-green-700 text-xs font-bold uppercase tracking-wide mb-4">
           <Rocket className="w-3.5 h-3.5" /> Step 4: Ship
         </div>
-        <h2 className="text-xl font-bold text-ink tracking-tight mb-2">
+        <h2 className="text-xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
           Which version would you actually send?
         </h2>
-        <p className="text-sm text-slate-600 mb-6">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
           Pick the one that feels right for this customer. There's no wrong answer — the goal is to think about why.
         </p>
 
@@ -401,11 +401,11 @@ function ShipStep({ tones, userMessage, choice, setChoice, onNext, onBack }) {
               className={`w-full text-left p-4 rounded-xl border transition-all ${
                 choice === opt.id
                   ? 'bg-brand text-white border-brand shadow-sm'
-                  : 'bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50'
+                  : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
               }`}
             >
               <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${
-                choice === opt.id ? 'text-white/70' : 'text-slate-500'
+                choice === opt.id ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
               }`}>
                 {opt.label}
               </p>
@@ -416,7 +416,7 @@ function ShipStep({ tones, userMessage, choice, setChoice, onNext, onBack }) {
       </div>
 
       <div className="flex justify-between">
-        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand transition-colors">
+        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors">
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
         <button
@@ -437,14 +437,14 @@ function ReflectStep({ reflection, setReflection, grade }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-8">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wide mb-4">
           <Brain className="w-3.5 h-3.5" /> Step 5: Reflect
         </div>
-        <h2 className="text-xl font-bold text-ink tracking-tight mb-2">
+        <h2 className="text-xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
           What did you take away?
         </h2>
-        <p className="text-sm text-slate-600 mb-6">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
           One sentence is enough. What will you do differently next time you write a customer message?
         </p>
 
@@ -453,27 +453,27 @@ function ReflectStep({ reflection, setReflection, grade }) {
           onChange={e => setReflection(e.target.value)}
           placeholder="Next time I'll..."
           rows={3}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none mb-6"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none mb-6"
         />
 
         {/* Summary */}
         <div className="bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-brand" />
-            <span className="text-sm font-bold text-ink">Lesson Complete</span>
+            <span className="text-sm font-bold text-ink dark:text-slate-200">Lesson Complete</span>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-2xl font-bold text-brand">{grade?.score || '—'}</p>
-              <p className="text-xs text-slate-500">Your Score</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Your Score</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-brand">50</p>
-              <p className="text-xs text-slate-500">XP Earned</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">XP Earned</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-brand">5m</p>
-              <p className="text-xs text-slate-500">Time Spent</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Time Spent</p>
             </div>
           </div>
         </div>

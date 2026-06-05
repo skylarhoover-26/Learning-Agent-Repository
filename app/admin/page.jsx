@@ -183,7 +183,7 @@ function ProposalCard({ proposal, onAction }) {
   );
 
   const cardClasses = [
-    'bg-white rounded-lg shadow-card border-l-4 p-5 transition-all duration-300',
+    'bg-white dark:bg-slate-800 rounded-lg shadow-card border-l-4 p-5 transition-all duration-300',
     proposal.borderColor,
     isApproved && 'opacity-75',
     isRejected && 'opacity-60',
@@ -210,7 +210,7 @@ function ProposalCard({ proposal, onAction }) {
         )}
       </div>
 
-      <h3 className={`text-lg font-bold text-ink mb-1 ${isRejected ? 'line-through' : ''}`}>
+      <h3 className={`text-lg font-bold text-ink dark:text-slate-200 mb-1 ${isRejected ? 'line-through' : ''}`}>
         {proposal.title}
       </h3>
 
@@ -218,7 +218,7 @@ function ProposalCard({ proposal, onAction }) {
 
       {isPending && proposal.sources.length > 0 && (
         <div className="mb-2">
-          <span className="text-xs font-semibold text-ink/70 mr-1">Sources:</span>
+          <span className="text-xs font-semibold text-ink/70 dark:text-slate-300/70 mr-1">Sources:</span>
           {proposal.sources.map((s, i) => (
             <a
               key={i}
@@ -234,9 +234,9 @@ function ProposalCard({ proposal, onAction }) {
 
       {isPending && proposal.affects.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
-          <span className="text-xs font-semibold text-ink/70">Affects:</span>
+          <span className="text-xs font-semibold text-ink/70 dark:text-slate-300/70">Affects:</span>
           {proposal.affects.map((a) => (
-            <span key={a} className="text-xs bg-bg-subtle text-ink px-2 py-0.5 rounded-full">
+            <span key={a} className="text-xs bg-bg-subtle dark:bg-slate-700 text-ink dark:text-slate-200 px-2 py-0.5 rounded-full">
               {a}
             </span>
           ))}
@@ -281,13 +281,13 @@ function ProposalCard({ proposal, onAction }) {
               <XCircle className="w-4 h-4" /> Reject
             </button>
           )}
-          <button className="text-sm font-medium px-3 py-1.5 rounded-md border border-bg-subtle text-ink-light hover:bg-bg-subtle transition-colors flex items-center gap-1">
+          <button className="text-sm font-medium px-3 py-1.5 rounded-md border border-bg-subtle text-ink-light hover:bg-bg-subtle dark:bg-slate-700 transition-colors flex items-center gap-1">
             <Edit3 className="w-4 h-4" /> Edit
           </button>
           {confirming && (
             <button
               onClick={() => setConfirming(null)}
-              className="text-xs text-ink-light hover:text-ink ml-1"
+              className="text-xs text-ink-light hover:text-ink dark:text-slate-200 ml-1"
             >
               Cancel
             </button>
@@ -782,7 +782,7 @@ export default function AdminDashboard() {
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActive
                         ? 'bg-brand text-white'
-                        : 'text-ink-light dark:text-slate-400 hover:bg-bg-subtle dark:hover:bg-slate-700'
+                        : 'text-ink-light dark:text-slate-400 hover:bg-bg-subtle dark:bg-slate-700 dark:hover:bg-slate-700'
                     }`}
                   >
                     {tab.label} ({count})
@@ -790,7 +790,7 @@ export default function AdminDashboard() {
                 );
               })}
               <div className="ml-auto flex items-center pr-2">
-                <button className="text-xs text-ink-light hover:text-ink flex items-center gap-1 px-2 py-1 rounded-md hover:bg-bg-subtle transition-colors">
+                <button className="text-xs text-ink-light hover:text-ink dark:text-slate-200 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-bg-subtle dark:bg-slate-700 transition-colors">
                   <RefreshCw className="w-3.5 h-3.5" /> Refresh
                 </button>
               </div>

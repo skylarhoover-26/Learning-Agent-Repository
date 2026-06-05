@@ -111,7 +111,7 @@ export default function ChatPage() {
           {isLoading && (
             <div className="flex flex-col items-start gap-1">
               <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-500">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Thinking...</span>
                 </div>

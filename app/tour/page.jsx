@@ -117,7 +117,7 @@ export default function TourPage() {
   const Icon = step.icon;
 
   return (
-    <div className="min-h-screen bg-bg-warm">
+    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Play}
         title="Platform Tour"
@@ -138,7 +138,7 @@ export default function TourPage() {
                   ? 'bg-brand text-white shadow-sm'
                   : i < currentStep
                   ? 'bg-[#009FDA] text-white'
-                  : 'bg-slate-200 text-slate-500'
+                  : 'bg-slate-200 text-slate-500 dark:text-slate-400'
               }`}>
                 {i + 1}
               </span>
@@ -153,7 +153,7 @@ export default function TourPage() {
 
         {/* Step content */}
         <div key={currentStep} className="animate-fade-in space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
             <div className="bg-gradient-to-br from-[#00205C] to-brand p-6 text-white">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -169,18 +169,18 @@ export default function TourPage() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
                   {step.panels.left.label}
                 </p>
-                <p className="text-sm text-slate-700 leading-relaxed">{step.panels.left.content}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{step.panels.left.content}</p>
               </div>
               <div className="p-6">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
                   {step.panels.right.label}
                 </p>
-                <p className="text-sm text-slate-700 leading-relaxed">{step.panels.right.content}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{step.panels.right.content}</p>
               </div>
             </div>
 
             {step.link && (
-              <div className="border-t border-slate-200 px-6 py-3 bg-slate-50">
+              <div className="border-t border-slate-200 dark:border-slate-700 px-6 py-3 bg-slate-50 dark:bg-slate-800/50">
                 <Link
                   href={step.link}
                   className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:text-brand-600 transition-colors"
@@ -197,7 +197,7 @@ export default function TourPage() {
             <button
               onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
               disabled={currentStep === 0}
-              className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand disabled:opacity-30 transition-colors"
+              className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-30 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" /> Previous
             </button>

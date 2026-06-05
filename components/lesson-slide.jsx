@@ -223,7 +223,7 @@ export function SlideCard({ slide, onButtonClick, isLatest }) {
           </div>
           <ul className="space-y-1.5">
             {keyPoints.map((point, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+              <li key={idx} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
                 <CheckCircle className="w-4 h-4 text-brand mt-0.5 shrink-0" />
                 <span>{point}</span>
               </li>
@@ -259,26 +259,26 @@ export function RecapCard({ recap, onPickAnother, onDashboard }) {
   ].filter(Boolean).join('. ');
 
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl border border-emerald-200 shadow-card overflow-hidden">
+    <div className="bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950 dark:to-green-900 rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-card overflow-hidden">
       <div className="px-6 pt-6 pb-4">
         <div className="flex justify-end mb-2">
           <TtsButton text={recapText} />
         </div>
         <div className="text-center">
           <div className="text-5xl mb-3">🎉</div>
-          <h2 className="text-2xl font-bold text-ink mb-1">Lesson Complete!</h2>
+          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1">Lesson Complete!</h2>
           {recap.topic && (
-            <p className="text-slate-600">{recap.topic}</p>
+            <p className="text-slate-600 dark:text-slate-400">{recap.topic}</p>
           )}
         </div>
       </div>
 
       {recap.keyPoints && recap.keyPoints.length > 0 && (
-        <div className="mx-6 mb-4 bg-white/70 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-emerald-700 mb-2">What you learned</h3>
+        <div className="mx-6 mb-4 bg-white/70 dark:bg-slate-800/70 rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-2">What you learned</h3>
           <ul className="space-y-1.5">
             {recap.keyPoints.map((point, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+              <li key={idx} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
                 <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                 <span>{point}</span>
               </li>
@@ -288,16 +288,16 @@ export function RecapCard({ recap, onPickAnother, onDashboard }) {
       )}
 
       {recap.applyTip && (
-        <div className="mx-6 mb-4 bg-white/70 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-emerald-700 mb-1">Try this next</h3>
-          <p className="text-sm text-slate-700">{recap.applyTip}</p>
+        <div className="mx-6 mb-4 bg-white/70 dark:bg-slate-800/70 rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-1">Try this next</h3>
+          <p className="text-sm text-slate-700 dark:text-slate-300">{recap.applyTip}</p>
         </div>
       )}
 
       <div className="px-6 pb-6 flex gap-3 justify-center">
         <button
           onClick={onPickAnother}
-          className="px-5 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-medium transition-all"
+          className="px-5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-medium transition-all"
         >
           Pick another topic
         </button>

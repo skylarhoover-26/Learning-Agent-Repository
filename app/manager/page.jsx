@@ -92,7 +92,7 @@ function TeamTable({ reports }) {
   if (!reports || reports.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 text-center">
-        <p className="text-sm text-slate-500">No direct reports found.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">No direct reports found.</p>
       </div>
     );
   }
@@ -102,7 +102,7 @@ function TeamTable({ reports }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-bold text-ink dark:text-slate-200">Direct Reports</h2>
-          <p className="text-xs text-slate-500">{reports.length} team member{reports.length !== 1 ? 's' : ''} from Snowflake</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{reports.length} team member{reports.length !== 1 ? 's' : ''} from Snowflake</p>
         </div>
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-semibold bg-green-50 text-green-700 ring-1 ring-green-200">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -166,7 +166,7 @@ function OverviewCards({ teamSize }) {
               </div>
             </div>
             <p className="text-3xl font-bold text-ink dark:text-slate-200">{card.value}</p>
-            <div className="flex items-center gap-1 text-xs text-slate-500 font-medium">
+            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
               {card.detail}
             </div>
           </div>
@@ -188,7 +188,7 @@ const SCORE_DOT_COLORS = {
 
 const STATUS_STYLES = {
   'On Track': 'bg-green-50 text-green-700',
-  'Not Started': 'bg-slate-100 text-slate-500',
+  'Not Started': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
   'Needs Nudge': 'bg-amber-50 text-amber-700',
   'Completed': 'bg-brand-50 text-brand-700',
 };
@@ -218,7 +218,7 @@ function CompetenciesTable() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-bold text-ink dark:text-slate-200">AI Impact Competencies</h2>
-          <p className="text-xs text-slate-500">P = Personal, T = Team, O = Org, D = AI Development &middot; S = Self, M = Manager</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">P = Personal, T = Team, O = Org, D = AI Development &middot; S = Self, M = Manager</p>
         </div>
         <button
           onClick={() => setRating(!rating)}
@@ -236,7 +236,7 @@ function CompetenciesTable() {
         <div className="text-center py-8">
           <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No competency data yet</p>
-          <p className="text-xs text-slate-500">Scores will appear as team members complete the AI Impact Assessment.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Scores will appear as team members complete the AI Impact Assessment.</p>
         </div>
       ) : (
       <table className="w-full text-sm">
@@ -282,7 +282,7 @@ function CompetenciesTable() {
                 </div>
               </td>
               <td className="py-3 pr-4">
-                <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${LEVEL_STYLES[person.level] || 'bg-slate-100 text-slate-600'}`}>
+                <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${LEVEL_STYLES[person.level] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>
                   {person.level}
                 </span>
               </td>
@@ -299,11 +299,11 @@ function CompetenciesTable() {
                   <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full bg-brand rounded-full" style={{ width: `${person.progress}%` }} />
                   </div>
-                  <span className="text-xs text-slate-500 w-8 text-right">{person.progress}%</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 w-8 text-right">{person.progress}%</span>
                 </div>
               </td>
               <td className="py-3">
-                <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || 'bg-slate-100 text-slate-500'}`}>
+                <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
                   {person.status}
                 </span>
               </td>
@@ -344,11 +344,11 @@ function SkillGaps() {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
       <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Org Skill Distribution</h2>
-      <p className="text-xs text-slate-500 mb-5">Proficiency across AI skills</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Proficiency across AI skills</p>
       {SKILL_GAPS.strong.length === 0 && SKILL_GAPS.growing.length === 0 && SKILL_GAPS.gaps.length === 0 ? (
         <div className="text-center py-6">
           <TrendingUp className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm text-slate-500">Skill distribution will appear as team members complete lessons.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Skill distribution will appear as team members complete lessons.</p>
         </div>
       ) : (
         <div className="space-y-6">
