@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Sparkles, ChevronRight, ChevronLeft, User,
-  Building2, Zap, Target, Check, Briefcase, Mail,
+  Building2, Zap, Target, Check, Briefcase, Mail, Loader2,
 } from 'lucide-react';
 import { saveProfile, generateLearnerId } from '@/lib/profile-client';
 import {
@@ -59,8 +59,12 @@ const TOTAL_STEPS = 5;
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const [mode, setMode] = useState('new');
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState('forward');
+  const [lookupEmail, setLookupEmail] = useState('');
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState(null);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -150,6 +154,32 @@ export default function OnboardingPage() {
     handleFinish(selectedGoal);
   }
 
+  async function handleLookup() {
+    if (!lookupEmail.trim() || !lookupEmail.includes('@')) return;
+    setLookupLoading(true);
+    setLookupError(null);
+    try {
+      const res = await fetch('/api/user-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: lookupEmail.trim() }),
+      });
+      const data = await res.json();
+      if (data.found && data.hasProfile && data.profile) {
+        saveProfile(data.profile);
+        window.location.href = '/';
+      } else {
+        setLookupError("No account found with that email. Let's set you up!");
+        setEmail(lookupEmail.trim());
+        setMode('new');
+      }
+    } catch {
+      setLookupError('Something went wrong. Please try again.');
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
   function handleFinish(selectedGoal) {
     const trimmedEmail = email.trim().toLowerCase();
     const profile = {
@@ -166,6 +196,11 @@ export default function OnboardingPage() {
       onboarded_at: new Date().toISOString(),
     };
     saveProfile(profile);
+    fetch('/api/user-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'profile', data: profile }),
+    }).catch(() => {});
     window.location.href = '/';
   }
 
@@ -220,7 +255,17 @@ export default function OnboardingPage() {
           key={`${step}-${showSubTeams}`}
           className="w-full max-w-2xl animate-fade-in"
         >
-          {step === 1 && (
+          {step === 1 && mode === 'returning' && (
+            <StepReturning
+              email={lookupEmail}
+              onEmailChange={setLookupEmail}
+              onLookup={handleLookup}
+              loading={lookupLoading}
+              error={lookupError}
+              onSwitchToNew={() => { setMode('new'); setEmail(lookupEmail); }}
+            />
+          )}
+          {step === 1 && mode === 'new' && (
             <StepWelcome
               firstName={firstName}
               lastName={lastName}
@@ -230,6 +275,7 @@ export default function OnboardingPage() {
               onEmailChange={setEmail}
               onNext={goNext}
               canAdvance={canAdvance()}
+              onSwitchToReturning={() => setMode('returning')}
             />
           )}
           {step === 2 && !showSubTeams && (
@@ -276,7 +322,65 @@ export default function OnboardingPage() {
 
 /* ---------- Step Components ---------- */
 
-function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastNameChange, onEmailChange, onNext, canAdvance }) {
+function StepReturning({ email, onEmailChange, onLookup, loading, error, onSwitchToNew }) {
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && email.trim() && email.includes('@')) {
+      onLookup();
+    }
+  }
+
+  return (
+    <div className="text-center">
+      <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand mb-6 shadow-card">
+        <Sparkles className="w-10 h-10 text-white" strokeWidth={2} />
+      </div>
+      <h2 className="text-3xl font-bold text-ink mb-2 tracking-tight">
+        Welcome back!
+      </h2>
+      <p className="text-slate-600 mb-8 max-w-md mx-auto">
+        Enter your work email to pick up where you left off.
+      </p>
+      <div className="max-w-sm mx-auto mb-6">
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="email"
+            value={email}
+            onChange={e => onEmailChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="you@housecallpro.com"
+            autoFocus
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-ink placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
+          />
+        </div>
+        {error && (
+          <p className="text-sm text-amber-600 mt-3">{error}</p>
+        )}
+      </div>
+      <button
+        onClick={onLookup}
+        disabled={!email.trim() || !email.includes('@') || loading}
+        className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+      >
+        {loading ? (
+          <><Loader2 className="w-4 h-4 animate-spin" /> Looking up...</>
+        ) : (
+          <>Continue <ChevronRight className="w-4 h-4" /></>
+        )}
+      </button>
+      <div className="mt-6">
+        <button
+          onClick={onSwitchToNew}
+          className="text-sm text-slate-500 hover:text-brand transition-colors"
+        >
+          New here? Create an account
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastNameChange, onEmailChange, onNext, canAdvance, onSwitchToReturning }) {
   function handleKeyDown(e) {
     if (e.key === 'Enter' && canAdvance) {
       onNext();
@@ -355,6 +459,14 @@ function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastName
         Get Started
         <ChevronRight className="w-4 h-4" />
       </button>
+      <div className="mt-6">
+        <button
+          onClick={onSwitchToReturning}
+          className="text-sm text-slate-500 hover:text-brand transition-colors"
+        >
+          Already have an account? Sign in with email
+        </button>
+      </div>
     </div>
   );
 }
