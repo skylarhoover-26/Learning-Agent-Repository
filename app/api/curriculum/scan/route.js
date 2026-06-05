@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
 import { FEEDS } from '@/lib/feeds';
 
 function parseRss(xml, sourceName) {
@@ -22,6 +23,38 @@ function parseRss(xml, sourceName) {
     }
   }
   return items;
+}
+
+async function filterUnsafeContent(findings) {
+  if (findings.length === 0) return findings;
+  try {
+    const client = new Anthropic();
+    const titles = findings.map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}`).join('\n');
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      system: `You are a content safety filter for a corporate AI learning platform at Housecall Pro.
+
+Review each article title and flag any that are:
+- Political (partisan politics, elections, political opinion)
+- Sexually explicit or violent
+- Hate speech or discriminatory
+- Conspiracy theories or misinformation
+- Not related to AI, technology, or professional development
+
+Return ONLY a JSON array of 1-based indices of articles to REMOVE.
+If all articles are safe, return [].
+Output ONLY the JSON array, no prose.`,
+      messages: [{ role: 'user', content: `Review these articles:\n${titles}` }],
+    });
+    const text = response.content[0].text.trim();
+    const match = text.match(/\[[\s\S]*?\]/);
+    if (!match) return findings;
+    const removeIndices = new Set(JSON.parse(match[0]));
+    return findings.filter((_, i) => !removeIndices.has(i + 1));
+  } catch {
+    return findings;
+  }
 }
 
 export async function POST() {
@@ -56,10 +89,13 @@ export async function POST() {
     }
   }
 
+  const safeFindings = await filterUnsafeContent(allFindings);
+
   return NextResponse.json({
-    findings: allFindings,
+    findings: safeFindings,
     scannedAt: new Date().toISOString(),
     sources: FEEDS.length,
+    filtered: allFindings.length - safeFindings.length,
     errors,
   });
 }

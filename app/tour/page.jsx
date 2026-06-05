@@ -101,13 +101,13 @@ const TOUR_STEPS = [
   },
   {
     title: 'Step 9: Auto-Refresh Pipeline',
-    description: 'The curriculum stays current. An automated scanner checks 6 AI news sources, Claude generates update proposals, and admins approve or reject.',
+    description: 'The curriculum stays current. An automated scanner checks 13 AI news sources daily, Claude generates update proposals, and admins review them behind the scenes.',
     panels: {
-      left: { label: 'Scanner', content: 'Fetches RSS from OpenAI, Anthropic, DeepMind, arXiv (cs.CL + cs.AI), and Hacker News. Dedupes and stores findings.' },
-      right: { label: 'Curator', content: 'Claude reviews findings against existing modules. Proposes NEW MODULE / CONTENT UPDATE / DEPRECATION with severity and confidence ratings.' },
+      left: { label: 'Scanner', content: 'Fetches RSS from OpenAI, Anthropic, DeepMind, Meta AI, Microsoft AI, Mistral, MIT Tech Review, The Verge, VentureBeat, Hugging Face, arXiv, and Hacker News. Dedupes and stores findings.' },
+      right: { label: 'Safety Filter', content: 'Claude reviews every article for content safety — filtering out politics, off-topic content, and anything not work-appropriate before it reaches learners.' },
     },
     icon: Rss,
-    link: '/curriculum-pipeline',
+    link: '/',
   },
 ];
 

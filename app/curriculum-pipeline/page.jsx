@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import {
   getFindings, saveFindings,
@@ -31,15 +32,29 @@ const STATUS_STYLES = {
 };
 
 export default function CurriculumPipelinePage() {
+  const router = useRouter();
   const [findings, setFindings] = useState([]);
   const [proposals, setProposals] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [curating, setCurating] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [expandedProposal, setExpandedProposal] = useState(null);
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    async function loadFromServer() {
+    async function checkAccessAndLoad() {
+      try {
+        const adminRes = await fetch('/api/admin-check');
+        const { isAdmin: admin } = await adminRes.json();
+        setIsAdmin(admin);
+        setAdminChecked(true);
+        if (!admin) return;
+      } catch {
+        setAdminChecked(true);
+        return;
+      }
+
       try {
         const [findingsRes, proposalsRes] = await Promise.all([
           fetch('/api/user-data?type=curriculum_findings'),
@@ -64,8 +79,21 @@ export default function CurriculumPipelinePage() {
         setProposals(getProposals());
       }
     }
-    loadFromServer();
+    checkAccessAndLoad();
   }, []);
+
+  if (!adminChecked) {
+    return (
+      <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    router.replace('/');
+    return null;
+  }
 
   async function handleScan() {
     setScanning(true);

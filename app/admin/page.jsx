@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import PageHeader from '../../components/page-header';
 import {
   Shield,
+  ShieldAlert,
   CheckCircle,
   XCircle,
   Edit3,
@@ -16,6 +18,7 @@ import {
   Trash2,
   BookOpen,
   GripVertical,
+  Loader2,
 } from 'lucide-react';
 import {
   getCuratedLessons,
@@ -638,16 +641,47 @@ const ADMIN_VIEWS = [
 ];
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [proposals, setProposals] = useState(INITIAL_PROPOSALS);
   const [activeTab, setActiveTab] = useState('all');
   const [toast, setToast] = useState(null);
   const [adminView, setAdminView] = useState('proposals');
   const [curatedLessons, setCuratedLessons] = useState([]);
-  const [editorState, setEditorState] = useState(null); // null = list, 'new' = creating, lesson obj = editing
+  const [editorState, setEditorState] = useState(null);
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkAdmin() {
+      try {
+        const res = await fetch('/api/admin-check');
+        const { isAdmin: admin } = await res.json();
+        setIsAdmin(admin);
+      } catch {
+        setIsAdmin(false);
+      } finally {
+        setAdminChecked(true);
+      }
+    }
+    checkAdmin();
+  }, []);
 
   useEffect(() => {
     setCuratedLessons(getCuratedLessons());
   }, []);
+
+  if (!adminChecked) {
+    return (
+      <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    router.replace('/');
+    return null;
+  }
 
   const showToast = useCallback((message) => {
     setToast(message);

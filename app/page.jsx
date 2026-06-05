@@ -17,6 +17,7 @@ import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
 import LiveRecentLesson from '@/components/live-recent-lesson';
 import LiveSourcesFeed from '@/components/live-sources-feed';
+import UserMenu from '@/components/user-menu';
 
 const TIER_LABELS = {
   beginner: { label: 'Beginner', color: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
@@ -77,12 +78,7 @@ export default async function Dashboard() {
               <p className="text-xs text-white/60 leading-tight">By Housecall Pro</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-3 text-sm text-white/90">
-            <span>{learner.display_name || learner.slack_handle || 'Learner'}</span>
-            <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white font-semibold text-sm">
-              {(learner.display_name || learner.slack_handle || 'L').charAt(0).toUpperCase()}
-            </div>
-          </div>
+          <UserMenu />
         </div>
       </header>
 

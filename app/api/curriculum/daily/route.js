@@ -58,6 +58,38 @@ async function writeBlob(key, data) {
   }
 }
 
+async function filterUnsafeContent(findings) {
+  if (findings.length === 0) return findings;
+  try {
+    const client = new Anthropic();
+    const titles = findings.map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}`).join('\n');
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      system: `You are a content safety filter for a corporate AI learning platform at Housecall Pro.
+
+Review each article title and flag any that are:
+- Political (partisan politics, elections, political opinion)
+- Sexually explicit or violent
+- Hate speech or discriminatory
+- Conspiracy theories or misinformation
+- Not related to AI, technology, or professional development
+
+Return ONLY a JSON array of 1-based indices of articles to REMOVE.
+If all articles are safe, return [].
+Output ONLY the JSON array, no prose.`,
+      messages: [{ role: 'user', content: `Review these articles:\n${titles}` }],
+    });
+    const text = response.content[0].text.trim();
+    const match = text.match(/\[[\s\S]*?\]/);
+    if (!match) return findings;
+    const removeIndices = new Set(JSON.parse(match[0]));
+    return findings.filter((_, i) => !removeIndices.has(i + 1));
+  } catch {
+    return findings;
+  }
+}
+
 export async function GET(request) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -95,14 +127,17 @@ export async function GET(request) {
     const existing = (await readBlob(BLOB_FINDINGS_KEY)) || [];
     const existingIds = new Set(existing.map(f => f.externalId));
     const newFindings = allFindings.filter(f => !existingIds.has(f.externalId));
-    const merged = [...newFindings, ...existing].slice(0, 200);
+
+    const safeFindings = await filterUnsafeContent(newFindings);
+
+    const merged = [...safeFindings, ...existing].slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
 
-    if (newFindings.length === 0) {
+    if (safeFindings.length === 0) {
       return NextResponse.json({
         ok: true,
         step: 'scan',
-        message: 'No new findings, skipping proposal generation',
+        message: 'No new findings (or all filtered for safety), skipping proposal generation',
         scannedAt: new Date().toISOString(),
       });
     }
@@ -169,7 +204,7 @@ Output ONLY a JSON array. No prose. If no updates are warranted, return [].`,
     return NextResponse.json({
       ok: true,
       scannedAt: new Date().toISOString(),
-      newFindings: newFindings.length,
+      newFindings: safeFindings.length,
       totalFindings: merged.length,
       newProposals: newProposals.length,
       errors,
