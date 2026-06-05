@@ -8,7 +8,7 @@ import {
   Sparkles, Target, TrendingUp, BookOpen,
   MessageCircle, ChevronRight, Library,
   Gamepad2, Lightbulb, Trophy, GitBranch, BarChart3,
-  ClipboardCheck, Crosshair, GraduationCap,
+  ClipboardCheck, Crosshair, GraduationCap, HelpCircle,
 } from 'lucide-react';
 import MiniHeatmap from '@/components/mini-heatmap';
 import { findDoThisNowSkill } from '@/lib/heatmap-data';
@@ -153,6 +153,7 @@ export default async function Dashboard() {
           <QuickAction href="/calibration" icon={Crosshair} label="Calibrate" />
           <QuickAction href="/skill-graph" icon={GitBranch} label="Skill Graph" />
           <QuickAction href="/manager" icon={BarChart3} label="Manager" />
+          <QuickAction href="/getting-started" icon={HelpCircle} label="Tutorial" />
         </div>
 
         {/* 5. Mini heatmap */}

@@ -201,7 +201,7 @@ export default function OnboardingPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'profile', data: profile }),
     }).catch(() => {});
-    window.location.href = '/';
+    window.location.href = '/getting-started';
   }
 
   const progressPercent = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
