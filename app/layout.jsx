@@ -1,5 +1,7 @@
 import './globals.css';
 import ThemeToggle from '@/components/theme-toggle';
+import { SessionWrapper } from '@/components/session-wrapper';
+import { ProfileProvider } from '@/components/profile-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
 
 export const metadata = {
@@ -21,9 +23,13 @@ export default function RootLayout({ children }) {
         ` }} />
       </head>
       <body className="min-h-screen bg-bg-warm text-ink dark:bg-slate-900 dark:text-slate-200">
-        <ProgressionProvider>
-          {children}
-        </ProgressionProvider>
+        <SessionWrapper>
+          <ProfileProvider>
+            <ProgressionProvider>
+              {children}
+            </ProgressionProvider>
+          </ProfileProvider>
+        </SessionWrapper>
         <ThemeToggle />
       </body>
     </html>

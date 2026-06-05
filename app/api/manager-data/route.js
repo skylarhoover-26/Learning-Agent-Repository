@@ -1,11 +1,15 @@
 import { put, list } from '@vercel/blob';
+import { timingSafeEqual } from 'crypto';
 
 const BLOB_KEY = 'manager-data/org-structure.json';
 const API_SECRET = process.env.MANAGER_DATA_SECRET;
 
 export async function POST(request) {
+  if (!API_SECRET) {
+    return Response.json({ error: 'Server misconfigured' }, { status: 503 });
+  }
   const authHeader = request.headers.get('x-api-secret');
-  if (API_SECRET && authHeader !== API_SECRET) {
+  if (!authHeader || !timingSafeEqual(Buffer.from(authHeader), Buffer.from(API_SECRET))) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -17,7 +21,6 @@ export async function POST(request) {
     };
 
     await put(BLOB_KEY, JSON.stringify(payload), {
-      access: 'public',
       addRandomSuffix: false,
       contentType: 'application/json',
     });
@@ -37,7 +40,7 @@ export async function GET() {
       return Response.json({ source: 'mock', data: null });
     }
 
-    const response = await fetch(blob.url);
+    const response = await fetch(blob.downloadUrl);
     const data = await response.json();
     return Response.json({ source: 'snowflake', data });
   } catch {

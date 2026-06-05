@@ -2,25 +2,17 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { getProfileClient } from '@/lib/profile-client';
+import { signOut } from 'next-auth/react';
+import { useProfile } from '@/components/profile-provider';
 import { Settings, LogOut, FileText, ChevronDown } from 'lucide-react';
 
 export default function UserMenu() {
-  const router = useRouter();
+  const { profile } = useProfile();
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [profile, setProfile] = useState(null);
   const menuRef = useRef(null);
 
   useEffect(() => {
-    try {
-      const p = getProfileClient();
-      if (p) setProfile(p);
-    } catch {
-      // cookie parse failure
-    }
-
     fetch('/api/admin-check')
       .then(r => r.json())
       .then(d => setIsAdmin(d.isAdmin))
@@ -38,8 +30,7 @@ export default function UserMenu() {
   }, []);
 
   function handleLogout() {
-    document.cookie = 'learner_profile=; path=/; max-age=0';
-    router.push('/onboarding');
+    signOut({ callbackUrl: '/auth/signin' });
   }
 
   const displayName = profile?.display_name || profile?.slack_handle || 'Learner';

@@ -193,6 +193,8 @@ function buildSkillsBlocks() {
 
 async function sendDelayedResponse(responseUrl, blocks, responseType) {
   try {
+    const parsed = new URL(responseUrl);
+    if (parsed.hostname !== 'hooks.slack.com') return;
     await fetch(responseUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -237,6 +239,12 @@ function handleSlashCommand(command, text, responseUrl) {
 export async function POST(request) {
   const contentType = request.headers.get('content-type') || '';
   const rawBody = await request.text();
+
+  const signature = request.headers.get('x-slack-signature');
+  const timestamp = request.headers.get('x-slack-request-timestamp');
+  if (!signature || !timestamp || !verifySlackSignature(signature, timestamp, rawBody)) {
+    return Response.json({ error: 'Invalid signature' }, { status: 401 });
+  }
 
   if (contentType.includes('application/json')) {
     const payload = JSON.parse(rawBody);

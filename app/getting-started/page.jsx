@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getProfileClient } from '@/lib/profile-client';
+import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft, X,
   Zap, BookOpen, Crosshair, BarChart3,
@@ -75,18 +75,15 @@ export default function GettingStartedPage() {
   const [displayName, setDisplayName] = useState('');
   const [completedSteps, setCompletedSteps] = useState(new Set());
 
+  const { profile } = useProfile();
+
   useEffect(() => {
-    try {
-      const profile = getProfileClient();
-      if (profile?.first_name) {
-        setDisplayName(profile.first_name);
-      } else if (profile?.display_name) {
-        setDisplayName(profile.display_name.split(' ')[0]);
-      }
-    } catch {
-      // no profile
+    if (profile?.first_name) {
+      setDisplayName(profile.first_name);
+    } else if (profile?.display_name) {
+      setDisplayName(profile.display_name.split(' ')[0]);
     }
-  }, []);
+  }, [profile]);
 
   const step = TUTORIAL_STEPS[currentStep];
   const Icon = step.icon;

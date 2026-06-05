@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
-import { getProfileClient } from '@/lib/profile-client';
+import { useProfile } from '@/components/profile-provider';
 import {
   Trophy, TrendingUp, ArrowUp, Sparkles, AlertCircle,
   BookOpen, Shield, Clock, Users,
@@ -20,18 +20,8 @@ function getRankMedal(rank) {
 }
 
 export default function LeaderboardPage() {
-  const [userDept, setUserDept] = useState(null);
-
-  useEffect(() => {
-    try {
-      const profile = getProfileClient();
-      if (profile?.department) {
-        setUserDept(profile.department);
-      }
-    } catch {
-      // cookie not set — no highlight
-    }
-  }, []);
+  const { profile } = useProfile();
+  const userDept = profile?.department || null;
 
   const userRow = DEPARTMENTS.find((d) => d.name === userDept);
   const userRank = userRow?.rank ?? null;

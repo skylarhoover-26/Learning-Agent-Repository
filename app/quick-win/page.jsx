@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
-import { getProfileClient } from '@/lib/profile-client';
+import { useProfile } from '@/components/profile-provider';
 import { getTaskList } from '@/lib/curriculum-data';
 import {
   Zap, Copy, Check, ChevronRight, Sparkles,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export default function QuickWinPage() {
-  const [profile, setProfile] = useState(null);
+  const { profile } = useProfile();
   const [department, setDepartment] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -21,20 +21,12 @@ export default function QuickWinPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    try {
-      const p = getProfileClient();
-      if (p) {
-        setProfile(p);
-        setDepartment(p.department);
-        if (p.department) {
-          const taskList = getTaskList(p.department, p.sub_team);
-          setTasks(taskList);
-        }
-      }
-    } catch {
-      // Profile not available
+    if (profile?.department) {
+      setDepartment(profile.department);
+      const taskList = getTaskList(profile.department, profile.sub_team);
+      setTasks(taskList);
     }
-  }, []);
+  }, [profile]);
 
   async function fetchQuickWin(task) {
     setIsLoading(true);

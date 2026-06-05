@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getUserData, saveUserData } from '@/lib/blob-store';
-import { getProfile } from '@/lib/profile';
+import { getAuthenticatedUser } from '@/lib/auth-helpers';
 
 export async function GET(request) {
   try {
-    const profile = await getProfile();
-    if (!profile?.id) {
+    const user = await getAuthenticatedUser();
+    if (!user?.email) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
@@ -15,7 +15,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Missing type parameter' }, { status: 400 });
     }
 
-    const data = await getUserData(profile.id, dataType);
+    const data = await getUserData(user.email, dataType);
     return NextResponse.json({ data });
   } catch (error) {
     console.error('GET /api/user-data error:', error);
@@ -25,8 +25,8 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const profile = await getProfile();
-    if (!profile?.id) {
+    const user = await getAuthenticatedUser();
+    if (!user?.email) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
@@ -35,7 +35,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing type or data' }, { status: 400 });
     }
 
-    await saveUserData(profile.id, type, data);
+    await saveUserData(user.email, type, data);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('POST /api/user-data error:', error);

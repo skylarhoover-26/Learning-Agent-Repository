@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { getProfile } from '@/lib/profile';
+import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { getQuickWin, getTaskList } from '@/lib/curriculum-data';
 
 let client;
@@ -68,7 +68,7 @@ function buildSystemPrompt(profile) {
 
 export async function POST(request) {
   try {
-    const profile = await getProfile();
+    const profile = await getAuthenticatedProfile();
     const { department, sub_team, top_tasks } = profile || {};
 
     let body = {};

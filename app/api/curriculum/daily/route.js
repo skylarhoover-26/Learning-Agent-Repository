@@ -34,7 +34,7 @@ async function readBlob(key) {
   try {
     const { blobs } = await list({ prefix: key, limit: 1 });
     if (blobs.length === 0) return null;
-    const res = await fetch(blobs[0].url);
+    const res = await fetch(blobs[0].downloadUrl);
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -49,7 +49,6 @@ async function writeBlob(key, data) {
       await del(blob.url);
     }
     await put(key, JSON.stringify(data), {
-      access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
     });

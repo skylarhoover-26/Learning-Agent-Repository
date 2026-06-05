@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getProfile } from '@/lib/profile';
+import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonResponse } from '@/lib/ai';
 
 export async function POST(request) {
   try {
     const { topic, format } = await request.json();
-    const profile = await getProfile();
+    const profile = await getAuthenticatedProfile();
 
     const messages = [{ role: 'user', content: 'Start the lesson' }];
     const response = await generateLessonResponse(topic, messages, profile, { format });

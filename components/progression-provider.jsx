@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getAllData } from '@/lib/learner-store';
 import { getTotalXp, getLevel, calculateStreak, LEVEL_THRESHOLDS } from '@/lib/progression';
-import { getProfileClient } from '@/lib/profile-client';
+import { useProfile } from '@/components/profile-provider';
 
 const ProgressionContext = createContext(null);
 
@@ -57,16 +57,16 @@ const EMPTY = {
 };
 
 export function ProgressionProvider({ children }) {
+  const { profile } = useProfile();
   const [data, setData] = useState(EMPTY);
 
   const load = useCallback(() => {
-    const profile = getProfileClient();
     if (profile?.id) {
       setData({ ...buildStats(profile.id), isLoaded: true, refresh: load });
     } else {
       setData({ ...EMPTY, isLoaded: true, refresh: load });
     }
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
     load();

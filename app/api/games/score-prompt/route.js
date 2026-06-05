@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { getProfile } from '@/lib/profile';
+import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 
 let client;
 function getClient() {
@@ -33,7 +33,7 @@ Be encouraging but honest. Always reference the RCTF framework (Role, Context, T
 export async function POST(request) {
   try {
     const { scenario, prompt } = await request.json();
-    const profile = await getProfile();
+    const profile = await getAuthenticatedProfile();
 
     if (!scenario || !prompt) {
       return NextResponse.json(

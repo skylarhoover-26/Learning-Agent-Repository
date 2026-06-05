@@ -8,7 +8,7 @@ import { SlideCard, RecapCard } from '@/components/lesson-slide';
 import XpToast from '@/components/xp-toast';
 import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete } from '@/lib/progression';
-import { getProfileClient } from '@/lib/profile-client';
+import { useProfile } from '@/components/profile-provider';
 import { getCuratedLessons, getCuratedLessonById } from '@/lib/curated-lessons';
 import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
 import {
@@ -56,6 +56,7 @@ function LessonContent() {
   const lessonStartedAt = useRef(null);
   const hasRecordedCompletion = useRef(false);
   const { refresh: refreshProgression } = useProgression() || {};
+  const { profile } = useProfile();
 
   useEffect(() => {
     setCuratedLessons(getCuratedLessons());
@@ -392,7 +393,6 @@ function LessonContent() {
     hasRecordedCompletion.current = true;
     clearSavedLesson();
     try {
-      const profile = getProfileClient();
       if (profile?.id && topic) {
         const result = onLessonComplete(profile.id, topic, lessonStartedAt.current);
         setProgressionResult(result);

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getProfile } from '@/lib/profile';
+import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateDiscoverOpportunities } from '@/lib/ai';
 
 export async function POST(request) {
   try {
     const { workDescription } = await request.json();
-    const profile = await getProfile();
+    const profile = await getAuthenticatedProfile();
 
     const opportunities = await generateDiscoverOpportunities(workDescription, profile);
 

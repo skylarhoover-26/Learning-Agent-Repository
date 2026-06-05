@@ -2,11 +2,12 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useProfile } from '@/components/profile-provider';
 import {
-  Sparkles, ChevronRight, ChevronLeft, User,
-  Building2, Zap, Target, Check, Briefcase, Mail, Loader2, Plus,
+  Sparkles, ChevronRight, ChevronLeft,
+  Building2, Zap, Target, Check, Briefcase, Plus,
 } from 'lucide-react';
-import { saveProfile, generateLearnerId } from '@/lib/profile-client';
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
 } from '@/lib/curriculum-data';
@@ -55,20 +56,15 @@ const GOALS = [
   "Explore what's possible",
 ];
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [mode, setMode] = useState('new');
+  const { data: session } = useSession();
+  const { refreshProfile } = useProfile();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState('forward');
-  const [lookupEmail, setLookupEmail] = useState('');
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupError, setLookupError] = useState(null);
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
   const [department, setDepartment] = useState('');
   const [subTeam, setSubTeam] = useState(null);
   const [showSubTeams, setShowSubTeams] = useState(false);
@@ -82,21 +78,15 @@ export default function OnboardingPage() {
 
   const canAdvance = useCallback(() => {
     if (step === 1) {
-      return firstName.trim().length > 0
-        && lastName.trim().length > 0
-        && email.trim().length > 0
-        && email.includes('@');
-    }
-    if (step === 2) {
       if (!department) return false;
       if (SUB_TEAMS[department] && !subTeam) return false;
       return true;
     }
-    if (step === 3) return topTasks.length >= 1;
-    if (step === 4) return tier.length > 0;
-    if (step === 5) return goal.length > 0;
+    if (step === 2) return topTasks.length >= 1;
+    if (step === 3) return tier.length > 0;
+    if (step === 4) return goal.length > 0;
     return false;
-  }, [step, firstName, lastName, email, department, subTeam, topTasks, tier, goal]);
+  }, [step, department, subTeam, topTasks, tier, goal]);
 
   function goNext() {
     if (!canAdvance()) return;
@@ -107,7 +97,7 @@ export default function OnboardingPage() {
   function goBack() {
     if (step <= 1) return;
     setDirection('back');
-    if (step === 2 && showSubTeams) {
+    if (step === 1 && showSubTeams) {
       setShowSubTeams(false);
       setSubTeam(null);
       return;
@@ -124,7 +114,7 @@ export default function OnboardingPage() {
     } else {
       setShowSubTeams(false);
       setDirection('forward');
-      setStep(3);
+      setStep(2);
     }
   }
 
@@ -132,7 +122,7 @@ export default function OnboardingPage() {
     setSubTeam(team);
     setTopTasks([]);
     setDirection('forward');
-    setStep(3);
+    setStep(2);
   }
 
   function handleTaskToggle(task) {
@@ -148,7 +138,7 @@ export default function OnboardingPage() {
   function handleTierSelect(tierId) {
     setTier(tierId);
     setDirection('forward');
-    setStep(5);
+    setStep(4);
   }
 
   function handleGoalSelect(selectedGoal) {
@@ -156,40 +146,16 @@ export default function OnboardingPage() {
     handleFinish(selectedGoal);
   }
 
-  async function handleLookup() {
-    if (!lookupEmail.trim() || !lookupEmail.includes('@')) return;
-    setLookupLoading(true);
-    setLookupError(null);
-    try {
-      const res = await fetch('/api/user-lookup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: lookupEmail.trim() }),
-      });
-      const data = await res.json();
-      if (data.found && data.hasProfile && data.profile) {
-        saveProfile(data.profile);
-        window.location.href = '/';
-      } else {
-        setLookupError("No account found with that email. Let's set you up!");
-        setEmail(lookupEmail.trim());
-        setMode('new');
-      }
-    } catch {
-      setLookupError('Something went wrong. Please try again.');
-    } finally {
-      setLookupLoading(false);
-    }
-  }
-
-  function handleFinish(selectedGoal) {
-    const trimmedEmail = email.trim().toLowerCase();
+  async function handleFinish(selectedGoal) {
+    const email = session?.user?.email?.toLowerCase() || '';
+    const name = session?.user?.name || '';
+    const nameParts = name.split(' ');
     const profile = {
-      id: trimmedEmail,
-      display_name: `${firstName.trim()} ${lastName.trim()}`,
-      first_name: firstName.trim(),
-      last_name: lastName.trim(),
-      email: trimmedEmail,
+      id: email,
+      display_name: name,
+      first_name: nameParts[0] || '',
+      last_name: nameParts.slice(1).join(' ') || '',
+      email,
       department,
       sub_team: subTeam || null,
       top_tasks: topTasks,
@@ -197,16 +163,21 @@ export default function OnboardingPage() {
       goal: selectedGoal || goal,
       onboarded_at: new Date().toISOString(),
     };
-    saveProfile(profile);
-    fetch('/api/user-data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'profile', data: profile }),
-    }).catch(() => {});
-    window.location.href = '/getting-started';
+    try {
+      await fetch('/api/user-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'profile', data: profile }),
+      });
+      await refreshProfile();
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+    }
+    router.push('/getting-started');
   }
 
   const progressPercent = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
+  const displayName = session?.user?.name?.split(' ')[0] || 'there';
 
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex flex-col">
@@ -257,36 +228,23 @@ export default function OnboardingPage() {
           key={`${step}-${showSubTeams}`}
           className="w-full max-w-2xl animate-fade-in"
         >
-          {step === 1 && mode === 'returning' && (
-            <StepReturning
-              email={lookupEmail}
-              onEmailChange={setLookupEmail}
-              onLookup={handleLookup}
-              loading={lookupLoading}
-              error={lookupError}
-              onSwitchToNew={() => { setMode('new'); setEmail(lookupEmail); }}
-            />
+          {step === 1 && !showSubTeams && (
+            <>
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight">
+                  Hey {displayName}, let's set up your learning path
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+                  This only takes a minute.
+                </p>
+              </div>
+              <StepDepartment
+                selected={department}
+                onSelect={handleDepartmentSelect}
+              />
+            </>
           )}
-          {step === 1 && mode === 'new' && (
-            <StepWelcome
-              firstName={firstName}
-              lastName={lastName}
-              email={email}
-              onFirstNameChange={setFirstName}
-              onLastNameChange={setLastName}
-              onEmailChange={setEmail}
-              onNext={goNext}
-              canAdvance={canAdvance()}
-              onSwitchToReturning={() => setMode('returning')}
-            />
-          )}
-          {step === 2 && !showSubTeams && (
-            <StepDepartment
-              selected={department}
-              onSelect={handleDepartmentSelect}
-            />
-          )}
-          {step === 2 && showSubTeams && (
+          {step === 1 && showSubTeams && (
             <StepSubTeam
               department={department}
               teams={SUB_TEAMS[department] || []}
@@ -294,7 +252,7 @@ export default function OnboardingPage() {
               onSelect={handleSubTeamSelect}
             />
           )}
-          {step === 3 && (
+          {step === 2 && (
             <StepTopTasks
               department={department}
               tasks={availableTasks}
@@ -317,13 +275,13 @@ export default function OnboardingPage() {
               canAdvance={canAdvance()}
             />
           )}
-          {step === 4 && (
+          {step === 3 && (
             <StepTier
               selected={tier}
               onSelect={handleTierSelect}
             />
           )}
-          {step === 5 && (
+          {step === 4 && (
             <StepGoal
               selected={goal}
               onSelect={handleGoalSelect}
@@ -331,157 +289,6 @@ export default function OnboardingPage() {
           )}
         </div>
       </main>
-    </div>
-  );
-}
-
-/* ---------- Step Components ---------- */
-
-function StepReturning({ email, onEmailChange, onLookup, loading, error, onSwitchToNew }) {
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' && email.trim() && email.includes('@')) {
-      onLookup();
-    }
-  }
-
-  return (
-    <div className="text-center">
-      <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand mb-6 shadow-card">
-        <Sparkles className="w-10 h-10 text-white" strokeWidth={2} />
-      </div>
-      <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
-        Welcome back!
-      </h2>
-      <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
-        Enter your work email to pick up where you left off.
-      </p>
-      <div className="max-w-sm mx-auto mb-6">
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="email"
-            value={email}
-            onChange={e => onEmailChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="you@housecallpro.com"
-            autoFocus
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
-          />
-        </div>
-        {error && (
-          <p className="text-sm text-amber-600 mt-3">{error}</p>
-        )}
-      </div>
-      <button
-        onClick={onLookup}
-        disabled={!email.trim() || !email.includes('@') || loading}
-        className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-      >
-        {loading ? (
-          <><Loader2 className="w-4 h-4 animate-spin" /> Looking up...</>
-        ) : (
-          <>Continue <ChevronRight className="w-4 h-4" /></>
-        )}
-      </button>
-      <div className="mt-6">
-        <button
-          onClick={onSwitchToNew}
-          className="text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
-        >
-          New here? Create an account
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function StepWelcome({ firstName, lastName, email, onFirstNameChange, onLastNameChange, onEmailChange, onNext, canAdvance, onSwitchToReturning }) {
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' && canAdvance) {
-      onNext();
-    }
-  }
-
-  return (
-    <div className="text-center">
-      <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand mb-6 shadow-card">
-        <Sparkles className="w-10 h-10 text-white" strokeWidth={2} />
-      </div>
-      <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
-        Welcome to the AI Learning Platform
-      </h2>
-      <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
-        Your personalized journey to mastering AI starts here. Let's get to know you.
-      </p>
-      <div className="max-w-sm mx-auto space-y-4 mb-6">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="first-name-input" className="block text-sm font-medium text-ink dark:text-slate-200 mb-1.5 text-left">
-              First name
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                id="first-name-input"
-                type="text"
-                value={firstName}
-                onChange={e => onFirstNameChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="First"
-                autoFocus
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="last-name-input" className="block text-sm font-medium text-ink dark:text-slate-200 mb-1.5 text-left">
-              Last name
-            </label>
-            <input
-              id="last-name-input"
-              type="text"
-              value={lastName}
-              onChange={e => onLastNameChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Last"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
-            />
-          </div>
-        </div>
-        <div>
-          <label htmlFor="email-input" className="block text-sm font-medium text-ink dark:text-slate-200 mb-1.5 text-left">
-            Work email
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              id="email-input"
-              type="email"
-              value={email}
-              onChange={e => onEmailChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="you@housecallpro.com"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-base"
-            />
-          </div>
-        </div>
-      </div>
-      <button
-        onClick={onNext}
-        disabled={!canAdvance}
-        className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-      >
-        Get Started
-        <ChevronRight className="w-4 h-4" />
-      </button>
-      <div className="mt-6">
-        <button
-          onClick={onSwitchToReturning}
-          className="text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
-        >
-          Already have an account? Sign in with email
-        </button>
-      </div>
     </div>
   );
 }

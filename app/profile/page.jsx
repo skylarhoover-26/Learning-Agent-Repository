@@ -7,7 +7,7 @@ import {
   Building2, Briefcase, Plus, Pencil, X, Loader2,
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
-import { getProfileClient, saveProfile } from '@/lib/profile-client';
+import { useProfile } from '@/components/profile-provider';
 import { DEPARTMENTS, SUBTEAMS, getTaskList } from '@/lib/curriculum-data';
 
 const TIER_LABELS = {
@@ -32,6 +32,7 @@ function formatDate(isoString) {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { profile: ctxProfile, updateProfile, isLoading: profileLoading } = useProfile();
   const [profile, setProfile] = useState(null);
   const [editName, setEditName] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
@@ -46,27 +47,30 @@ export default function ProfilePage() {
   const [roleSaveStatus, setRoleSaveStatus] = useState('idle');
 
   useEffect(() => {
-    const p = getProfileClient();
-    if (!p) {
+    if (profileLoading) return;
+    if (!ctxProfile) {
       router.push('/onboarding');
       return;
     }
-    setProfile(p);
-    setEditName(p.display_name || '');
-  }, [router]);
+    setProfile(ctxProfile);
+    setEditName(ctxProfile.display_name || '');
+  }, [ctxProfile, profileLoading, router]);
 
-  function handleSaveName() {
+  async function handleSaveName() {
     const trimmed = editName.trim();
     if (!trimmed || !profile) return;
     const updated = { ...profile, display_name: trimmed };
-    saveProfile(updated);
-    setProfile(updated);
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 2000);
+    try {
+      await updateProfile(updated);
+      setProfile(updated);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Failed to save name:', error);
+    }
   }
 
   function handleReset() {
-    document.cookie = 'learner_profile=; path=/; max-age=0';
     router.push('/onboarding');
   }
 
@@ -122,16 +126,11 @@ export default function ProfilePage() {
       sub_team: needsSubTeam ? editSubTeam : null,
       top_tasks: editTopTasks,
     };
-    saveProfile(updated);
-    setProfile(updated);
     try {
-      await fetch('/api/user-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'profile', data: updated }),
-      });
+      await updateProfile(updated);
+      setProfile(updated);
     } catch (e) {
-      console.error('Failed to persist profile to blob:', e);
+      console.error('Failed to persist profile:', e);
     }
     setRoleSaveStatus('saved');
     setEditingRole(false);
