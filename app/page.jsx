@@ -25,20 +25,9 @@ const TIER_LABELS = {
   developer: { label: 'Developer', color: 'bg-slate-100 text-ink ring-1 ring-slate-300' },
 };
 
-const DEPT_LEADERBOARD = [
-  { name: 'Customer Success', xp: 14200 }, { name: 'Sales', xp: 12800 },
-  { name: 'Product', xp: 11500 }, { name: 'Engineering', xp: 10900 },
-  { name: 'Marketing', xp: 9400 },
-];
+const DEPT_LEADERBOARD = [];
 
-const WEEKLY_CHANGES = [
-  { tag: 'DIRECT IMPACT', borderColor: 'border-l-red-500', tagColor: 'bg-red-50 text-red-700',
-    headline: 'GPT-5 reasoning controls change customer reply tone', affects: 'Customer Comms', readTime: '4 min' },
-  { tag: 'UPDATED FOR YOU', borderColor: 'border-l-purple-500', tagColor: 'bg-purple-50 text-purple-700',
-    headline: "Anthropic's agent SDK replaces old tool-call patterns", affects: 'AI Agents', readTime: '6 min' },
-  { tag: 'HEADS UP', borderColor: 'border-l-amber-500', tagColor: 'bg-amber-50 text-amber-700',
-    headline: 'New PII detection rules from NIST affect AI compliance', affects: 'Compliance', readTime: '3 min' },
-];
+const WEEKLY_CHANGES = [];
 
 function getGreetingPrefix() {
   const hour = new Date().getHours();
@@ -217,33 +206,16 @@ export default async function Dashboard() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-ink dark:text-slate-200">What Changed This Week</h3>
-            <span className="flex items-center gap-1.5 text-xs text-slate-500">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              Auto-refreshed weekly
-            </span>
+            <Link
+              href="/curriculum-pipeline"
+              className="text-sm font-medium text-brand hover:text-brand-600 transition-colors"
+            >
+              Scan for updates &rarr;
+            </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {WEEKLY_CHANGES.map(change => (
-              <div
-                key={change.tag}
-                className={`border-l-4 ${change.borderColor} bg-bg-warm dark:bg-slate-900 rounded-xl p-4`}
-              >
-                <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${change.tagColor} mb-2`}>
-                  {change.tag}
-                </span>
-                <p className="text-sm font-semibold text-ink dark:text-slate-200 leading-snug mb-2">
-                  {change.headline}
-                </p>
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>Affects: {change.affects}</span>
-                  <span>{change.readTime}</span>
-                </div>
-                <button className="text-xs font-medium text-brand mt-2 hover:text-brand-600 transition-colors">
-                  Read more &rarr;
-                </button>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-slate-500 italic">
+            No updates yet. Use the Curriculum Pipeline to scan AI news sources and generate updates.
+          </p>
         </div>
 
         {/* 9. Department leaderboard preview */}
@@ -257,34 +229,9 @@ export default async function Dashboard() {
               View full leaderboard &rarr;
             </Link>
           </div>
-          <div className="space-y-3">
-            {DEPT_LEADERBOARD.map((dept, i) => {
-              const maxXp = DEPT_LEADERBOARD[0].xp;
-              const pct = Math.round((dept.xp / maxXp) * 100);
-              const isUser = dept.name === userDept;
-              return (
-                <div key={dept.name} className="flex items-center gap-3">
-                  <span className={`w-6 text-center text-sm font-bold ${isUser ? 'text-brand' : 'text-slate-400'}`}>
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-medium truncate ${isUser ? 'text-brand font-semibold' : 'text-ink dark:text-slate-200'}`}>
-                        {dept.name} {isUser && '(you)'}
-                      </span>
-                      <span className="text-xs text-slate-500 shrink-0 ml-2">{dept.xp.toLocaleString()} XP</span>
-                    </div>
-                    <div className="h-1.5 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${isUser ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-500'}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <p className="text-sm text-slate-500 italic">
+            Leaderboard data will appear as team members complete lessons and earn XP.
+          </p>
         </div>
 
         {/* 10. Skills: Strong / Growing / Gaps */}

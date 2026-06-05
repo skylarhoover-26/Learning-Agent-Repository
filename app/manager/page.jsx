@@ -9,21 +9,9 @@ import {
 } from 'lucide-react';
 
 const SKILL_GAPS = {
-  strong: [
-    { name: 'Prompt basics', pct: 78 },
-    { name: 'Email drafting', pct: 65 },
-    { name: 'Meeting summaries', pct: 62 },
-  ],
-  growing: [
-    { name: 'Data analysis', pct: 45 },
-    { name: 'Report writing', pct: 41 },
-    { name: 'Workflow design', pct: 38 },
-  ],
-  gaps: [
-    { name: 'Advanced prompting', pct: 22 },
-    { name: 'Automation', pct: 18 },
-    { name: 'AI agents', pct: 12 },
-  ],
+  strong: [],
+  growing: [],
+  gaps: [],
 };
 
 function ManagerSearch({ onResult, loading, onSubmit }) {
@@ -188,18 +176,7 @@ function OverviewCards({ teamSize }) {
   );
 }
 
-const MOCK_COMPETENCIES = [
-  { name: 'Sarah Kim', role: 'CSM', level: 'Practitioner', progress: 60, status: 'On Track',
-    scores: { personal: { s: 3, m: 3 }, team: { s: 2, m: 2 }, org: { s: 1, m: 2 }, development: { s: 3, m: 3 } } },
-  { name: 'Jason Park', role: 'CSM', level: 'Power User', progress: 85, status: 'On Track',
-    scores: { personal: { s: 4, m: 4 }, team: { s: 3, m: 3 }, org: { s: 3, m: 2 }, development: { s: 4, m: 4 } } },
-  { name: 'Emily Tran', role: 'Sr. CSM', level: 'Builder', progress: 100, status: 'Completed',
-    scores: { personal: { s: 5, m: 5 }, team: { s: 4, m: 4 }, org: { s: 4, m: 3 }, development: { s: 5, m: 5 } } },
-  { name: 'Alex Rivera', role: 'CSM', level: 'Beginner', progress: 20, status: 'Needs Nudge',
-    scores: { personal: { s: 1, m: 1 }, team: { s: 1, m: 1 }, org: { s: 1, m: 1 }, development: { s: 2, m: 1 } } },
-  { name: 'Morgan Lee', role: 'CSM', level: 'Practitioner', progress: 0, status: 'Not Started',
-    scores: { personal: { s: null, m: null }, team: { s: null, m: null }, org: { s: null, m: null }, development: { s: null, m: null } } },
-];
+const MOCK_COMPETENCIES = [];
 
 const SCORE_DOT_COLORS = {
   1: 'bg-red-400',
@@ -255,6 +232,13 @@ function CompetenciesTable() {
         </button>
       </div>
 
+      {MOCK_COMPETENCIES.length === 0 ? (
+        <div className="text-center py-8">
+          <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No competency data yet</p>
+          <p className="text-xs text-slate-500">Scores will appear as team members complete the AI Impact Assessment.</p>
+        </div>
+      ) : (
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-ink/50 dark:text-slate-400 uppercase tracking-wide border-b border-ink/10 dark:border-slate-700">
@@ -327,16 +311,19 @@ function CompetenciesTable() {
           ))}
         </tbody>
       </table>
+      )}
 
-      <div className="mt-4 flex gap-4 text-xs text-slate-400">
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> 1</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 2</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> 3</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-400" /> 4</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> 5</span>
-        <span className="ml-2 text-slate-300">|</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-200" /> Not assessed</span>
-      </div>
+      {MOCK_COMPETENCIES.length > 0 && (
+        <div className="mt-4 flex gap-4 text-xs text-slate-400">
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> 1</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 2</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> 3</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-400" /> 4</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> 5</span>
+          <span className="ml-2 text-slate-300">|</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-200" /> Not assessed</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -357,27 +344,40 @@ function SkillGaps() {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
       <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Org Skill Distribution</h2>
-      <p className="text-xs text-slate-500 mb-5">Proficiency across AI skills (mock data)</p>
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-green-600 mb-3">Strong</h3>
-          <div className="space-y-2">
-            {SKILL_GAPS.strong.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-green-500" />)}
-          </div>
+      <p className="text-xs text-slate-500 mb-5">Proficiency across AI skills</p>
+      {SKILL_GAPS.strong.length === 0 && SKILL_GAPS.growing.length === 0 && SKILL_GAPS.gaps.length === 0 ? (
+        <div className="text-center py-6">
+          <TrendingUp className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+          <p className="text-sm text-slate-500">Skill distribution will appear as team members complete lessons.</p>
         </div>
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-500 mb-3">Growing</h3>
-          <div className="space-y-2">
-            {SKILL_GAPS.growing.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-amber-400" />)}
-          </div>
+      ) : (
+        <div className="space-y-6">
+          {SKILL_GAPS.strong.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-green-600 mb-3">Strong</h3>
+              <div className="space-y-2">
+                {SKILL_GAPS.strong.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-green-500" />)}
+              </div>
+            </div>
+          )}
+          {SKILL_GAPS.growing.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-500 mb-3">Growing</h3>
+              <div className="space-y-2">
+                {SKILL_GAPS.growing.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-amber-400" />)}
+              </div>
+            </div>
+          )}
+          {SKILL_GAPS.gaps.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-red-500 mb-3">Gaps</h3>
+              <div className="space-y-2">
+                {SKILL_GAPS.gaps.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-red-400" />)}
+              </div>
+            </div>
+          )}
         </div>
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-red-500 mb-3">Gaps</h3>
-          <div className="space-y-2">
-            {SKILL_GAPS.gaps.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-red-400" />)}
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,44 @@
+import { NextResponse } from 'next/server';
+import { getUserData, saveUserData } from '@/lib/blob-store';
+import { getProfile } from '@/lib/profile';
+
+export async function GET(request) {
+  try {
+    const profile = await getProfile();
+    if (!profile?.id) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const dataType = searchParams.get('type');
+    if (!dataType) {
+      return NextResponse.json({ error: 'Missing type parameter' }, { status: 400 });
+    }
+
+    const data = await getUserData(profile.id, dataType);
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error('GET /api/user-data error:', error);
+    return NextResponse.json({ error: 'Failed to load data' }, { status: 500 });
+  }
+}
+
+export async function POST(request) {
+  try {
+    const profile = await getProfile();
+    if (!profile?.id) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const { type, data } = await request.json();
+    if (!type || data === undefined) {
+      return NextResponse.json({ error: 'Missing type or data' }, { status: 400 });
+    }
+
+    await saveUserData(profile.id, type, data);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('POST /api/user-data error:', error);
+    return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
+  }
+}
