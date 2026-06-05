@@ -56,10 +56,10 @@ export default function MiniHeatmap() {
               }`}
               title={`${skill.name}: ${skill.mastery}% mastery, ${skill.freshness}d since last study`}
             >
-              <p className="text-[11px] font-semibold text-ink dark:text-slate-200 leading-tight truncate">
+              <p className="text-[11px] font-semibold text-ink leading-tight truncate">
                 {skill.name}
               </p>
-              <p className="text-[10px] text-ink/70 dark:text-slate-300/70 font-medium mt-0.5">
+              <p className="text-[10px] text-ink/70 font-medium mt-0.5">
                 {skill.mastery}%
               </p>
             </div>
