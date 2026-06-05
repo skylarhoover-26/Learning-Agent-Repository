@@ -14,8 +14,12 @@ export default function UserMenu() {
   const menuRef = useRef(null);
 
   useEffect(() => {
-    const p = getProfileClient();
-    setProfile(p);
+    try {
+      const p = getProfileClient();
+      if (p) setProfile(p);
+    } catch {
+      // cookie parse failure
+    }
 
     fetch('/api/admin-check')
       .then(r => r.json())
@@ -42,12 +46,12 @@ export default function UserMenu() {
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="relative hidden sm:block" ref={menuRef}>
+    <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(prev => !prev)}
         className="flex items-center gap-2 text-sm text-white/90 hover:text-white transition-colors"
       >
-        <span>{displayName}</span>
+        <span className="hidden sm:inline">{displayName}</span>
         <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white font-semibold text-sm">
           {initial}
         </div>

@@ -31,7 +31,7 @@ const INITIAL_PROPOSALS = [
     id: 1,
     status: 'pending',
     type: 'NEW MODULE',
-    typeBg: 'bg-blue-100 text-blue-700',
+    typeBg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
     borderColor: 'border-l-blue-500',
     title: 'Claude 4 Tool Use Patterns',
     severity: 'High',
@@ -49,7 +49,7 @@ const INITIAL_PROPOSALS = [
     id: 2,
     status: 'pending',
     type: 'CONTENT UPDATE',
-    typeBg: 'bg-amber-100 text-amber-700',
+    typeBg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
     borderColor: 'border-l-amber-500',
     title: 'Updated GPT-5 Reasoning Parameters',
     severity: 'Medium',
@@ -64,7 +64,7 @@ const INITIAL_PROPOSALS = [
     id: 3,
     status: 'pending',
     type: 'DEPRECATION',
-    typeBg: 'bg-red-100 text-red-700',
+    typeBg: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
     borderColor: 'border-l-red-500',
     title: 'Remove Legacy Completions API References',
     severity: 'Low',
@@ -79,7 +79,7 @@ const INITIAL_PROPOSALS = [
     id: 4,
     status: 'pending',
     type: 'NEW MODULE',
-    typeBg: 'bg-blue-100 text-blue-700',
+    typeBg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
     borderColor: 'border-l-blue-500',
     title: 'NIST AI Safety Framework for Enterprise',
     severity: 'Medium',
@@ -98,7 +98,7 @@ const INITIAL_PROPOSALS = [
     id: 5,
     status: 'approved',
     type: 'CONTENT UPDATE',
-    typeBg: 'bg-amber-100 text-amber-700',
+    typeBg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
     borderColor: 'border-l-amber-500',
     title: 'MCP Server Setup Guide v2',
     severity: 'Medium',
@@ -114,7 +114,7 @@ const INITIAL_PROPOSALS = [
     id: 6,
     status: 'rejected',
     type: 'NEW MODULE',
-    typeBg: 'bg-blue-100 text-blue-700',
+    typeBg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
     borderColor: 'border-l-blue-500',
     title: 'Comparison of AI Code Editors',
     severity: 'Low',
@@ -131,9 +131,9 @@ const INITIAL_PROPOSALS = [
 ];
 
 const SEVERITY_STYLES = {
-  High: 'bg-red-100 text-red-700',
-  Medium: 'bg-amber-100 text-amber-700',
-  Low: 'bg-green-100 text-green-700',
+  High: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+  Medium: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+  Low: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
 };
 
 const TABS = [
@@ -149,13 +149,13 @@ function countByStatus(proposals, status) {
 }
 
 function ChangesSummary({ changes, changesNote }) {
-  if (changesNote) return <span className="text-sm text-ink-light">{changesNote}</span>;
+  if (changesNote) return <span className="text-sm text-slate-500 dark:text-slate-400">{changesNote}</span>;
   const parts = [];
   if (changes.added > 0) parts.push(`+${changes.added} added`);
   if (changes.edited > 0) parts.push(`~${changes.edited} edited`);
   if (changes.removed > 0) parts.push(`-${changes.removed} removed`);
   if (parts.length === 0) return null;
-  return <span className="text-sm text-ink-light">{parts.join(', ')}</span>;
+  return <span className="text-sm text-slate-500 dark:text-slate-400">{parts.join(', ')}</span>;
 }
 
 function Toast({ message, onDone }) {
@@ -205,7 +205,7 @@ function ProposalCard({ proposal, onAction }) {
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEVERITY_STYLES[proposal.severity]}`}>
               {proposal.severity}
             </span>
-            <span className="text-xs text-ink-light flex items-center gap-1">
+            <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
               <FileText className="w-3 h-3" />
               {proposal.confidence}% confidence
             </span>
@@ -217,7 +217,7 @@ function ProposalCard({ proposal, onAction }) {
         {proposal.title}
       </h3>
 
-      <p className="text-sm text-ink-light mb-3">{proposal.summary}</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">{proposal.summary}</p>
 
       {isPending && proposal.sources.length > 0 && (
         <div className="mb-2">
@@ -239,7 +239,7 @@ function ProposalCard({ proposal, onAction }) {
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span className="text-xs font-semibold text-ink/70 dark:text-slate-300/70">Affects:</span>
           {proposal.affects.map((a) => (
-            <span key={a} className="text-xs bg-bg-subtle dark:bg-slate-700 text-ink dark:text-slate-200 px-2 py-0.5 rounded-full">
+            <span key={a} className="text-xs bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200 px-2 py-0.5 rounded-full">
               {a}
             </span>
           ))}
@@ -253,7 +253,7 @@ function ProposalCard({ proposal, onAction }) {
       )}
 
       {isPending && (
-        <div className="flex items-center gap-2 pt-2 border-t border-bg-subtle">
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
           {confirming === 'approve' ? (
             <button
               onClick={() => handleAction('approve')}
@@ -264,7 +264,7 @@ function ProposalCard({ proposal, onAction }) {
           ) : (
             <button
               onClick={() => handleAction('approve')}
-              className="text-sm font-medium px-3 py-1.5 rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors flex items-center gap-1"
+              className="text-sm font-medium px-3 py-1.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors flex items-center gap-1"
             >
               <CheckCircle className="w-4 h-4" /> Approve
             </button>
@@ -279,18 +279,18 @@ function ProposalCard({ proposal, onAction }) {
           ) : (
             <button
               onClick={() => handleAction('reject')}
-              className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors flex items-center gap-1"
+              className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
             >
               <XCircle className="w-4 h-4" /> Reject
             </button>
           )}
-          <button className="text-sm font-medium px-3 py-1.5 rounded-md border border-bg-subtle text-ink-light hover:bg-bg-subtle dark:bg-slate-700 transition-colors flex items-center gap-1">
+          <button className="text-sm font-medium px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-700 transition-colors flex items-center gap-1">
             <Edit3 className="w-4 h-4" /> Edit
           </button>
           {confirming && (
             <button
               onClick={() => setConfirming(null)}
-              className="text-xs text-ink-light hover:text-ink dark:text-slate-200 ml-1"
+              className="text-xs text-slate-500 dark:text-slate-400 hover:text-ink dark:text-slate-200 ml-1"
             >
               Cancel
             </button>
@@ -299,20 +299,20 @@ function ProposalCard({ proposal, onAction }) {
       )}
 
       {isApproved && (
-        <div className="flex items-center gap-2 text-sm text-green-700 pt-2 border-t border-bg-subtle">
+        <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 pt-2 border-t border-slate-200 dark:border-slate-700">
           <CheckCircle className="w-4 h-4" />
           <span>Approved by {proposal.decidedBy} — {proposal.decidedAgo}</span>
         </div>
       )}
 
       {isRejected && (
-        <div className="pt-2 border-t border-bg-subtle">
-          <div className="flex items-center gap-2 text-sm text-red-600 mb-1">
+        <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-1">
             <XCircle className="w-4 h-4" />
             <span>Rejected by {proposal.decidedBy} — {proposal.decidedAgo}</span>
           </div>
           {proposal.rejectReason && (
-            <p className="text-xs text-ink-light italic ml-6">
+            <p className="text-xs text-slate-500 dark:text-slate-400 italic ml-6">
               &ldquo;{proposal.rejectReason}&rdquo;
             </p>
           )}
@@ -569,7 +569,7 @@ function CuratedLessonsList({ lessons, onEdit, onDelete, onCreate }) {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-12 text-center">
         <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
         <p className="text-ink dark:text-slate-300 font-medium mb-1">No curated lessons yet</p>
-        <p className="text-sm text-ink-light dark:text-slate-500 mb-4">
+        <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-4">
           Create hand-crafted lessons that appear on the lesson picker alongside AI-generated ones.
         </p>
         <button
@@ -670,19 +670,6 @@ export default function AdminDashboard() {
     setCuratedLessons(getCuratedLessons());
   }, []);
 
-  if (!adminChecked) {
-    return (
-      <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    router.replace('/');
-    return null;
-  }
-
   const showToast = useCallback((message) => {
     setToast(message);
     setTimeout(() => setToast(null), 2500);
@@ -712,6 +699,19 @@ export default function AdminDashboard() {
     [showToast]
   );
 
+  if (!adminChecked) {
+    return (
+      <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    router.replace('/');
+    return null;
+  }
+
   function handleSaveLesson(lesson) {
     const saved = saveCuratedLesson(lesson);
     setCuratedLessons(getCuratedLessons());
@@ -731,7 +731,7 @@ export default function AdminDashboard() {
       : proposals.filter((p) => p.status === activeTab);
 
   return (
-    <div className="min-h-screen bg-bg-subtle dark:bg-slate-900">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
       <PageHeader
         icon={Shield}
         title="Admin Dashboard"
@@ -769,7 +769,7 @@ export default function AdminDashboard() {
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-4">
-                <p className="text-xs font-semibold text-ink-light dark:text-slate-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                   Pending
                 </p>
                 <p className="text-2xl font-bold text-ink dark:text-slate-200 mt-1">
@@ -777,7 +777,7 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-4">
-                <p className="text-xs font-semibold text-ink-light dark:text-slate-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                   Approved this week
                 </p>
                 <p className="text-2xl font-bold text-green-600 mt-1">
@@ -785,7 +785,7 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-4">
-                <p className="text-xs font-semibold text-ink-light dark:text-slate-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                   Rejected
                 </p>
                 <p className="text-2xl font-bold text-red-600 mt-1">
@@ -793,12 +793,12 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-4">
-                <p className="text-xs font-semibold text-ink-light dark:text-slate-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                   Auto-scan status
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />
-                  <span className="text-sm text-ink-light dark:text-slate-500 flex items-center gap-1">
+                  <span className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" /> Last scan: 2 hours ago
                   </span>
                 </div>
@@ -816,7 +816,7 @@ export default function AdminDashboard() {
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActive
                         ? 'bg-brand text-white'
-                        : 'text-ink-light dark:text-slate-400 hover:bg-bg-subtle dark:bg-slate-700 dark:hover:bg-slate-700'
+                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-700'
                     }`}
                   >
                     {tab.label} ({count})
@@ -824,7 +824,7 @@ export default function AdminDashboard() {
                 );
               })}
               <div className="ml-auto flex items-center pr-2">
-                <button className="text-xs text-ink-light hover:text-ink dark:text-slate-200 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-bg-subtle dark:bg-slate-700 transition-colors">
+                <button className="text-xs text-slate-500 dark:text-slate-400 hover:text-ink dark:text-slate-200 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-slate-100 dark:bg-slate-700 transition-colors">
                   <RefreshCw className="w-3.5 h-3.5" /> Refresh
                 </button>
               </div>
@@ -840,8 +840,8 @@ export default function AdminDashboard() {
               ))}
               {filtered.length === 0 && (
                 <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-12 text-center">
-                  <AlertTriangle className="w-8 h-8 text-ink-light mx-auto mb-2" />
-                  <p className="text-ink-light text-sm">
+                  <AlertTriangle className="w-8 h-8 text-slate-500 dark:text-slate-400 mx-auto mb-2" />
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">
                     No proposals in this category.
                   </p>
                 </div>
