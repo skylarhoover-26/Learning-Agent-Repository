@@ -1,13 +1,5 @@
 import { NextResponse } from 'next/server';
-
-const FEEDS = [
-  { name: 'OpenAI blog', url: 'https://openai.com/blog/rss.xml' },
-  { name: 'Anthropic news', url: 'https://www.anthropic.com/news/rss.xml' },
-  { name: 'Google DeepMind', url: 'https://deepmind.google/blog/rss.xml' },
-  { name: 'arXiv (cs.CL)', url: 'http://export.arxiv.org/rss/cs.CL' },
-  { name: 'arXiv (cs.AI)', url: 'http://export.arxiv.org/rss/cs.AI' },
-  { name: 'Hacker News (AI)', url: 'https://hnrss.org/newest?q=AI+OR+LLM&points=50' },
-];
+import { FEEDS } from '@/lib/feeds';
 
 function parseRss(xml, sourceName) {
   const items = [];

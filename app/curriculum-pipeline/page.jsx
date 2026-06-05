@@ -39,8 +39,32 @@ export default function CurriculumPipelinePage() {
   const [expandedProposal, setExpandedProposal] = useState(null);
 
   useEffect(() => {
-    setFindings(getFindings());
-    setProposals(getProposals());
+    async function loadFromServer() {
+      try {
+        const [findingsRes, proposalsRes] = await Promise.all([
+          fetch('/api/user-data?type=curriculum_findings'),
+          fetch('/api/user-data?type=curriculum_proposals'),
+        ]);
+        const findingsData = findingsRes.ok ? (await findingsRes.json()).data : null;
+        const proposalsData = proposalsRes.ok ? (await proposalsRes.json()).data : null;
+        if (findingsData) {
+          saveFindings(findingsData);
+          setFindings(findingsData);
+        } else {
+          setFindings(getFindings());
+        }
+        if (proposalsData) {
+          saveProposals(proposalsData);
+          setProposals(proposalsData);
+        } else {
+          setProposals(getProposals());
+        }
+      } catch {
+        setFindings(getFindings());
+        setProposals(getProposals());
+      }
+    }
+    loadFromServer();
   }, []);
 
   async function handleScan() {
@@ -96,10 +120,20 @@ export default function CurriculumPipelinePage() {
       <PageHeader
         icon={Rss}
         title="Curriculum Pipeline"
-        subtitle="Scan AI news sources, generate update proposals, review and approve"
+        subtitle="AI news sources are scanned daily — review and approve proposals"
       />
 
       <main className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start gap-3">
+          <Rss className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Sources are scanned automatically every day at 8am UTC</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+              New findings are analyzed and turned into curriculum update proposals. You can also run a manual scan anytime.
+            </p>
+          </div>
+        </div>
+
         {/* Controls */}
         <div className="flex flex-wrap gap-3">
           <button

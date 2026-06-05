@@ -16,6 +16,7 @@ import LiveStatsPills from '@/components/live-stats-pills';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
 import LiveRecentLesson from '@/components/live-recent-lesson';
+import LiveSourcesFeed from '@/components/live-sources-feed';
 
 const TIER_LABELS = {
   beginner: { label: 'Beginner', color: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
@@ -167,21 +168,8 @@ export default async function Dashboard() {
           <LiveStreakCard />
         </div>
 
-        {/* 8. "What Changed This Week" */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-ink dark:text-slate-200">What Changed This Week</h3>
-            <Link
-              href="/curriculum-pipeline"
-              className="text-sm font-medium text-brand hover:text-brand-600 transition-colors"
-            >
-              Scan for updates &rarr;
-            </Link>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-            No updates yet. Use the Curriculum Pipeline to scan AI news sources and generate updates.
-          </p>
-        </div>
+        {/* 8. AI Sources feed — live from curriculum pipeline */}
+        <LiveSourcesFeed />
 
         {/* 9. Department leaderboard preview */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
