@@ -112,36 +112,38 @@ export default function ModulesPage() {
 }
 
 function ModuleDetail({ module: mod, expandedSection, setExpandedSection, onProgressChange }) {
-  const [sectionReadState, setSectionReadState] = useState(() =>
-    mod.sections.map((_, i) => isSectionRead(mod.num, i))
-  );
+  const [sectionReadState, setSectionReadState] = useState(() => {
+    const initial = mod.sections.map((_, i) => isSectionRead(mod.num, i));
+    if (!initial[0]) {
+      markSectionRead(mod.num, 0);
+      initial[0] = true;
+      onProgressChange?.();
+    }
+    return initial;
+  });
+
+  function markRead(idx) {
+    if (idx < 0 || idx >= mod.sections.length || sectionReadState[idx]) return;
+    markSectionRead(mod.num, idx);
+    setSectionReadState((prev) => {
+      const next = [...prev];
+      next[idx] = true;
+      return next;
+    });
+    onProgressChange?.();
+  }
 
   function handleExpandSection(idx) {
     const willExpand = expandedSection !== idx;
     setExpandedSection(willExpand ? idx : -1);
-    if (willExpand && !sectionReadState[idx]) {
-      markSectionRead(mod.num, idx);
-      setSectionReadState((prev) => {
-        const next = [...prev];
-        next[idx] = true;
-        return next;
-      });
-      onProgressChange?.();
-    }
+    if (willExpand) markRead(idx);
   }
 
   function handleNextSection(currentIdx) {
+    markRead(currentIdx);
     const nextIdx = currentIdx + 1;
     setExpandedSection(nextIdx);
-    if (nextIdx < mod.sections.length && !sectionReadState[nextIdx]) {
-      markSectionRead(mod.num, nextIdx);
-      setSectionReadState((prev) => {
-        const next = [...prev];
-        next[nextIdx] = true;
-        return next;
-      });
-      onProgressChange?.();
-    }
+    markRead(nextIdx);
   }
 
   const handleActivityDone = useCallback(() => {
@@ -228,6 +230,7 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
   const storedProgress = getModuleProgress(moduleNum);
   const [selectedAnswer, setSelectedAnswer] = useState(storedProgress?.quizAnswer);
   const [showResult, setShowResult] = useState(storedProgress?.quizAnswer !== null && storedProgress?.quizAnswer !== undefined);
+  const [markedDone, setMarkedDone] = useState(storedProgress?.completed || false);
 
   function handleQuizAnswer(answerIdx) {
     setSelectedAnswer(answerIdx);
@@ -301,15 +304,29 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
             ))}
           </ol>
         )}
-        {activity.action && (
-          <Link
-            href={activity.action.href}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 transition-all"
-          >
-            {activity.action.label}
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        )}
+        <div className="flex items-center gap-3 mt-4">
+          {activity.action && (
+            <Link
+              href={activity.action.href}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 transition-all"
+            >
+              {activity.action.label}
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
+          {markedDone ? (
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-green-100 text-green-700 text-sm font-semibold">
+              <Check className="w-4 h-4" /> Module complete
+            </span>
+          ) : (
+            <button
+              onClick={() => { setMarkedDone(true); onActivityDone?.(); }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all"
+            >
+              <Check className="w-4 h-4" /> Mark as complete
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -333,6 +350,20 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
               />
             </div>
           ))}
+        </div>
+        <div className="mt-4">
+          {markedDone ? (
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-green-100 text-green-700 text-sm font-semibold">
+              <Check className="w-4 h-4" /> Module complete
+            </span>
+          ) : (
+            <button
+              onClick={() => { setMarkedDone(true); onActivityDone?.(); }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all"
+            >
+              <Check className="w-4 h-4" /> Mark as complete
+            </button>
+          )}
         </div>
       </div>
     );

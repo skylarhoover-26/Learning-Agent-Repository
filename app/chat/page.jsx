@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-store';
 import { MessageCircle, Send, Loader2, Trash2 } from 'lucide-react';
+import { FormattedContent } from '@/components/lesson-slide';
 
 const SUGGESTIONS = [
   'How do I write a good prompt?',
@@ -107,7 +108,10 @@ export default function ChatPage() {
                     : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm'
                 }`}
               >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                {msg.role === 'assistant'
+                  ? <FormattedContent text={msg.content} />
+                  : <p className="whitespace-pre-wrap">{msg.content}</p>
+                }
               </div>
             </div>
           ))}

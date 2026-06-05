@@ -11,7 +11,7 @@ import {
   ClipboardCheck, Crosshair, GraduationCap, HelpCircle,
 } from 'lucide-react';
 import MiniHeatmap from '@/components/mini-heatmap';
-import { findDoThisNowSkill } from '@/lib/heatmap-data';
+import LiveDoThisNow from '@/components/live-do-this-now';
 import LiveStatsPills from '@/components/live-stats-pills';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
@@ -25,9 +25,6 @@ const TIER_LABELS = {
   developer: { label: 'Developer', color: 'bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200 ring-1 ring-slate-300' },
 };
 
-const DEPT_LEADERBOARD = [];
-
-const WEEKLY_CHANGES = [];
 
 function getGreetingPrefix() {
   const hour = new Date().getHours();
@@ -63,7 +60,6 @@ export default async function Dashboard() {
   const tier = TIER_LABELS[learner.tier] || TIER_LABELS.beginner;
   const displayName = learner.display_name || 'there';
   const greetingPrefix = getGreetingPrefix();
-  const doThisNow = findDoThisNowSkill();
   const userDept = learner.department || 'Customer Success';
 
   return (
@@ -106,40 +102,8 @@ export default async function Dashboard() {
           <LiveStatsPills />
         </div>
 
-        {/* 3. "Do This Now" hero card */}
-        {doThisNow && (
-          <Link
-            href={`/lesson?topic=${encodeURIComponent(doThisNow.name)}`}
-            className="group block bg-gradient-to-br from-brand to-brand-700 rounded-2xl text-white shadow-card hover:shadow-card-hover transition-all overflow-hidden relative"
-          >
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute -right-12 -top-12 w-64 h-64 rounded-full bg-white/5" />
-              <div className="absolute right-20 top-20 w-32 h-32 rounded-full bg-white/5" />
-              <div className="absolute right-8 bottom-4 w-48 h-48 rounded-full bg-white/5" />
-            </div>
-            <div className="relative p-7">
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-pill mb-3">
-                DO THIS NOW &middot; 6 min &middot; adaptive
-              </div>
-              <h3 className="text-xl sm:text-2xl font-bold mb-1.5 leading-tight tracking-tight">
-                Refresh your {doThisNow.name} — it&apos;s high-mastery but {doThisNow.freshness} days stale.
-              </h3>
-              <p className="text-white/80 text-sm mb-5 max-w-2xl">
-                Picked from your heatmap: this is your highest-value gap.
-              </p>
-              <div className="flex items-center gap-4 flex-wrap">
-                <span className="inline-flex items-center gap-2 px-6 py-3 bg-cta text-ink font-semibold rounded-pill shadow-sm group-hover:bg-cta-600 transition-all">
-                  Start refresher
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </span>
-                <span className="flex items-center gap-2 text-sm text-white/70">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                  412 in your org started this today
-                </span>
-              </div>
-            </div>
-          </Link>
-        )}
+        {/* 3. "Do This Now" hero card (client — reads real learner data) */}
+        <LiveDoThisNow />
 
         {/* 4. Quick actions strip */}
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">

@@ -5,17 +5,17 @@ import { useProgression } from './progression-provider';
 import { ArrowLeft, Award, Sparkles } from 'lucide-react';
 
 const ALL_BADGES = [
-  { id: 'first_lesson', name: 'First Steps', emoji: '🎓', description: 'Complete your first lesson' },
-  { id: 'three_lessons', name: 'Getting Going', emoji: '📚', description: 'Complete 3 lessons' },
-  { id: 'ten_lessons', name: 'Bookworm', emoji: '🤓', description: 'Complete 10 lessons' },
-  { id: 'three_day_streak', name: 'On Fire', emoji: '🔥', description: 'Learn 3 days in a row' },
-  { id: 'seven_day_streak', name: 'Unstoppable', emoji: '⚡', description: 'Learn 7 days in a row' },
-  { id: 'first_quiz', name: 'Pop Quiz', emoji: '✏️', description: 'Answer your first quiz question' },
-  { id: 'quiz_master', name: 'Quiz Master', emoji: '💯', description: 'Get 10 quiz answers correct' },
-  { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest' },
-  { id: 'first_project', name: 'Goal Getter', emoji: '🎯', description: 'Add your first work project' },
-  { id: 'first_goal', name: 'Aim High', emoji: '⭐', description: 'Set your first learning goal' },
-  { id: 'level_5', name: 'Power Learner', emoji: '🚀', description: 'Reach Level 5' },
+  { id: 'first_lesson', name: 'First Steps', emoji: '🎓', description: 'Complete your first lesson', href: '/library' },
+  { id: 'three_lessons', name: 'Getting Going', emoji: '📚', description: 'Complete 3 lessons', href: '/library' },
+  { id: 'ten_lessons', name: 'Bookworm', emoji: '🤓', description: 'Complete 10 lessons', href: '/library' },
+  { id: 'three_day_streak', name: 'On Fire', emoji: '🔥', description: 'Learn 3 days in a row', href: '/library' },
+  { id: 'seven_day_streak', name: 'Unstoppable', emoji: '⚡', description: 'Learn 7 days in a row', href: '/library' },
+  { id: 'first_quiz', name: 'Pop Quiz', emoji: '✏️', description: 'Answer your first quiz question', href: '/library' },
+  { id: 'quiz_master', name: 'Quiz Master', emoji: '💯', description: 'Get 10 quiz answers correct', href: '/library' },
+  { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest', href: '/quests' },
+  { id: 'first_project', name: 'Goal Getter', emoji: '🎯', description: 'Add your first work project', href: '/projects' },
+  { id: 'first_goal', name: 'Aim High', emoji: '⭐', description: 'Set your first learning goal', href: '/goals' },
+  { id: 'level_5', name: 'Power Learner', emoji: '🚀', description: 'Reach Level 5', href: '/library' },
 ];
 
 export default function AchievementsLive() {
@@ -98,9 +98,10 @@ export default function AchievementsLive() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {badgesWithStatus.map(badge => (
-            <div
+            <Link
               key={badge.id}
-              className={`bg-white dark:bg-slate-800 rounded-2xl border p-5 text-center transition-all ${
+              href={badge.href}
+              className={`bg-white dark:bg-slate-800 rounded-2xl border p-5 text-center transition-all hover:scale-[1.03] hover:shadow-lg ${
                 badge.earned
                   ? 'border-cta-200 shadow-card'
                   : 'border-slate-200 dark:border-slate-700 opacity-50 grayscale'
@@ -122,7 +123,7 @@ export default function AchievementsLive() {
                   )}
                 </div>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       </main>

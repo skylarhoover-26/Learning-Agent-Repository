@@ -6,6 +6,10 @@ import {
   GitBranch, ArrowRight, Clock, Sparkles, Lock, Unlock, ChevronRight,
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
+import { useProgression } from '@/components/progression-provider';
+import { computeSkills } from '@/lib/heatmap-data';
+import { getAllModuleProgress } from '@/lib/module-store';
+import { getCalibrationSkills } from '@/lib/calibration-store';
 import {
   GRAPH_NODES, GRAPH_EDGES, CATEGORY_COLORS,
   computeLayout, findRecommendedNext, getPathTo, getUnlockedBy,
@@ -136,11 +140,11 @@ function GraphNode({
   );
 }
 
-function DetailPanel({ node, unlocks, prerequisites }) {
+function DetailPanel({ node, unlocks, prerequisites, allNodes }) {
   if (!node) return null;
   const catColor = CATEGORY_COLORS[node.category];
   const nodeMap = {};
-  GRAPH_NODES.forEach(n => { nodeMap[n.id] = n; });
+  allNodes.forEach(n => { nodeMap[n.id] = n; });
 
   const prereqNodes = prerequisites.map(id => nodeMap[id]).filter(Boolean);
   const unlockNodes = [...unlocks].map(id => nodeMap[id]).filter(Boolean);
@@ -241,12 +245,59 @@ function DetailPanel({ node, unlocks, prerequisites }) {
   );
 }
 
+const GRAPH_NAME_TO_HEATMAP = {
+  'AI Fundamentals': 'AI Fundamentals',
+  'Prompt Basics': 'Prompt Basics',
+  'Customer Comms': 'Customer Comms',
+  'System Prompts': 'System Prompts',
+  'Data Privacy & PII': 'Data Privacy',
+  'Safety & Red-teaming': 'Eval & Hallucinations',
+  'Email Drafting': 'Email Drafting',
+  'Report Writing': 'Report Writing',
+  'Eval & Hallucinations': 'Eval & Hallucinations',
+  'Bias & Fairness': 'Bias & Fairness',
+  'AI Ethics': 'AI Ethics',
+  'Compliance': 'Compliance',
+  'AI Agents & Tools': 'AI Agents',
+  'Image & Voice': 'Image & Voice',
+  'Reasoning Models': 'Reasoning Models',
+  'Multimodal AI': 'Multimodal',
+};
+
 export default function SkillGraphPage() {
   const [selectedId, setSelectedId] = useState(null);
-  const layout = useMemo(() => computeLayout(GRAPH_NODES, GRAPH_EDGES), []);
-  const recommendedId = useMemo(() => findRecommendedNext(GRAPH_NODES, GRAPH_EDGES), []);
+  const prog = useProgression();
 
-  const selectedNode = GRAPH_NODES.find(n => n.id === selectedId) || null;
+  const moduleProgress = typeof window !== 'undefined' ? getAllModuleProgress() : {};
+  const calibrationSkills = typeof window !== 'undefined' ? getCalibrationSkills() : null;
+
+  const realSkills = useMemo(() => {
+    const computed = computeSkills({
+      lessonHistory: prog?.lessonHistory || [],
+      moduleProgress,
+      calibrationSkills,
+    });
+    const map = {};
+    for (const s of computed) {
+      map[s.name] = s;
+    }
+    return map;
+  }, [prog?.lessonHistory, moduleProgress, calibrationSkills]);
+
+  const enrichedNodes = useMemo(() => GRAPH_NODES.map(node => {
+    const heatmapName = GRAPH_NAME_TO_HEATMAP[node.name];
+    const real = heatmapName ? realSkills[heatmapName] : null;
+    return {
+      ...node,
+      mastery: real?.mastery || 0,
+      freshness: real?.freshness ?? 0,
+    };
+  }), [realSkills]);
+
+  const layout = useMemo(() => computeLayout(enrichedNodes, GRAPH_EDGES), [enrichedNodes]);
+  const recommendedId = useMemo(() => findRecommendedNext(enrichedNodes, GRAPH_EDGES), [enrichedNodes]);
+
+  const selectedNode = enrichedNodes.find(n => n.id === selectedId) || null;
   const pathNodeIds = selectedId ? getPathTo(selectedId, GRAPH_EDGES) : new Set();
   const unlockIds = selectedId ? getUnlockedBy(selectedId, GRAPH_EDGES) : new Set();
 
@@ -261,8 +312,8 @@ export default function SkillGraphPage() {
     ? new Set(GRAPH_EDGES.filter(e => pathNodeIds.has(e.from) && pathNodeIds.has(e.to)).map((_, i) => i))
     : new Set();
 
-  const recommendedNode = GRAPH_NODES.find(n => n.id === recommendedId);
-  const categories = [...new Set(GRAPH_NODES.map(n => n.category))];
+  const recommendedNode = enrichedNodes.find(n => n.id === recommendedId);
+  const categories = [...new Set(enrichedNodes.map(n => n.category))];
 
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
@@ -343,7 +394,7 @@ export default function SkillGraphPage() {
             </g>
 
             <g>
-              {GRAPH_NODES.map(node => {
+              {enrichedNodes.map(node => {
                 const pos = layout.positions[node.id];
                 if (!pos) return null;
                 const isSelected = selectedId === node.id;
@@ -369,6 +420,7 @@ export default function SkillGraphPage() {
           node={selectedNode}
           unlocks={directUnlocks}
           prerequisites={prerequisites}
+          allNodes={enrichedNodes}
         />
 
         <div className="flex items-center gap-4">
