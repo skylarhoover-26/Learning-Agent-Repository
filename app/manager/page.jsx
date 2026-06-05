@@ -188,6 +188,159 @@ function OverviewCards({ teamSize }) {
   );
 }
 
+const MOCK_COMPETENCIES = [
+  { name: 'Sarah Kim', role: 'CSM', level: 'Practitioner', progress: 60, status: 'On Track',
+    scores: { personal: { s: 3, m: 3 }, team: { s: 2, m: 2 }, org: { s: 1, m: 2 }, development: { s: 3, m: 3 } } },
+  { name: 'Jason Park', role: 'CSM', level: 'Power User', progress: 85, status: 'On Track',
+    scores: { personal: { s: 4, m: 4 }, team: { s: 3, m: 3 }, org: { s: 3, m: 2 }, development: { s: 4, m: 4 } } },
+  { name: 'Emily Tran', role: 'Sr. CSM', level: 'Builder', progress: 100, status: 'Completed',
+    scores: { personal: { s: 5, m: 5 }, team: { s: 4, m: 4 }, org: { s: 4, m: 3 }, development: { s: 5, m: 5 } } },
+  { name: 'Alex Rivera', role: 'CSM', level: 'Beginner', progress: 20, status: 'Needs Nudge',
+    scores: { personal: { s: 1, m: 1 }, team: { s: 1, m: 1 }, org: { s: 1, m: 1 }, development: { s: 2, m: 1 } } },
+  { name: 'Morgan Lee', role: 'CSM', level: 'Practitioner', progress: 0, status: 'Not Started',
+    scores: { personal: { s: null, m: null }, team: { s: null, m: null }, org: { s: null, m: null }, development: { s: null, m: null } } },
+];
+
+const SCORE_DOT_COLORS = {
+  1: 'bg-red-400',
+  2: 'bg-orange-400',
+  3: 'bg-yellow-400',
+  4: 'bg-green-400',
+  5: 'bg-purple-500',
+};
+
+const STATUS_STYLES = {
+  'On Track': 'bg-green-50 text-green-700',
+  'Not Started': 'bg-slate-100 text-slate-500',
+  'Needs Nudge': 'bg-amber-50 text-amber-700',
+  'Completed': 'bg-brand-50 text-brand-700',
+};
+
+const LEVEL_STYLES = {
+  Beginner: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+  Practitioner: 'bg-brand-50 text-brand-700 ring-1 ring-brand-200',
+  'Power User': 'bg-cta-50 text-cta-700 ring-1 ring-cta-200',
+  Builder: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
+};
+
+function ScoreDot({ score, type }) {
+  if (score === null) return <span className="w-3 h-3 rounded-full bg-slate-200" title="Not assessed" />;
+  return (
+    <span
+      className={`w-3 h-3 rounded-full ${SCORE_DOT_COLORS[score] || 'bg-slate-200'}`}
+      title={`${type}: ${score}/5`}
+    />
+  );
+}
+
+function CompetenciesTable() {
+  const [rating, setRating] = useState(false);
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 overflow-x-auto">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-base font-bold text-ink dark:text-slate-200">AI Impact Competencies</h2>
+          <p className="text-xs text-slate-500">P = Personal, T = Team, O = Org, D = AI Development &middot; S = Self, M = Manager</p>
+        </div>
+        <button
+          onClick={() => setRating(!rating)}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            rating
+              ? 'bg-red-50 text-red-600 hover:bg-red-100'
+              : 'bg-brand text-white hover:bg-brand-600'
+          }`}
+        >
+          {rating ? 'Cancel' : 'Rate Team'}
+        </button>
+      </div>
+
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-xs text-ink/50 dark:text-slate-400 uppercase tracking-wide border-b border-ink/10 dark:border-slate-700">
+            <th className="pb-3 pr-4 font-semibold">Name</th>
+            <th className="pb-3 pr-4 font-semibold">Level</th>
+            <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>P</th>
+            <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>T</th>
+            <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>O</th>
+            <th className="pb-3 pr-4 font-semibold text-center" colSpan={2}>D</th>
+            <th className="pb-3 pr-4 font-semibold">Progress</th>
+            <th className="pb-3 font-semibold">Status</th>
+          </tr>
+          <tr className="text-[10px] text-slate-400 border-b border-slate-100 dark:border-slate-700">
+            <th colSpan={2} />
+            <th className="pb-2 text-center font-normal">S</th>
+            <th className="pb-2 text-center font-normal pr-2">M</th>
+            <th className="pb-2 text-center font-normal">S</th>
+            <th className="pb-2 text-center font-normal pr-2">M</th>
+            <th className="pb-2 text-center font-normal">S</th>
+            <th className="pb-2 text-center font-normal pr-4">M</th>
+            <th className="pb-2 text-center font-normal">S</th>
+            <th className="pb-2 text-center font-normal pr-4">M</th>
+            <th colSpan={2} />
+          </tr>
+        </thead>
+        <tbody>
+          {MOCK_COMPETENCIES.map((person, i) => (
+            <tr
+              key={person.name}
+              className={`border-b border-ink/5 dark:border-slate-700 ${i % 2 === 0 ? 'bg-bg-warm dark:bg-slate-900' : ''}`}
+            >
+              <td className="py-3 pr-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-brand-50 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-brand">
+                    {person.name.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="font-medium text-ink dark:text-slate-200 block">{person.name}</span>
+                    <span className="text-xs text-slate-400">{person.role}</span>
+                  </div>
+                </div>
+              </td>
+              <td className="py-3 pr-4">
+                <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${LEVEL_STYLES[person.level] || 'bg-slate-100 text-slate-600'}`}>
+                  {person.level}
+                </span>
+              </td>
+              <td className="py-3 text-center"><ScoreDot score={person.scores.personal.s} type="Self" /></td>
+              <td className="py-3 text-center pr-2"><ScoreDot score={person.scores.personal.m} type="Manager" /></td>
+              <td className="py-3 text-center"><ScoreDot score={person.scores.team.s} type="Self" /></td>
+              <td className="py-3 text-center pr-2"><ScoreDot score={person.scores.team.m} type="Manager" /></td>
+              <td className="py-3 text-center"><ScoreDot score={person.scores.org.s} type="Self" /></td>
+              <td className="py-3 text-center pr-4"><ScoreDot score={person.scores.org.m} type="Manager" /></td>
+              <td className="py-3 text-center"><ScoreDot score={person.scores.development.s} type="Self" /></td>
+              <td className="py-3 text-center pr-4"><ScoreDot score={person.scores.development.m} type="Manager" /></td>
+              <td className="py-3 pr-4">
+                <div className="flex items-center gap-2 w-24">
+                  <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-brand rounded-full" style={{ width: `${person.progress}%` }} />
+                  </div>
+                  <span className="text-xs text-slate-500 w-8 text-right">{person.progress}%</span>
+                </div>
+              </td>
+              <td className="py-3">
+                <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || 'bg-slate-100 text-slate-500'}`}>
+                  {person.status}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="mt-4 flex gap-4 text-xs text-slate-400">
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> 1</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 2</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> 3</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-400" /> 4</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> 5</span>
+        <span className="ml-2 text-slate-300">|</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-200" /> Not assessed</span>
+      </div>
+    </div>
+  );
+}
+
 function SkillBar({ name, pct, color }) {
   return (
     <div className="flex items-center gap-3">
@@ -298,6 +451,8 @@ export default function ManagerDashboard() {
             <OverviewCards teamSize={teamData.directReports?.length || 0} />
 
             <TeamTable reports={teamData.directReports} />
+
+            <CompetenciesTable />
 
             <SkillGaps />
           </>

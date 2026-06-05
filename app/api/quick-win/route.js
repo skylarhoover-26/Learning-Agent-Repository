@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getProfile } from '@/lib/profile';
+import { getQuickWin, getTaskList } from '@/lib/curriculum-data';
 
 let client;
 function getClient() {
@@ -9,6 +10,31 @@ function getClient() {
 }
 
 const MODEL = 'claude-sonnet-4-20250514';
+
+function buildCuratedQuickWin(department, task, curatedData) {
+  return {
+    title: curatedData.quickWin,
+    description: `A quick win for ${department} — specifically for "${task}". Copy the prompt below and paste it into Claude or ChatGPT.`,
+    timeEstimate: '~3 minutes',
+    steps: [
+      'Copy the prompt below',
+      'Paste it into Claude, ChatGPT, or your preferred AI tool',
+      'Review the output and customize for your specific situation',
+      'Use the result in your work today',
+    ],
+    prompt: curatedData.prompt,
+    expectedResult: `You'll get ${curatedData.what}.`,
+  };
+}
+
+function pickRandomTask(department, subTeam, topTasks) {
+  if (topTasks && topTasks.length > 0) {
+    return topTasks[Math.floor(Math.random() * topTasks.length)];
+  }
+  const tasks = getTaskList(department, subTeam);
+  if (tasks.length === 0) return null;
+  return tasks[Math.floor(Math.random() * tasks.length)];
+}
 
 function buildSystemPrompt(profile) {
   const { department, sub_team, tier, goal, display_name } = profile || {};
@@ -40,11 +66,35 @@ function buildSystemPrompt(profile) {
   ].filter(Boolean).join('\n');
 }
 
-export async function POST() {
+export async function POST(request) {
   try {
     const profile = await getProfile();
-    const systemPrompt = buildSystemPrompt(profile);
+    const { department, sub_team, top_tasks } = profile || {};
 
+    let body = {};
+    try {
+      body = await request.json();
+    } catch {
+      // no body is fine
+    }
+
+    const requestedTask = body.task;
+
+    if (department) {
+      const task = requestedTask || pickRandomTask(department, sub_team, top_tasks);
+      if (task) {
+        const curated = getQuickWin(department, task);
+        if (curated) {
+          return NextResponse.json({
+            quickWin: buildCuratedQuickWin(department, task, curated),
+            source: 'curated',
+            task,
+          });
+        }
+      }
+    }
+
+    const systemPrompt = buildSystemPrompt(profile);
     const response = await getClient().messages.create({
       model: MODEL,
       max_tokens: 800,
@@ -61,7 +111,7 @@ export async function POST() {
     text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const quickWin = JSON.parse(text);
 
-    return NextResponse.json({ quickWin });
+    return NextResponse.json({ quickWin, source: 'ai' });
   } catch (error) {
     console.error('POST /api/quick-win error:', error);
     return NextResponse.json(

@@ -4,69 +4,14 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Sparkles, ChevronRight, ChevronLeft, User,
-  Building2, Zap, Target, Check,
+  Building2, Zap, Target, Check, Briefcase,
 } from 'lucide-react';
 import { saveProfile, generateLearnerId } from '@/lib/profile-client';
+import {
+  DEPARTMENTS, SUBTEAMS, getTaskList,
+} from '@/lib/curriculum-data';
 
-const DEPARTMENTS = [
-  'Analytics',
-  'Business Development',
-  'Business Solutions',
-  'Customer Success',
-  'Enablement',
-  'Engineering',
-  'Enterprise',
-  'Executive',
-  'Finance',
-  'Information Systems',
-  'Innovation',
-  'Internal Tooling',
-  'Legal',
-  'Marketing',
-  'Partner Development',
-  'People',
-  'Product',
-  'Risk',
-  'Sales',
-  'Strategy and Operations',
-];
-
-const SUB_TEAMS = {
-  'Business Solutions': [
-    'Bookkeeping',
-    'Operations',
-    'Payroll',
-    'Success Advisors',
-    'Tax',
-  ],
-  'Customer Success': [
-    'Account Management',
-    'Onboarding',
-    'Operations',
-    'Pro Advocate',
-    'QA',
-    'Retention',
-    'Success Advisors',
-    'Support',
-    'Website Onboarding',
-  ],
-  'Engineering': [
-    'Core',
-    'Data Engineering',
-    'DevOps',
-    'Fintech',
-    'Innovation',
-    'Internal Tooling',
-    'QA',
-    'Talent Programs',
-  ],
-  'Risk': [
-    'Fraud Data Analysts',
-    'Operations',
-    'Payment Support',
-    'Risk Analysts',
-  ],
-};
+const SUB_TEAMS = SUBTEAMS;
 
 const TIERS = [
   {
@@ -110,7 +55,7 @@ const GOALS = [
   "Explore what's possible",
 ];
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -121,8 +66,11 @@ export default function OnboardingPage() {
   const [department, setDepartment] = useState('');
   const [subTeam, setSubTeam] = useState(null);
   const [showSubTeams, setShowSubTeams] = useState(false);
+  const [topTasks, setTopTasks] = useState([]);
   const [tier, setTier] = useState('');
   const [goal, setGoal] = useState('');
+
+  const availableTasks = department ? getTaskList(department, subTeam) : [];
 
   const canAdvance = useCallback(() => {
     if (step === 1) return name.trim().length > 0;
@@ -131,10 +79,11 @@ export default function OnboardingPage() {
       if (SUB_TEAMS[department] && !subTeam) return false;
       return true;
     }
-    if (step === 3) return tier.length > 0;
-    if (step === 4) return goal.length > 0;
+    if (step === 3) return topTasks.length >= 1;
+    if (step === 4) return tier.length > 0;
+    if (step === 5) return goal.length > 0;
     return false;
-  }, [step, name, department, subTeam, tier, goal]);
+  }, [step, name, department, subTeam, topTasks, tier, goal]);
 
   function goNext() {
     if (!canAdvance()) return;
@@ -156,6 +105,7 @@ export default function OnboardingPage() {
   function handleDepartmentSelect(dept) {
     setDepartment(dept);
     setSubTeam(null);
+    setTopTasks([]);
     if (SUB_TEAMS[dept]) {
       setShowSubTeams(true);
     } else {
@@ -167,14 +117,25 @@ export default function OnboardingPage() {
 
   function handleSubTeamSelect(team) {
     setSubTeam(team);
+    setTopTasks([]);
     setDirection('forward');
     setStep(3);
+  }
+
+  function handleTaskToggle(task) {
+    setTopTasks(prev => {
+      if (prev.includes(task)) {
+        return prev.filter(t => t !== task);
+      }
+      if (prev.length >= 3) return prev;
+      return [...prev, task];
+    });
   }
 
   function handleTierSelect(tierId) {
     setTier(tierId);
     setDirection('forward');
-    setStep(4);
+    setStep(5);
   }
 
   function handleGoalSelect(selectedGoal) {
@@ -188,6 +149,7 @@ export default function OnboardingPage() {
       display_name: name.trim(),
       department,
       sub_team: subTeam || null,
+      top_tasks: topTasks,
       tier,
       goal: selectedGoal || goal,
       onboarded_at: new Date().toISOString(),
@@ -270,12 +232,22 @@ export default function OnboardingPage() {
             />
           )}
           {step === 3 && (
+            <StepTopTasks
+              department={department}
+              tasks={availableTasks}
+              selected={topTasks}
+              onToggle={handleTaskToggle}
+              onNext={goNext}
+              canAdvance={canAdvance()}
+            />
+          )}
+          {step === 4 && (
             <StepTier
               selected={tier}
               onSelect={handleTierSelect}
             />
           )}
-          {step === 4 && (
+          {step === 5 && (
             <StepGoal
               selected={goal}
               onSelect={handleGoalSelect}
@@ -398,6 +370,66 @@ function StepSubTeam({ department, teams, selected, onSelect }) {
             {team}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function StepTopTasks({ department, tasks, selected, onToggle, onNext, canAdvance }) {
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-cta-50 mb-4">
+          <Briefcase className="w-7 h-7 text-cta-700" />
+        </div>
+        <h2 className="text-2xl font-bold text-ink mb-1 tracking-tight">
+          What are your top tasks?
+        </h2>
+        <p className="text-slate-600 text-sm">
+          Pick up to 3 tasks you do most in {department}. We'll personalize your quick wins and learning path.
+        </p>
+      </div>
+      <div className="space-y-2 max-w-lg mx-auto mb-6">
+        {tasks.map(task => {
+          const isSelected = selected.includes(task);
+          const isDisabled = !isSelected && selected.length >= 3;
+          return (
+            <button
+              key={task}
+              onClick={() => !isDisabled && onToggle(task)}
+              disabled={isDisabled}
+              className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl border text-left transition-all ${
+                isSelected
+                  ? 'bg-brand text-white border-brand shadow-sm'
+                  : isDisabled
+                  ? 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed'
+                  : 'bg-white text-ink border-slate-200 hover:border-brand-200 hover:bg-brand-50'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                isSelected
+                  ? 'bg-white border-white'
+                  : 'border-slate-300'
+              }`}>
+                {isSelected && <Check className="w-3.5 h-3.5 text-brand" />}
+              </div>
+              <span className="font-medium text-sm">{task}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="text-center">
+        <p className="text-xs text-slate-500 mb-4">
+          {selected.length}/3 selected{selected.length === 0 ? ' — pick at least 1' : ''}
+        </p>
+        <button
+          onClick={onNext}
+          disabled={!canAdvance}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          Continue
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );

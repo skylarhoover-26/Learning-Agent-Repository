@@ -4,13 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { getProfileClient } from '@/lib/profile-client';
+import { getTaskList } from '@/lib/curriculum-data';
 import {
   Zap, Copy, Check, ChevronRight, Sparkles,
   Clock, ArrowRight, RefreshCw, Loader2,
 } from 'lucide-react';
 
 export default function QuickWinPage() {
+  const [profile, setProfile] = useState(null);
   const [department, setDepartment] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [quickWin, setQuickWin] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,29 +22,37 @@ export default function QuickWinPage() {
 
   useEffect(() => {
     try {
-      const profile = getProfileClient();
-      if (profile?.department) {
-        setDepartment(profile.department);
+      const p = getProfileClient();
+      if (p) {
+        setProfile(p);
+        setDepartment(p.department);
+        if (p.department) {
+          const taskList = getTaskList(p.department, p.sub_team);
+          setTasks(taskList);
+        }
       }
     } catch {
-      // Profile not available — that's fine
+      // Profile not available
     }
   }, []);
 
-  async function fetchQuickWin() {
+  async function fetchQuickWin(task) {
     setIsLoading(true);
     setError(null);
     setQuickWin(null);
     setCopied(false);
 
     try {
+      const body = task ? { task } : {};
       const res = await fetch('/api/quick-win', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to get a quick win');
       setQuickWin(data.quickWin);
+      if (data.task) setSelectedTask(data.task);
     } catch (err) {
       console.error('Quick win error:', err);
       setError(err.message || 'Something went wrong. Please try again.');
@@ -73,6 +85,8 @@ export default function QuickWinPage() {
         {!isLoading && !quickWin && !error && (
           <InitialCard
             department={department}
+            tasks={tasks}
+            topTasks={profile?.top_tasks || []}
             onStart={fetchQuickWin}
           />
         )}
@@ -91,7 +105,10 @@ export default function QuickWinPage() {
             quickWin={quickWin}
             copied={copied}
             onCopy={handleCopy}
-            onTryAnother={fetchQuickWin}
+            onTryAnother={() => {
+              setQuickWin(null);
+              setSelectedTask(null);
+            }}
           />
         )}
       </main>
@@ -99,7 +116,11 @@ export default function QuickWinPage() {
   );
 }
 
-function InitialCard({ department, onStart }) {
+function InitialCard({ department, tasks, topTasks, onStart }) {
+  const displayTasks = topTasks.length > 0
+    ? [...topTasks, ...tasks.filter(t => !topTasks.includes(t))]
+    : tasks;
+
   return (
     <div className="text-center">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-10 max-w-xl mx-auto">
@@ -110,17 +131,40 @@ function InitialCard({ department, onStart }) {
         <h2 className="text-3xl font-bold text-ink mb-3 tracking-tight">
           Get a Quick AI Win
         </h2>
-        <p className="text-slate-600 max-w-md mx-auto mb-8 leading-relaxed">
-          I'll find <strong>ONE specific thing</strong> you can do with AI right now
-          — personalized to your role. Takes under 5 minutes.
+        <p className="text-slate-600 max-w-md mx-auto mb-6 leading-relaxed">
+          Pick a task to get a <strong>ready-to-use AI prompt</strong> you can try right now.
+          Takes under 5 minutes.
         </p>
 
+        {displayTasks.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+              Pick a task
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {displayTasks.map((task, i) => (
+                <button
+                  key={task}
+                  onClick={() => onStart(task)}
+                  className={`px-4 py-2 rounded-pill text-sm font-medium transition-all ${
+                    i < topTasks.length
+                      ? 'bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100'
+                      : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {task}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button
-          onClick={onStart}
+          onClick={() => onStart()}
           className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-pill bg-cta text-ink font-bold text-lg hover:bg-cta-600 transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
         >
           <Zap className="w-5 h-5" />
-          Find my quick win
+          Surprise me
         </button>
 
         {department && (
