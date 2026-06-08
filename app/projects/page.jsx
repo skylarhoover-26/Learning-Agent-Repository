@@ -19,7 +19,7 @@ export default async function ProjectsPage() {
       <main className="max-w-4xl mx-auto px-6 py-10">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Tell the AI coach about your real work projects, and every lesson will be tailored
+            Tell the AI Learning Platform about your real work projects, and every lesson will be tailored
             to help you apply AI to what you're actually doing.
           </p>
         </div>

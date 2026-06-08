@@ -6,12 +6,36 @@ import PageHeader from '@/components/page-header';
 import {
   getFindings, saveFindings,
   getProposals, saveProposals, updateProposalStatus,
+  getPatches, savePatch,
 } from '@/lib/pipeline-store';
 import {
   RefreshCw, Loader2, Check, X, ExternalLink,
-  Zap, AlertTriangle, FileText, Trash2,
-  ChevronDown, ChevronRight, Rss,
+  Zap, FileText, Trash2, PlayCircle,
+  ChevronDown, ChevronRight, Rss, CheckCircle2,
 } from 'lucide-react';
+
+function AppliedPatchDetail({ patch }) {
+  if (!patch) {
+    return (
+      <div className="pt-2 flex items-center gap-2 text-sm text-brand font-medium">
+        <CheckCircle2 className="w-4 h-4" /> Applied to curriculum
+      </div>
+    );
+  }
+  return (
+    <div className="pt-3 space-y-2">
+      <div className="flex items-center gap-2 text-sm text-brand font-semibold">
+        <CheckCircle2 className="w-4 h-4" /> Applied to curriculum
+      </div>
+      <div className="bg-brand-50 dark:bg-brand-950 border border-brand-200 dark:border-brand-800 rounded-lg p-3">
+        <p className="text-xs font-semibold text-brand-700 dark:text-brand-300 mb-1">{patch.changeDescription}</p>
+        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+          {patch.targetModule && <span className="font-medium">Target: {patch.targetModule}{patch.targetSection ? ` → ${patch.targetSection}` : ''}</span>}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 const SEVERITY_STYLES = {
   high: 'bg-red-50 text-red-700 ring-1 ring-red-200',
@@ -28,6 +52,7 @@ const TYPE_ICONS = {
 const STATUS_STYLES = {
   pending: 'bg-amber-50 text-amber-700',
   approved: 'bg-green-50 text-green-700',
+  applied: 'bg-brand-50 text-brand-700',
   rejected: 'bg-red-50 text-red-600',
 };
 
@@ -39,6 +64,8 @@ export default function CurriculumPipelinePage() {
   const [curating, setCurating] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [expandedProposal, setExpandedProposal] = useState(null);
+  const [patches, setPatches] = useState([]);
+  const [applying, setApplying] = useState(null);
   const [adminChecked, setAdminChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -56,12 +83,14 @@ export default function CurriculumPipelinePage() {
       }
 
       try {
-        const [findingsRes, proposalsRes] = await Promise.all([
+        const [findingsRes, proposalsRes, patchesRes] = await Promise.all([
           fetch('/api/user-data?type=curriculum_findings'),
           fetch('/api/user-data?type=curriculum_proposals'),
+          fetch('/api/user-data?type=curriculum_patches'),
         ]);
         const findingsData = findingsRes.ok ? (await findingsRes.json()).data : null;
         const proposalsData = proposalsRes.ok ? (await proposalsRes.json()).data : null;
+        const patchesData = patchesRes.ok ? (await patchesRes.json()).data : null;
         if (findingsData) {
           saveFindings(findingsData);
           setFindings(findingsData);
@@ -74,9 +103,11 @@ export default function CurriculumPipelinePage() {
         } else {
           setProposals(getProposals());
         }
+        setPatches(patchesData || getPatches());
       } catch {
         setFindings(getFindings());
         setProposals(getProposals());
+        setPatches(getPatches());
       }
     }
     checkAccessAndLoad();
@@ -139,6 +170,28 @@ export default function CurriculumPipelinePage() {
   function handleProposalAction(proposalId, status) {
     const updated = updateProposalStatus(proposalId, status);
     setProposals(updated);
+  }
+
+  async function handleApply(proposal) {
+    setApplying(proposal.id);
+    try {
+      const res = await fetch('/api/curriculum/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposal }),
+      });
+      const data = await res.json();
+      if (data.patch) {
+        const allPatches = savePatch(data.patch);
+        setPatches(allPatches);
+        const updated = updateProposalStatus(proposal.id, 'applied');
+        setProposals(updated);
+      }
+    } catch (error) {
+      console.error('Apply error:', error);
+    } finally {
+      setApplying(null);
+    }
   }
 
   const pendingCount = proposals.filter(p => p.status === 'pending').length;
@@ -307,12 +360,72 @@ export default function CurriculumPipelinePage() {
                               </button>
                             </div>
                           )}
+
+                          {proposal.status === 'approved' && (
+                            <div className="pt-2">
+                              <button
+                                onClick={() => handleApply(proposal)}
+                                disabled={applying === proposal.id}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-white font-semibold text-sm hover:bg-brand-600 disabled:opacity-50 transition-all"
+                              >
+                                {applying === proposal.id ? (
+                                  <><Loader2 className="w-4 h-4 animate-spin" /> Applying...</>
+                                ) : (
+                                  <><PlayCircle className="w-4 h-4" /> Apply to Curriculum</>
+                                )}
+                              </button>
+                            </div>
+                          )}
+
+                          {proposal.status === 'applied' && (
+                            <AppliedPatchDetail patch={patches.find(p => p.proposalId === proposal.id)} />
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Applied Changes */}
+        {patches.length > 0 && (
+          <div>
+            <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-4">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-brand" />
+                Applied Changes
+              </span>
+            </h2>
+            <div className="space-y-3">
+              {patches.map((patch, i) => (
+                <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-brand-200 dark:border-brand-800 shadow-card p-5">
+                  <div className="flex items-start gap-3 mb-3">
+                    <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                      patch.changeType === 'new_module' ? 'bg-green-50 text-green-700' :
+                      patch.changeType === 'deprecation' ? 'bg-red-50 text-red-600' :
+                      'bg-brand-50 text-brand-700'
+                    }`}>
+                      {(patch.changeType || '').replace('_', ' ')}
+                    </span>
+                    {patch.targetModule && (
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {patch.targetModule}{patch.targetSection ? ` → ${patch.targetSection}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-ink dark:text-slate-200 mb-2">{patch.changeDescription}</p>
+                  <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Content</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{patch.newContent}</p>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2">
+                    Applied {patch.appliedAt ? new Date(patch.appliedAt).toLocaleString() : ''}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         )}

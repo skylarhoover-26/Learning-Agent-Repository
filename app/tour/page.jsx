@@ -14,7 +14,7 @@ const TOUR_STEPS = [
     title: 'Welcome to AI Learning Platform',
     description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey in 9 steps.',
     panels: {
-      left: { label: 'Slack Bot', content: 'The AI Coach lives in Slack. When an employee DMs the bot for the first time, it starts a 5-minute onboarding conversation.' },
+      left: { label: 'Slack Bot', content: 'The AI Learning Platform lives in Slack. When an employee DMs the bot for the first time, it starts a 5-minute onboarding conversation.' },
       right: { label: 'Web Dashboard', content: 'The web platform is where employees track progress, take lessons, and explore AI use cases. Managers see team views.' },
     },
     icon: Play,
@@ -73,8 +73,8 @@ const TOUR_STEPS = [
     title: 'Step 6: Gamification & Progress',
     description: 'XP, levels, badges, streaks, quests, spaced repetition, and a department leaderboard keep learners engaged over time.',
     panels: {
-      left: { label: 'Earning', content: '50 XP per lesson, streak bonuses, 11 earnable badges. Quests are 20-60 min guided projects that build real artifacts.' },
-      right: { label: 'Tracking', content: 'Dashboard shows live stats, level progress, streak counter, recent lessons, and achievement badges. All localStorage-based until Supabase ships.' },
+      left: { label: 'Earning', content: '50 XP per lesson, streak bonuses, 11 earnable badges. Quests are 20-60 min guided projects that build real artifacts. 10 structured lessons with Claude-graded submissions.' },
+      right: { label: 'Tracking', content: 'Dashboard shows live stats, level progress, streak counter, recent lessons, and achievement badges. Data syncs to the cloud so managers can see team progress.' },
     },
     icon: Trophy,
     link: '/achievements',
@@ -107,7 +107,7 @@ const TOUR_STEPS = [
       right: { label: 'Safety Filter', content: 'Claude reviews every article for content safety — filtering out politics, off-topic content, and anything not work-appropriate before it reaches learners.' },
     },
     icon: Rss,
-    link: '/',
+    link: '/curriculum-pipeline',
   },
 ];
 

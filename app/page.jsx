@@ -9,6 +9,7 @@ import {
   MessageCircle, ChevronRight, Library,
   Gamepad2, Lightbulb, Trophy, GitBranch, BarChart3,
   ClipboardCheck, Crosshair, GraduationCap, HelpCircle,
+  Play, PenTool,
 } from 'lucide-react';
 import MiniHeatmap from '@/components/mini-heatmap';
 import LiveDoThisNow from '@/components/live-do-this-now';
@@ -113,8 +114,9 @@ export default async function Dashboard() {
           <QuickAction href="/scoring" icon={ClipboardCheck} label="AI Impact" />
           <QuickAction href="/calibration" icon={Crosshair} label="Calibrate" />
           <QuickAction href="/skill-graph" icon={GitBranch} label="Skill Graph" />
+          <QuickAction href="/structured-lesson" icon={PenTool} label="Practice" />
           <QuickAction href="/manager" icon={BarChart3} label="Manager" />
-          <QuickAction href="/getting-started" icon={HelpCircle} label="Tutorial" />
+          <QuickAction href="/tour" icon={Play} label="Tour" />
         </div>
 
         {/* 5. Mini heatmap */}
