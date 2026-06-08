@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import {
   getCurrentLearner, getActiveGoals,
   calculateGoalProgressForGoal, getAggregatedSkills,
@@ -9,7 +8,7 @@ import {
   MessageCircle, ChevronRight, Library,
   Gamepad2, Lightbulb, Trophy, GitBranch, BarChart3,
   ClipboardCheck, Crosshair, GraduationCap, HelpCircle,
-  Play, PenTool,
+  Play, PenTool, ArrowRight,
 } from 'lucide-react';
 import MiniHeatmap from '@/components/mini-heatmap';
 import LiveDoThisNow from '@/components/live-do-this-now';
@@ -51,7 +50,48 @@ export default async function Dashboard() {
   const learner = await getCurrentLearner();
 
   if (!learner) {
-    redirect('/onboarding');
+    return (
+      <div className="min-h-screen">
+        <header className="bg-ink sticky top-0 z-10 text-white">
+          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-md bg-brand flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="font-bold tracking-tight text-[17px] leading-tight">AI Learning Platform</h1>
+                <p className="text-xs text-white/60 leading-tight">By Housecall Pro</p>
+              </div>
+            </div>
+          </div>
+        </header>
+        <main className="max-w-2xl mx-auto px-6 py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-brand-50 ring-1 ring-brand-200 mx-auto mb-6 flex items-center justify-center">
+            <Sparkles className="w-8 h-8 text-brand" />
+          </div>
+          <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-3">Welcome to AI Learning Platform</h2>
+          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
+            Set up your profile in under 2 minutes and get a personalized AI learning experience.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold text-base hover:bg-cta-600 transition-all shadow-sm"
+            >
+              Get Started
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/tour"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium text-base hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+            >
+              <Play className="w-4 h-4" />
+              Take the Tour
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   const skills = getSkills(learner.id);

@@ -193,7 +193,7 @@ export default function TourPage() {
           </div>
 
           {/* Navigation */}
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <button
               onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
               disabled={currentStep === 0}
@@ -201,6 +201,14 @@ export default function TourPage() {
             >
               <ChevronLeft className="w-4 h-4" /> Previous
             </button>
+            {currentStep < TOUR_STEPS.length - 1 && (
+              <Link
+                href="/"
+                className="text-sm text-slate-400 hover:text-brand transition-colors"
+              >
+                Skip tour
+              </Link>
+            )}
             {currentStep < TOUR_STEPS.length - 1 ? (
               <button
                 onClick={() => setCurrentStep(prev => prev + 1)}
