@@ -1,6 +1,10 @@
 import { auth } from '@/auth';
 
+const oktaConfigured = !!(process.env.AUTH_OKTA_ID && process.env.AUTH_OKTA_SECRET && process.env.AUTH_OKTA_ISSUER);
+
 export default auth((req) => {
+  if (!oktaConfigured) return;
+
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith('/auth')) return;
