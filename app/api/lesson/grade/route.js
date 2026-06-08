@@ -7,61 +7,59 @@ function getClient() {
   return client;
 }
 
-const TECH_NOTE =
-  "cust said AC blowing warm — checked refrig, low — added 2lb 410a — recommended coil clean nxt visit";
-
 function cannedGrade(input) {
   const lower = input.toLowerCase();
   const wordCount = input.split(/\s+/).length;
-  const greets = /hi|hello|hey|good (morning|afternoon)|thanks/.test(lower);
-  const tooTechnical = /\b410a\b|\brefrigerant\b/.test(lower);
-  const mentionsClean = /clean|coil|maintenance|service/.test(lower);
+  const hasStructure = wordCount > 20;
+  const hasTone = /thank|please|appreciate|glad|happy|hope/.test(lower);
 
-  let score = 40;
-  if (wordCount > 12) score += 10;
-  if (wordCount > 25) score += 10;
-  if (greets) score += 8;
-  if (mentionsClean) score += 12;
-  if (!tooTechnical) score += 10;
-  if (/[?!]/.test(input)) score += 4;
-  score = Math.min(score, 92);
+  let score = 45;
+  if (wordCount > 12) score += 8;
+  if (wordCount > 25) score += 8;
+  if (hasStructure) score += 8;
+  if (hasTone) score += 8;
+  if (/[.!?]$/.test(input.trim())) score += 5;
+  score = Math.min(score, 88);
 
   return {
     score,
-    strength: greets
-      ? "Friendly opener — that sets the tone before the technical detail."
-      : "You captured what was done and the next step. That's what customers care about.",
-    improvement: tooTechnical
-      ? "Swap '410a' for plain words — 'topped off the AC' lands better than the chemical name."
-      : 'Add one sentence about what to expect next (when to schedule the coil clean, what it costs).',
+    strength: hasTone
+      ? 'Good tone — you kept it friendly and approachable.'
+      : 'You captured the key information clearly.',
+    improvement: hasStructure
+      ? 'Try tightening the language — shorter sentences land harder.'
+      : 'Add more detail or structure to make your response complete.',
   };
 }
 
 export async function POST(request) {
   try {
-    const { message } = await request.json();
+    const { message, sourceText, gradingCriteria } = await request.json();
     const trimmed = (message || '').trim();
 
     if (trimmed.length < 12) {
       return NextResponse.json({
         score: 12,
         strength: "You started — that's the hardest part.",
-        improvement: 'Try a full 2-sentence message: what you found, what you did, and one next step.',
+        improvement: 'Write a more complete response — at least a few sentences.',
       });
     }
+
+    const source = sourceText || 'a workplace scenario';
+    const criteria = gradingCriteria || 'clarity, completeness, tone, and professionalism';
 
     try {
       const response = await getClient().messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 400,
-        system: `You grade short customer messages written by Housecall Pro technicians.
-You receive a messy technician note and the technician's customer-facing rewrite.
-Score 0-100 based on: clarity, friendliness, includes what was found + what was done + next step, no jargon.
+        system: `You grade written responses for a workplace AI learning platform.
+You receive source material and the learner's written response.
+Score 0-100 based on: ${criteria}.
 Return ONLY JSON: {"score": int, "strength": "one sentence praise", "improvement": "one sentence specific suggestion"}.`,
         messages: [
           {
             role: 'user',
-            content: `Technician note:\n"${TECH_NOTE}"\n\nTechnician's customer rewrite:\n"${trimmed}"\n\nGrade it.`,
+            content: `Source material:\n"${source}"\n\nLearner's response:\n"${trimmed}"\n\nGrade it.`,
           },
         ],
       });

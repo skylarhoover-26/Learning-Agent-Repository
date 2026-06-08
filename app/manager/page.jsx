@@ -1,20 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '../../components/page-header';
 import {
   BarChart3, Users, BookOpen, TrendingUp, Award, Activity,
-  Download, ArrowUpRight, Search, Loader2, UserCircle, Mail,
-  Building2, Calendar, ChevronRight, XCircle,
+  Search, Loader2, Mail, Building2, XCircle, Check, X,
+  ChevronDown, Save,
 } from 'lucide-react';
 
-const SKILL_GAPS = {
-  strong: [],
-  growing: [],
-  gaps: [],
-};
-
-function ManagerSearch({ onResult, loading, onSubmit }) {
+function ManagerSearch({ loading, onSubmit }) {
   const [name, setName] = useState('');
 
   function handleSubmit(e) {
@@ -145,12 +139,12 @@ function TeamTable({ reports }) {
   );
 }
 
-function OverviewCards({ teamSize }) {
+function OverviewCards({ teamSize, overview }) {
   const cards = [
     { label: 'Team Size', value: teamSize, detail: 'direct reports', icon: Users, color: 'bg-brand' },
-    { label: 'Active This Week', value: '-', detail: 'connect Supabase', icon: Activity, color: 'bg-green-500' },
-    { label: 'Lessons Completed', value: '-', detail: 'connect Supabase', icon: BookOpen, color: 'bg-cta' },
-    { label: 'Avg Team Level', value: '-', detail: 'connect Supabase', icon: TrendingUp, color: 'bg-brand-400' },
+    { label: 'Active This Week', value: overview?.activeThisWeek ?? '-', detail: 'logged in past 7 days', icon: Activity, color: 'bg-green-500' },
+    { label: 'Lessons Completed', value: overview?.totalLessons ?? '-', detail: 'across the team', icon: BookOpen, color: 'bg-cta' },
+    { label: 'Avg AI Score', value: overview?.avgLevel ?? '-', detail: 'team average (1-5)', icon: TrendingUp, color: 'bg-brand-400' },
   ];
 
   return (
@@ -176,8 +170,6 @@ function OverviewCards({ teamSize }) {
   );
 }
 
-const MOCK_COMPETENCIES = [];
-
 const SCORE_DOT_COLORS = {
   1: 'bg-red-400',
   2: 'bg-orange-400',
@@ -187,21 +179,23 @@ const SCORE_DOT_COLORS = {
 };
 
 const STATUS_STYLES = {
-  'On Track': 'bg-green-50 text-green-700',
+  'On Track': 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   'Not Started': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
-  'Needs Nudge': 'bg-amber-50 text-amber-700',
-  'Completed': 'bg-brand-50 text-brand-700',
+  'Needs Nudge': 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  'Completed': 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300',
 };
 
 const LEVEL_STYLES = {
   Beginner: 'bg-green-50 text-green-700 ring-1 ring-green-200',
   Practitioner: 'bg-brand-50 text-brand-700 ring-1 ring-brand-200',
   'Power User': 'bg-cta-50 text-cta-700 ring-1 ring-cta-200',
-  Builder: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
+  'Not Started': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-600',
 };
 
 function ScoreDot({ score, type }) {
-  if (score === null) return <span className="w-3 h-3 rounded-full bg-slate-200" title="Not assessed" />;
+  if (score === null || score === undefined) {
+    return <span className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-600" title="Not assessed" />;
+  }
   return (
     <span
       className={`w-3 h-3 rounded-full ${SCORE_DOT_COLORS[score] || 'bg-slate-200'}`}
@@ -210,8 +204,93 @@ function ScoreDot({ score, type }) {
   );
 }
 
-function CompetenciesTable() {
-  const [rating, setRating] = useState(false);
+function ScorePicker({ value, onChange }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map(n => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(value === n ? null : n)}
+          className={`w-5 h-5 rounded-full text-[9px] font-bold transition-all ${
+            value === n
+              ? `${SCORE_DOT_COLORS[n]} text-white ring-2 ring-offset-1 ring-brand`
+              : 'bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+          }`}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CompetenciesTable({ members, reports, rating, setRating, managerEmail, onScoresSaved }) {
+  const [pendingScores, setPendingScores] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const memberMap = {};
+  for (const m of members) {
+    memberMap[m.email] = m;
+  }
+
+  const rows = (reports || []).map(r => {
+    const data = memberMap[r.email] || {};
+    return {
+      name: r.name,
+      email: r.email,
+      role: r.title || '-',
+      level: data.level || 'Not Started',
+      selfScores: data.selfScores || null,
+      managerScores: data.managerScores || null,
+      progress: data.progress || 0,
+      status: data.status || 'Not Started',
+    };
+  });
+
+  function updatePending(email, dim, val) {
+    setPendingScores(prev => ({
+      ...prev,
+      [email]: {
+        ...(prev[email] || {}),
+        [dim]: val,
+      },
+    }));
+  }
+
+  async function handleSaveAll() {
+    setSaving(true);
+    try {
+      const entries = Object.entries(pendingScores).filter(
+        ([, scores]) => Object.values(scores).some(v => v !== null && v !== undefined)
+      );
+      await Promise.all(
+        entries.map(([email, scores]) =>
+          fetch('/api/team-scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'rate',
+              managerEmail,
+              memberEmail: email,
+              scores,
+            }),
+          })
+        )
+      );
+      setPendingScores({});
+      setRating(false);
+      if (onScoresSaved) onScoresSaved();
+    } catch (error) {
+      console.error('Failed to save scores:', error);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const hasChanges = Object.values(pendingScores).some(
+    s => Object.values(s).some(v => v !== null && v !== undefined)
+  );
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 overflow-x-auto">
@@ -220,165 +299,152 @@ function CompetenciesTable() {
           <h2 className="text-base font-bold text-ink dark:text-slate-200">AI Impact Competencies</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">P = Personal, T = Team, O = Org, D = AI Development &middot; S = Self, M = Manager</p>
         </div>
-        <button
-          onClick={() => setRating(!rating)}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-            rating
-              ? 'bg-red-50 text-red-600 hover:bg-red-100'
-              : 'bg-brand text-white hover:bg-brand-600'
-          }`}
-        >
-          {rating ? 'Cancel' : 'Rate Team'}
-        </button>
+        <div className="flex items-center gap-2">
+          {rating && hasChanges && (
+            <button
+              onClick={handleSaveAll}
+              disabled={saving}
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition-all disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              {saving ? 'Saving...' : 'Save Scores'}
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (rating) {
+                setPendingScores({});
+              }
+              setRating(!rating);
+            }}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              rating
+                ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400'
+                : 'bg-brand text-white hover:bg-brand-600'
+            }`}
+          >
+            {rating ? 'Cancel' : 'Rate Team'}
+          </button>
+        </div>
       </div>
 
-      {MOCK_COMPETENCIES.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="text-center py-8">
           <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No competency data yet</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Scores will appear as team members complete the AI Impact Assessment.</p>
         </div>
       ) : (
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-xs text-ink/50 dark:text-slate-400 uppercase tracking-wide border-b border-ink/10 dark:border-slate-700">
-            <th className="pb-3 pr-4 font-semibold">Name</th>
-            <th className="pb-3 pr-4 font-semibold">Level</th>
-            <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>P</th>
-            <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>T</th>
-            <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>O</th>
-            <th className="pb-3 pr-4 font-semibold text-center" colSpan={2}>D</th>
-            <th className="pb-3 pr-4 font-semibold">Progress</th>
-            <th className="pb-3 font-semibold">Status</th>
-          </tr>
-          <tr className="text-[10px] text-slate-400 border-b border-slate-100 dark:border-slate-700">
-            <th colSpan={2} />
-            <th className="pb-2 text-center font-normal">S</th>
-            <th className="pb-2 text-center font-normal pr-2">M</th>
-            <th className="pb-2 text-center font-normal">S</th>
-            <th className="pb-2 text-center font-normal pr-2">M</th>
-            <th className="pb-2 text-center font-normal">S</th>
-            <th className="pb-2 text-center font-normal pr-4">M</th>
-            <th className="pb-2 text-center font-normal">S</th>
-            <th className="pb-2 text-center font-normal pr-4">M</th>
-            <th colSpan={2} />
-          </tr>
-        </thead>
-        <tbody>
-          {MOCK_COMPETENCIES.map((person, i) => (
-            <tr
-              key={person.name}
-              className={`border-b border-ink/5 dark:border-slate-700 ${i % 2 === 0 ? 'bg-bg-warm dark:bg-slate-900' : ''}`}
-            >
-              <td className="py-3 pr-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-brand-50 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-brand">
-                    {person.name.charAt(0)}
-                  </div>
-                  <div>
-                    <span className="font-medium text-ink dark:text-slate-200 block">{person.name}</span>
-                    <span className="text-xs text-slate-400">{person.role}</span>
-                  </div>
-                </div>
-              </td>
-              <td className="py-3 pr-4">
-                <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${LEVEL_STYLES[person.level] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>
-                  {person.level}
-                </span>
-              </td>
-              <td className="py-3 text-center"><ScoreDot score={person.scores.personal.s} type="Self" /></td>
-              <td className="py-3 text-center pr-2"><ScoreDot score={person.scores.personal.m} type="Manager" /></td>
-              <td className="py-3 text-center"><ScoreDot score={person.scores.team.s} type="Self" /></td>
-              <td className="py-3 text-center pr-2"><ScoreDot score={person.scores.team.m} type="Manager" /></td>
-              <td className="py-3 text-center"><ScoreDot score={person.scores.org.s} type="Self" /></td>
-              <td className="py-3 text-center pr-4"><ScoreDot score={person.scores.org.m} type="Manager" /></td>
-              <td className="py-3 text-center"><ScoreDot score={person.scores.development.s} type="Self" /></td>
-              <td className="py-3 text-center pr-4"><ScoreDot score={person.scores.development.m} type="Manager" /></td>
-              <td className="py-3 pr-4">
-                <div className="flex items-center gap-2 w-24">
-                  <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-brand rounded-full" style={{ width: `${person.progress}%` }} />
-                  </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 w-8 text-right">{person.progress}%</span>
-                </div>
-              </td>
-              <td className="py-3">
-                <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
-                  {person.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      )}
+        <>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-ink/50 dark:text-slate-400 uppercase tracking-wide border-b border-ink/10 dark:border-slate-700">
+                <th className="pb-3 pr-4 font-semibold">Name</th>
+                <th className="pb-3 pr-4 font-semibold">Level</th>
+                <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>P</th>
+                <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>T</th>
+                <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>O</th>
+                <th className="pb-3 pr-4 font-semibold text-center" colSpan={2}>D</th>
+                <th className="pb-3 pr-4 font-semibold">Progress</th>
+                <th className="pb-3 font-semibold">Status</th>
+              </tr>
+              <tr className="text-[10px] text-slate-400 border-b border-slate-100 dark:border-slate-700">
+                <th colSpan={2} />
+                <th className="pb-2 text-center font-normal">S</th>
+                <th className="pb-2 text-center font-normal pr-2">M</th>
+                <th className="pb-2 text-center font-normal">S</th>
+                <th className="pb-2 text-center font-normal pr-2">M</th>
+                <th className="pb-2 text-center font-normal">S</th>
+                <th className="pb-2 text-center font-normal pr-4">M</th>
+                <th className="pb-2 text-center font-normal">S</th>
+                <th className="pb-2 text-center font-normal pr-4">M</th>
+                <th colSpan={2} />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((person, i) => {
+                const pending = pendingScores[person.email] || {};
+                return (
+                  <tr
+                    key={person.email}
+                    className={`border-b border-ink/5 dark:border-slate-700 ${i % 2 === 0 ? 'bg-bg-warm dark:bg-slate-900' : ''}`}
+                  >
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-brand-50 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-brand">
+                          {person.name.charAt(0)}
+                        </div>
+                        <div>
+                          <span className="font-medium text-ink dark:text-slate-200 block">{person.name}</span>
+                          <span className="text-xs text-slate-400">{person.role}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${LEVEL_STYLES[person.level] || LEVEL_STYLES['Not Started']}`}>
+                        {person.level}
+                      </span>
+                    </td>
+                    {['personal', 'team', 'org', 'development'].map(dim => (
+                      <DimensionCells
+                        key={dim}
+                        selfScore={person.selfScores?.[dim] ?? null}
+                        managerScore={person.managerScores?.[dim] ?? null}
+                        rating={rating}
+                        pendingValue={pending[dim] ?? null}
+                        onPendingChange={(val) => updatePending(person.email, dim, val)}
+                        isLast={dim === 'development'}
+                      />
+                    ))}
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center gap-2 w-24">
+                        <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${person.progress}%` }} />
+                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 w-8 text-right">{person.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES['Not Started']}`}>
+                        {person.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
-      {MOCK_COMPETENCIES.length > 0 && (
-        <div className="mt-4 flex gap-4 text-xs text-slate-400">
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> 1</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 2</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> 3</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-400" /> 4</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> 5</span>
-          <span className="ml-2 text-slate-300">|</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-200" /> Not assessed</span>
-        </div>
+          <div className="mt-4 flex gap-4 text-xs text-slate-400">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> 1</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 2</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> 3</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-400" /> 4</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> 5</span>
+            <span className="ml-2 text-slate-300 dark:text-slate-600">|</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-600" /> Not assessed</span>
+          </div>
+        </>
       )}
     </div>
   );
 }
 
-function SkillBar({ name, pct, color }) {
+function DimensionCells({ selfScore, managerScore, rating, pendingValue, onPendingChange, isLast }) {
+  const prClass = isLast ? 'pr-4' : 'pr-2';
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-ink dark:text-slate-200 w-40 shrink-0 truncate">{name}</span>
-      <div className="flex-1 h-3 bg-ink/5 dark:bg-slate-700 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-sm font-semibold text-ink/70 dark:text-slate-400 w-10 text-right">{pct}%</span>
-    </div>
-  );
-}
-
-function SkillGaps() {
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
-      <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Org Skill Distribution</h2>
-      <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Proficiency across AI skills</p>
-      {SKILL_GAPS.strong.length === 0 && SKILL_GAPS.growing.length === 0 && SKILL_GAPS.gaps.length === 0 ? (
-        <div className="text-center py-6">
-          <TrendingUp className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">Skill distribution will appear as team members complete lessons.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {SKILL_GAPS.strong.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-green-600 mb-3">Strong</h3>
-              <div className="space-y-2">
-                {SKILL_GAPS.strong.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-green-500" />)}
-              </div>
-            </div>
-          )}
-          {SKILL_GAPS.growing.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-500 mb-3">Growing</h3>
-              <div className="space-y-2">
-                {SKILL_GAPS.growing.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-amber-400" />)}
-              </div>
-            </div>
-          )}
-          {SKILL_GAPS.gaps.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-red-500 mb-3">Gaps</h3>
-              <div className="space-y-2">
-                {SKILL_GAPS.gaps.map((s) => <SkillBar key={s.name} name={s.name} pct={s.pct} color="bg-red-400" />)}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    <>
+      <td className="py-3 text-center">
+        <ScoreDot score={selfScore} type="Self" />
+      </td>
+      <td className={`py-3 text-center ${prClass}`}>
+        {rating ? (
+          <ScorePicker value={pendingValue ?? managerScore} onChange={onPendingChange} />
+        ) : (
+          <ScoreDot score={managerScore} type="Manager" />
+        )}
+      </td>
+    </>
   );
 }
 
@@ -386,6 +452,28 @@ export default function ManagerDashboard() {
   const [teamData, setTeamData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [scoreData, setScoreData] = useState(null);
+  const [scoresLoading, setScoresLoading] = useState(false);
+  const [rating, setRating] = useState(false);
+
+  const fetchTeamScores = useCallback(async (emails) => {
+    setScoresLoading(true);
+    try {
+      const res = await fetch('/api/team-scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emails }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setScoreData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch team scores:', error);
+    } finally {
+      setScoresLoading(false);
+    }
+  }, []);
 
   async function handleLookup(name) {
     setLoading(true);
@@ -402,6 +490,13 @@ export default function ManagerDashboard() {
         return;
       }
       setTeamData(data);
+
+      const emails = (data.directReports || [])
+        .map(r => r.email)
+        .filter(Boolean);
+      if (emails.length > 0) {
+        fetchTeamScores(emails);
+      }
     } catch {
       setError('Could not connect to the lookup service.');
     } finally {
@@ -411,7 +506,18 @@ export default function ManagerDashboard() {
 
   function handleReset() {
     setTeamData(null);
+    setScoreData(null);
     setError(null);
+    setRating(false);
+  }
+
+  function handleScoresSaved() {
+    const emails = (teamData?.directReports || [])
+      .map(r => r.email)
+      .filter(Boolean);
+    if (emails.length > 0) {
+      fetchTeamScores(emails);
+    }
   }
 
   return (
@@ -448,13 +554,28 @@ export default function ManagerDashboard() {
 
             {teamData.manager && <ManagerCard manager={teamData.manager} />}
 
-            <OverviewCards teamSize={teamData.directReports?.length || 0} />
+            <OverviewCards
+              teamSize={teamData.directReports?.length || 0}
+              overview={scoreData?.overview}
+            />
 
             <TeamTable reports={teamData.directReports} />
 
-            <CompetenciesTable />
-
-            <SkillGaps />
+            {scoresLoading ? (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center">
+                <Loader2 className="w-6 h-6 animate-spin text-brand mx-auto mb-2" />
+                <p className="text-sm text-slate-500 dark:text-slate-400">Loading competency scores...</p>
+              </div>
+            ) : (
+              <CompetenciesTable
+                members={scoreData?.members || []}
+                reports={teamData.directReports || []}
+                rating={rating}
+                setRating={setRating}
+                managerEmail={teamData.manager?.email}
+                onScoresSaved={handleScoresSaved}
+              />
+            )}
           </>
         )}
       </main>

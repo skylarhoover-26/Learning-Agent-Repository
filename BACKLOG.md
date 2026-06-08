@@ -1,6 +1,6 @@
 # AI Learning Platform — Consolidated Backlog
 
-**Last updated:** 2026-06-04
+**Last updated:** 2026-06-08
 **Project:** AI Learning Platform (learning-agent repo)
 **Sources:** Bridget's prototype (foundation), Rachel's AI Coach prototype (Slack bot + scoring + curriculum)
 
@@ -159,12 +159,11 @@ Brian's "AI Academy" prototype is a Next.js/TypeScript app focused on a self-upd
 - **What's needed:** Port to current app. Replace localStorage with DB-backed profile. Could complement or replace current onboarding flow.
 - **Priority:** Medium — gives a real skill baseline vs self-reported data, which makes the heatmap and recommendations meaningful
 
-### BR3. Structured Lesson Player (5-Step Flow) — Medium
+### ~~BR3. Structured Lesson Player (5-Step Flow)~~ — DONE
 
-- **What it is:** `LessonPlayer.tsx` — 5-step lesson flow: **Read → Try → Compare → Ship → Reflect**. The "Try" step takes learner input and grades it via Claude (`POST /api/lesson/grade`). The "Compare" step calls Claude to show warm/concise/playful AI variants of the same content. Falls back to canned responses if no API key.
-- **Status:** One lesson exists (`/lesson/customer-followups` — HVAC tech note). The player framework is complete; just needs more lesson content.
-- **What's needed:** Port lesson player component. Create more lessons across personas (non-tech, tech, leader). Wire to Track/Module/Lesson data model.
-- **Priority:** Medium — the current platform has lessons but this structured flow with Claude grading is more interactive
+- **Shipped:** 2026-06-08
+- **Implementation:** Lesson picker at `/structured-lesson` with search + category filters. Dynamic player at `/structured-lesson/[id]` with full 5-step flow (Read → Try → Compare → Ship → Reflect). 10 lessons across roles: Field Tech, Customer Service, Manager, Sales, Marketing, HR, Support, PM, Training, and Any Role. API routes (`/api/lesson/grade`, `/api/lesson/tones`) now accept lesson-specific context instead of hardcoded content. Claude Haiku grades responses and generates tone variants per lesson.
+- **Files:** `lib/structured-lessons-data.js`, `app/structured-lesson/page.jsx`, `app/structured-lesson/[id]/page.jsx`, `app/api/lesson/grade/route.js`, `app/api/lesson/tones/route.js`
 
 ### BR4. Profile Radar + Calibration Chart — Low
 
@@ -191,15 +190,15 @@ Brian's "AI Academy" prototype is a Next.js/TypeScript app focused on a self-upd
 | **Critical** | Supabase Database (B1 + R1 + BR5) | All three | Blocks cross-device, manager features, scoring, pipeline |
 | **High** | Slack Bot (R2) | Rachel | Independent — adoption driver |
 | **High** | AI Impact Competency Scoring (R3) | Rachel | Blocked by Supabase |
-| **High** | 20-Department Curriculum (R4) | Rachel | Independent — personalization layer |
+| ~~**High**~~ | ~~20-Department Curriculum (R4)~~ | Rachel | **DONE** — integrated into onboarding flow |
 | **High** | Auto-Refresh Curriculum Pipeline (BR1) | Brian | Blocked by Supabase; solves curriculum staleness |
 | **Medium** | Manager Dashboard + Competencies Table (R5) | Rachel | Blocked by Supabase + Scoring |
-| **Medium** | Modules 4 and 5 (R6) | Rachel | Independent — content work |
+| ~~**Medium**~~ | ~~Modules 4 and 5 (R6)~~ | Rachel | **DONE** — full content for all 5 modules |
 | **Medium** | 6-Week Check-In Flow (R7) | Rachel | Blocked by Supabase + Scoring |
 | **Medium** | Okta SSO (R8) | Rachel | Independent — required for org rollout |
-| **Medium** | Calibration Onboarding (BR2) | Brian | Independent — scenario-based skill baseline |
-| **Medium** | Structured Lesson Player (BR3) | Brian | Independent — Claude-graded 5-step flow |
-| **Low** | Skill Graph Visualization (B2) | Bridget | Heatmap covers core need |
+| ~~**Medium**~~ | ~~Calibration Onboarding (BR2)~~ | Brian | **DONE** — 6 scenarios, radar chart, gap analysis |
+| ~~**Medium**~~ | ~~Structured Lesson Player (BR3)~~ | Brian | **DONE** — 10 lessons, dynamic player, Claude grading |
+| ~~**Low**~~ | ~~Skill Graph Visualization (B2)~~ | Bridget | **DONE** — 16 nodes, dependencies, mastery integration |
 | **Low** | Profile Radar + Calibration Chart (BR4) | Brian | Depends on BR2 |
 | **Low** | Interactive Mockup (R9) | Rachel | Demo asset |
 

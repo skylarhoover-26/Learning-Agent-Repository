@@ -95,13 +95,14 @@ export default function OnboardingPage() {
   }
 
   function goBack() {
-    if (step <= 1) return;
     setDirection('back');
     if (step === 1 && showSubTeams) {
       setShowSubTeams(false);
       setSubTeam(null);
+      setDepartment('');
       return;
     }
+    if (step <= 1) return;
     setStep(prev => prev - 1);
   }
 
@@ -137,13 +138,10 @@ export default function OnboardingPage() {
 
   function handleTierSelect(tierId) {
     setTier(tierId);
-    setDirection('forward');
-    setStep(4);
   }
 
   function handleGoalSelect(selectedGoal) {
     setGoal(selectedGoal);
-    handleFinish(selectedGoal);
   }
 
   async function handleFinish(selectedGoal) {
@@ -209,7 +207,7 @@ export default function OnboardingPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Step {step} of {TOTAL_STEPS}
             </p>
-            {step > 1 && (
+            {(step > 1 || showSubTeams) && (
               <button
                 onClick={goBack}
                 className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
@@ -279,12 +277,16 @@ export default function OnboardingPage() {
             <StepTier
               selected={tier}
               onSelect={handleTierSelect}
+              onNext={goNext}
+              canAdvance={tier.length > 0}
             />
           )}
           {step === 4 && (
             <StepGoal
               selected={goal}
               onSelect={handleGoalSelect}
+              onFinish={() => handleFinish(goal)}
+              canAdvance={goal.length > 0}
             />
           )}
         </div>
@@ -474,7 +476,7 @@ function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCus
   );
 }
 
-function StepTier({ selected, onSelect }) {
+function StepTier({ selected, onSelect, onNext, canAdvance }) {
   return (
     <div>
       <div className="text-center mb-8">
@@ -488,7 +490,7 @@ function StepTier({ selected, onSelect }) {
           No wrong answer — this sets your starting point.
         </p>
       </div>
-      <div className="space-y-2 max-w-lg mx-auto">
+      <div className="space-y-2 max-w-lg mx-auto mb-6">
         {TIERS.map(t => (
           <button
             key={t.id}
@@ -512,11 +514,21 @@ function StepTier({ selected, onSelect }) {
           </button>
         ))}
       </div>
+      <div className="text-center">
+        <button
+          onClick={onNext}
+          disabled={!canAdvance}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          Continue
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
 
-function StepGoal({ selected, onSelect }) {
+function StepGoal({ selected, onSelect, onFinish, canAdvance }) {
   return (
     <div>
       <div className="text-center mb-8">
@@ -530,7 +542,7 @@ function StepGoal({ selected, onSelect }) {
           Pick what excites you most — you can always change it later.
         </p>
       </div>
-      <div className="space-y-2 max-w-lg mx-auto">
+      <div className="space-y-2 max-w-lg mx-auto mb-6">
         {GOALS.map(g => (
           <button
             key={g}
@@ -549,6 +561,16 @@ function StepGoal({ selected, onSelect }) {
             )}
           </button>
         ))}
+      </div>
+      <div className="text-center">
+        <button
+          onClick={onFinish}
+          disabled={!canAdvance}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-green-600 text-white font-semibold shadow-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          <Sparkles className="w-4 h-4" />
+          Start Learning
+        </button>
       </div>
     </div>
   );
