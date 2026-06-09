@@ -280,7 +280,9 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
   const [showDiscussion, setShowDiscussion] = useState(false);
 
   const isCorrect = showResult && selectedAnswer === activity.correct;
+  const outOfAttempts = showResult && !isCorrect && attempts >= MAX_QUIZ_ATTEMPTS;
   const canRetry = showResult && !isCorrect && attempts < MAX_QUIZ_ATTEMPTS;
+  const revealAnswer = isCorrect || outOfAttempts;
 
   function handleQuizAnswer(answerIdx) {
     setSelectedAnswer(answerIdx);
@@ -307,7 +309,7 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">{activity.question}</p>
         <div className="space-y-2 mb-4">
           {activity.options.map((opt, i) => {
-            const isCorrectOpt = showResult && i === activity.correct;
+            const isCorrectOpt = revealAnswer && i === activity.correct;
             const isWrong = showResult && selectedAnswer === i && i !== activity.correct;
             return (
               <button
@@ -316,9 +318,9 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
                 disabled={showResult}
                 className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all ${
                   isCorrectOpt
-                    ? 'bg-green-50 border-green-300 text-green-800'
+                    ? 'bg-green-50 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300'
                     : isWrong
-                    ? 'bg-red-50 border-red-300 text-red-800'
+                    ? 'bg-red-50 border-red-300 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300'
                     : selectedAnswer === i
                     ? 'bg-brand-50 border-brand-300'
                     : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-200 disabled:opacity-60'
@@ -330,11 +332,17 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
           })}
         </div>
 
-        {showResult && (
+        {showResult && canRetry && (
+          <div className="rounded-xl p-4 text-sm bg-amber-50 border border-amber-100 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300">
+            Not quite — give it another shot. ({MAX_QUIZ_ATTEMPTS - attempts} {MAX_QUIZ_ATTEMPTS - attempts === 1 ? 'try' : 'tries'} left)
+          </div>
+        )}
+
+        {revealAnswer && (
           <div className={`rounded-xl p-4 text-sm ${
             isCorrect
-              ? 'bg-green-50 border border-green-100 text-green-800'
-              : 'bg-amber-50 border border-amber-100 text-amber-800'
+              ? 'bg-green-50 border border-green-100 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
+              : 'bg-amber-50 border border-amber-100 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300'
           }`}>
             {activity.explanation}
           </div>
@@ -351,18 +359,20 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
                 Try again ({MAX_QUIZ_ATTEMPTS - attempts} left)
               </button>
             )}
-            {!canRetry && !isCorrect && (
+            {outOfAttempts && (
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 No retries remaining
               </span>
             )}
-            <button
-              onClick={() => setShowDiscussion(!showDiscussion)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-brand-50 text-brand-700 text-sm font-medium hover:bg-brand-100 transition-all"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              {showDiscussion ? 'Hide discussion' : 'Ask about this'}
-            </button>
+            {revealAnswer && (
+              <button
+                onClick={() => setShowDiscussion(!showDiscussion)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-brand-50 text-brand-700 text-sm font-medium hover:bg-brand-100 transition-all"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                {showDiscussion ? 'Hide discussion' : 'Ask about this'}
+              </button>
+            )}
           </div>
         )}
 
