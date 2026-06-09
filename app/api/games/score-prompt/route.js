@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
+import { logAuditEntry } from '@/lib/audit-log';
 
 let client;
 function getClient() {
@@ -46,6 +47,7 @@ export async function POST(request) {
       ? `\nLearner context: ${profile.display_name || 'Anonymous'}, ${profile.department || 'unknown department'}, tier: ${profile.tier || 'beginner'}.`
       : '';
 
+    const start = Date.now();
     const response = await getClient().messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 600,
@@ -61,6 +63,16 @@ export async function POST(request) {
     let text = response.content[0].text.trim();
     text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const scores = JSON.parse(text);
+
+    logAuditEntry({
+      type: 'score_prompt',
+      endpoint: '/api/games/score-prompt',
+      user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
+      model: 'claude-sonnet-4-20250514',
+      input: { scenario, prompt },
+      output: scores,
+      durationMs: Date.now() - start,
+    }).catch(() => {});
 
     return NextResponse.json(scores);
   } catch (error) {

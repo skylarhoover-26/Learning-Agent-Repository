@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { logAuditEntry } from '@/lib/audit-log';
 
 let client;
 function getClient() {
@@ -48,6 +49,10 @@ export async function POST(request) {
     const source = sourceText || 'a workplace scenario';
     const criteria = gradingCriteria || 'clarity, completeness, tone, and professionalism';
 
+    const start = Date.now();
+    let gradeResult;
+    let gradeSource = 'fallback';
+
     try {
       const response = await getClient().messages.create({
         model: 'claude-haiku-4-5-20251001',
@@ -68,17 +73,32 @@ Return ONLY JSON: {"score": int, "strength": "one sentence praise", "improvement
       const match = text.match(/\{[\s\S]*\}/);
       if (match) {
         const parsed = JSON.parse(match[0]);
-        return NextResponse.json({
+        gradeResult = {
           score: Math.max(0, Math.min(100, Math.round(parsed.score))),
           strength: parsed.strength,
           improvement: parsed.improvement,
-        });
+        };
+        gradeSource = 'ai';
       }
     } catch (error) {
       console.error('Grade API error, using fallback:', error);
     }
 
-    return NextResponse.json(cannedGrade(trimmed));
+    if (!gradeResult) {
+      gradeResult = cannedGrade(trimmed);
+    }
+
+    logAuditEntry({
+      type: 'grade',
+      endpoint: '/api/lesson/grade',
+      user: { email: 'unknown', name: 'Unknown' },
+      model: gradeSource === 'ai' ? 'claude-haiku-4-5-20251001' : 'fallback',
+      input: { learnerResponse: trimmed, sourceText: source, gradingCriteria: criteria },
+      output: gradeResult,
+      durationMs: Date.now() - start,
+    }).catch(() => {});
+
+    return NextResponse.json(gradeResult);
   } catch (error) {
     console.error('POST /api/lesson/grade error:', error);
     return NextResponse.json(

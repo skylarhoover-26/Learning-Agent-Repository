@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { logAuditEntry } from '@/lib/audit-log';
 
 let client;
 function getClient() {
@@ -31,6 +32,10 @@ export async function POST(request) {
     const source = sourceText || 'a workplace scenario';
     const context = toneContext || 'a professional workplace communication';
 
+    const start = Date.now();
+    let tonesResult;
+    let tonesSource = 'fallback';
+
     try {
       const response = await getClient().messages.create({
         model: 'claude-haiku-4-5-20251001',
@@ -53,14 +58,27 @@ Return ONLY JSON array: [{"tone":"warm","message":"...","whyItWorks":"one senten
       if (match) {
         const parsed = JSON.parse(match[0]);
         if (Array.isArray(parsed) && parsed.length === 3) {
-          return NextResponse.json({ tones: parsed });
+          tonesResult = parsed;
+          tonesSource = 'ai';
         }
       }
     } catch (error) {
       console.error('Tones API error, using fallback:', error);
     }
 
-    return NextResponse.json({ tones: FALLBACK_TONES });
+    if (!tonesResult) tonesResult = FALLBACK_TONES;
+
+    logAuditEntry({
+      type: 'tones',
+      endpoint: '/api/lesson/tones',
+      user: { email: 'unknown', name: 'Unknown' },
+      model: tonesSource === 'ai' ? 'claude-haiku-4-5-20251001' : 'fallback',
+      input: { sourceText: source, toneContext: context },
+      output: { tones: tonesResult.map((t) => t.tone), source: tonesSource },
+      durationMs: Date.now() - start,
+    }).catch(() => {});
+
+    return NextResponse.json({ tones: tonesResult });
   } catch (error) {
     console.error('POST /api/lesson/tones error:', error);
     return NextResponse.json({ tones: FALLBACK_TONES });

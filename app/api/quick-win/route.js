@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { getQuickWin, getTaskList } from '@/lib/curriculum-data';
+import { logAuditEntry } from '@/lib/audit-log';
 
 let client;
 function getClient() {
@@ -98,6 +99,8 @@ export async function POST(request) {
     const userMessage = requestedTask
       ? `Give me one quick AI win specifically for this task: "${requestedTask}". Make the prompt directly usable for this task.`
       : 'Give me one quick AI win I can do right now. Make it different from common suggestions — surprise me with something useful.';
+
+    const start = Date.now();
     const response = await getClient().messages.create({
       model: MODEL,
       max_tokens: 800,
@@ -113,6 +116,16 @@ export async function POST(request) {
     let text = response.content[0].text.trim();
     text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const quickWin = JSON.parse(text);
+
+    logAuditEntry({
+      type: 'quick_win',
+      endpoint: '/api/quick-win',
+      user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
+      model: MODEL,
+      input: { task: requestedTask || 'random', department },
+      output: { title: quickWin.title, source: 'ai' },
+      durationMs: Date.now() - start,
+    }).catch(() => {});
 
     return NextResponse.json({ quickWin, source: 'ai' });
   } catch (error) {

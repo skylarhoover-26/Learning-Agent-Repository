@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import Anthropic from '@anthropic-ai/sdk';
+import { logAuditEntry } from '@/lib/audit-log';
 
 const MODEL = 'claude-sonnet-4-20250514';
 
@@ -51,7 +52,20 @@ export async function POST(request) {
       messages,
     });
 
-    return NextResponse.json({ reply: response.content[0].text });
+    const reply = response.content[0].text;
+
+    const userMessage = messages?.[messages.length - 1]?.content || '';
+    logAuditEntry({
+      type: 'discuss',
+      endpoint: '/api/modules/discuss',
+      user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
+      model: MODEL,
+      input: { question: quizContext?.question, userMessage, messageCount: messages.length },
+      output: { reply },
+      durationMs: 0,
+    }).catch(() => {});
+
+    return NextResponse.json({ reply });
   } catch (error) {
     console.error('POST /api/modules/discuss error:', error);
     return NextResponse.json(

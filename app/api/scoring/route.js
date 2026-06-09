@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { logAuditEntry } from '@/lib/audit-log';
 
 let client;
 function getClient() {
@@ -89,7 +90,19 @@ export async function POST(request) {
       );
     }
 
+    const start = Date.now();
     const score = await scoreWithClaude(config.prompt(text), config.validScores);
+
+    logAuditEntry({
+      type: 'scoring',
+      endpoint: '/api/scoring',
+      user: { email: 'unknown', name: 'Unknown' },
+      model: MODEL,
+      input: { dimension, text },
+      output: { score, dimension },
+      durationMs: Date.now() - start,
+    }).catch(() => {});
+
     return NextResponse.json({ score, dimension });
   } catch (error) {
     console.error('POST /api/scoring error:', error);
