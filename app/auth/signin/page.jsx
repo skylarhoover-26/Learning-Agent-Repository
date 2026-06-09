@@ -29,7 +29,7 @@ function SignInForm() {
       <div className="w-full max-w-sm text-center space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-ink dark:text-white">
-            AI Learning Platform
+            AI Learning Coach
           </h1>
           <p className="mt-2 text-ink/60 dark:text-slate-400">
             Housecall Pro

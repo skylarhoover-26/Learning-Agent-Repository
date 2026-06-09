@@ -46,7 +46,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+      },
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
+        'header': ['1.0625rem', { lineHeight: '1.25rem' }],
       },
       boxShadow: {
         card: '0 1px 3px 0 rgb(10 36 67 / 0.06), 0 1px 2px -1px rgb(10 36 67 / 0.04)',

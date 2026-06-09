@@ -1,18 +1,25 @@
 import './globals.css';
+import { Inter } from 'next/font/google';
 import ThemeToggle from '@/components/theme-toggle';
 import { SessionWrapper } from '@/components/session-wrapper';
 import { ProfileProvider } from '@/components/profile-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
 import PageTracker from '@/components/page-tracker';
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
 export const metadata = {
-  title: 'AI Learning Platform — Housecall Pro',
+  title: 'AI Learning Coach — Housecall Pro',
   description: 'Personalized AI learning for the Housecall Pro team',
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
           try {

@@ -189,7 +189,7 @@ export default function OnboardingPage() {
           </div>
           <div>
             <h1 className="font-bold tracking-tight text-[17px] leading-tight">
-              AI Learning Platform
+              AI Learning Coach
             </h1>
             <p className="text-xs text-white/60 leading-tight">By Housecall Pro</p>
           </div>

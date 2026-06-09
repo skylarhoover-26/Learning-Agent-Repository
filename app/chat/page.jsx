@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-store';
+import { addXpEvent } from '@/lib/learner-store';
+import { useProfile } from '@/components/profile-provider';
 import { MessageCircle, Send, Loader2, Trash2 } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 
@@ -14,20 +17,42 @@ const SUGGESTIONS = [
 ];
 
 export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col">
+        <PageHeader icon={MessageCircle} title="Just Chat" subtitle="Ask me anything about AI" />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        </main>
+      </div>
+    }>
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
+function ChatPageInner() {
+  const { profile } = useProfile();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
   useEffect(() => {
-    setMessages(getChatHistory());
+    const existing = getChatHistory();
+    setMessages(existing);
+    const prefill = searchParams.get('q');
+    if (prefill && existing.length === 0) {
+      setInput(prefill);
+    }
     inputRef.current?.focus();
-  }, []);
+  }, [searchParams]);
 
   async function sendMessage() {
     const text = input.trim();
@@ -50,6 +75,13 @@ export default function ChatPage() {
       const updatedMessages = [...newMessages, { role: 'assistant', content: data.reply }];
       setMessages(updatedMessages);
       saveChatHistory(updatedMessages);
+      if (profile?.id) {
+        addXpEvent(profile.id, {
+          source: 'chat_message',
+          amount: 5,
+          created_at: new Date().toISOString(),
+        });
+      }
     } catch (error) {
       console.error('Chat error:', error);
       setMessages([

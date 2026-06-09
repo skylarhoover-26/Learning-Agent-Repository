@@ -10,7 +10,7 @@ import { useTts } from '@/lib/use-tts';
 export function FormattedContent({ text }) {
   if (!text) return null;
 
-  const lines = text.split('\n');
+  const lines = normaliseToMarkdown(text).split('\n');
   const elements = [];
   let i = 0;
 
@@ -98,12 +98,50 @@ export function FormattedContent({ text }) {
   return <div className="space-y-1">{elements}</div>;
 }
 
-/** Renders inline markdown: **bold** and `code` */
+/**
+ * Normalise text so downstream rendering only needs to handle markdown.
+ * Converts HTML bold / italic / line-break tags into their markdown equivalents
+ * and strips any remaining HTML tags so nothing shows as raw markup.
+ */
+function normaliseToMarkdown(text) {
+  if (!text) return text;
+
+  let out = text;
+
+  // Bold: <strong>, <b> (with optional attributes)
+  out = out.replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**');
+  out = out.replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**');
+
+  // Italic: <em>, <i>
+  out = out.replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*');
+  out = out.replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, '*$1*');
+
+  // Inline code: <code>
+  out = out.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, '`$1`');
+
+  // Line breaks → newlines (so FormattedContent handles them as paragraph breaks)
+  out = out.replace(/<br\s*\/?>/gi, '\n');
+
+  // Paragraph tags → double newline
+  out = out.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n');
+  out = out.replace(/<\/?p[^>]*>/gi, '\n');
+
+  // Strip any remaining HTML tags (anchors, spans, divs, etc.)
+  out = out.replace(/<[^>]+>/g, '');
+
+  // Collapse runs of 3+ newlines into 2
+  out = out.replace(/\n{3,}/g, '\n\n');
+
+  return out;
+}
+
+/** Renders inline markdown: **bold**, *italic*, and `code` */
 function renderInline(text) {
   if (!text) return text;
 
   const parts = [];
-  const regex = /(\*\*(.+?)\*\*|`([^`]+)`)/g;
+  // Match **bold**, *italic* (but not **), and `code`
+  const regex = /(\*\*(.+?)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
   let lastIndex = 0;
   let match;
 
@@ -112,18 +150,27 @@ function renderInline(text) {
       parts.push(text.slice(lastIndex, match.index));
     }
     if (match[2]) {
+      // **bold**
       parts.push(
         <strong key={`b-${match.index}`} className="font-semibold text-ink dark:text-slate-200">
           {match[2]}
         </strong>
       );
     } else if (match[3]) {
+      // *italic*
+      parts.push(
+        <em key={`i-${match.index}`} className="italic text-slate-700 dark:text-slate-300">
+          {match[3]}
+        </em>
+      );
+    } else if (match[4]) {
+      // `code`
       parts.push(
         <code
           key={`c-${match.index}`}
           className="bg-slate-100 dark:bg-slate-700 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 rounded text-sm font-mono"
         >
-          {match[3]}
+          {match[4]}
         </code>
       );
     }
@@ -149,7 +196,7 @@ const PHASE_LABELS = {
 };
 
 function TtsButton({ text }) {
-  const { isSpeaking, isPaused, isLoading, toggle, stop } = useTts();
+  const { isSpeaking, isPaused, isLoading, error, toggle, stop } = useTts();
 
   const speakableText = [text].flat().filter(Boolean).join('. ');
 
@@ -230,7 +277,7 @@ export function SlideCard({ slide, onButtonClick, isLatest }) {
             {keyPoints.map((point, idx) => (
               <li key={idx} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
                 <CheckCircle className="w-4 h-4 text-brand mt-0.5 shrink-0" />
-                <span>{point}</span>
+                <span>{renderInline(normaliseToMarkdown(point))}</span>
               </li>
             ))}
           </ul>
@@ -285,7 +332,7 @@ export function RecapCard({ recap, onPickAnother, onDashboard }) {
             {recap.keyPoints.map((point, idx) => (
               <li key={idx} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
                 <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                <span>{point}</span>
+                <span>{renderInline(normaliseToMarkdown(point))}</span>
               </li>
             ))}
           </ul>
@@ -295,7 +342,7 @@ export function RecapCard({ recap, onPickAnother, onDashboard }) {
       {recap.applyTip && (
         <div className="mx-6 mb-4 bg-white/70 dark:bg-slate-800/70 rounded-xl p-4">
           <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-1">Try this next</h3>
-          <p className="text-sm text-slate-700 dark:text-slate-300">{recap.applyTip}</p>
+          <p className="text-sm text-slate-700 dark:text-slate-300">{renderInline(normaliseToMarkdown(recap.applyTip))}</p>
         </div>
       )}
 

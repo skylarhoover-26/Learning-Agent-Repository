@@ -23,15 +23,37 @@ export async function POST(request) {
 
     const { audioStream } = tts.toStream(sanitizedText, { rate: speedToSsmlRate(clampedSpeed) });
 
-    const chunks = [];
-    for await (const chunk of audioStream) {
-      if (Buffer.isBuffer(chunk)) {
-        chunks.push(chunk);
-      }
-    }
-    const buffer = Buffer.concat(chunks);
+    const stream = new ReadableStream({
+      async start(controller) {
+        const timeout = setTimeout(() => {
+          try {
+            controller.error(new Error('TTS stream timeout'));
+            audioStream.destroy();
+          } catch {
+            // stream already closed
+          }
+        }, 30000);
 
-    return new Response(buffer, {
+        try {
+          for await (const chunk of audioStream) {
+            if (Buffer.isBuffer(chunk)) {
+              controller.enqueue(new Uint8Array(chunk));
+            }
+          }
+          clearTimeout(timeout);
+          controller.close();
+        } catch (err) {
+          clearTimeout(timeout);
+          try {
+            controller.error(err);
+          } catch {
+            // stream already closed
+          }
+        }
+      },
+    });
+
+    return new Response(stream, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Cache-Control': 'public, max-age=3600',

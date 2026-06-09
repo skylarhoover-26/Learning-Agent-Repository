@@ -11,10 +11,10 @@ import {
 
 const TOUR_STEPS = [
   {
-    title: 'Welcome to AI Learning Platform',
+    title: 'Welcome to AI Learning Coach',
     description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey in 9 steps.',
     panels: {
-      left: { label: 'Slack Bot', content: 'The AI Learning Platform lives in Slack. When an employee DMs the bot for the first time, it starts a 5-minute onboarding conversation.' },
+      left: { label: 'Slack Bot', content: 'The AI Learning Coach lives in Slack. When an employee DMs the bot for the first time, it starts a 5-minute onboarding conversation.' },
       right: { label: 'Web Dashboard', content: 'The web platform is where employees track progress, take lessons, and explore AI use cases. Managers see team views.' },
     },
     icon: Play,
