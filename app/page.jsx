@@ -18,6 +18,7 @@ import LiveStreakCard from '@/components/live-streak-card';
 import LiveRecentLesson from '@/components/live-recent-lesson';
 import LiveSourcesFeed from '@/components/live-sources-feed';
 import UserMenu from '@/components/user-menu';
+import LiveModuleProgress from '@/components/live-module-progress';
 
 const TIER_LABELS = {
   beginner: { label: 'Beginner', color: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
@@ -240,6 +241,9 @@ export default async function Dashboard() {
 
         {/* 11. Recent lesson CTA */}
         <LiveRecentLesson />
+
+        {/* 12. Learning Path modules progress */}
+        <LiveModuleProgress />
 
         <Link
           href="/quests"

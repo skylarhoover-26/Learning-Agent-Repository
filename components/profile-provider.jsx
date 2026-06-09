@@ -18,10 +18,8 @@ export function ProfileProvider({ children }) {
   const pathname = usePathname();
 
   const fetchProfile = useCallback(async () => {
-    if (status !== 'authenticated' || !session?.user?.email) {
-      setIsLoading(false);
-      return;
-    }
+    if (status === 'loading') return;
+
     try {
       const res = await fetch('/api/user-data?type=profile');
       if (res.ok) {
@@ -32,16 +30,16 @@ export function ProfileProvider({ children }) {
           return;
         }
       }
-      setProfile(null);
-      setIsLoading(false);
-      if (pathname !== '/onboarding' && !pathname.startsWith('/auth')) {
-        router.push('/onboarding');
-      }
     } catch {
-      setProfile(null);
-      setIsLoading(false);
+      // fetch failed — fall through to null profile
     }
-  }, [status, session?.user?.email, pathname, router]);
+
+    setProfile(null);
+    setIsLoading(false);
+    if (pathname !== '/onboarding' && !pathname.startsWith('/auth') && !pathname.startsWith('/tour')) {
+      router.push('/onboarding');
+    }
+  }, [status, pathname, router]);
 
   useEffect(() => {
     fetchProfile();

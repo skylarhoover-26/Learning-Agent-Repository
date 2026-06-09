@@ -216,14 +216,14 @@ export function SlideCard({ slide, onButtonClick, isLatest }) {
 
       {/* Key points box */}
       {keyPoints && keyPoints.length > 0 && (
-        <div className="mx-6 mb-4 bg-brand-50 rounded-xl p-4">
+        <div className="mx-6 mb-4 bg-brand-50 dark:bg-slate-700/50 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Lightbulb className="w-4 h-4 text-brand" />
-            <span className="text-sm font-semibold text-brand-700">Key Points</span>
+            <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">Key Points</span>
           </div>
           <ul className="space-y-1.5">
             {keyPoints.map((point, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+              <li key={idx} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
                 <CheckCircle className="w-4 h-4 text-brand mt-0.5 shrink-0" />
                 <span>{point}</span>
               </li>

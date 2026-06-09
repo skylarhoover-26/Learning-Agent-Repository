@@ -21,11 +21,28 @@ export async function POST(request) {
     });
 
     if (!res.ok) {
+      console.error('n8n webhook returned', res.status);
       return Response.json({ error: 'Snowflake lookup failed.' }, { status: 502 });
     }
 
-    const data = await res.json();
-    return Response.json(data);
+    const text = await res.text();
+    if (!text || text.trim().length === 0) {
+      return Response.json(
+        { error: 'No results found. The Snowflake query returned empty — check that the n8n workflow has valid Snowflake credentials and the correct query.' },
+        { status: 502 }
+      );
+    }
+
+    try {
+      const data = JSON.parse(text);
+      return Response.json(data);
+    } catch {
+      console.error('n8n returned non-JSON:', text.slice(0, 200));
+      return Response.json(
+        { error: 'Received an unexpected response from the lookup service.' },
+        { status: 502 }
+      );
+    }
   } catch (error) {
     console.error('Manager lookup error:', error);
     return Response.json({ error: 'Something went wrong.' }, { status: 500 });

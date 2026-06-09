@@ -14,17 +14,8 @@ import {
   Clock,
   FileText,
   RefreshCw,
-  Plus,
-  Trash2,
-  BookOpen,
-  GripVertical,
   Loader2,
 } from 'lucide-react';
-import {
-  getCuratedLessons,
-  saveCuratedLesson,
-  deleteCuratedLesson,
-} from '@/lib/curated-lessons';
 
 const INITIAL_PROPOSALS = [
   {
@@ -322,332 +313,11 @@ function ProposalCard({ proposal, onAction }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Lesson Builder
-// ---------------------------------------------------------------------------
-
-const EMPTY_SLIDE = { slideTitle: '', message: '', keyPoints: [''] };
-
-function LessonBuilder({ editingLesson, onSave, onCancel }) {
-  const [topic, setTopic] = useState(editingLesson?.topic || '');
-  const [format, setFormat] = useState(editingLesson?.format || 'standard');
-  const [slides, setSlides] = useState(
-    editingLesson?.slides?.length > 0
-      ? editingLesson.slides
-      : [{ ...EMPTY_SLIDE }]
-  );
-
-  function updateSlide(idx, field, value) {
-    setSlides((prev) =>
-      prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s))
-    );
-  }
-
-  function updateKeyPoint(slideIdx, kpIdx, value) {
-    setSlides((prev) =>
-      prev.map((s, i) =>
-        i === slideIdx
-          ? { ...s, keyPoints: s.keyPoints.map((kp, j) => (j === kpIdx ? value : kp)) }
-          : s
-      )
-    );
-  }
-
-  function addKeyPoint(slideIdx) {
-    setSlides((prev) =>
-      prev.map((s, i) =>
-        i === slideIdx ? { ...s, keyPoints: [...s.keyPoints, ''] } : s
-      )
-    );
-  }
-
-  function removeKeyPoint(slideIdx, kpIdx) {
-    setSlides((prev) =>
-      prev.map((s, i) =>
-        i === slideIdx
-          ? { ...s, keyPoints: s.keyPoints.filter((_, j) => j !== kpIdx) }
-          : s
-      )
-    );
-  }
-
-  function addSlide() {
-    setSlides((prev) => [...prev, { ...EMPTY_SLIDE, keyPoints: [''] }]);
-  }
-
-  function removeSlide(idx) {
-    if (slides.length <= 1) return;
-    setSlides((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!topic.trim()) return;
-
-    const cleanSlides = slides
-      .filter((s) => s.slideTitle.trim() || s.message.trim())
-      .map((s, idx) => ({
-        slideTitle: s.slideTitle.trim(),
-        message: s.message.trim(),
-        keyPoints: s.keyPoints.filter((kp) => kp.trim()),
-        phase: idx === 0 ? 'intro' : idx === slides.length - 1 ? 'complete' : 'steps',
-        buttons: [],
-      }));
-
-    if (cleanSlides.length === 0) return;
-
-    const lastSlide = cleanSlides[cleanSlides.length - 1];
-    lastSlide.phase = 'complete';
-    lastSlide.recap = {
-      topic: topic.trim(),
-      keyPoints: cleanSlides.flatMap((s) => s.keyPoints).slice(0, 5),
-      applyTip: 'Try applying what you learned to a real task today.',
-    };
-
-    onSave({
-      id: editingLesson?.id,
-      topic: topic.trim(),
-      format,
-      slides: cleanSlides,
-      createdAt: editingLesson?.createdAt,
-    });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-6 space-y-4">
-        <h3 className="text-lg font-bold text-ink dark:text-slate-200">
-          {editingLesson ? 'Edit Lesson' : 'Create Curated Lesson'}
-        </h3>
-
-        <div>
-          <label className="block text-sm font-medium text-ink dark:text-slate-300 mb-1">
-            Lesson Topic
-          </label>
-          <input
-            type="text"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g., Writing Effective AI Prompts for Customer Service"
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-ink dark:text-slate-300 mb-1">
-            Format
-          </label>
-          <select
-            value={format}
-            onChange={(e) => setFormat(e.target.value)}
-            className="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
-          >
-            <option value="quick_tip">Quick Tip (60 sec)</option>
-            <option value="standard">Quick Lesson (3-5 min)</option>
-            <option value="deep_dive">Deep Dive (15-20 min)</option>
-          </select>
-        </div>
-      </div>
-
-      {slides.map((slide, sIdx) => (
-        <div
-          key={sIdx}
-          className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-6 space-y-4"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <GripVertical className="w-4 h-4 text-slate-300" />
-              <h4 className="text-sm font-semibold text-ink dark:text-slate-300 uppercase tracking-wide">
-                Slide {sIdx + 1}
-              </h4>
-            </div>
-            {slides.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeSlide(sIdx)}
-                className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Remove
-              </button>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-ink dark:text-slate-300 mb-1">
-              Slide Title
-            </label>
-            <input
-              type="text"
-              value={slide.slideTitle}
-              onChange={(e) => updateSlide(sIdx, 'slideTitle', e.target.value)}
-              placeholder="e.g., What is the RCTF Framework?"
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-ink dark:text-slate-300 mb-1">
-              Content (supports **bold**, `code`, bullet lists)
-            </label>
-            <textarea
-              value={slide.message}
-              onChange={(e) => updateSlide(sIdx, 'message', e.target.value)}
-              placeholder="Write your lesson content here..."
-              rows={6}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none resize-y"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-ink dark:text-slate-300 mb-1">
-              Key Points
-            </label>
-            <div className="space-y-2">
-              {slide.keyPoints.map((kp, kpIdx) => (
-                <div key={kpIdx} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={kp}
-                    onChange={(e) => updateKeyPoint(sIdx, kpIdx, e.target.value)}
-                    placeholder={`Key point ${kpIdx + 1}`}
-                    className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm"
-                  />
-                  {slide.keyPoints.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeKeyPoint(sIdx, kpIdx)}
-                      className="p-2 text-slate-400 hover:text-red-500"
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addKeyPoint(sIdx)}
-                className="text-xs text-brand hover:underline flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add key point
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
-
-      <button
-        type="button"
-        onClick={addSlide}
-        className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:border-brand hover:text-brand transition-all flex items-center justify-center gap-2"
-      >
-        <Plus className="w-4 h-4" /> Add Slide
-      </button>
-
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          className="px-6 py-2.5 rounded-lg bg-brand text-white font-medium hover:bg-brand-600 transition-all"
-        >
-          {editingLesson ? 'Update Lesson' : 'Publish Lesson'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-6 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function CuratedLessonsList({ lessons, onEdit, onDelete, onCreate }) {
-  if (lessons.length === 0) {
-    return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-12 text-center">
-        <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-        <p className="text-ink dark:text-slate-300 font-medium mb-1">No curated lessons yet</p>
-        <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-4">
-          Create hand-crafted lessons that appear on the lesson picker alongside AI-generated ones.
-        </p>
-        <button
-          onClick={onCreate}
-          className="px-5 py-2.5 rounded-lg bg-brand text-white font-medium hover:bg-brand-600 transition-all inline-flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Create First Lesson
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {lessons.map((lesson) => (
-        <div
-          key={lesson.id}
-          className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-5 flex items-center justify-between"
-        >
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand">
-                {lesson.format === 'quick_tip'
-                  ? 'Quick Tip'
-                  : lesson.format === 'deep_dive'
-                    ? 'Deep Dive'
-                    : 'Quick Lesson'}
-              </span>
-              <span className="text-xs text-slate-400">
-                {lesson.slides?.length || 0} slide{(lesson.slides?.length || 0) !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <h4 className="font-bold text-ink dark:text-slate-200 truncate">{lesson.topic}</h4>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Created {new Date(lesson.createdAt).toLocaleDateString()}
-              {lesson.updatedAt !== lesson.createdAt &&
-                ` · Updated ${new Date(lesson.updatedAt).toLocaleDateString()}`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 ml-4">
-            <button
-              onClick={() => onEdit(lesson)}
-              className="p-2 rounded-lg text-slate-400 hover:text-brand hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all"
-              title="Edit"
-            >
-              <Edit3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onDelete(lesson.id)}
-              className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main Admin Dashboard
-// ---------------------------------------------------------------------------
-
-const ADMIN_VIEWS = [
-  { key: 'proposals', label: 'Proposals', icon: FileText },
-  { key: 'lessons', label: 'Curated Lessons', icon: BookOpen },
-];
-
 export default function AdminDashboard() {
   const router = useRouter();
   const [proposals, setProposals] = useState(INITIAL_PROPOSALS);
   const [activeTab, setActiveTab] = useState('all');
   const [toast, setToast] = useState(null);
-  const [adminView, setAdminView] = useState('proposals');
-  const [curatedLessons, setCuratedLessons] = useState([]);
-  const [editorState, setEditorState] = useState(null);
   const [adminChecked, setAdminChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -664,10 +334,6 @@ export default function AdminDashboard() {
       }
     }
     checkAdmin();
-  }, []);
-
-  useEffect(() => {
-    setCuratedLessons(getCuratedLessons());
   }, []);
 
   const showToast = useCallback((message) => {
@@ -712,19 +378,6 @@ export default function AdminDashboard() {
     return null;
   }
 
-  function handleSaveLesson(lesson) {
-    const saved = saveCuratedLesson(lesson);
-    setCuratedLessons(getCuratedLessons());
-    setEditorState(null);
-    showToast(lesson.id ? 'Lesson updated' : 'Lesson published');
-  }
-
-  function handleDeleteLesson(id) {
-    deleteCuratedLesson(id);
-    setCuratedLessons(getCuratedLessons());
-    showToast('Lesson deleted');
-  }
-
   const filtered =
     activeTab === 'all'
       ? proposals
@@ -735,38 +388,10 @@ export default function AdminDashboard() {
       <PageHeader
         icon={Shield}
         title="Admin Dashboard"
-        subtitle="Manage curriculum proposals and curated lessons"
+        subtitle="Manage curriculum proposals"
       />
 
       <main className="max-w-6xl mx-auto px-6 py-6 space-y-6">
-        {/* Admin View Switcher */}
-        <div className="flex items-center gap-2">
-          {ADMIN_VIEWS.map((v) => (
-            <button
-              key={v.key}
-              onClick={() => { setAdminView(v.key); setEditorState(null); }}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                adminView === v.key
-                  ? 'bg-brand text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              <v.icon className="w-4 h-4" />
-              {v.label}
-              {v.key === 'lessons' && curatedLessons.length > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                  adminView === v.key ? 'bg-white/20' : 'bg-brand-50 dark:bg-brand-900/30 text-brand'
-                }`}>
-                  {curatedLessons.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Proposals View */}
-        {adminView === 'proposals' && (
-          <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-4">
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wide">
@@ -847,44 +472,6 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
-          </>
-        )}
-
-        {/* Curated Lessons View */}
-        {adminView === 'lessons' && (
-          <>
-            {editorState ? (
-              <LessonBuilder
-                editingLesson={editorState === 'new' ? null : editorState}
-                onSave={handleSaveLesson}
-                onCancel={() => setEditorState(null)}
-              />
-            ) : (
-              <>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-bold text-ink dark:text-slate-200">Curated Lessons</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Hand-crafted lessons that appear on the lesson picker. These are delivered as-is, without AI generation.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setEditorState('new')}
-                    className="px-4 py-2.5 rounded-lg bg-brand text-white font-medium hover:bg-brand-600 transition-all flex items-center gap-2 text-sm"
-                  >
-                    <Plus className="w-4 h-4" /> New Lesson
-                  </button>
-                </div>
-                <CuratedLessonsList
-                  lessons={curatedLessons}
-                  onEdit={(lesson) => setEditorState(lesson)}
-                  onDelete={handleDeleteLesson}
-                  onCreate={() => setEditorState('new')}
-                />
-              </>
-            )}
-          </>
-        )}
       </main>
 
       {toast && <Toast message={toast} />}
