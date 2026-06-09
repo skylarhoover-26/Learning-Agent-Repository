@@ -104,7 +104,7 @@ export default async function Dashboard() {
   const tier = TIER_LABELS[learner.tier] || TIER_LABELS.beginner;
   const displayName = learner.display_name || 'there';
   const greetingPrefix = getGreetingPrefix();
-  const userDept = learner.department || 'Customer Success';
+  const userDept = learner.department || '';
 
   return (
     <div className="min-h-screen">

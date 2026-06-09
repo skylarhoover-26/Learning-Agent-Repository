@@ -11,9 +11,11 @@ import { onLessonComplete } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
 import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
 import {
-  BookOpen, ChevronRight, ChevronLeft, Zap, BookMarked, Trophy,
-  Loader2, Send,
+  BookOpen, ChevronRight, Zap, BookMarked, Trophy,
+  Loader2, Send, Mic, MicOff, MessageSquare,
 } from 'lucide-react';
+import { useStt } from '@/lib/use-stt';
+import { useTts } from '@/lib/use-tts';
 
 const SUGGESTED_TOPICS = [
   { label: '🎯 Prompt Basics', topic: 'How to write clear, specific prompts that get useful results' },
@@ -37,10 +39,98 @@ function LessonContent() {
   const [slides, setSlides] = useState([]);
   const [currentSlideIdx, setCurrentSlideIdx] = useState(0);
   const [messages, setMessages] = useState([]);
+  const [userInputs, setUserInputs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [userInput, setUserInput] = useState('');
-  const slideRef = useRef(null);
+  const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const voiceModeRef = useRef(false);
+  const pendingVoiceSubmitRef = useRef(null);
+
+  // TTS for voice conversation mode
+  const { isSpeaking: ttsActive, speak: ttsSpeak, stop: ttsStop } = useTts();
+
+  // Speech-to-text
+  const { isListening, isSupported: sttSupported, transcript, start: sttStart, stop: sttStop, toggle: toggleStt } = useStt({
+    onResult: (text) => {
+      if (voiceModeRef.current) {
+        pendingVoiceSubmitRef.current = text.trim();
+      } else {
+        setUserInput((prev) => (prev ? `${prev} ${text}` : text));
+        inputRef.current?.focus();
+      }
+    },
+  });
+
+  useEffect(() => {
+    voiceModeRef.current = voiceMode;
+  }, [voiceMode]);
+
+  useEffect(() => {
+    if (isListening && transcript) {
+      setUserInput(transcript);
+    }
+  }, [isListening, transcript]);
+
+  // Voice mode: auto-submit when STT finishes
+  useEffect(() => {
+    if (!isListening && pendingVoiceSubmitRef.current && voiceModeRef.current) {
+      const text = pendingVoiceSubmitRef.current;
+      pendingVoiceSubmitRef.current = null;
+      setUserInput('');
+      continueLesson(text);
+    }
+  }, [isListening]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Voice mode: auto-read new slides, then re-listen
+  const prevSlideCountRef = useRef(0);
+  useEffect(() => {
+    if (!voiceModeRef.current || slides.length === 0) {
+      prevSlideCountRef.current = slides.length;
+      return;
+    }
+    if (slides.length > prevSlideCountRef.current) {
+      const latest = slides[slides.length - 1];
+      if (latest.phase === 'complete') {
+        setVoiceMode(false);
+        ttsStop();
+      } else {
+        const text = [latest.message, ...(latest.keyPoints || [])].filter(Boolean).join('. ');
+        ttsSpeak(text);
+      }
+    }
+    prevSlideCountRef.current = slides.length;
+  }, [slides.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Voice mode: after TTS finishes, auto-listen
+  useEffect(() => {
+    if (voiceModeRef.current && !ttsActive && slides.length > 0 && !isLoading && !isListening) {
+      const latest = slides[slides.length - 1];
+      if (latest.phase !== 'complete') {
+        const timer = setTimeout(() => {
+          if (voiceModeRef.current && !isListening) {
+            sttStart();
+          }
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [ttsActive, slides.length, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function toggleVoiceMode() {
+    if (voiceMode) {
+      setVoiceMode(false);
+      ttsStop();
+      sttStop();
+    } else {
+      setVoiceMode(true);
+      if (slides.length > 0 && !isLoading) {
+        sttStart();
+      }
+    }
+  }
 
   // Saved lesson state (for resume banner)
   const [savedLesson, setSavedLesson] = useState(null);
@@ -73,6 +163,7 @@ function LessonContent() {
         slides,
         currentSlideIdx,
         messages,
+        userInputs,
         lessonStartedAt: lessonStartedAt.current,
       });
     }, 500);
@@ -81,14 +172,14 @@ function LessonContent() {
         clearTimeout(debounceSaveRef.current);
       }
     };
-  }, [view, slides, currentSlideIdx, messages, topic, format]);
+  }, [view, slides, currentSlideIdx, messages, userInputs, topic, format]);
 
-  // Auto-scroll to slide card on slide change
+  // Auto-scroll to bottom of conversation on new content
   useEffect(() => {
-    if (slideRef.current) {
-      slideRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [currentSlideIdx]);
+  }, [slides, userInputs, isLoading]);
 
 
   // If we arrive with a topic from URL, kick off the lesson
@@ -106,6 +197,7 @@ function LessonContent() {
     setSlides([]);
     setCurrentSlideIdx(0);
     setMessages([]);
+    setUserInputs([]);
     lessonStartedAt.current = new Date().toISOString();
     hasRecordedCompletion.current = false;
     setProgressionResult(null);
@@ -136,7 +228,8 @@ function LessonContent() {
     fetchStartLesson(t);
   }
 
-  async function continueLesson(input) {
+  async function continueLesson(input, displayLabel) {
+    setUserInputs((prev) => [...prev, displayLabel || input]);
     setIsLoading(true);
     setError(null);
 
@@ -161,7 +254,7 @@ function LessonContent() {
   }
 
   function handleButtonClick(btn) {
-    continueLesson(`[I clicked: ${btn.action}]`);
+    continueLesson(`[I clicked: ${btn.action}]`, btn.label);
   }
 
   function handleSubmitInput(e) {
@@ -178,6 +271,7 @@ function LessonContent() {
     setTopic('');
     setSlides([]);
     setMessages([]);
+    setUserInputs([]);
     setCurrentSlideIdx(0);
     setError(null);
     hasRecordedCompletion.current = false;
@@ -218,6 +312,7 @@ function LessonContent() {
       setSlides(savedLesson.slides || []);
       setCurrentSlideIdx(savedLesson.currentSlideIdx || 0);
       setMessages(savedLesson.messages || []);
+      setUserInputs(savedLesson.userInputs || []);
       lessonStartedAt.current = savedLesson.lessonStartedAt || new Date().toISOString();
       hasRecordedCompletion.current = false;
       setProgressionResult(null);
@@ -354,55 +449,36 @@ function LessonContent() {
     <main className="max-w-3xl mx-auto px-6 py-10">
       <XpToast result={progressionResult} onDismiss={() => setProgressionResult(null)} />
 
-      {/* Slide progress dots */}
+      {/* Progress bar + voice mode toggle */}
       {slides.length > 0 && (
-        <div className="flex items-center justify-center gap-2 mb-6">
-          {slides.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentSlideIdx(idx)}
-              className={`w-2.5 h-2.5 rounded-full transition-all ${
-                idx === currentSlideIdx
-                  ? 'bg-brand scale-125'
-                  : idx < currentSlideIdx
-                    ? 'bg-brand-200'
-                    : 'bg-slate-200'
-              }`}
-              aria-label={`Go to slide ${idx + 1}`}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-brand rounded-full transition-all duration-500"
+              style={{ width: `${((currentSlideIdx + 1) / Math.max(slides.length + (isComplete ? 0 : 1), 1)) * 100}%` }}
             />
-          ))}
-          {isLoading && (
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-200 animate-pulse" />
+          </div>
+          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+            Step {currentSlideIdx + 1}
+          </span>
+          {sttSupported && !isComplete && (
+            <button
+              onClick={toggleVoiceMode}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                voiceMode
+                  ? 'bg-red-500 text-white shadow-sm animate-pulse'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+              }`}
+              aria-label={voiceMode ? 'Exit voice mode' : 'Enter voice mode'}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              {voiceMode ? 'Voice On' : 'Voice Mode'}
+            </button>
           )}
         </div>
       )}
 
-      {/* Back/Next navigation */}
-      {slides.length > 1 && (
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => setCurrentSlideIdx((i) => Math.max(0, i - 1))}
-            disabled={currentSlideIdx === 0}
-            className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Previous
-          </button>
-          <span className="text-xs text-slate-400 font-medium">
-            {currentSlideIdx + 1} / {slides.length}
-          </span>
-          <button
-            onClick={() => setCurrentSlideIdx((i) => Math.min(slides.length - 1, i + 1))}
-            disabled={currentSlideIdx === slides.length - 1}
-            className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          >
-            Next
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Loading state */}
+      {/* Loading state (initial) */}
       {isLoading && slides.length === 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-brand mx-auto mb-4" />
@@ -413,65 +489,114 @@ function LessonContent() {
 
       {/* Error state */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-center">
-          <p className="text-red-700 text-sm font-medium">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4 text-center">
+          <p className="text-red-700 dark:text-red-400 text-sm font-medium">{error}</p>
           <button
             onClick={() => fetchStartLesson(topic)}
-            className="mt-2 text-sm text-red-600 underline hover:text-red-800"
+            className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:text-red-800"
           >
             Try again
           </button>
         </div>
       )}
 
-      {/* Slide content */}
-      <div ref={slideRef}>
-        {currentSlide && !isComplete && (
-          <SlideCard
-            slide={currentSlide}
-            onButtonClick={handleButtonClick}
-            isLatest={isOnLatestSlide && !isLoading}
-          />
+      {/* Conversation thread */}
+      <div className="space-y-4">
+        {slides.map((slide, idx) => {
+          const isLast = idx === slides.length - 1;
+          const slideIsComplete = slide.phase === 'complete' && slide.recap;
+          return (
+            <div key={idx}>
+              {/* User message that triggered this slide */}
+              {userInputs[idx - 1] && (
+                <div className="flex justify-end mb-4">
+                  <div className="max-w-[80%] bg-brand text-white px-4 py-3 rounded-2xl rounded-br-md text-sm">
+                    {userInputs[idx - 1]}
+                  </div>
+                </div>
+              )}
+
+              {/* AI slide */}
+              {slideIsComplete && isLast ? (
+                <RecapCard
+                  recap={slide.recap}
+                  onPickAnother={resetToPickerView}
+                  onDashboard={() => router.push('/')}
+                />
+              ) : (
+                <SlideCard
+                  slide={slide}
+                  onButtonClick={handleButtonClick}
+                  isLatest={isLast && !isLoading}
+                />
+              )}
+            </div>
+          );
+        })}
+
+        {/* Pending user message while AI is thinking */}
+        {isLoading && userInputs.length >= slides.length && userInputs[userInputs.length - 1] && (
+          <div className="flex justify-end">
+            <div className="max-w-[80%] bg-brand text-white px-4 py-3 rounded-2xl rounded-br-md text-sm">
+              {userInputs[userInputs.length - 1]}
+            </div>
+          </div>
         )}
 
-        {isComplete && (
-          <RecapCard
-            recap={currentSlide.recap}
-            onPickAnother={resetToPickerView}
-            onDashboard={() => router.push('/')}
-          />
+        {/* Loading indicator for continuation */}
+        {isLoading && slides.length > 0 && (
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-3 flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Thinking...</span>
+            </div>
+          </div>
         )}
+
+        <div ref={bottomRef} />
       </div>
 
-      {/* Loading indicator for continuation */}
-      {isLoading && slides.length > 0 && (
-        <div className="flex items-center justify-center gap-2 mt-4 text-slate-500 dark:text-slate-400">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Thinking...</span>
-        </div>
-      )}
-
+      {/* Input area */}
       {slides.length > 0 && !isComplete && (
-        <form onSubmit={handleSubmitInput} className="mt-4 flex gap-2">
+        <form onSubmit={handleSubmitInput} className="mt-4 flex gap-2 sticky bottom-4">
           <input
+            ref={inputRef}
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type a question or response..."
+            placeholder={isListening ? 'Listening...' : 'Type a question or response...'}
             disabled={isLoading}
-            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50"
+            className={`flex-1 px-4 py-3 rounded-xl border dark:bg-slate-900 dark:text-slate-200 bg-white focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50 shadow-sm ${
+              isListening
+                ? 'border-red-300 dark:border-red-700 ring-2 ring-red-100 dark:ring-red-900/30'
+                : 'border-slate-200 dark:border-slate-700'
+            }`}
           />
+          {sttSupported && (
+            <button
+              type="button"
+              onClick={toggleStt}
+              className={`px-3 py-3 rounded-xl transition-all shadow-sm ${
+                isListening
+                  ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+              }`}
+              aria-label={isListening ? 'Stop listening' : 'Voice input'}
+            >
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+          )}
           <button
             type="submit"
             disabled={!userInput.trim() || isLoading}
-            className="px-4 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="px-4 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
       )}
 
-      {/* Back to topic picker (non-complete state) */}
+      {/* Exit lesson */}
       {slides.length > 0 && !isComplete && (
         <div className="mt-6 text-center">
           <button

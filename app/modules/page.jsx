@@ -1,38 +1,75 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
-import { MODULES } from '@/lib/modules-data';
+import { useProfile } from '@/components/profile-provider';
+import { getModulesForTier, getPersonalizedSubtitle } from '@/lib/modules-data';
 import {
   getModuleProgress, isSectionRead, markSectionRead,
-  saveQuizAnswer, markModuleComplete,
+  saveQuizAnswer, markModuleComplete, resetQuizForRetry,
 } from '@/lib/module-store';
 import {
   GraduationCap, ChevronRight, ChevronLeft,
   Check, BookOpen, Zap, Wand2, Cog, BarChart3,
-  ArrowRight, Play,
+  ArrowRight, Play, RotateCcw, MessageCircle,
+  Send, Loader2, Brain, Workflow, Code2, Users,
 } from 'lucide-react';
 
-const MODULE_ICONS = [BookOpen, Zap, Wand2, Cog, BarChart3];
+const MODULE_ICONS = {
+  1: BookOpen,
+  2: Zap,
+  3: Wand2,
+  4: Cog,
+  5: BarChart3,
+  6: Brain,
+  7: Workflow,
+  8: Code2,
+  9: Users,
+};
+
+const MAX_QUIZ_ATTEMPTS = 3;
 
 export default function ModulesPage() {
+  const { profile, isLoading: profileLoading } = useProfile();
   const [selectedModule, setSelectedModule] = useState(null);
   const [expandedSection, setExpandedSection] = useState(0);
   const [progressVersion, setProgressVersion] = useState(0);
+
+  const tier = profile?.tier || 'beginner';
+  const topTasks = profile?.top_tasks || [];
+  const modules = getModulesForTier(tier);
 
   const refreshProgress = useCallback(() => {
     setProgressVersion((v) => v + 1);
   }, []);
 
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
+        <PageHeader icon={GraduationCap} title="Learning Path" subtitle="Loading your personalized modules..." />
+        <main className="max-w-3xl mx-auto px-6 py-10">
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-6 h-6 text-brand animate-spin" />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (selectedModule !== null) {
-    const mod = MODULES[selectedModule];
+    const mod = modules[selectedModule];
+    if (!mod) {
+      setSelectedModule(null);
+      return null;
+    }
+    const displayNum = selectedModule + 1;
     return (
       <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader
           icon={GraduationCap}
-          title={`Module ${mod.num}: ${mod.title}`}
-          subtitle={mod.subtitle}
+          title={`Module ${displayNum}: ${mod.title}`}
+          subtitle={getPersonalizedSubtitle(mod.num, topTasks) || mod.subtitle}
         />
         <main className="max-w-3xl mx-auto px-6 py-10">
           <button
@@ -53,23 +90,31 @@ export default function ModulesPage() {
     );
   }
 
+  const tierLabel = {
+    beginner: 'Beginner',
+    practitioner: 'Practitioner',
+    power_user: 'Power User',
+    builder: 'Builder',
+    developer: 'Developer',
+  }[tier] || 'Beginner';
+
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={GraduationCap}
         title="Learning Path"
-        subtitle="5 modules from foundations to measuring impact"
+        subtitle={`${modules.length} modules tailored for ${tierLabel} level`}
       />
 
       <main className="max-w-3xl mx-auto px-6 py-10">
         <div className="space-y-4">
-          {MODULES.map((mod, i) => {
-            const Icon = MODULE_ICONS[i];
-            // progressVersion is used to trigger re-reads from localStorage
-            const progress = progressVersion >= 0 ? getModuleProgress(mod.num) : null; // eslint-disable-line no-unused-expressions
+          {modules.map((mod, i) => {
+            const Icon = MODULE_ICONS[mod.num] || BookOpen;
+            const progress = progressVersion >= 0 ? getModuleProgress(mod.num) : null;
             const totalSections = mod.sections.length;
             const readCount = progress?.sectionsRead?.length || 0;
             const pct = totalSections > 0 ? Math.round((readCount / totalSections) * 100) : 0;
+            const personalizedSub = getPersonalizedSubtitle(mod.num, topTasks);
             return (
               <button
                 key={mod.num}
@@ -83,7 +128,7 @@ export default function ModulesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                        Module {mod.num}
+                        Module {i + 1}
                       </span>
                       <span className="text-xs text-slate-400">&middot; {mod.duration}</span>
                       {progress?.completed && (
@@ -98,7 +143,9 @@ export default function ModulesPage() {
                       )}
                     </div>
                     <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-0.5 tracking-tight">{mod.title}</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{mod.subtitle}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {personalizedSub || mod.subtitle}
+                    </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all shrink-0 mt-1" />
                 </div>
@@ -156,7 +203,6 @@ function ModuleDetail({ module: mod, expandedSection, setExpandedSection, onProg
 
   return (
     <div className="space-y-6">
-      {/* Sections */}
       <div className="space-y-3">
         {mod.sections.map((section, i) => {
           const isExpanded = expandedSection === i;
@@ -218,7 +264,6 @@ function ModuleDetail({ module: mod, expandedSection, setExpandedSection, onProg
         })}
       </div>
 
-      {/* Activity */}
       {mod.activity && (
         <ActivityCard activity={mod.activity} moduleNum={mod.num} onActivityDone={handleActivityDone} />
       )}
@@ -230,13 +275,26 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
   const storedProgress = getModuleProgress(moduleNum);
   const [selectedAnswer, setSelectedAnswer] = useState(storedProgress?.quizAnswer);
   const [showResult, setShowResult] = useState(storedProgress?.quizAnswer !== null && storedProgress?.quizAnswer !== undefined);
+  const [attempts, setAttempts] = useState(storedProgress?.quizAttempts || 0);
   const [markedDone, setMarkedDone] = useState(storedProgress?.completed || false);
+  const [showDiscussion, setShowDiscussion] = useState(false);
+
+  const isCorrect = showResult && selectedAnswer === activity.correct;
+  const canRetry = showResult && !isCorrect && attempts < MAX_QUIZ_ATTEMPTS;
 
   function handleQuizAnswer(answerIdx) {
     setSelectedAnswer(answerIdx);
     setShowResult(true);
+    setAttempts((prev) => prev + 1);
     saveQuizAnswer(moduleNum, answerIdx);
     onActivityDone?.();
+  }
+
+  function handleRetry() {
+    resetQuizForRetry(moduleNum);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setShowDiscussion(false);
   }
 
   if (activity.type === 'quiz') {
@@ -249,7 +307,7 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">{activity.question}</p>
         <div className="space-y-2 mb-4">
           {activity.options.map((opt, i) => {
-            const isCorrect = showResult && i === activity.correct;
+            const isCorrectOpt = showResult && i === activity.correct;
             const isWrong = showResult && selectedAnswer === i && i !== activity.correct;
             return (
               <button
@@ -257,7 +315,7 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
                 onClick={() => handleQuizAnswer(i)}
                 disabled={showResult}
                 className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all ${
-                  isCorrect
+                  isCorrectOpt
                     ? 'bg-green-50 border-green-300 text-green-800'
                     : isWrong
                     ? 'bg-red-50 border-red-300 text-red-800'
@@ -271,14 +329,53 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
             );
           })}
         </div>
+
         {showResult && (
           <div className={`rounded-xl p-4 text-sm ${
-            selectedAnswer === activity.correct
+            isCorrect
               ? 'bg-green-50 border border-green-100 text-green-800'
               : 'bg-amber-50 border border-amber-100 text-amber-800'
           }`}>
             {activity.explanation}
           </div>
+        )}
+
+        {showResult && (
+          <div className="flex items-center gap-3 mt-4">
+            {canRetry && (
+              <button
+                onClick={handleRetry}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-pill border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Try again ({MAX_QUIZ_ATTEMPTS - attempts} left)
+              </button>
+            )}
+            {!canRetry && !isCorrect && (
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                No retries remaining
+              </span>
+            )}
+            <button
+              onClick={() => setShowDiscussion(!showDiscussion)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-brand-50 text-brand-700 text-sm font-medium hover:bg-brand-100 transition-all"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              {showDiscussion ? 'Hide discussion' : 'Ask about this'}
+            </button>
+          </div>
+        )}
+
+        {showDiscussion && (
+          <QuizDiscussion
+            quizContext={{
+              question: activity.question,
+              options: activity.options,
+              correct: activity.correct,
+              userAnswer: selectedAnswer,
+              explanation: activity.explanation,
+            }}
+          />
         )}
       </div>
     );
@@ -370,4 +467,113 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
   }
 
   return null;
+}
+
+function QuizDiscussion({ quizContext }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  async function handleSend(e) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || isLoading) return;
+
+    const userMessage = { role: 'user', content: text };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/modules/discuss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quizContext, messages: updatedMessages }),
+      });
+
+      if (!res.ok) throw new Error('Failed to get response');
+
+      const data = await res.json();
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Sorry, something went wrong. Try asking again.' },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+      <div className="bg-slate-50 dark:bg-slate-700/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+          Ask a question about this answer
+        </p>
+      </div>
+
+      <div ref={scrollRef} className="max-h-64 overflow-y-auto p-4 space-y-3">
+        {messages.length === 0 && (
+          <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+            Ask why an answer is right or wrong, request an example, or get more context.
+          </p>
+        )}
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={`text-sm leading-relaxed ${
+              msg.role === 'user'
+                ? 'text-right'
+                : 'text-left'
+            }`}
+          >
+            <span
+              className={`inline-block px-3 py-2 rounded-xl max-w-[85%] ${
+                msg.role === 'user'
+                  ? 'bg-brand text-white'
+                  : 'bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200'
+              }`}
+            >
+              {msg.content}
+            </span>
+          </div>
+        ))}
+        {isLoading && (
+          <div className="text-left">
+            <span className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-sm">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Thinking...
+            </span>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSend} className="flex items-center gap-2 p-3 border-t border-slate-200 dark:border-slate-700">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Why is that the right answer?"
+          className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand"
+          disabled={isLoading}
+        />
+        <button
+          type="submit"
+          disabled={isLoading || !input.trim()}
+          className="p-2 rounded-lg bg-brand text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-brand-600 transition-all"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </form>
+    </div>
+  );
 }

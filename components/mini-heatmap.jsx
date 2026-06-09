@@ -7,7 +7,7 @@ import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
 
 function getCellColor(mastery, freshness, hasActivity) {
-  if (!hasActivity) return 'bg-slate-200/70 dark:bg-slate-700';
+  if (!hasActivity) return 'bg-slate-200/70 dark:bg-slate-900/60';
   const fresh = freshness >= 0 && freshness <= 14;
   const aging = freshness > 14 && freshness <= 60;
   const high = mastery >= 60;

@@ -1,13 +1,28 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 
 function SignInForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const error = searchParams.get('error');
   const callbackUrl = searchParams.get('callbackUrl') || '/';
+
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_OKTA_CONFIGURED) {
+      router.replace(callbackUrl);
+    }
+  }, [callbackUrl, router]);
+
+  if (!process.env.NEXT_PUBLIC_OKTA_CONFIGURED) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-warm dark:bg-slate-900">
+        <p className="text-slate-500 dark:text-slate-400">Redirecting...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg-warm dark:bg-slate-900 px-4">

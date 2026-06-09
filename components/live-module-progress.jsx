@@ -2,16 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { MODULES } from '@/lib/modules-data';
+import { getModulesForTier } from '@/lib/modules-data';
 import { getAllModuleProgress } from '@/lib/module-store';
+import { useProfile } from '@/components/profile-provider';
 import {
   GraduationCap, ChevronRight, Check,
   BookOpen, Zap, Wand2, Cog, BarChart3,
+  Brain, Workflow, Code2, Users,
 } from 'lucide-react';
 
-const MODULE_ICONS = [BookOpen, Zap, Wand2, Cog, BarChart3];
+const MODULE_ICONS = {
+  1: BookOpen,
+  2: Zap,
+  3: Wand2,
+  4: Cog,
+  5: BarChart3,
+  6: Brain,
+  7: Workflow,
+  8: Code2,
+  9: Users,
+};
 
 export default function LiveModuleProgress() {
+  const { profile } = useProfile();
   const [progress, setProgress] = useState({});
   const [loaded, setLoaded] = useState(false);
 
@@ -22,8 +35,10 @@ export default function LiveModuleProgress() {
 
   if (!loaded) return null;
 
-  const completedCount = MODULES.filter(m => progress[m.num]?.completed).length;
-  const overallPct = Math.round((completedCount / MODULES.length) * 100);
+  const tier = profile?.tier || 'beginner';
+  const modules = getModulesForTier(tier);
+  const completedCount = modules.filter(m => progress[m.num]?.completed).length;
+  const overallPct = Math.round((completedCount / modules.length) * 100);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
@@ -32,7 +47,7 @@ export default function LiveModuleProgress() {
           <GraduationCap className="w-5 h-5 text-brand" />
           <h3 className="font-semibold text-ink dark:text-slate-200">Learning Path</h3>
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            {completedCount}/{MODULES.length} complete
+            {completedCount}/{modules.length} complete
           </span>
         </div>
         <Link
@@ -56,8 +71,8 @@ export default function LiveModuleProgress() {
       </div>
 
       <div className="space-y-2">
-        {MODULES.map((mod, i) => {
-          const Icon = MODULE_ICONS[i];
+        {modules.map((mod) => {
+          const Icon = MODULE_ICONS[mod.num] || BookOpen;
           const modProgress = progress[mod.num];
           const isComplete = modProgress?.completed;
           const readCount = modProgress?.sectionsRead?.length || 0;

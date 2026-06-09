@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -16,6 +16,8 @@ export function ProfileProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const hasRedirected = useRef(false);
+  const hasFetched = useRef(false);
 
   const fetchProfile = useCallback(async () => {
     if (status === 'loading') return;
@@ -23,27 +25,37 @@ export function ProfileProvider({ children }) {
     try {
       const res = await fetch('/api/user-data?type=profile');
       if (res.ok) {
-        const data = await res.json();
-        if (data) {
-          setProfile(data);
+        const json = await res.json();
+        let profileData = json.data;
+        if (profileData && profileData.data && profileData.data.department) {
+          profileData = profileData.data;
+        }
+        if (profileData && profileData.department) {
+          setProfile(profileData);
           setIsLoading(false);
+          hasFetched.current = true;
           return;
         }
       }
     } catch {
-      // fetch failed — fall through to null profile
+      if (hasFetched.current) return;
     }
 
     setProfile(null);
     setIsLoading(false);
-    if (pathname !== '/onboarding' && !pathname.startsWith('/auth') && !pathname.startsWith('/tour')) {
-      router.push('/onboarding');
-    }
-  }, [status, pathname, router]);
+  }, [status]);
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    if (isLoading || profile) return;
+    if (hasRedirected.current) return;
+    if (pathname === '/onboarding' || pathname.startsWith('/auth') || pathname.startsWith('/tour')) return;
+    hasRedirected.current = true;
+    router.push('/onboarding');
+  }, [isLoading, profile, pathname, router]);
 
   const updateProfile = useCallback(async (fields) => {
     const updated = { ...profile, ...fields };
@@ -60,7 +72,13 @@ export function ProfileProvider({ children }) {
     }
   }, [profile]);
 
-  const value = { profile, isLoading, updateProfile, refreshProfile: fetchProfile, session };
+  const refreshProfile = useCallback(async () => {
+    hasFetched.current = false;
+    hasRedirected.current = false;
+    await fetchProfile();
+  }, [fetchProfile]);
+
+  const value = { profile, isLoading, updateProfile, refreshProfile, session };
 
   return (
     <ProfileContext.Provider value={value}>

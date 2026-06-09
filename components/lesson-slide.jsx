@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, Lightbulb, Volume2, Pause, Square } from 'lucide-react';
+import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2 } from 'lucide-react';
 import { useTts } from '@/lib/use-tts';
 
 /**
@@ -149,27 +149,32 @@ const PHASE_LABELS = {
 };
 
 function TtsButton({ text }) {
-  const { isSpeaking, isPaused, toggle, stop } = useTts();
+  const { isSpeaking, isPaused, isLoading, toggle, stop } = useTts();
 
   const speakableText = [text].flat().filter(Boolean).join('. ');
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       <button
         onClick={() => toggle(speakableText)}
-        className={`p-1.5 rounded-lg transition-all ${
-          isSpeaking && !isPaused
-            ? 'bg-brand text-white'
-            : 'text-slate-400 hover:text-brand hover:bg-brand-50 dark:hover:bg-brand-900/30'
+        disabled={isLoading}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+          isLoading
+            ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 cursor-wait'
+            : isSpeaking && !isPaused
+              ? 'bg-brand text-white shadow-sm'
+              : 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/50'
         }`}
-        aria-label={isSpeaking && !isPaused ? 'Pause reading' : isPaused ? 'Resume reading' : 'Read aloud'}
-        title={isSpeaking && !isPaused ? 'Pause' : isPaused ? 'Resume' : 'Read aloud'}
+        aria-label={isLoading ? 'Generating audio...' : isSpeaking && !isPaused ? 'Pause reading' : isPaused ? 'Resume reading' : 'Read aloud'}
       >
-        {isSpeaking && !isPaused ? (
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : isSpeaking && !isPaused ? (
           <Pause className="w-4 h-4" />
         ) : (
           <Volume2 className="w-4 h-4" />
         )}
+        <span>{isLoading ? 'Loading...' : isSpeaking && !isPaused ? 'Pause' : isPaused ? 'Resume' : 'Listen'}</span>
       </button>
       {(isSpeaking || isPaused) && (
         <button
