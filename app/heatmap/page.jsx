@@ -21,19 +21,19 @@ function getFreshnessZone(days) {
 
 function getCellColor(mastery, freshness) {
   const zone = getFreshnessZone(freshness);
-  if (zone === 'none') return 'bg-slate-200/70 dark:bg-slate-700';
+  if (zone === 'none') return 'bg-slate-200/70 dark:bg-slate-700/60 dark:border dark:border-slate-600/50';
   const high = mastery >= 60;
   const mid = mastery >= 30;
-  if (zone === 'fresh') return high ? 'bg-blue-400' : mid ? 'bg-blue-200' : 'bg-blue-100';
-  if (zone === 'aging') return high ? 'bg-amber-400' : mid ? 'bg-amber-200' : 'bg-amber-100';
-  return high ? 'bg-orange-500' : mid ? 'bg-orange-300' : 'bg-orange-200';
+  if (zone === 'fresh') return high ? 'bg-blue-400 dark:bg-blue-500/80' : mid ? 'bg-blue-200 dark:bg-blue-600/50' : 'bg-blue-100 dark:bg-blue-700/40';
+  if (zone === 'aging') return high ? 'bg-amber-400 dark:bg-amber-500/80' : mid ? 'bg-amber-200 dark:bg-amber-600/50' : 'bg-amber-100 dark:bg-amber-700/40';
+  return high ? 'bg-orange-500 dark:bg-orange-500/80' : mid ? 'bg-orange-300 dark:bg-orange-600/50' : 'bg-orange-200 dark:bg-orange-700/40';
 }
 
 function getCellOpacity(mastery, hasActivity) {
-  if (!hasActivity) return 'opacity-70';
+  if (!hasActivity) return 'opacity-70 dark:opacity-80';
   if (mastery >= 70) return 'opacity-100';
-  if (mastery >= 40) return 'opacity-80';
-  return 'opacity-50';
+  if (mastery >= 40) return 'opacity-80 dark:opacity-90';
+  return 'opacity-50 dark:opacity-70';
 }
 
 function getBadge(mastery, freshness, hasActivity) {

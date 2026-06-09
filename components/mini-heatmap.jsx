@@ -7,15 +7,15 @@ import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
 
 function getCellColor(mastery, freshness, hasActivity) {
-  if (!hasActivity) return 'bg-slate-200/70 dark:bg-slate-900/60';
+  if (!hasActivity) return 'bg-slate-200/70 dark:bg-slate-700/60 dark:border dark:border-slate-600/50';
   const fresh = freshness >= 0 && freshness <= 14;
   const aging = freshness > 14 && freshness <= 60;
   const high = mastery >= 60;
   const mid = mastery >= 30;
 
-  if (fresh) return high ? 'bg-blue-400' : mid ? 'bg-blue-200' : 'bg-blue-100';
-  if (aging) return high ? 'bg-amber-400' : mid ? 'bg-amber-200' : 'bg-amber-100';
-  return high ? 'bg-orange-500' : mid ? 'bg-orange-300' : 'bg-orange-200';
+  if (fresh) return high ? 'bg-blue-400 dark:bg-blue-500/80' : mid ? 'bg-blue-200 dark:bg-blue-600/50' : 'bg-blue-100 dark:bg-blue-700/40';
+  if (aging) return high ? 'bg-amber-400 dark:bg-amber-500/80' : mid ? 'bg-amber-200 dark:bg-amber-600/50' : 'bg-amber-100 dark:bg-amber-700/40';
+  return high ? 'bg-orange-500 dark:bg-orange-500/80' : mid ? 'bg-orange-300 dark:bg-orange-600/50' : 'bg-orange-200 dark:bg-orange-700/40';
 }
 
 function findDoThisNow(skills) {
@@ -72,7 +72,7 @@ export default function MiniHeatmap() {
               key={skill.name}
               className={`relative rounded-lg p-2.5 text-center transition-all ${getCellColor(skill.mastery, skill.freshness, skill.hasActivity)} ${
                 isPulse ? 'animate-heatmap-pulse ring-2 ring-brand/40' : ''
-              } ${!skill.hasActivity ? 'opacity-70' : ''}`}
+              } ${!skill.hasActivity ? 'opacity-70 dark:opacity-80' : ''}`}
               title={skill.hasActivity
                 ? `${skill.name}: ${skill.mastery}% mastery, ${skill.freshness}d since last study`
                 : `${skill.name}: No activity yet`
