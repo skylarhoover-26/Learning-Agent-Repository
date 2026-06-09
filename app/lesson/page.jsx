@@ -10,6 +10,7 @@ import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
 import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
+import BookLoader from '@/components/book-loader';
 import {
   BookOpen, ChevronRight, Zap, BookMarked, Trophy,
   Loader2, Send, Mic, MicOff, MessageSquare,
@@ -483,10 +484,8 @@ function LessonContent() {
 
       {/* Loading state (initial) */}
       {isLoading && slides.length === 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12 text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-brand mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Generating your lesson...</p>
-          <p className="text-sm text-slate-400 mt-1">{topic}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
+          <BookLoader message={`Preparing your lesson on ${topic}...`} size="lg" />
         </div>
       )}
 

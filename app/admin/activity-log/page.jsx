@@ -25,6 +25,7 @@ import {
   ArrowRight,
   XCircle,
 } from 'lucide-react';
+import BookLoader from '@/components/book-loader';
 
 const TYPE_CONFIG = {
   chat: { label: 'Chat', icon: MessageSquare, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
@@ -352,7 +353,7 @@ export default function ActivityLogPage() {
   if (!adminChecked) {
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <BookLoader message="Checking admin access..." size="sm" />
       </div>
     );
   }
@@ -486,9 +487,7 @@ export default function ActivityLogPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-          </div>
+          <BookLoader message="Loading activity entries..." />
         ) : entries.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-12 text-center">
             <Activity className="w-8 h-8 text-slate-400 mx-auto mb-2" />

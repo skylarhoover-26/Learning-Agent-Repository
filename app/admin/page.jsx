@@ -17,6 +17,7 @@ import {
   Activity,
   Radar,
 } from 'lucide-react';
+import BookLoader from '@/components/book-loader';
 
 const TYPE_STYLES = {
   'NEW MODULE': {
@@ -339,7 +340,7 @@ export default function AdminDashboard() {
   if (!adminChecked) {
     return (
       <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <BookLoader message="Checking admin access..." size="sm" />
       </div>
     );
   }
@@ -477,9 +478,7 @@ export default function AdminDashboard() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-          </div>
+          <BookLoader message="Loading proposals..." size="sm" />
         ) : (
           <div className="space-y-4">
             {filtered.map((proposal) => (

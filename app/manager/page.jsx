@@ -7,6 +7,7 @@ import {
   Search, Loader2, Mail, Building2, XCircle, Check, X,
   ChevronDown, Save,
 } from 'lucide-react';
+import BookLoader from '@/components/book-loader';
 
 function ManagerSearch({ loading, onSubmit }) {
   const [name, setName] = useState('');
@@ -532,6 +533,11 @@ export default function ManagerDashboard() {
         {!teamData ? (
           <>
             <ManagerSearch loading={loading} onSubmit={handleLookup} />
+            {loading && (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8">
+                <BookLoader message="Looking up your team in Snowflake..." />
+              </div>
+            )}
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 flex items-center gap-3">
                 <XCircle className="w-4 h-4 text-red-500" />
@@ -562,9 +568,8 @@ export default function ManagerDashboard() {
             <TeamTable reports={teamData.directReports} />
 
             {scoresLoading ? (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center">
-                <Loader2 className="w-6 h-6 animate-spin text-brand mx-auto mb-2" />
-                <p className="text-sm text-slate-500 dark:text-slate-400">Loading competency scores...</p>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8">
+                <BookLoader message="Loading competency scores..." size="sm" />
               </div>
             ) : (
               <CompetenciesTable

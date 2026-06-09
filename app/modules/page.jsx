@@ -6,6 +6,7 @@ import PageHeader from '@/components/page-header';
 import { useProfile } from '@/components/profile-provider';
 import { getModulesForTier, getPersonalizedSubtitle } from '@/lib/modules-data';
 import { trackModuleSectionRead, trackQuizAttempt, trackModuleComplete } from '@/lib/track';
+import BookLoader from '@/components/book-loader';
 import {
   getModuleProgress, isSectionRead, markSectionRead,
   saveQuizAnswer, markModuleComplete, resetQuizForRetry,
@@ -50,9 +51,7 @@ export default function ModulesPage() {
       <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader icon={GraduationCap} title="Learning Path" subtitle="Loading your personalized modules..." />
         <main className="max-w-3xl mx-auto px-6 py-10">
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 text-brand animate-spin" />
-          </div>
+          <BookLoader message="Loading your personalized modules..." />
         </main>
       </div>
     );

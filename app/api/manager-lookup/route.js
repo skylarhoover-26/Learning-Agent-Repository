@@ -14,11 +14,28 @@ export async function POST(request) {
       return Response.json({ error: 'Please enter a valid name.' }, { status: 400 });
     }
 
-    const res = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managerName: name.trim() }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    let res;
+    try {
+      res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ managerName: name.trim() }),
+        signal: controller.signal,
+      });
+    } catch (fetchError) {
+      clearTimeout(timeout);
+      if (fetchError.name === 'AbortError') {
+        return Response.json(
+          { error: 'Snowflake lookup timed out after 30 seconds. The n8n workflow or Snowflake may be unresponsive — try again in a minute.' },
+          { status: 504 }
+        );
+      }
+      throw fetchError;
+    }
+    clearTimeout(timeout);
 
     if (!res.ok) {
       console.error('n8n webhook returned', res.status);

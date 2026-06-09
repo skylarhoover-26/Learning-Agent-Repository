@@ -5,6 +5,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { useProfile } from '@/components/profile-provider';
 import { getTaskList } from '@/lib/curriculum-data';
+import BookLoader from '@/components/book-loader';
 import {
   Zap, Copy, Check, ChevronRight, Sparkles,
   Clock, ArrowRight, RefreshCw, Loader2,
@@ -173,16 +174,7 @@ function LoadingCard() {
   return (
     <div className="text-center">
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 max-w-xl mx-auto">
-        <div className="w-16 h-16 rounded-2xl bg-brand-50 ring-1 ring-brand-100 mx-auto mb-6 flex items-center justify-center animate-pulse">
-          <Sparkles className="w-8 h-8 text-brand" strokeWidth={1.5} />
-        </div>
-        <Loader2 className="w-6 h-6 text-brand animate-spin mx-auto mb-4" />
-        <p className="text-lg font-semibold text-ink dark:text-slate-200 mb-1">
-          Finding something perfect for you...
-        </p>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Personalizing to your role and goals
-        </p>
+        <BookLoader message="Finding something perfect for you..." size="lg" />
       </div>
     </div>
   );
