@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../components/page-header';
+import Link from 'next/link';
 import {
   Shield,
   ShieldAlert,
@@ -15,6 +16,7 @@ import {
   FileText,
   RefreshCw,
   Loader2,
+  Activity,
 } from 'lucide-react';
 
 const INITIAL_PROPOSALS = [
@@ -392,6 +394,19 @@ export default function AdminDashboard() {
       />
 
       <main className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+            <Link
+              href="/admin/activity-log"
+              className="flex items-center gap-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4 hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-lg bg-brand flex items-center justify-center flex-shrink-0">
+                <Activity className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-ink dark:text-slate-200 text-sm">Activity Log — QA Review</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Review all AI interactions, inputs, and outputs across users</p>
+              </div>
+            </Link>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-4">
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wide">

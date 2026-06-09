@@ -479,6 +479,27 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
   return null;
 }
 
+function renderInlineMarkdown(text) {
+  if (!text) return text;
+  const parts = [];
+  const regex = /(\*\*(.+?)\*\*|`([^`]+)`)/g;
+  let lastIndex = 0;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    if (match[2]) {
+      parts.push(<strong key={`b-${match.index}`} className="font-semibold">{match[2]}</strong>);
+    } else if (match[3]) {
+      parts.push(
+        <code key={`c-${match.index}`} className="bg-slate-200/60 dark:bg-slate-600/60 px-1 py-0.5 rounded text-[13px] font-mono">{match[3]}</code>
+      );
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts.length > 0 ? parts : text;
+}
+
 function QuizDiscussion({ quizContext }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -553,7 +574,7 @@ function QuizDiscussion({ quizContext }) {
                   : 'bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200'
               }`}
             >
-              {msg.content}
+              {msg.role === 'assistant' ? renderInlineMarkdown(msg.content) : msg.content}
             </span>
           </div>
         ))}
