@@ -3,6 +3,7 @@ import ThemeToggle from '@/components/theme-toggle';
 import { SessionWrapper } from '@/components/session-wrapper';
 import { ProfileProvider } from '@/components/profile-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
+import PageTracker from '@/components/page-tracker';
 
 export const metadata = {
   title: 'AI Learning Platform — Housecall Pro',
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
             </ProgressionProvider>
           </ProfileProvider>
         </SessionWrapper>
+        <PageTracker />
         <ThemeToggle />
       </body>
     </html>

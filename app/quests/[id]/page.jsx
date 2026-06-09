@@ -8,6 +8,7 @@ import { Trophy, ChevronRight, ChevronLeft, CheckCircle2, Circle, Lightbulb, Tar
 import { QUESTS } from '@/lib/quest-data';
 import { getQuestState, startQuest, completeStep, completeQuest } from '@/lib/quest-store';
 import { addXp, earnBadge } from '@/lib/xp-store';
+import { trackQuestComplete } from '@/lib/track';
 
 export default function QuestDetailPage() {
   const params = useParams();
@@ -49,6 +50,7 @@ export default function QuestDetailPage() {
 
       setQuestState(completed);
       setShowCompletion(true);
+      trackQuestComplete(quest.id, quest.title, quest.xpReward);
     } else {
       setQuestState(updated);
       setActiveStepIdx(activeStepIdx + 1);

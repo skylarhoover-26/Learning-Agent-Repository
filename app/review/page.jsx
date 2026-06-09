@@ -7,6 +7,7 @@ import { Brain, ChevronRight, Check, X, RotateCcw, BarChart3, Zap } from 'lucide
 import { QUALITY_BUTTONS, formatNextReview } from '@/lib/sm2';
 import { buildReviewQueue, updateCardAfterReview, getCardState, getReviewStats } from '@/lib/review-store';
 import { addXp } from '@/lib/xp-store';
+import { trackReviewCard } from '@/lib/track';
 
 export default function ReviewPage() {
   const [queue, setQueue] = useState([]);
@@ -41,9 +42,11 @@ export default function ReviewPage() {
   const handleQualityRating = useCallback((quality) => {
     if (!card) return;
     const updated = updateCardAfterReview(card.id, quality);
-    if (quality >= 3) {
+    const correct = quality >= 3;
+    if (correct) {
       addXp(5, 'review_correct');
     }
+    trackReviewCard(card.id, card.category, quality, correct);
     setCurrentIdx(prev => prev + 1);
     setShowAnswer(false);
     setSelectedOption(null);

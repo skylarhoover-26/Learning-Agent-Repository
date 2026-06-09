@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft,
@@ -168,6 +169,7 @@ export default function OnboardingPage() {
         body: JSON.stringify({ type: 'profile', data: profile }),
       });
       await refreshProfile();
+      trackOnboardingComplete(profile);
     } catch (error) {
       console.error('Failed to save profile:', error);
     }

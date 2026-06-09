@@ -5,6 +5,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { useProfile } from '@/components/profile-provider';
 import { getModulesForTier, getPersonalizedSubtitle } from '@/lib/modules-data';
+import { trackModuleSectionRead, trackQuizAttempt, trackModuleComplete } from '@/lib/track';
 import {
   getModuleProgress, isSectionRead, markSectionRead,
   saveQuizAnswer, markModuleComplete, resetQuizForRetry,
@@ -172,6 +173,7 @@ function ModuleDetail({ module: mod, expandedSection, setExpandedSection, onProg
   function markRead(idx) {
     if (idx < 0 || idx >= mod.sections.length || sectionReadState[idx]) return;
     markSectionRead(mod.num, idx);
+    trackModuleSectionRead(mod.num, mod.title, mod.sections[idx]?.title || `Section ${idx + 1}`);
     setSectionReadState((prev) => {
       const next = [...prev];
       next[idx] = true;
@@ -197,9 +199,10 @@ function ModuleDetail({ module: mod, expandedSection, setExpandedSection, onProg
     const allRead = mod.sections.every((_, i) => isSectionRead(mod.num, i));
     if (allRead) {
       markModuleComplete(mod.num);
+      trackModuleComplete(mod.num, mod.title);
       onProgressChange?.();
     }
-  }, [mod.num, mod.sections, onProgressChange]);
+  }, [mod.num, mod.title, mod.sections, onProgressChange]);
 
   return (
     <div className="space-y-6">
@@ -285,10 +288,12 @@ function ActivityCard({ activity, moduleNum, onActivityDone }) {
   const revealAnswer = isCorrect || outOfAttempts;
 
   function handleQuizAnswer(answerIdx) {
+    const newAttempts = attempts + 1;
     setSelectedAnswer(answerIdx);
     setShowResult(true);
-    setAttempts((prev) => prev + 1);
+    setAttempts(newAttempts);
     saveQuizAnswer(moduleNum, answerIdx);
+    trackQuizAttempt(moduleNum, activity.title, answerIdx === activity.correct, newAttempts, MAX_QUIZ_ATTEMPTS);
     onActivityDone?.();
   }
 

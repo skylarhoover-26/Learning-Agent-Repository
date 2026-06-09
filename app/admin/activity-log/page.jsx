@@ -30,6 +30,7 @@ const TYPE_CONFIG = {
   chat: { label: 'Chat', icon: MessageSquare, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
   lesson_start: { label: 'Lesson Start', icon: BookOpen, color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
   lesson_continue: { label: 'Lesson', icon: BookOpen, color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
+  lesson_complete: { label: 'Lesson Done', icon: GraduationCap, color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
   discover: { label: 'Discover', icon: Search, color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
   grade: { label: 'Grade', icon: GraduationCap, color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
   tones: { label: 'Tones', icon: MessageSquare, color: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400' },
@@ -37,6 +38,15 @@ const TYPE_CONFIG = {
   score_prompt: { label: 'Prompt Score', icon: Gamepad2, color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' },
   scoring: { label: 'Scoring', icon: BarChart3, color: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' },
   discuss: { label: 'Discussion', icon: MessageSquare, color: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400' },
+  page_visit: { label: 'Page Visit', icon: Activity, color: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' },
+  onboarding_complete: { label: 'Onboarded', icon: GraduationCap, color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
+  section_read: { label: 'Section Read', icon: BookOpen, color: 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400' },
+  quiz_attempt: { label: 'Quiz', icon: Gamepad2, color: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400' },
+  module_complete: { label: 'Module Done', icon: GraduationCap, color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
+  xp_earned: { label: 'XP', icon: Zap, color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
+  badge_earned: { label: 'Badge', icon: GraduationCap, color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' },
+  quest_complete: { label: 'Quest Done', icon: Zap, color: 'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400' },
+  review_card: { label: 'Review', icon: BookOpen, color: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' },
 };
 
 function getTypeConfig(type) {
@@ -210,7 +220,34 @@ function getEntrySummary(entry) {
     if (type === 'tones') {
       return `Tone variants for: "${truncate(input?.sourceText || '', 60)}"`;
     }
-    return entry.endpoint || 'AI interaction';
+    if (type === 'page_visit') {
+      return `Visited: ${input?.page || input?.path || 'unknown page'}`;
+    }
+    if (type === 'onboarding_complete') {
+      return `Onboarding complete — ${input?.department || 'unknown dept'}, ${input?.tier || 'unknown tier'}`;
+    }
+    if (type === 'lesson_complete') {
+      return `Finished lesson: ${input?.topic || 'unknown'} (${input?.format || 'standard'})`;
+    }
+    if (type === 'section_read') {
+      return `Read: ${input?.sectionTitle || 'section'} in Module ${input?.moduleNum || '?'}`;
+    }
+    if (type === 'quiz_attempt') {
+      return `Quiz ${input?.isCorrect ? 'correct' : 'wrong'} — Module ${input?.moduleNum || '?'} (attempt ${input?.attempt || '?'}/${input?.maxAttempts || 3})`;
+    }
+    if (type === 'module_complete') {
+      return `Completed Module ${input?.moduleNum || '?'}: ${input?.moduleTitle || ''}`;
+    }
+    if (type === 'xp_earned') {
+      return `+${input?.amount || 0} XP — ${input?.source || 'unknown'}`;
+    }
+    if (type === 'badge_earned') {
+      return `Earned badge: ${input?.badgeId || 'unknown'}`;
+    }
+    if (type === 'quest_complete') {
+      return `Completed quest: ${input?.questTitle || 'unknown'} (+${input?.xpReward || 0} XP)`;
+    }
+    return entry.endpoint || 'Activity';
   } catch {
     return 'AI interaction';
   }

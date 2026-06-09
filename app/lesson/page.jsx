@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
+import { trackLessonComplete } from '@/lib/track';
 
 const SUGGESTED_TOPICS = [
   { label: '🎯 Prompt Basics', topic: 'How to write clear, specific prompts that get useful results' },
@@ -289,14 +290,16 @@ function LessonContent() {
     clearSavedLesson();
     try {
       if (profile?.id && topic) {
+        const durationMs = lessonStartedAt.current ? Date.now() - lessonStartedAt.current : 0;
         const result = onLessonComplete(profile.id, topic, lessonStartedAt.current);
         setProgressionResult(result);
         refreshProgression?.();
+        trackLessonComplete(topic, format, durationMs);
       }
     } catch {
       // progression is best-effort
     }
-  }, [topic, profile, refreshProgression]);
+  }, [topic, format, profile, refreshProgression]);
 
   useEffect(() => {
     if (isComplete) {
