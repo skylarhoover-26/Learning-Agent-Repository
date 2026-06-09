@@ -5,6 +5,7 @@ import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdminEmail } from '@/lib/admin';
+import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
 const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
@@ -91,6 +92,79 @@ Output ONLY the JSON array, no prose.`,
   }
 }
 
+async function generateDailyLessonsFromFindings(client, findings) {
+  if (findings.length === 0) return 0;
+
+  const findingsList = findings
+    .map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}\n   ${f.url}`)
+    .join('\n');
+
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 2000,
+    system: `You are a learning experience designer for Housecall Pro's AI Academy.
+
+Given recent AI news and research, generate 4-5 daily micro-lessons that would be
+valuable for home service professionals learning about AI. Each lesson should connect
+real-world AI developments to practical workplace applications.
+
+Mix difficulty levels and categories. Make topics specific and actionable, not generic.
+
+Output ONLY a JSON array where each item has:
+{
+  "title": "Catchy lesson title (max 60 chars)",
+  "description": "One sentence explaining what the learner will gain",
+  "category": "Applied AI" | "Prompting" | "Technical" | "Strategy" | "Writing",
+  "difficulty": "Beginner" | "Intermediate" | "Advanced",
+  "duration": "5 min" | "10 min" | "15 min",
+  "topic": "Detailed topic string for the AI lesson generator (be specific)",
+  "format": "interactive",
+  "finding_index": 1-based index of the finding that inspired this lesson
+}
+
+No prose, only the JSON array.`,
+    messages: [
+      {
+        role: 'user',
+        content: `Today's AI findings:\n${findingsList}\n\nGenerate daily lessons.`,
+      },
+    ],
+  });
+
+  const text = response.content[0].text.trim();
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) return 0;
+
+  const rawLessons = JSON.parse(match[0]);
+  const today = todayDateString();
+
+  const lessons = rawLessons.map((l, i) => ({
+    id: `dl_${today.replace(/-/g, '')}_${i}`,
+    title: l.title,
+    description: l.description,
+    category: l.category || 'Applied AI',
+    difficulty: l.difficulty || 'Intermediate',
+    duration: l.duration || '10 min',
+    topic: l.topic,
+    format: l.format || 'interactive',
+    source: l.finding_index ? {
+      title: findings[l.finding_index - 1]?.title || '',
+      url: findings[l.finding_index - 1]?.url || '',
+      sourceName: findings[l.finding_index - 1]?.sourceName || '',
+    } : null,
+    pinned: false,
+    pinnedBy: null,
+  }));
+
+  await writeDailyLessons(today, {
+    date: today,
+    generatedAt: new Date().toISOString(),
+    lessons,
+  });
+
+  return lessons.length;
+}
+
 export async function POST() {
   try {
     const user = await getAuthenticatedUser();
@@ -134,7 +208,15 @@ export async function POST() {
     const merged = [...safeFindings, ...existing].slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
 
+    const client = new Anthropic();
+
     if (safeFindings.length === 0) {
+      let dailyLessonCount = 0;
+      try {
+        dailyLessonCount = await generateDailyLessonsFromFindings(client, merged.slice(0, 20));
+      } catch (err) {
+        errors.push({ source: 'daily-lessons', error: err.message });
+      }
       return NextResponse.json({
         ok: true,
         message: 'No new findings since last scan',
@@ -142,11 +224,10 @@ export async function POST() {
         newFindings: 0,
         totalFindings: merged.length,
         newProposals: 0,
+        dailyLessons: dailyLessonCount,
         errors,
       });
     }
-
-    const client = new Anthropic();
     const findingsList = merged
       .slice(0, 30)
       .map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}\n   ${f.url}`)
@@ -205,12 +286,21 @@ Output ONLY a JSON array. No prose. If no updates are warranted, return [].`,
       await writeBlob(BLOB_PROPOSALS_KEY, allProposals);
     }
 
+    let dailyLessonCount = 0;
+    try {
+      dailyLessonCount = await generateDailyLessonsFromFindings(client, merged.slice(0, 20));
+    } catch (err) {
+      console.error('Daily lesson generation error:', err);
+      errors.push({ source: 'daily-lessons', error: err.message });
+    }
+
     return NextResponse.json({
       ok: true,
       scannedAt: new Date().toISOString(),
       newFindings: safeFindings.length,
       totalFindings: merged.length,
       newProposals: newProposals.length,
+      dailyLessons: dailyLessonCount,
       errors,
     });
   } catch (error) {

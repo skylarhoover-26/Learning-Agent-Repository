@@ -8,7 +8,7 @@ import {
   MessageCircle, ChevronRight, Library,
   Gamepad2, Lightbulb, Trophy, GitBranch, BarChart3,
   ClipboardCheck, Crosshair, GraduationCap, HelpCircle,
-  Play, PenTool, ArrowRight,
+  Play, PenTool, ArrowRight, CalendarDays,
 } from 'lucide-react';
 import MiniHeatmap from '@/components/mini-heatmap';
 import LiveDoThisNow from '@/components/live-do-this-now';
@@ -19,6 +19,7 @@ import LiveRecentLesson from '@/components/live-recent-lesson';
 import LiveSourcesFeed from '@/components/live-sources-feed';
 import UserMenu from '@/components/user-menu';
 import LiveModuleProgress from '@/components/live-module-progress';
+import LiveDailyLessons from '@/components/live-daily-lessons';
 
 const TIER_LABELS = {
   beginner: { label: 'Beginner', color: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
@@ -157,6 +158,7 @@ export default async function Dashboard() {
           <QuickAction href="/skill-graph" icon={GitBranch} label="Skill Graph" />
           <QuickAction href="/structured-lesson" icon={PenTool} label="Practice" />
           <QuickAction href="/manager" icon={BarChart3} label="Manager" />
+          <QuickAction href="/daily" icon={CalendarDays} label="Daily" />
           <QuickAction href="/tour" icon={Play} label="Tour" />
         </div>
 
@@ -209,6 +211,9 @@ export default async function Dashboard() {
 
         {/* 8. AI Sources feed — live from curriculum pipeline */}
         <LiveSourcesFeed />
+
+        {/* 8.5. Daily Lessons — auto-generated from latest findings */}
+        <LiveDailyLessons />
 
         {/* 9. Department leaderboard preview */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
