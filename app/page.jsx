@@ -11,7 +11,6 @@ import UserMenu from '@/components/user-menu';
 import HamburgerMenu from '@/components/hamburger-menu';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
-import XpExplainer from '@/components/xp-explainer';
 import ActiveProjectsPreview from '@/components/active-projects-preview';
 import {
   getCurrentLearner, getAggregatedSkills,
@@ -135,11 +134,8 @@ export default async function Dashboard() {
           </p>
         </div>
 
-        {/* Level + XP bar */}
+        {/* Level + XP bar (XP explainer now lives inside this card) */}
         <LiveLevelBadges />
-
-        {/* XP explainer */}
-        <XpExplainer />
 
         {/* Learning section header */}
         <div className="relative py-2">

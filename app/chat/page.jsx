@@ -9,12 +9,30 @@ import { useProfile } from '@/components/profile-provider';
 import { MessageCircle, Send, Loader2, Trash2 } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 
-const SUGGESTIONS = [
+const DEFAULT_SUGGESTIONS = [
   'How do I write a good prompt?',
   'What can AI actually do well?',
   'How do I verify AI output?',
   'What are AI agents?',
 ];
+
+// Build suggestion chips tailored to the learner's role, tasks, and experience.
+function buildSuggestions(profile) {
+  if (!profile) return DEFAULT_SUGGESTIONS;
+  const tasks = Array.isArray(profile.top_tasks) ? profile.top_tasks : [];
+  const dept = profile.department;
+  const isDev = profile.tier === 'developer';
+  const out = [];
+
+  if (tasks[0]) out.push(`How can AI help me with ${tasks[0].toLowerCase()}?`);
+  if (tasks[1]) out.push(`Show me an AI workflow for ${tasks[1].toLowerCase()}`);
+  if (dept) out.push(`What are the best AI use cases for ${dept}?`);
+  out.push(isDev ? 'How do I build an AI agent for my work?' : 'How do I write a good prompt?');
+  out.push('How do I verify AI output?');
+
+  // De-dupe and keep it to 4 chips.
+  return [...new Set(out)].slice(0, 4);
+}
 
 export default function ChatPage() {
   return (
@@ -118,7 +136,7 @@ function ChatPageInner() {
                 I'll adapt to your level and teach by example. Try asking about prompting, agents, or anything you're curious about.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                {SUGGESTIONS.map((s) => (
+                {buildSuggestions(profile).map((s) => (
                   <button
                     key={s}
                     onClick={() => { setInput(s); inputRef.current?.focus(); }}

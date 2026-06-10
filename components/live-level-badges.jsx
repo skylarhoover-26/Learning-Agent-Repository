@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useProgression } from './progression-provider';
+import XpExplainer from './xp-explainer';
 import { Award, ChevronRight } from 'lucide-react';
 
 const BADGE_META = {
@@ -34,11 +35,9 @@ export default function LiveLevelBadges() {
     .slice(0, 4);
 
   return (
-    <Link
-      href="/achievements"
-      className="group block bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-5 items-center">
+    <div className="group relative bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all">
+      <Link href="/achievements" aria-label="View achievements and badges" className="absolute inset-0 z-0 rounded-2xl" />
+      <div className="relative z-10 pointer-events-none grid grid-cols-1 md:grid-cols-[1fr,auto] gap-5 items-center">
         <div className="flex items-center gap-5">
           <div className="relative shrink-0">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cta-400 to-cta-600 flex items-center justify-center shadow-sm">
@@ -63,9 +62,12 @@ export default function LiveLevelBadges() {
                 {levelProgress.xpToNext} XP to L{levelProgress.level + 1}
               </span>
             </div>
-            <div className="mt-2">
+            <div className="mt-2 flex items-center gap-3 flex-wrap">
               <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-cta-50 dark:bg-slate-700 text-xs font-semibold text-cta-700 dark:text-cta-300">
                 {prog.totalXp.toLocaleString()} XP
+              </span>
+              <span className="pointer-events-auto">
+                <XpExplainer />
               </span>
             </div>
           </div>
@@ -97,6 +99,6 @@ export default function LiveLevelBadges() {
           <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
