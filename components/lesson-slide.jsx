@@ -2,6 +2,7 @@
 
 import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2 } from 'lucide-react';
 import { useTts } from '@/lib/use-tts';
+import MermaidDiagram from '@/components/mermaid-diagram';
 
 /**
  * Renders a markdown-ish string into React elements.
@@ -17,8 +18,9 @@ export function FormattedContent({ text }) {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Fenced code block
+    // Fenced code block (```mermaid renders as a diagram; everything else as code)
     if (line.trim().startsWith('```')) {
+      const lang = line.trim().slice(3).trim().toLowerCase();
       const codeLines = [];
       i += 1;
       while (i < lines.length && !lines[i].trim().startsWith('```')) {
@@ -26,13 +28,59 @@ export function FormattedContent({ text }) {
         i += 1;
       }
       i += 1; // skip closing ```
+      if (lang === 'mermaid') {
+        elements.push(
+          <MermaidDiagram key={`mermaid-${elements.length}`} code={codeLines.join('\n')} />
+        );
+      } else {
+        elements.push(
+          <pre
+            key={`code-${elements.length}`}
+            className="bg-slate-900 text-slate-100 rounded-xl p-4 text-sm overflow-x-auto my-3 font-mono"
+          >
+            <code>{codeLines.join('\n')}</code>
+          </pre>
+        );
+      }
+      continue;
+    }
+
+    // Markdown table: a header row of pipes followed by a |---|---| separator
+    if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|[-:\s|]+\|\s*$/.test(lines[i + 1])) {
+      const parseRow = (row) =>
+        row.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+      const headers = parseRow(line);
+      i += 2; // skip header + separator
+      const rows = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+        rows.push(parseRow(lines[i]));
+        i += 1;
+      }
       elements.push(
-        <pre
-          key={`code-${elements.length}`}
-          className="bg-slate-900 text-slate-100 rounded-xl p-4 text-sm overflow-x-auto my-3 font-mono"
-        >
-          <code>{codeLines.join('\n')}</code>
-        </pre>
+        <div key={`table-${elements.length}`} className="my-3 overflow-x-auto">
+          <table className="w-full text-sm border-collapse rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+            <thead>
+              <tr className="bg-brand-50 dark:bg-slate-700/50">
+                {headers.map((h, hi) => (
+                  <th key={hi} className="text-left font-semibold text-ink dark:text-slate-200 px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+                    {renderInline(h)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={ri} className="even:bg-slate-50 dark:even:bg-slate-800/40">
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="px-3 py-2 text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 align-top">
+                      {renderInline(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       );
       continue;
     }
