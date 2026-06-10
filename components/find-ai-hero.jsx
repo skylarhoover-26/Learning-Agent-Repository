@@ -62,9 +62,13 @@ export default function FindAiHero() {
             </button>
           </div>
 
-          <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/10 items-center justify-center shrink-0">
+          <button
+            onClick={handleClick}
+            aria-label="Find AI for your work"
+            className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/10 items-center justify-center shrink-0 hover:bg-white/20 transition-all cursor-pointer"
+          >
             <Search className="w-7 h-7 text-white" />
-          </div>
+          </button>
         </div>
       </div>
     </div>

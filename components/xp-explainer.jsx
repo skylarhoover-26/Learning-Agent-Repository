@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { HelpCircle, X, BookOpen, Trophy, MessageCircle, Flame } from 'lucide-react';
 
+// Listed alphabetically by label.
 const XP_SOURCES = [
+  { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+25 XP' },
   { icon: BookOpen, label: 'Complete a lesson', amount: '+50 XP' },
   { icon: Trophy, label: 'Finish a project milestone', amount: '+100 XP' },
-  { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+25 XP' },
   { icon: Flame, label: 'Keep your streak going', amount: '+10 XP/day' },
 ];
 
@@ -20,7 +21,7 @@ export default function XpExplainer() {
         className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
       >
         <HelpCircle className="w-3.5 h-3.5" />
-        How do you earn XP?
+        How do you earn experience points?
       </button>
 
       {open && (
@@ -28,7 +29,7 @@ export default function XpExplainer() {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 z-50">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-ink dark:text-slate-200">Earning XP</h4>
+              <h4 className="text-sm font-semibold text-ink dark:text-slate-200">How do you earn experience points</h4>
               <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-4 h-4" />
               </button>

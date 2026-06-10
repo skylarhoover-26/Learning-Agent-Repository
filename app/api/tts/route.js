@@ -1,59 +1,50 @@
-import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
-import { EDGE_VOICES, DEFAULT_VOICE_ID, speedToSsmlRate, escapeXml } from '@/lib/edge-voices';
+// Text-to-speech via OpenAI (gpt-4o-mini-tts) — natural, consistent voices that
+// work in serverless. Falls back to browser TTS client-side if this fails or the
+// key isn't configured.
 
-export const maxDuration = 60;
+const OPENAI_VOICES = new Set([
+  'alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse',
+]);
+const DEFAULT_VOICE = 'nova';
+
+export const maxDuration = 30;
 
 export async function POST(request) {
   try {
-    const { text, voice, speed } = await request.json();
+    const { text, voice } = await request.json();
 
     if (!text || typeof text !== 'string' || !text.trim()) {
       return Response.json({ error: 'Text is required' }, { status: 400 });
     }
+    if (!process.env.OPENAI_API_KEY) {
+      // Not configured — client will fall back to browser TTS.
+      return Response.json({ error: 'TTS not configured' }, { status: 503 });
+    }
 
-    const voiceId = (voice && EDGE_VOICES.some((v) => v.id === voice))
-      ? voice
-      : DEFAULT_VOICE_ID;
+    const selectedVoice = OPENAI_VOICES.has(voice) ? voice : DEFAULT_VOICE;
 
-    const clampedSpeed = Math.min(2, Math.max(0.5, speed ?? 1));
-    const sanitizedText = escapeXml(text.trim());
-
-    const tts = new MsEdgeTTS();
-    await tts.setMetadata(voiceId, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
-
-    const { audioStream } = tts.toStream(sanitizedText, { rate: speedToSsmlRate(clampedSpeed) });
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        const timeout = setTimeout(() => {
-          try {
-            controller.error(new Error('TTS stream timeout'));
-            audioStream.destroy();
-          } catch {
-            // stream already closed
-          }
-        }, 30000);
-
-        try {
-          for await (const chunk of audioStream) {
-            if (Buffer.isBuffer(chunk)) {
-              controller.enqueue(new Uint8Array(chunk));
-            }
-          }
-          clearTimeout(timeout);
-          controller.close();
-        } catch (err) {
-          clearTimeout(timeout);
-          try {
-            controller.error(err);
-          } catch {
-            // stream already closed
-          }
-        }
+    const res = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini-tts',
+        voice: selectedVoice,
+        input: text.slice(0, 4000),
+        response_format: 'mp3',
+      }),
     });
 
-    return new Response(stream, {
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      console.error('OpenAI TTS error:', res.status, detail.slice(0, 300));
+      return Response.json({ error: 'TTS failed' }, { status: 502 });
+    }
+
+    const audio = await res.arrayBuffer();
+    return new Response(audio, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Cache-Control': 'public, max-age=3600',

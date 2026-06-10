@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { useProfile } from '@/components/profile-provider';
+import VoicePicker from '@/components/voice-picker';
 import { Settings, LogOut, FileText, ChevronDown, Briefcase, UserCog } from 'lucide-react';
 
 export default function UserMenu() {
@@ -97,6 +98,10 @@ export default function UserMenu() {
               Admin Dashboard
             </Link>
           )}
+
+          <div className="border-t border-slate-100 dark:border-slate-700">
+            <VoicePicker />
+          </div>
 
           {process.env.NEXT_PUBLIC_OKTA_CONFIGURED && (
             <div className="border-t border-slate-100 dark:border-slate-700">

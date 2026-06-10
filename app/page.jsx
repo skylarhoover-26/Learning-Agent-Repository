@@ -141,6 +141,19 @@ export default async function Dashboard() {
         {/* XP explainer */}
         <XpExplainer />
 
+        {/* Learning section header */}
+        <div className="relative py-2">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+          </div>
+          <div className="relative flex justify-start">
+            <span className="bg-bg-warm dark:bg-slate-900 pr-4 flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-brand" />
+              <span className="text-sm font-semibold text-ink dark:text-slate-200">Find something to learn</span>
+            </span>
+          </div>
+        </div>
+
         {/* "Find AI for your work" hero */}
         <FindAiHero />
 

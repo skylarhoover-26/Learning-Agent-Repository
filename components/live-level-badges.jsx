@@ -51,7 +51,6 @@ export default function LiveLevelBadges() {
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
               <h3 className="font-bold text-ink dark:text-slate-200">Level {levelProgress.level}</h3>
-              <span className="text-sm text-slate-500 dark:text-slate-400">&middot; {prog.totalXp.toLocaleString()} XP</span>
             </div>
             <div className="flex items-center gap-3 max-w-md">
               <div className="flex-1 h-2 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
@@ -62,6 +61,11 @@ export default function LiveLevelBadges() {
               </div>
               <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">
                 {levelProgress.xpToNext} XP to L{levelProgress.level + 1}
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-cta-50 dark:bg-slate-700 text-xs font-semibold text-cta-700 dark:text-cta-300">
+                {prog.totalXp.toLocaleString()} XP
               </span>
             </div>
           </div>

@@ -5,21 +5,36 @@ import Link from 'next/link';
 import {
   Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
   CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
-  Target, Grid3X3, Gamepad2,
+  Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
+  Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
+  Rocket, RefreshCw,
 } from 'lucide-react';
 
+// Full feature list, alphabetical by label.
 const NAV_ITEMS = [
+  { href: '/achievements', icon: Award, label: 'Achievements' },
+  { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact' },
+  { href: '/calibration', icon: Crosshair, label: 'Calibrate' },
+  { href: '/chat', icon: MessageCircle, label: 'Chat' },
+  { href: '/checkin', icon: CalendarCheck, label: 'Check-in' },
+  { href: '/daily', icon: CalendarDays, label: 'Daily' },
+  { href: '/discover', icon: Compass, label: 'Discover' },
   { href: '/games', icon: Gamepad2, label: 'Games' },
   { href: '/goals', icon: Target, label: 'Goals' },
   { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap' },
-  { href: '/modules', icon: GraduationCap, label: 'Modules' },
-  { href: '/calibration', icon: Crosshair, label: 'Calibrate' },
-  { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph' },
-  { href: '/structured-lesson', icon: PenTool, label: 'Practice' },
+  { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  { href: '/lesson', icon: BookOpen, label: 'Lesson' },
+  { href: '/library', icon: Library, label: 'Library' },
   { href: '/manager', icon: BarChart3, label: 'Manager' },
-  { href: '/daily', icon: CalendarDays, label: 'Daily' },
+  { href: '/modules', icon: GraduationCap, label: 'Modules' },
+  { href: '/structured-lesson', icon: PenTool, label: 'Practice' },
+  { href: '/profile', icon: User, label: 'Profile' },
+  { href: '/projects', icon: FolderKanban, label: 'Projects' },
+  { href: '/prompts', icon: Terminal, label: 'Prompts' },
+  { href: '/quests', icon: Rocket, label: 'Quests' },
   { href: '/quick-win', icon: Lightbulb, label: 'Quick Win' },
-  { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact' },
+  { href: '/review', icon: RefreshCw, label: 'Review' },
+  { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph' },
   { href: '/tour', icon: Play, label: 'Tour' },
 ];
 
@@ -56,9 +71,9 @@ export default function HamburgerMenu() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-2 z-50">
-          <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">More Features</p>
+        <div className="absolute left-0 top-full mt-2 w-64 max-h-[70vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-2 z-50">
+          <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800">
+            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Menu</p>
           </div>
           {NAV_ITEMS.map(item => (
             <Link

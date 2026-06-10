@@ -2,7 +2,24 @@
 
 import Link from 'next/link';
 import { useProgression } from './progression-provider';
-import { ArrowLeft, Award, Sparkles } from 'lucide-react';
+import { ArrowLeft, Award, Sparkles, TrendingUp } from 'lucide-react';
+
+const XP_SOURCE_LABELS = {
+  lesson_complete: 'Lesson completed',
+  game_complete: 'Game completed',
+  quiz_correct: 'Quiz answered',
+  streak_day: 'Daily streak',
+  project_milestone: 'Project milestone',
+  goal_set: 'Goal set',
+  quest_complete: 'Quest completed',
+  chat: 'Chatted with the coach',
+};
+
+function xpSourceLabel(source) {
+  if (XP_SOURCE_LABELS[source]) return XP_SOURCE_LABELS[source];
+  if (!source) return 'Experience earned';
+  return source.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 const ALL_BADGES = [
   { id: 'first_lesson', name: 'First Steps', emoji: '🎓', description: 'Complete your first lesson', href: '/library' },
@@ -36,8 +53,13 @@ export default function AchievementsLive() {
     );
   }
 
-  const { levelProgress, totalXp, badgesEarned, lessonHistory } = prog;
+  const { levelProgress, totalXp, badgesEarned, lessonHistory, xpEvents } = prog;
   const earnedIds = new Set(badgesEarned.map(b => b.badge_id));
+
+  const recentXp = (xpEvents || [])
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 10);
 
   const badgesWithStatus = ALL_BADGES.map(b => ({
     ...b,
@@ -126,6 +148,31 @@ export default function AchievementsLive() {
             </Link>
           ))}
         </div>
+
+        {/* Recent XP — at the bottom of the page */}
+        {recentXp.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-5 h-5 text-brand" />
+              <h3 className="text-lg font-bold text-ink dark:text-slate-200">Recent XP</h3>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card divide-y divide-slate-100 dark:divide-slate-700">
+              {recentXp.map((e, i) => (
+                <div key={e.id || i} className="flex items-center justify-between gap-4 px-5 py-3">
+                  <div>
+                    <p className="text-sm text-ink dark:text-slate-200">{xpSourceLabel(e.source)}</p>
+                    {e.created_at && (
+                      <p className="text-xs text-slate-400">{new Date(e.created_at).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                  <span className="text-sm font-semibold text-cta-600 dark:text-cta-300 shrink-0">
+                    +{e.amount} XP
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

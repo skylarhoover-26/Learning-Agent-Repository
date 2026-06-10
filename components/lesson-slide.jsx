@@ -105,11 +105,13 @@ export function FormattedContent({ text }) {
       continue;
     }
 
-    // Numbered list items
+    // Numbered list items — preserve the author's actual number so that steps
+    // split across separate blocks still read 1, 2, 3 (not 1, 1, 1).
     if (/^\s*\d+[.)] /.test(line)) {
       const listItems = [];
       while (i < lines.length && /^\s*\d+[.)] /.test(lines[i])) {
-        listItems.push(lines[i].replace(/^\s*\d+[.)] /, ''));
+        const m = lines[i].match(/^\s*(\d+)[.)] /);
+        listItems.push({ num: m ? m[1] : null, text: lines[i].replace(/^\s*\d+[.)] /, '') });
         i += 1;
       }
       elements.push(
@@ -117,9 +119,9 @@ export function FormattedContent({ text }) {
           {listItems.map((item, idx) => (
             <li key={idx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
               <span className="text-brand font-semibold min-w-[1.25rem] text-right mt-0.5">
-                {idx + 1}.
+                {item.num ?? idx + 1}.
               </span>
-              <span>{renderInline(item)}</span>
+              <span>{renderInline(item.text)}</span>
             </li>
           ))}
         </ol>
