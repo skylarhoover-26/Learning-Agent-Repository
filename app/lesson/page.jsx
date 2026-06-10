@@ -38,13 +38,14 @@ function getSavedFormat() {
   }
 }
 
+// Fallback shown instantly and used if personalized suggestions fail to load.
 const SUGGESTED_TOPICS = [
-  { label: '🎯 Prompt Basics', topic: 'How to write clear, specific prompts that get useful results' },
-  { label: '🧵 AI for Slack', topic: 'Using AI to draft, summarize, and respond to Slack messages and threads faster' },
-  { label: '📊 Data Summaries', topic: 'Turning raw data and notes into executive-ready summaries' },
-  { label: '🤖 What Are AI Agents?', topic: 'Understanding AI agents and how they can automate multi-step workflows' },
-  { label: '✅ Verifying AI Output', topic: 'How to fact-check and validate AI-generated content before using it' },
-  { label: '💬 Better Conversations', topic: 'How to have productive back-and-forth conversations with AI assistants' },
+  { emoji: '🎯', label: 'Prompt Basics', topic: 'How to write clear, specific prompts that get useful results' },
+  { emoji: '🧵', label: 'AI for Slack', topic: 'Using AI to draft, summarize, and respond to Slack messages and threads faster' },
+  { emoji: '📊', label: 'Data Summaries', topic: 'Turning raw data and notes into executive-ready summaries' },
+  { emoji: '🤖', label: 'What Are AI Agents?', topic: 'Understanding AI agents and how they can automate multi-step workflows' },
+  { emoji: '✅', label: 'Verifying AI Output', topic: 'How to fact-check and validate AI-generated content before using it' },
+  { emoji: '💬', label: 'Better Conversations', topic: 'How to have productive back-and-forth conversations with AI assistants' },
 ];
 
 function LessonContent() {
@@ -185,6 +186,46 @@ function LessonContent() {
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Personalized "Suggested for you" topics, generated from the learner's profile.
+  // Cached per day + profile so we don't regenerate on every visit.
+  const [suggested, setSuggested] = useState(null);
+  const suggestionsFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (initialTopic || suggestionsFetchedRef.current || !profile) return;
+    suggestionsFetchedRef.current = true;
+
+    const sig = `${profile.department || ''}|${profile.tier || ''}|${(profile.top_tasks || []).join(',')}`;
+    const today = new Date().toISOString().slice(0, 10);
+    const cacheKey = 'lesson_suggested_topics';
+
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (cached && cached.sig === sig && cached.date === today && Array.isArray(cached.topics) && cached.topics.length) {
+        setSuggested(cached.topics);
+        return;
+      }
+    } catch {
+      // ignore cache read errors
+    }
+
+    fetch('/api/lesson/suggestions', { method: 'POST' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
+      .then((data) => {
+        if (Array.isArray(data.suggestions) && data.suggestions.length) {
+          setSuggested(data.suggestions);
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify({ sig, date: today, topics: data.suggestions }));
+          } catch {
+            // ignore cache write errors
+          }
+        }
+      })
+      .catch(() => {
+        // fall back to the static SUGGESTED_TOPICS already shown
+      });
+  }, [profile, initialTopic]);
 
   function selectFormat(key) {
     setFormat(key);
@@ -485,15 +526,15 @@ function LessonContent() {
             Suggested for you
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {SUGGESTED_TOPICS.map((s, i) => (
+            {(suggested || SUGGESTED_TOPICS).map((s, i) => (
               <button
                 key={i}
                 onClick={() => startLesson(s.topic)}
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:shadow-md transition-all text-left"
               >
-                <span className="text-2xl">{s.label.split(' ')[0]}</span>
+                <span className="text-2xl">{s.emoji || '💡'}</span>
                 <div className="flex-1">
-                  <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label.split(' ').slice(1).join(' ')}</div>
+                  <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label}</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.topic}</div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />

@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
+import { getDueScheduledChange, buildApplyScheduled } from '@/lib/role-manager';
 
 const ProfileContext = createContext(null);
 
@@ -77,6 +78,17 @@ export function ProfileProvider({ children }) {
     hasRedirected.current = false;
     await fetchProfile();
   }, [fetchProfile]);
+
+  // Lazily apply a scheduled role change once its effective date arrives — no
+  // cron needed; it happens the next time the user loads the app.
+  const scheduledAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || scheduledAppliedRef.current) return;
+    const due = getDueScheduledChange(profile);
+    if (!due) return;
+    scheduledAppliedRef.current = true;
+    updateProfile(buildApplyScheduled(profile, profile.id, due)).catch(() => {});
+  }, [profile, updateProfile]);
 
   const value = { profile, isLoading, updateProfile, refreshProfile, session };
 
