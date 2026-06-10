@@ -26,7 +26,7 @@ const TIERS = [
     id: 'practitioner',
     label: 'Practitioner',
     emoji: '🚀',
-    description: "I've used ChatGPT or similar tools a few times",
+    description: "I've used Gemini or similar AI tools a few times",
   },
   {
     id: 'power_user',

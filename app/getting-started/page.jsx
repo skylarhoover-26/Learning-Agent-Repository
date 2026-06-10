@@ -22,7 +22,7 @@ const TUTORIAL_STEPS = [
   {
     icon: Zap,
     title: 'Quick Wins',
-    description: 'Get a ready-to-use AI prompt for your specific role and tasks. Pick a task, copy the prompt, paste it into Claude or ChatGPT, and see results in under 5 minutes.',
+    description: 'Get a ready-to-use AI prompt for your specific role and tasks. Pick a task, copy the prompt, try it in AI Chat, and see results in under 5 minutes.',
     tip: 'Start here — it\'s the fastest way to see AI help with your actual work.',
     action: { label: 'Try a Quick Win', href: '/quick-win' },
     color: 'bg-cta',

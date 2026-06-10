@@ -14,7 +14,7 @@ const GAMES = [
     icon: Swords,
     title: 'Prompt Battle',
     description:
-      'Get a scenario, write your best prompt, and let Claude score it on clarity, specificity, and effectiveness.',
+      'Get a scenario, write your best prompt, and let AI score it on clarity, specificity, and effectiveness.',
     difficulty: 'Medium',
     difficultyColor: 'bg-cta-50 text-cta-700 ring-1 ring-cta-200',
     time: '5-10 min',

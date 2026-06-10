@@ -31,9 +31,9 @@ const TOUR_STEPS = [
   },
   {
     title: 'Step 2: AI Impact Assessment',
-    description: 'Users answer 4 questions across Personal, Team, Org, and AI Development dimensions. Free-text follow-ups are scored by Claude Haiku.',
+    description: 'Users answer 4 questions across Personal, Team, Org, and AI Development dimensions. Free-text follow-ups are scored by AI.',
     panels: {
-      left: { label: 'Slack', content: 'Bot asks multiple-choice questions with follow-up free text for top answers. Claude scores responses and builds a P/T/O/D profile.' },
+      left: { label: 'Slack', content: 'Bot asks multiple-choice questions with follow-up free text for top answers. AI scores responses and builds a P/T/O/D profile.' },
       right: { label: 'Web', content: 'The /scoring page mirrors the same flow. Results show overall impact level (Low/Medium/High) with score bars for each dimension.' },
     },
     icon: BarChart3,
@@ -53,7 +53,7 @@ const TOUR_STEPS = [
     title: 'Step 4: Personalized Quick Wins',
     description: 'Based on department and top tasks, users get curated, ready-to-use AI prompts. ~60 pre-built quick wins across all 20 departments.',
     panels: {
-      left: { label: 'How it works', content: 'User picks a task → gets a specific prompt they can copy-paste into Claude or ChatGPT right now. No placeholders — complete and ready to use.' },
+      left: { label: 'How it works', content: 'User picks a task → gets a specific prompt they can try in AI Chat right now. No placeholders — complete and ready to use.' },
       right: { label: 'Example', content: 'A CSM picks "QBR preparation" → gets a prompt that drafts a 45-min agenda with talking points, tailored to their customer\'s industry and goals.' },
     },
     icon: Zap,
@@ -64,7 +64,7 @@ const TOUR_STEPS = [
     description: '5 modules from foundations to measuring impact. Each module has reading content, interactive activities, and links to hands-on practice.',
     panels: {
       left: { label: 'Modules', content: 'Module 1: AI Foundations → Module 2: Core Tasks → Module 3: Prompting → Module 4: Building & Automating → Module 5: Measuring Impact' },
-      right: { label: 'Structured Lessons', content: 'The 5-step lesson player (Read → Try → Compare → Ship → Reflect) grades submissions via Claude and shows AI tone variants.' },
+      right: { label: 'Structured Lessons', content: 'The 5-step lesson player (Read → Try → Compare → Ship → Reflect) grades submissions via AI and shows tone variants.' },
     },
     icon: BookOpen,
     link: '/modules',
@@ -73,7 +73,7 @@ const TOUR_STEPS = [
     title: 'Step 6: Gamification & Progress',
     description: 'XP, levels, badges, streaks, quests, spaced repetition, and a department leaderboard keep learners engaged over time.',
     panels: {
-      left: { label: 'Earning', content: '50 XP per lesson, streak bonuses, 11 earnable badges. Quests are 20-60 min guided projects that build real artifacts. 10 structured lessons with Claude-graded submissions.' },
+      left: { label: 'Earning', content: '50 XP per lesson, streak bonuses, 11 earnable badges. Quests are 20-60 min guided projects that build real artifacts. 10 structured lessons with AI-graded submissions.' },
       right: { label: 'Tracking', content: 'Dashboard shows live stats, level progress, streak counter, recent lessons, and achievement badges. Data syncs to the cloud so managers can see team progress.' },
     },
     icon: Trophy,
@@ -93,7 +93,7 @@ const TOUR_STEPS = [
     title: 'Step 8: 6-Week Check-In',
     description: 'Every 6 weeks, learners re-answer scoring questions. The check-in shows progress deltas and adjusts recommendations.',
     panels: {
-      left: { label: 'Flow', content: '2-3 quick questions about personal and team AI usage changes. Optional blocker question if no improvement. Free-text follow-ups scored by Claude.' },
+      left: { label: 'Flow', content: '2-3 quick questions about personal and team AI usage changes. Optional blocker question if no improvement. Free-text follow-ups scored by AI.' },
       right: { label: 'Results', content: 'Side-by-side old → new scores with delta arrows. "Nice growth!" or "Focus on Module X next" messaging based on progress.' },
     },
     icon: RefreshCw,
@@ -101,10 +101,10 @@ const TOUR_STEPS = [
   },
   {
     title: 'Step 9: Auto-Refresh Pipeline',
-    description: 'The curriculum stays current. An automated scanner checks 13 AI news sources daily, Claude generates update proposals, and admins review them behind the scenes.',
+    description: 'The curriculum stays current. An automated scanner checks 13 AI news sources daily, AI generates update proposals, and admins review them behind the scenes.',
     panels: {
       left: { label: 'Scanner', content: 'Fetches RSS from OpenAI, Anthropic, DeepMind, Meta AI, Microsoft AI, Mistral, MIT Tech Review, The Verge, VentureBeat, Hugging Face, arXiv, and Hacker News. Dedupes and stores findings.' },
-      right: { label: 'Safety Filter', content: 'Claude reviews every article for content safety — filtering out politics, off-topic content, and anything not work-appropriate before it reaches learners.' },
+      right: { label: 'Safety Filter', content: 'AI reviews every article for content safety — filtering out politics, off-topic content, and anything not work-appropriate before it reaches learners.' },
     },
     icon: Rss,
     link: '/curriculum-pipeline',

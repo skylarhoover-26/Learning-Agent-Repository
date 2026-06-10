@@ -15,11 +15,11 @@ const MODEL = 'claude-sonnet-4-20250514';
 function buildCuratedQuickWin(department, task, curatedData) {
   return {
     title: curatedData.quickWin,
-    description: `A quick win for ${department} — specifically for "${task}". Copy the prompt below and paste it into Claude or ChatGPT.`,
+    description: `A quick win for ${department} — specifically for "${task}". Copy the prompt below and try it in AI Chat.`,
     timeEstimate: '~3 minutes',
     steps: [
       'Copy the prompt below',
-      'Paste it into Claude, ChatGPT, or your preferred AI tool',
+      'Open AI Chat on this platform and paste it in',
       'Review the output and customize for your specific situation',
       'Use the result in your work today',
     ],
@@ -50,7 +50,7 @@ function buildSystemPrompt(profile) {
     '- description (string): 1-2 sentences explaining why this is useful and how it saves time',
     '- timeEstimate (string): estimated time like "~2 minutes" or "~4 minutes" — always under 5 minutes',
     '- steps (array of strings): 3-5 numbered step instructions to complete this win',
-    '- prompt (string): the actual copy-paste prompt they can paste into ChatGPT or Claude. It MUST follow the RCTF framework: start with a Role ("You are a..."), then Context (background info), then Task (what to do), then Format (desired output structure). It must be COMPLETE — no placeholders like [insert X]. Make it specific and ready to use.',
+    '- prompt (string): the actual copy-paste prompt they can try in the platform\'s AI Chat. It MUST follow the RCTF framework: start with a Role ("You are a..."), then Context (background info), then Task (what to do), then Format (desired output structure). It must be COMPLETE — no placeholders like [insert X]. Make it specific and ready to use.',
     '- expectedResult (string): 1-2 sentences describing what they will get back when they use the prompt',
     '',
     'Rules:',
@@ -59,7 +59,7 @@ function buildSystemPrompt(profile) {
     '- Keep it practical, not theoretical. Something they can literally do RIGHT NOW.',
     '- Vary your suggestions — cover different use cases: writing, analysis, planning, communication, brainstorming, summarizing.',
     !isDevTier
-      ? '- The user is NOT a developer. Never suggest coding, APIs, or terminal commands. Focus on browser-based AI tools like ChatGPT or Claude.'
+      ? '- The user is NOT a developer. Never suggest coding, APIs, or terminal commands. Focus on using the AI Chat built into this platform. Never direct users to external AI tools.'
       : '- The user is a developer. You may suggest technical wins involving code, APIs, or developer tools.',
     department ? `- They work in ${department}${sub_team ? ` (${sub_team})` : ''}. Tailor the win to their department.` : null,
     goal ? `- Their learning goal: ${goal}. Connect the win to this goal when possible.` : null,
