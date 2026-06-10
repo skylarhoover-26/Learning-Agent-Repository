@@ -19,9 +19,28 @@ import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
 import { trackLessonComplete } from '@/lib/track';
 
+// Prefilled into the chat bar at the lesson's first practice point so the learner
+// can hit enter to kick off an interactive, personalized scenario.
+const SCENARIO_PROMPT = "I'd like to try a scenario based on my work.";
+
+const FORMAT_META = {
+  quick_tip: { title: 'Quick Tip', subtitle: 'Pick a topic — 60-second insight' },
+  standard: { title: 'Quick Lesson', subtitle: 'Pick a topic — 3-5 minute hands-on lesson' },
+  deep_dive: { title: 'Deep Dive', subtitle: 'Pick a topic — 15-20 minute thorough lesson' },
+};
+
+function getSavedFormat() {
+  try {
+    const saved = localStorage.getItem('lesson_format');
+    return FORMAT_META[saved] ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
 const SUGGESTED_TOPICS = [
   { label: '🎯 Prompt Basics', topic: 'How to write clear, specific prompts that get useful results' },
-  { label: '📧 AI for Email', topic: 'Using AI to draft, reply to, and summarize emails faster' },
+  { label: '🧵 AI for Slack', topic: 'Using AI to draft, summarize, and respond to Slack messages and threads faster' },
   { label: '📊 Data Summaries', topic: 'Turning raw data and notes into executive-ready summaries' },
   { label: '🤖 What Are AI Agents?', topic: 'Understanding AI agents and how they can automate multi-step workflows' },
   { label: '✅ Verifying AI Output', topic: 'How to fact-check and validate AI-generated content before using it' },
@@ -32,6 +51,10 @@ function LessonContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialTopic = searchParams.get('topic');
+  const initialFormat = (() => {
+    const f = searchParams.get('format');
+    return ['quick_tip', 'standard', 'deep_dive'].includes(f) ? f : null;
+  })();
   const [view, setView] = useState(initialTopic ? 'lesson' : 'picker');
   const [topic, setTopic] = useState(initialTopic || '');
   const [customTopic, setCustomTopic] = useState('');
@@ -50,6 +73,7 @@ function LessonContent() {
   const [voiceMode, setVoiceMode] = useState(false);
   const voiceModeRef = useRef(false);
   const pendingVoiceSubmitRef = useRef(null);
+  const practicePrefilledRef = useRef(false);
 
   // TTS for voice conversation mode
   const { isSpeaking: ttsActive, speak: ttsSpeak, stop: ttsStop } = useTts();
@@ -150,7 +174,26 @@ function LessonContent() {
     if (saved) {
       setSavedLesson(saved);
     }
-  }, []);
+    if (initialTopic) {
+      // Deep link / Today's Pick: default to the 3-5 min Quick Lesson unless the
+      // URL explicitly asks for another depth. Do not inherit the saved picker choice.
+      setFormat(initialFormat || 'standard');
+    } else {
+      const savedFormat = getSavedFormat();
+      if (savedFormat) {
+        setFormat(savedFormat);
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function selectFormat(key) {
+    setFormat(key);
+    try {
+      localStorage.setItem('lesson_format', key);
+    } catch {
+      // persistence is best-effort
+    }
+  }
 
   // Debounce-save lesson state when in lesson view
   useEffect(() => {
@@ -189,11 +232,41 @@ function LessonContent() {
   useEffect(() => {
     if (initialTopic && !hasStarted.current && slides.length === 0) {
       hasStarted.current = true;
-      fetchStartLesson(initialTopic);
+      fetchStartLesson(initialTopic, initialFormat || 'standard');
     }
   }, [initialTopic]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function fetchStartLesson(t) {
+  // The model suggests the next step via a "next"/"try_exercise" button label;
+  // we surface it as a chat-bar prefill instead of a button.
+  function nextActionLabel(slide) {
+    const b = (slide?.buttons || []).find((x) => x.action === 'next' || x.action === 'try_exercise');
+    return b ? b.label : null;
+  }
+
+  // There are no Continue buttons — the learner moves through the lesson and
+  // engages entirely through the chat bar. Prefill it so they can hit enter to
+  // advance, or type their own question/attempt. At the first practice point we
+  // prefill the scenario prompt; on a scenario-attempt slide (no next button) we
+  // leave it empty so they type their attempt.
+  function prefillForSlide(slide) {
+    if (voiceModeRef.current) return;
+    const phase = slide?.phase;
+    if (phase === 'complete') {
+      setUserInput('');
+      return;
+    }
+    const scenarioEntry =
+      !practicePrefilledRef.current &&
+      (format === 'quick_tip' || phase === 'practice' || phase === 'apply');
+    if (scenarioEntry) {
+      practicePrefilledRef.current = true;
+      setUserInput(SCENARIO_PROMPT);
+    } else {
+      setUserInput(nextActionLabel(slide) || '');
+    }
+  }
+
+  async function fetchStartLesson(t, fmt = format) {
     setIsLoading(true);
     setError(null);
     setSlides([]);
@@ -202,13 +275,14 @@ function LessonContent() {
     setUserInputs([]);
     lessonStartedAt.current = new Date().toISOString();
     hasRecordedCompletion.current = false;
+    practicePrefilledRef.current = false;
     setProgressionResult(null);
 
     try {
       const res = await fetch('/api/lesson/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: t, format }),
+        body: JSON.stringify({ topic: t, format: fmt }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start lesson');
@@ -217,6 +291,7 @@ function LessonContent() {
       setSlides([slide]);
       setMessages(newMessages);
       setCurrentSlideIdx(0);
+      prefillForSlide(slide);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -248,6 +323,7 @@ function LessonContent() {
       setSlides((prev) => [...prev, slide]);
       setMessages(newMessages);
       setCurrentSlideIdx((prev) => prev + 1);
+      prefillForSlide(slide);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -255,8 +331,9 @@ function LessonContent() {
     }
   }
 
-  function handleButtonClick(btn) {
-    continueLesson(`[I clicked: ${btn.action}]`, btn.label);
+  function finishLesson() {
+    if (isLoading) return;
+    continueLesson("I'm ready to wrap up the lesson.", 'Finish lesson');
   }
 
   function handleSubmitInput(e) {
@@ -283,7 +360,6 @@ function LessonContent() {
   // --- Progression: record completion (must be before any early return) ---
   const currentSlide = slides[currentSlideIdx];
   const isComplete = currentSlide?.phase === 'complete' && currentSlide?.recap;
-  const isOnLatestSlide = currentSlideIdx === slides.length - 1;
 
   const handleLessonComplete = useCallback(() => {
     if (hasRecordedCompletion.current) return;
@@ -319,6 +395,7 @@ function LessonContent() {
       setUserInputs(savedLesson.userInputs || []);
       lessonStartedAt.current = savedLesson.lessonStartedAt || new Date().toISOString();
       hasRecordedCompletion.current = false;
+      practicePrefilledRef.current = true; // don't auto-prefill mid-lesson on resume
       setProgressionResult(null);
       setView('lesson');
       setSavedLesson(null);
@@ -330,6 +407,8 @@ function LessonContent() {
     }
 
     return (
+      <>
+      <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
       <main className="max-w-4xl mx-auto px-6 py-10">
         {savedLesson && (
           <div className="mb-8 bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800 rounded-xl p-4 flex items-center justify-between gap-4">
@@ -371,7 +450,7 @@ function LessonContent() {
             ].map(f => (
               <button
                 key={f.key}
-                onClick={() => setFormat(f.key)}
+                onClick={() => selectFormat(f.key)}
                 className={`group p-4 rounded-xl border text-left transition-all ${
                   format === f.key
                     ? 'bg-brand-50 dark:bg-brand-900/30 border-brand-300 ring-2 ring-brand-100 shadow-sm'
@@ -446,10 +525,13 @@ function LessonContent() {
           </div>
         </div>
       </main>
+      </>
     );
   }
 
   return (
+    <>
+    <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
     <main className="max-w-3xl mx-auto px-6 py-10">
       <XpToast result={progressionResult} onDismiss={() => setProgressionResult(null)} />
 
@@ -522,15 +604,12 @@ function LessonContent() {
               {slideIsComplete && isLast ? (
                 <RecapCard
                   recap={slide.recap}
+                  format={format}
                   onPickAnother={resetToPickerView}
                   onDashboard={() => router.push('/')}
                 />
               ) : (
-                <SlideCard
-                  slide={slide}
-                  onButtonClick={handleButtonClick}
-                  isLatest={isLast && !isLoading}
-                />
+                <SlideCard slide={slide} />
               )}
             </div>
           );
@@ -558,65 +637,79 @@ function LessonContent() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input area */}
+      {/* Engagement area: encouragement + chat-driven practice, finish as a quiet link */}
       {slides.length > 0 && !isComplete && (
-        <form onSubmit={handleSubmitInput} className="mt-4 flex gap-2 sticky bottom-4">
-          <input
-            ref={inputRef}
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder={isListening ? 'Listening...' : 'Type a question or response...'}
-            disabled={isLoading}
-            className={`flex-1 px-4 py-3 rounded-xl border dark:bg-slate-900 dark:text-slate-200 bg-white focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50 shadow-sm ${
-              isListening
-                ? 'border-red-300 dark:border-red-700 ring-2 ring-red-100 dark:ring-red-900/30'
-                : 'border-slate-200 dark:border-slate-700'
-            }`}
-          />
-          {sttSupported && (
-            <button
-              type="button"
-              onClick={toggleStt}
-              className={`px-3 py-3 rounded-xl transition-all shadow-sm ${
+        <div className="mt-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+            <MessageSquare className="w-4 h-4 text-brand shrink-0" />
+            {userInput === SCENARIO_PROMPT
+              ? 'Press enter or tap the arrow → to try a scenario based on your work — or type your own.'
+              : 'Press enter or tap the arrow → to send. Ask a question or share your response anytime.'}
+          </p>
+          <form onSubmit={handleSubmitInput} className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder={isListening ? 'Listening...' : 'Type a question or response...'}
+              disabled={isLoading}
+              className={`flex-1 px-4 py-3 rounded-xl border dark:bg-slate-900 dark:text-slate-200 bg-white focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50 shadow-sm ${
                 isListening
-                  ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                  ? 'border-red-300 dark:border-red-700 ring-2 ring-red-100 dark:ring-red-900/30'
+                  : 'border-slate-200 dark:border-slate-700'
               }`}
-              aria-label={isListening ? 'Stop listening' : 'Voice input'}
+            />
+            {sttSupported && (
+              <button
+                type="button"
+                onClick={toggleStt}
+                className={`px-3 py-3 rounded-xl transition-all shadow-sm ${
+                  isListening
+                    ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                }`}
+                aria-label={isListening ? 'Stop listening' : 'Voice input'}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={!userInput.trim() || isLoading}
+              className="px-4 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              <Send className="w-4 h-4" />
             </button>
-          )}
-          <button
-            type="submit"
-            disabled={!userInput.trim() || isLoading}
-            className="px-4 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
-      )}
+          </form>
 
-      {/* Exit lesson */}
-      {slides.length > 0 && !isComplete && (
-        <div className="mt-6 text-center">
-          <button
-            onClick={resetToPickerView}
-            className="text-sm text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-all"
-          >
-            Exit lesson
-          </button>
+          {/* Quiet finish + exit links */}
+          <div className="mt-4 flex items-center justify-center gap-4">
+            <button
+              onClick={finishLesson}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-brand dark:text-slate-400 transition-all disabled:opacity-50"
+            >
+              Finish lesson
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={resetToPickerView}
+              className="text-sm text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-all"
+            >
+              Exit lesson
+            </button>
+          </div>
         </div>
       )}
     </main>
+    </>
   );
 }
 
 export default function LessonPage() {
   return (
     <div className="min-h-screen">
-      <PageHeader icon={BookOpen} title="Quick Lesson" subtitle="Pick a topic — 3-5 minute hands-on lesson" />
       <Suspense fallback={<div className="max-w-4xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
         <LessonContent />
       </Suspense>

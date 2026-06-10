@@ -237,8 +237,8 @@ function TtsButton({ text }) {
   );
 }
 
-export function SlideCard({ slide, onButtonClick, isLatest }) {
-  const { slideTitle, message, keyPoints, phase, buttons } = slide;
+export function SlideCard({ slide }) {
+  const { slideTitle, message, keyPoints, phase } = slide;
 
   const fullText = [message, ...(keyPoints || [])].filter(Boolean).join('. ');
 
@@ -284,25 +284,17 @@ export function SlideCard({ slide, onButtonClick, isLatest }) {
         </div>
       )}
 
-      {/* Action buttons */}
-      {isLatest && buttons && buttons.length > 0 && (
-        <div className="px-6 pb-6 flex flex-wrap gap-2">
-          {buttons.map((btn, idx) => (
-            <button
-              key={idx}
-              onClick={() => onButtonClick(btn)}
-              className="px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm text-sm"
-            >
-              {btn.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* No action buttons — the learner advances and engages through the chat
+          bar below, which is prefilled with the suggested next step. */}
+      <div className="pb-2" />
     </div>
   );
 }
 
-export function RecapCard({ recap, onPickAnother, onDashboard }) {
+export function RecapCard({ recap, format, onPickAnother, onDashboard }) {
+  // Quick Tips already show Key Points on the tip slide, so the recap's
+  // "What you learned" list is redundant — keep the recap lean for them.
+  const showLearned = format !== 'quick_tip';
   const recapText = [
     'Lesson complete.',
     recap.topic,
@@ -325,7 +317,7 @@ export function RecapCard({ recap, onPickAnother, onDashboard }) {
         </div>
       </div>
 
-      {recap.keyPoints && recap.keyPoints.length > 0 && (
+      {showLearned && recap.keyPoints && recap.keyPoints.length > 0 && (
         <div className="mx-6 mb-4 bg-white/70 dark:bg-slate-800/70 rounded-xl p-4">
           <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-2">What you learned</h3>
           <ul className="space-y-1.5">
