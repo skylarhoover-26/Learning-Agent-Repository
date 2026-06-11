@@ -131,7 +131,7 @@ function ChatPageInner() {
                 <MessageCircle className="w-8 h-8 text-brand" strokeWidth={1.5} />
               </div>
               <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
-                What do you want to know about AI?
+                How can AI optimize your workflow?
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
                 I'll adapt to your level and teach by example. Try asking about prompting, agents, or anything you're curious about.

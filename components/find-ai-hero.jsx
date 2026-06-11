@@ -36,7 +36,7 @@ export default function FindAiHero() {
               Find AI for your work
             </h3>
             <p className="text-sm text-white/80 mb-4 max-w-lg">
-              Tell me about your day or a task you do regularly. I&apos;ll find specific AI opportunities you can try
+              Tell me about your day-to-day work and I&apos;ll find specific AI opportunities you can use
               today — for YOUR actual work, not generic ideas.
             </p>
 
