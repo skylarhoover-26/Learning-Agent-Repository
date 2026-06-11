@@ -13,11 +13,12 @@ import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-
 import BookLoader from '@/components/book-loader';
 import {
   BookOpen, ChevronRight, Zap, BookMarked, Trophy,
-  Loader2, Send, Mic, MicOff, MessageSquare, HelpCircle,
+  Loader2, Send, Mic, MicOff, MessageSquare, HelpCircle, PlayCircle,
 } from 'lucide-react';
 import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
 import { trackLessonComplete } from '@/lib/track';
+import VideoLessonPlayer from '@/components/video-lesson-player';
 
 // Prefilled into the chat bar at the lesson's first practice point so the learner
 // can hit enter to kick off an interactive, personalized scenario.
@@ -60,6 +61,11 @@ function LessonContent() {
   const [topic, setTopic] = useState(initialTopic || '');
   const [customTopic, setCustomTopic] = useState('');
   const [format, setFormat] = useState('standard');
+
+  // Learning mode: 'read' = interactive chat-driven lesson; 'watch' = narrated
+  // video. In watch mode, selecting a topic opens the VideoLessonPlayer instead.
+  const [learnMode, setLearnMode] = useState('read');
+  const [videoTopic, setVideoTopic] = useState(null);
 
   // Lesson state
   const [slides, setSlides] = useState([]);
@@ -346,6 +352,15 @@ function LessonContent() {
     fetchStartLesson(t);
   }
 
+  // Entry point from the picker: watch a narrated video or start a read lesson.
+  function chooseTopic(t) {
+    if (learnMode === 'watch') {
+      setVideoTopic(t);
+    } else {
+      startLesson(t);
+    }
+  }
+
   async function continueLesson(input, displayLabel) {
     setUserInputs((prev) => [...prev, displayLabel || input]);
     setIsLoading(true);
@@ -523,13 +538,44 @@ function LessonContent() {
 
         <div className="mb-8">
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
+            How do you want to learn?
+          </h3>
+          <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
+            {[
+              { key: 'read', icon: BookOpen, label: 'Read & practice', desc: 'Interactive, chat-driven' },
+              { key: 'watch', icon: PlayCircle, label: 'Watch (narrated)', desc: 'Sit back & listen' },
+            ].map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setLearnMode(m.key)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  learnMode === m.key
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+                aria-pressed={learnMode === m.key}
+              >
+                <m.icon className="w-4 h-4" />
+                <span>{m.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+            {learnMode === 'watch'
+              ? 'Pick a topic below and we’ll generate a short narrated video you can watch.'
+              : 'Pick a topic below for a hands-on lesson you work through step by step.'}
+          </p>
+        </div>
+
+        <div className="mb-8">
+          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             Suggested for you
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => (
               <button
                 key={i}
-                onClick={() => startLesson(s.topic)}
+                onClick={() => chooseTopic(s.topic)}
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:shadow-md transition-all text-left"
               >
                 <span className="text-2xl">{s.emoji || '💡'}</span>
@@ -552,20 +598,27 @@ function LessonContent() {
               type="text"
               value={customTopic}
               onChange={(e) => setCustomTopic(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && customTopic.trim()) startLesson(customTopic.trim()); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && customTopic.trim()) chooseTopic(customTopic.trim()); }}
               placeholder="e.g., 'how to use AI for budget forecasting'"
               className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
             />
             <button
-              onClick={() => customTopic.trim() && startLesson(customTopic.trim())}
+              onClick={() => customTopic.trim() && chooseTopic(customTopic.trim())}
               disabled={!customTopic.trim()}
-              className="px-5 py-3 rounded-xl bg-brand text-white font-medium hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="px-5 py-3 rounded-xl bg-brand text-white font-medium hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all inline-flex items-center gap-1.5"
             >
-              Start
+              {learnMode === 'watch' ? <><PlayCircle className="w-4 h-4" /> Watch</> : 'Start'}
             </button>
           </div>
         </div>
       </main>
+      {videoTopic && (
+        <VideoLessonPlayer
+          topic={videoTopic}
+          format={format}
+          onClose={() => setVideoTopic(null)}
+        />
+      )}
       </>
     );
   }
