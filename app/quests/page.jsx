@@ -6,12 +6,15 @@ import PageHeader from '@/components/page-header';
 import { Trophy, Clock, ChevronRight, Star, CheckCircle2, Play, RotateCcw } from 'lucide-react';
 import { QUESTS } from '@/lib/quest-data';
 import { getQuestProgress, getCompletedQuestCount } from '@/lib/quest-store';
-import { getTotalEarnedXp } from '@/lib/xp-store';
+import { useProgression } from '@/components/progression-provider';
 
 export default function QuestsPage() {
   const [progressMap, setProgressMap] = useState({});
   const [completedCount, setCompletedCount] = useState(0);
-  const [totalXp, setTotalXp] = useState(0);
+  const { xpEvents = [] } = useProgression() || {};
+  const totalXp = xpEvents
+    .filter(e => e.source === 'quest_complete')
+    .reduce((sum, e) => sum + (e.amount || 0), 0);
 
   useEffect(() => {
     const map = {};
@@ -20,7 +23,6 @@ export default function QuestsPage() {
     }
     setProgressMap(map);
     setCompletedCount(getCompletedQuestCount());
-    setTotalXp(getTotalEarnedXp());
   }, []);
 
   const totalXpAvailable = QUESTS.reduce((sum, q) => sum + q.xpReward, 0);

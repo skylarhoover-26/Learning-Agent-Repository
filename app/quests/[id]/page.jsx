@@ -7,13 +7,18 @@ import PageHeader from '@/components/page-header';
 import { Trophy, ChevronRight, ChevronLeft, CheckCircle2, Circle, Lightbulb, Target, ArrowLeft, PartyPopper } from 'lucide-react';
 import { QUESTS } from '@/lib/quest-data';
 import { getQuestState, startQuest, completeStep, completeQuest } from '@/lib/quest-store';
-import { addXp, earnBadge } from '@/lib/xp-store';
+import { addXpEvent, addBadgeEarned } from '@/lib/learner-store';
+import { resolveLearnerId } from '@/lib/learner-id';
+import { useProfile } from '@/components/profile-provider';
+import { useProgression } from '@/components/progression-provider';
 import { trackQuestComplete } from '@/lib/track';
 
 export default function QuestDetailPage() {
   const params = useParams();
   const router = useRouter();
   const quest = QUESTS.find(q => q.id === params.id);
+  const { profile } = useProfile();
+  const { refresh: refreshProgression } = useProgression() || {};
 
   const [questState, setQuestState] = useState(null);
   const [activeStepIdx, setActiveStepIdx] = useState(0);
@@ -39,14 +44,21 @@ export default function QuestDetailPage() {
 
     if (activeStepIdx === quest.steps.length - 1) {
       const completed = completeQuest(quest.id);
-      addXp(quest.xpReward, `quest_complete:${quest.id}`);
+      const lid = resolveLearnerId(profile);
+      addXpEvent(lid, {
+        source: 'quest_complete',
+        amount: quest.xpReward,
+        created_at: new Date().toISOString(),
+        meta: { quest: quest.id },
+      });
 
       const completedCount = Object.values(
         JSON.parse(localStorage.getItem('learner_quest_state') || '{}')
       ).filter(q => q.status === 'completed').length;
       if (completedCount === 1) {
-        earnBadge('first_quest');
+        addBadgeEarned(lid, 'first_quest');
       }
+      refreshProgression?.();
 
       setQuestState(completed);
       setShowCompletion(true);
@@ -55,7 +67,7 @@ export default function QuestDetailPage() {
       setQuestState(updated);
       setActiveStepIdx(activeStepIdx + 1);
     }
-  }, [quest, questState, activeStepIdx]);
+  }, [quest, questState, activeStepIdx, profile, refreshProgression]);
 
   if (!quest) {
     return (

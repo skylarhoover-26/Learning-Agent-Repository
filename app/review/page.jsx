@@ -6,10 +6,15 @@ import PageHeader from '@/components/page-header';
 import { Brain, ChevronRight, Check, X, RotateCcw, BarChart3, Zap } from 'lucide-react';
 import { QUALITY_BUTTONS, formatNextReview } from '@/lib/sm2';
 import { buildReviewQueue, updateCardAfterReview, getCardState, getReviewStats } from '@/lib/review-store';
-import { addXp } from '@/lib/xp-store';
+import { addXpEvent } from '@/lib/learner-store';
+import { resolveLearnerId } from '@/lib/learner-id';
+import { useProfile } from '@/components/profile-provider';
+import { useProgression } from '@/components/progression-provider';
 import { trackReviewCard } from '@/lib/track';
 
 export default function ReviewPage() {
+  const { profile } = useProfile();
+  const { refresh: refreshProgression } = useProgression() || {};
   const [queue, setQueue] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -44,13 +49,18 @@ export default function ReviewPage() {
     const updated = updateCardAfterReview(card.id, quality);
     const correct = quality >= 3;
     if (correct) {
-      addXp(5, 'review_correct');
+      addXpEvent(resolveLearnerId(profile), {
+        source: 'review_correct',
+        amount: 5,
+        created_at: new Date().toISOString(),
+      });
+      refreshProgression?.();
     }
     trackReviewCard(card.id, card.category, quality, correct);
     setCurrentIdx(prev => prev + 1);
     setShowAnswer(false);
     setSelectedOption(null);
-  }, [card]);
+  }, [card, profile, refreshProgression]);
 
   const restart = useCallback(() => {
     setQueue(buildReviewQueue(10));
