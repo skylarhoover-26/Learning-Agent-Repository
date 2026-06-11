@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { getAllData } from '@/lib/learner-store';
 import { getTotalXp, getLevel, calculateStreak, LEVEL_THRESHOLDS } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
+import { resolveLearnerId } from '@/lib/learner-id';
 
 const ProgressionContext = createContext(null);
 
@@ -61,8 +62,8 @@ export function ProgressionProvider({ children }) {
   const [data, setData] = useState(EMPTY);
 
   const load = useCallback(() => {
-    if (profile?.id) {
-      setData({ ...buildStats(profile.id), isLoaded: true, refresh: load });
+    if (profile) {
+      setData({ ...buildStats(resolveLearnerId(profile)), isLoaded: true, refresh: load });
     } else {
       setData({ ...EMPTY, isLoaded: true, refresh: load });
     }

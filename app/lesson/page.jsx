@@ -18,6 +18,7 @@ import {
 import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
 import { trackLessonComplete } from '@/lib/track';
+import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 
 // Prefilled into the chat bar at the lesson's first practice point so the learner
@@ -422,9 +423,9 @@ function LessonContent() {
     hasRecordedCompletion.current = true;
     clearSavedLesson();
     try {
-      if (profile?.id && topic) {
+      if (profile && topic) {
         const durationMs = lessonStartedAt.current ? Date.now() - lessonStartedAt.current : 0;
-        const result = onLessonComplete(profile.id, topic, lessonStartedAt.current);
+        const result = onLessonComplete(resolveLearnerId(profile), topic, lessonStartedAt.current);
         setProgressionResult(result);
         refreshProgression?.();
         trackLessonComplete(topic, format, durationMs);

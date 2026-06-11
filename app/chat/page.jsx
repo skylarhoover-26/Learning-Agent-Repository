@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-store';
 import { addXpEvent } from '@/lib/learner-store';
+import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
 import { MessageCircle, Send, Loader2, Trash2 } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
@@ -93,8 +94,8 @@ function ChatPageInner() {
       const updatedMessages = [...newMessages, { role: 'assistant', content: data.reply }];
       setMessages(updatedMessages);
       saveChatHistory(updatedMessages);
-      if (profile?.id) {
-        addXpEvent(profile.id, {
+      if (profile) {
+        addXpEvent(resolveLearnerId(profile), {
           source: 'chat_message',
           amount: 5,
           created_at: new Date().toISOString(),
