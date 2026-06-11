@@ -87,17 +87,17 @@ export default function AchievementsLive() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-10">
-        <div className="bg-gradient-to-br from-cta-400 to-cta-600 rounded-2xl p-8 mb-8 text-center">
-          <div className="w-24 h-24 rounded-3xl bg-white/20 mx-auto mb-4 flex items-center justify-center backdrop-blur-sm">
-            <span className="text-4xl font-bold text-ink dark:text-slate-200">{levelProgress.level}</span>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8 mb-8 text-center">
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-cta-400 to-cta-600 mx-auto mb-4 flex items-center justify-center shadow-sm">
+            <span className="text-4xl font-bold text-ink dark:text-slate-900">{levelProgress.level}</span>
           </div>
           <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1">Level {levelProgress.level}</h2>
-          <p className="text-ink/70 dark:text-slate-300/70 mb-4">{totalXp.toLocaleString()} XP total</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-4">{totalXp.toLocaleString()} XP total</p>
           <div className="max-w-sm mx-auto">
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-3 bg-white/30 rounded-full overflow-hidden">
+              <div className="flex-1 h-3 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-white dark:bg-slate-800 transition-all duration-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-cta to-cta-600 transition-all duration-500 rounded-full"
                   style={{ width: `${levelProgress.percent}%` }}
                 />
               </div>

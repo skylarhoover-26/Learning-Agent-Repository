@@ -23,7 +23,7 @@ export default function LiveLevelBadges() {
   const prog = useProgression();
   if (!prog?.isLoaded) {
     return (
-      <div className="bg-gradient-to-br from-cta-400 to-cta-600 rounded-2xl shadow-card p-6 animate-pulse h-24 opacity-70" />
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 animate-pulse h-24" />
     );
   }
 
@@ -35,35 +35,35 @@ export default function LiveLevelBadges() {
     .slice(0, 4);
 
   return (
-    <div className="group relative bg-gradient-to-br from-cta-400 to-cta-600 rounded-2xl shadow-card hover:shadow-card-hover p-6 transition-all">
+    <div className="group relative bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all">
       <Link href="/achievements" aria-label="View achievements and badges" className="absolute inset-0 z-0 rounded-2xl" />
       <div className="relative z-10 pointer-events-none grid grid-cols-1 md:grid-cols-[1fr,auto] gap-5 items-center">
         <div className="flex items-center gap-5">
           <div className="relative shrink-0">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-sm">
-              <span className="text-2xl font-bold text-ink">{levelProgress.level}</span>
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cta-400 to-cta-600 flex items-center justify-center shadow-sm">
+              <span className="text-2xl font-bold text-ink dark:text-slate-900">{levelProgress.level}</span>
             </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-800">
               LV
             </div>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
-              <h3 className="font-bold text-ink">Level {levelProgress.level}</h3>
+              <h3 className="font-bold text-ink dark:text-slate-200">Level {levelProgress.level}</h3>
             </div>
             <div className="flex items-center gap-3 max-w-md">
-              <div className="flex-1 h-2 bg-white/30 rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-white transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-cta to-cta-600 transition-all duration-500"
                   style={{ width: `${levelProgress.percent}%` }}
                 />
               </div>
-              <span className="text-xs text-ink/70 shrink-0">
+              <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">
                 {levelProgress.xpToNext} XP to L{levelProgress.level + 1}
               </span>
             </div>
             <div className="mt-2 flex items-center gap-3 flex-wrap">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white/25 text-xs font-semibold text-ink">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-cta-50 dark:bg-slate-700 text-xs font-semibold text-cta-700 dark:text-cta-300">
                 {prog.totalXp.toLocaleString()} XP
               </span>
               <span className="pointer-events-auto">
@@ -79,24 +79,24 @@ export default function LiveLevelBadges() {
                 {recentBadges.map(b => (
                   <div
                     key={b.id}
-                    className="w-9 h-9 rounded-full bg-white/25 ring-2 ring-white/40 flex items-center justify-center text-lg shadow-sm"
+                    className="w-9 h-9 rounded-full bg-cta-50 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-800 flex items-center justify-center text-lg shadow-sm"
                     title={b.name}
                   >
                     {b.emoji}
                   </div>
                 ))}
               </div>
-              <div className="text-sm text-ink/70 hidden sm:block">
+              <div className="text-sm text-slate-600 dark:text-slate-400 hidden sm:block">
                 {badgesEarned.length} {badgesEarned.length === 1 ? 'badge' : 'badges'}
               </div>
             </>
           ) : (
-            <div className="text-sm text-ink/70">
+            <div className="text-sm text-slate-500 dark:text-slate-400">
               <Award className="w-4 h-4 inline mr-1" />
               Earn your first badge
             </div>
           )}
-          <ChevronRight className="w-5 h-5 text-ink/50 group-hover:text-ink group-hover:translate-x-1 transition-all" />
+          <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
         </div>
       </div>
     </div>

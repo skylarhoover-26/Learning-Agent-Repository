@@ -18,7 +18,7 @@ export default function XpExplainer() {
     <div className="relative inline-block">
       <button
         onClick={() => setOpen(prev => !prev)}
-        className="inline-flex items-center gap-1 text-xs text-ink/70 hover:text-ink transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
       >
         <HelpCircle className="w-3.5 h-3.5" />
         How do you earn experience points?
