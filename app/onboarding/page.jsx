@@ -18,6 +18,9 @@ const SUB_TEAMS = SUBTEAMS;
 
 const TOTAL_STEPS = 4;
 
+// Soft cap — generous enough that no one realistically hits it.
+const MAX_TASKS = 20;
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -91,7 +94,7 @@ export default function OnboardingPage() {
       if (prev.includes(task)) {
         return prev.filter(t => t !== task);
       }
-      if (prev.length >= 3) return prev;
+      if (prev.length >= MAX_TASKS) return prev;
       return [...prev, task];
     });
   }
@@ -222,7 +225,7 @@ export default function OnboardingPage() {
               showCustomInput={showCustomInput}
               onAddCustomTask={() => {
                 const trimmed = customTask.trim();
-                if (trimmed && !topTasks.includes(trimmed) && topTasks.length < 3) {
+                if (trimmed && !topTasks.includes(trimmed) && topTasks.length < MAX_TASKS) {
                   setTopTasks(prev => [...prev, trimmed]);
                   setCustomTask('');
                   setShowCustomInput(false);
@@ -323,7 +326,7 @@ function StepSubTeam({ department, teams, selected, onSelect }) {
 }
 
 function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCustomTaskChange, showCustomInput, onAddCustomTask, onShowCustomInput, onHideCustomInput, onNext, canAdvance }) {
-  const atLimit = selected.length >= 3;
+  const atLimit = selected.length >= MAX_TASKS;
 
   return (
     <div>
@@ -335,7 +338,7 @@ function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCus
           What are your top tasks?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm">
-          Pick up to 3 tasks you do most in {department}. We'll personalize your quick wins and learning path.
+          Pick the tasks you do most in {department}. We'll personalize your quick wins and learning path.
         </p>
       </div>
       <div className="space-y-2 max-w-lg mx-auto mb-6">
@@ -422,7 +425,7 @@ function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCus
       </div>
       <div className="text-center">
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-          {selected.length}/3 selected{selected.length === 0 ? ' — pick at least 1' : ''}
+          {selected.length} selected{selected.length === 0 ? ' — pick at least 1' : ''}
         </p>
         <button
           onClick={onNext}

@@ -9,6 +9,9 @@ import {
 } from 'lucide-react';
 import { getTaskList } from '@/lib/curriculum-data';
 
+// Soft cap — generous enough that no one realistically hits it.
+const MAX_TASKS = 20;
+
 export default function MyTasksPage() {
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
@@ -33,7 +36,7 @@ export default function MyTasksPage() {
       if (prev.includes(task)) {
         return prev.filter(t => t !== task);
       }
-      if (prev.length >= 3) return prev;
+      if (prev.length >= MAX_TASKS) return prev;
       return [...prev, task];
     });
     setSaved(false);
@@ -41,7 +44,7 @@ export default function MyTasksPage() {
 
   function handleAddCustomTask() {
     const trimmed = customTask.trim();
-    if (trimmed && !topTasks.includes(trimmed) && topTasks.length < 3) {
+    if (trimmed && !topTasks.includes(trimmed) && topTasks.length < MAX_TASKS) {
       setTopTasks(prev => [...prev, trimmed]);
       setCustomTask('');
       setShowCustomInput(false);
@@ -62,7 +65,7 @@ export default function MyTasksPage() {
     }
   }
 
-  const atLimit = topTasks.length >= 3;
+  const atLimit = topTasks.length >= MAX_TASKS;
   const hasChanges = JSON.stringify(topTasks) !== JSON.stringify(profile?.top_tasks || []);
 
   if (!profile) return null;
@@ -164,7 +167,7 @@ export default function MyTasksPage() {
 
         <div className="flex items-center justify-between">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {topTasks.length}/3 selected{topTasks.length === 0 ? ' — pick at least 1' : ''}
+            {topTasks.length} selected{topTasks.length === 0 ? ' — pick at least 1' : ''}
           </p>
           <div className="flex items-center gap-3">
             {saved && !hasChanges && (
