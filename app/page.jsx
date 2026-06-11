@@ -2,7 +2,7 @@ import Link from 'next/link';
 import {
   Sparkles, TrendingUp,
   MessageCircle, BookOpen, Library, Gamepad2, Trophy,
-  ChevronRight, BarChart2,
+  ChevronRight, BarChart2, GitBranch,
 } from 'lucide-react';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
@@ -209,9 +209,19 @@ export default async function Dashboard() {
 
         {/* Skills: Strong / Growing / Gaps */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="w-5 h-5 text-brand" />
-            <h3 className="font-semibold text-ink dark:text-slate-200">Your Skills</h3>
+          <div className="flex items-center justify-between gap-2 mb-5">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-brand" />
+              <h3 className="font-semibold text-ink dark:text-slate-200">Your Skills</h3>
+            </div>
+            <Link
+              href="/skill-graph"
+              className="group inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-brand-600 transition-all"
+            >
+              <GitBranch className="w-4 h-4" />
+              View Skill Graph
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <SkillColumn label="Strong" dotColor="bg-green-500" items={skills.strong} bgClass="bg-green-50 border-green-100" emptyText="Keep learning to build strong skills" />
