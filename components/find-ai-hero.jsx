@@ -11,10 +11,10 @@ export default function FindAiHero() {
 
   function handleClick() {
     if (topTasks.length > 0) {
-      const prompt = `I work in ${profile.department || 'my team'}. My main tasks are: ${topTasks.join(', ')}. What AI opportunities can I try today?`;
-      router.push(`/chat?q=${encodeURIComponent(prompt)}`);
+      const prompt = `I work in ${profile.department || 'my team'}. My main tasks are: ${topTasks.join(', ')}.`;
+      router.push(`/discover?q=${encodeURIComponent(prompt)}`);
     } else {
-      router.push('/chat');
+      router.push('/discover');
     }
   }
 

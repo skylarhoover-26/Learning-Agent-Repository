@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import {
@@ -27,20 +28,34 @@ const CATEGORY_COLORS = {
   decisions: 'from-pink-500 to-rose-500',
 };
 
-export default function DiscoverPage() {
+function DiscoverContent() {
+  const searchParams = useSearchParams();
   const [workDescription, setWorkDescription] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [opportunities, setOpportunities] = useState([]);
+  const autoRanRef = useRef(false);
 
-  async function findOpportunities() {
-    if (!workDescription.trim()) return;
+  // Prefill + auto-run when arriving from the "Find AI for your work" hero
+  // (which passes the typed work description as ?q=).
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && !autoRanRef.current) {
+      autoRanRef.current = true;
+      setWorkDescription(q);
+      findOpportunities(q);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function findOpportunities(desc) {
+    const text = (typeof desc === 'string' ? desc : workDescription).trim();
+    if (!text) return;
     setIsSearching(true);
     try {
       const res = await fetch('/api/discover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workDescription }),
+        body: JSON.stringify({ workDescription: text }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Search failed');
@@ -206,5 +221,13 @@ export default function DiscoverPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function DiscoverPage() {
+  return (
+    <Suspense fallback={<div className="max-w-5xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
+      <DiscoverContent />
+    </Suspense>
   );
 }
