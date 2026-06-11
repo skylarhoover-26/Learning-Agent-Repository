@@ -12,6 +12,7 @@ import HamburgerMenu from '@/components/hamburger-menu';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
 import ActiveProjectsPreview from '@/components/active-projects-preview';
+import ImpactAssessmentModal from '@/components/impact-assessment-modal';
 import {
   getCurrentLearner, getAggregatedSkills,
 } from '@/lib/data';
@@ -257,6 +258,7 @@ export default async function Dashboard() {
           </div>
         </Link>
       </main>
+      <ImpactAssessmentModal />
     </div>
   );
 }

@@ -1,6 +1,7 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import PageHeader from '@/components/page-header';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, ListChecks, ChevronRight } from 'lucide-react';
 import { getCurrentLearner } from '@/lib/data';
 import ProjectsManager from '@/components/projects-manager';
 
@@ -18,6 +19,14 @@ export default async function ProjectsPage() {
             Tell the AI Learning Coach about your real work projects, and every lesson will be tailored
             to help you apply AI to what you&apos;re actually doing.
           </p>
+          <Link
+            href="/my-tasks"
+            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300 text-sm font-medium hover:bg-brand-100 dark:hover:bg-slate-600 transition-all"
+          >
+            <ListChecks className="w-4 h-4" />
+            Your tasks
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
         <ProjectsManager />

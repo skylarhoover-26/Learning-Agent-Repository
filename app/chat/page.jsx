@@ -216,6 +216,9 @@ function ChatPageInner() {
           <p className="text-xs text-slate-400 mt-2 text-center">
             Press Enter to send · Shift+Enter for new line
           </p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 text-center">
+            Chats are saved to your account and may be reviewed by admins to improve training.
+          </p>
         </div>
       </footer>
     </div>
