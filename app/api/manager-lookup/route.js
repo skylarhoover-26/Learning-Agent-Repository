@@ -37,29 +37,53 @@ export async function POST(request) {
     }
     clearTimeout(timeout);
 
-    if (!res.ok) {
-      console.error('n8n webhook returned', res.status);
-      return Response.json({ error: 'Snowflake lookup failed.' }, { status: 502 });
+    const text = await res.text();
+    let parsed = null;
+    try {
+      parsed = text && text.trim() ? JSON.parse(text) : null;
+    } catch {
+      parsed = null;
     }
 
-    const text = await res.text();
+    // n8n returns 404 for two very different reasons — disambiguate them.
+    if (res.status === 404) {
+      const msg = parsed && typeof parsed.message === 'string' ? parsed.message : '';
+      if (/not registered/i.test(msg)) {
+        // The n8n workflow is inactive — a service/config issue, not a bad name.
+        console.error('manager-lookup webhook not registered (workflow inactive)');
+        return Response.json(
+          { error: 'The lookup service is currently unavailable. Please try again in a minute.' },
+          { status: 503 }
+        );
+      }
+      // Genuine "no manager by that name."
+      return Response.json(
+        { error: 'No manager found by that name. Try their full name or a different spelling.', manager: null, directReports: [] },
+        { status: 404 }
+      );
+    }
+
+    if (!res.ok) {
+      console.error('n8n webhook returned', res.status);
+      return Response.json({ error: 'Snowflake lookup failed. Please try again.' }, { status: 502 });
+    }
+
     if (!text || text.trim().length === 0) {
       return Response.json(
-        { error: 'No results found. The Snowflake query returned empty — check that the n8n workflow has valid Snowflake credentials and the correct query.' },
+        { error: 'No results found. The Snowflake query returned empty — check that the n8n workflow has valid credentials and the correct query.' },
         { status: 502 }
       );
     }
 
-    try {
-      const data = JSON.parse(text);
-      return Response.json(data);
-    } catch {
+    if (!parsed) {
       console.error('n8n returned non-JSON:', text.slice(0, 200));
       return Response.json(
         { error: 'Received an unexpected response from the lookup service.' },
         { status: 502 }
       );
     }
+
+    return Response.json(parsed);
   } catch (error) {
     console.error('Manager lookup error:', error);
     return Response.json({ error: 'Something went wrong.' }, { status: 500 });
