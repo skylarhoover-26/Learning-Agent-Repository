@@ -60,7 +60,14 @@ export default function NotificationsAdminPage() {
     try {
       const res = await fetch('/api/admin/notifications/send', { method: 'POST' });
       const data = await res.json();
-      setStatus(res.ok ? `sent:${data.sent}/${data.recipients}` : 'error');
+      if (!res.ok) {
+        setStatus('error');
+      } else if (data.failed > 0) {
+        const firstErr = (data.results || []).find((r) => !r.ok)?.error || 'unknown';
+        setStatus(`partial:${data.sent}/${data.recipients}:${firstErr}`);
+      } else {
+        setStatus(`sent:${data.sent}/${data.recipients}`);
+      }
     } catch {
       setStatus('error');
     }
@@ -148,6 +155,11 @@ export default function NotificationsAdminPage() {
             {status === 'error' && <span className="text-sm text-red-600 dark:text-red-400">Something went wrong</span>}
             {status?.startsWith('sent:') && (
               <span className="text-sm text-green-600 dark:text-green-400">Sent {status.slice(5)} DMs</span>
+            )}
+            {status?.startsWith('partial:') && (
+              <span className="text-sm text-amber-600 dark:text-amber-400">
+                Sent {status.split(':')[1]} DMs — Slack error: <code className="font-mono">{status.split(':').slice(2).join(':')}</code>
+              </span>
             )}
           </div>
         </div>
