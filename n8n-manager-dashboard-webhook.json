@@ -1,30 +1,19 @@
 {
-  "name": "Snowflake → Manager Dashboard",
+  "name": "Manager Dashboard Webhook (Snowflake)",
   "nodes": [
     {
-      "parameters": {},
-      "id": "trigger-manual",
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [240, 300]
-    },
-    {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 6 * * *"
-            }
-          ]
-        }
+        "httpMethod": "POST",
+        "path": "manager-dashboard",
+        "responseMode": "responseNode",
+        "options": {}
       },
-      "id": "trigger-schedule",
-      "name": "Daily 6am",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [240, 500]
+      "id": "webhook-dashboard",
+      "name": "Webhook — Manager Dashboard",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [368, 400],
+      "webhookId": "manager-dashboard"
     },
     {
       "parameters": {
@@ -35,7 +24,7 @@
       "name": "Snowflake - Employees",
       "type": "n8n-nodes-base.snowflake",
       "typeVersion": 1,
-      "position": [520, 400],
+      "position": [592, 400],
       "credentials": {
         "snowflake": {
           "id": "TEyBS3f5EJmOlxun",
@@ -52,47 +41,33 @@
       "name": "Aggregate by Dept + Manager",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [780, 400]
+      "position": [816, 400]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://learning-agent-pearl.vercel.app/api/manager-data",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}"
-      },
-      "id": "http-push",
-      "name": "Push to Dashboard API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1040, 400],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "",
-          "name": "Manager Data Secret (x-api-secret)"
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
         }
-      }
+      },
+      "id": "respond-dashboard",
+      "name": "Respond — Dashboard Data",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1040, 400]
     }
   ],
   "connections": {
-    "Manual Trigger": {
-      "main": [
-        [{ "node": "Snowflake - Employees", "type": "main", "index": 0 }]
-      ]
-    },
-    "Daily 6am": {
+    "Webhook — Manager Dashboard": {
       "main": [
         [{ "node": "Snowflake - Employees", "type": "main", "index": 0 }]
       ]
@@ -104,7 +79,7 @@
     },
     "Aggregate by Dept + Manager": {
       "main": [
-        [{ "node": "Push to Dashboard API", "type": "main", "index": 0 }]
+        [{ "node": "Respond — Dashboard Data", "type": "main", "index": 0 }]
       ]
     }
   },
@@ -113,6 +88,7 @@
   },
   "tags": [
     { "name": "learning-platform" },
-    { "name": "snowflake" }
+    { "name": "snowflake" },
+    { "name": "manager-dashboard" }
   ]
 }
