@@ -34,16 +34,17 @@ function DiscoverContent() {
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [opportunities, setOpportunities] = useState([]);
-  const autoRanRef = useRef(false);
+  const [cameFromTasks, setCameFromTasks] = useState(false);
+  const prefilledRef = useRef(false);
 
-  // Prefill + auto-run when arriving from the "Find AI for your work" hero
-  // (which passes the typed work description as ?q=).
+  // Prefill (but DON'T auto-run) when arriving from the "Find AI for your work"
+  // hero, so the user can review/update their saved tasks before searching.
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q && !autoRanRef.current) {
-      autoRanRef.current = true;
+    if (q && !prefilledRef.current) {
+      prefilledRef.current = true;
       setWorkDescription(q);
-      findOpportunities(q);
+      setCameFromTasks(true);
     }
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -127,6 +128,15 @@ function DiscoverContent() {
                   )}
                 </button>
               </div>
+              {cameFromTasks && (
+                <div className="mt-4 flex items-start gap-2 rounded-xl bg-brand-50 dark:bg-slate-700/50 px-3 py-2.5 text-xs text-slate-600 dark:text-slate-300">
+                  <Lightbulb className="w-4 h-4 text-brand shrink-0 mt-0.5" />
+                  <span>
+                    We pulled this from your saved tasks — update it if anything&apos;s changed, then hit <strong>Find AI for me</strong>.{' '}
+                    <Link href="/my-tasks" className="text-brand font-medium hover:underline">Update your tasks</Link> to keep future trainings tailored.
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
