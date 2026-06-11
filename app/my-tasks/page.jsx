@@ -1,19 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import PageHeader from '@/components/page-header';
 import {
-  Briefcase, Check, Plus, Save, Loader2,
+  Briefcase, Check, Plus, Save, Loader2, ArrowLeft,
 } from 'lucide-react';
 import { getTaskList } from '@/lib/curriculum-data';
 
 // Soft cap — generous enough that no one realistically hits it.
 const MAX_TASKS = 20;
 
-export default function MyTasksPage() {
+function MyTasksContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromDiscover = searchParams.get('from') === 'discover';
   const { profile, updateProfile } = useProfile();
   const [topTasks, setTopTasks] = useState([]);
   const [customTask, setCustomTask] = useState('');
@@ -58,6 +61,13 @@ export default function MyTasksPage() {
     try {
       await updateProfile({ top_tasks: topTasks });
       setSaved(true);
+      // If they came from "Find AI for your work", send them back with the
+      // refreshed tasks prefilled.
+      if (fromDiscover) {
+        const dept = profile?.department || 'my team';
+        const prompt = `I work in ${dept}. My main tasks are: ${topTasks.join(', ')}.`;
+        router.push(`/discover?q=${encodeURIComponent(prompt)}`);
+      }
     } catch (error) {
       console.error('Failed to save tasks:', error);
     } finally {
@@ -75,6 +85,15 @@ export default function MyTasksPage() {
       <PageHeader icon={Briefcase} title="My Tasks" subtitle="What you do day-to-day" />
 
       <main className="max-w-2xl mx-auto px-6 py-10">
+        {fromDiscover && (
+          <Link
+            href="/discover"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand mb-4 hover:underline"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Find AI for your work
+          </Link>
+        )}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <p className="text-sm text-slate-600 dark:text-slate-400">
             These are the tasks AI will help you with. Your lessons, quick wins, and
@@ -186,11 +205,19 @@ export default function MyTasksPage() {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              Save Tasks
+              {fromDiscover ? 'Save & continue' : 'Save Tasks'}
             </button>
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function MyTasksPage() {
+  return (
+    <Suspense fallback={<div className="max-w-2xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
+      <MyTasksContent />
+    </Suspense>
   );
 }

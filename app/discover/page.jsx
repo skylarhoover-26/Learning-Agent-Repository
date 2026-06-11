@@ -133,7 +133,7 @@ function DiscoverContent() {
                   <Lightbulb className="w-4 h-4 text-brand shrink-0 mt-0.5" />
                   <span>
                     We pulled this from your saved tasks — update it if anything&apos;s changed, then hit <strong>Find AI for me</strong>.{' '}
-                    <Link href="/my-tasks" className="text-brand font-medium hover:underline">Update your tasks</Link> to keep future trainings tailored.
+                    <Link href="/my-tasks?from=discover" className="text-brand font-medium hover:underline">Update your tasks</Link> to keep future trainings tailored.
                   </span>
                 </div>
               )}
