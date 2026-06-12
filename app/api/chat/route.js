@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateChatReply } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
+import { detectLessonTopic } from '@/lib/lesson-intent';
 
 export async function POST(request) {
   try {
@@ -32,7 +33,11 @@ export async function POST(request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ reply });
+    // Server-side lesson-intent detection: if the learner asked a
+    // what/how/explain question, surface the topic so chat can offer a lesson.
+    const lessonTopic = detectLessonTopic(userMessage);
+
+    return NextResponse.json({ reply, lessonTopic });
   } catch (error) {
     console.error('POST /api/chat error:', error);
     return NextResponse.json(

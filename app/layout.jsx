@@ -5,6 +5,7 @@ import { SessionWrapper } from '@/components/session-wrapper';
 import { ProfileProvider } from '@/components/profile-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
 import PageTracker from '@/components/page-tracker';
+import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -34,7 +35,12 @@ export default function RootLayout({ children }) {
         <SessionWrapper>
           <ProfileProvider>
             <ProgressionProvider>
-              {children}
+              <SidebarProvider>
+                <SideNav />
+                <SidebarShell>
+                  {children}
+                </SidebarShell>
+              </SidebarProvider>
             </ProgressionProvider>
           </ProfileProvider>
         </SessionWrapper>
