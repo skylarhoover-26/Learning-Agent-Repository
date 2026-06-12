@@ -24,7 +24,7 @@ export function ProfileProvider({ children }) {
     if (status === 'loading') return;
 
     try {
-      const res = await fetch('/api/user-data?type=profile');
+      const res = await fetch('/api/user-data?type=profile', { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         let profileData = json.data;
