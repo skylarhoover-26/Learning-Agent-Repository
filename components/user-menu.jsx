@@ -59,14 +59,28 @@ export default function UserMenu() {
             )}
           </div>
 
-          <Link
-            href="/profile"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          >
-            <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-            Profile
-          </Link>
+          {/* Items in alphabetical order. */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Settings className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              Admin Dashboard
+            </Link>
+          )}
+
+          {isAdmin && (
+            <Link
+              href="/curriculum-pipeline"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              Content Updates
+            </Link>
+          )}
 
           <Link
             href="/my-role"
@@ -88,17 +102,6 @@ export default function UserMenu() {
 
           {isAdmin && (
             <Link
-              href="/curriculum-pipeline"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              Content Updates
-            </Link>
-          )}
-
-          {isAdmin && (
-            <Link
               href="/admin/notifications"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -108,16 +111,14 @@ export default function UserMenu() {
             </Link>
           )}
 
-          {isAdmin && (
-            <Link
-              href="/admin"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <Settings className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              Admin Dashboard
-            </Link>
-          )}
+          <Link
+            href="/profile"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            Profile
+          </Link>
 
           <div className="border-t border-slate-100 dark:border-slate-700">
             <VoicePicker />
