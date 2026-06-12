@@ -291,13 +291,6 @@ function LessonContent() {
     }
   }, [initialTopic]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The model suggests the next step via a "next"/"try_exercise" button label;
-  // we surface it as a chat-bar prefill instead of a button.
-  function nextActionLabel(slide) {
-    const b = (slide?.buttons || []).find((x) => x.action === 'next' || x.action === 'try_exercise');
-    return b ? b.label : null;
-  }
-
   // There are no Continue buttons — the learner moves through the lesson and
   // engages entirely through the chat bar. Prefill it so they can hit enter to
   // advance, or type their own question/attempt. At the first practice point we
@@ -317,7 +310,9 @@ function LessonContent() {
       practicePrefilledRef.current = true;
       setUserInput(SCENARIO_PROMPT);
     } else {
-      setUserInput(nextActionLabel(slide) || '');
+      // Leave the input empty — the suggested next-step chips below guide the
+      // learner instead of a bland prefilled "Continue".
+      setUserInput('');
     }
   }
 
@@ -746,9 +741,31 @@ function LessonContent() {
             <MessageSquare className="w-4 h-4 text-brand shrink-0" />
             {userInput === SCENARIO_PROMPT
               ? 'Press enter or tap the arrow → to try a scenario based on your work — or type your own.'
-              : 'Press enter or tap the arrow → to send. Ask a question or share your response anytime.'}
+              : 'Tap a suggestion to keep going, or type your own question or response.'}
           </p>
-          <div className="mb-2">
+          {/* Suggested next-step chips from the current slide + a Show me how helper */}
+          <div className="mb-2 flex flex-wrap gap-2">
+            {(currentSlide?.buttons || [])
+              .filter((b) => b.action !== 'complete' && b.label)
+              .map((b, i) => {
+                const isPrimary = b.action === 'next';
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => !isLoading && continueLesson(b.label, b.label)}
+                    disabled={isLoading}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${
+                      isPrimary
+                        ? 'bg-brand text-white hover:bg-brand-600 border border-brand'
+                        : 'border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 bg-brand-50 dark:bg-slate-700 hover:bg-brand-100 dark:hover:bg-slate-600'
+                    }`}
+                  >
+                    {b.label}
+                    {isPrimary && <ChevronRight className="w-3.5 h-3.5" />}
+                  </button>
+                );
+              })}
             <button
               type="button"
               onClick={() => !isLoading && continueLesson('Show me how to do this, step by step.', 'Show me how')}
