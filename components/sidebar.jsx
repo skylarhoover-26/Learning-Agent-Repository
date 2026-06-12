@@ -7,12 +7,31 @@ import {
   CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
-  Rocket, RefreshCw, ExternalLink, Store,
+  Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
 } from 'lucide-react';
+
+// Section header styled like the dashboard's "Find something to learn":
+// an icon, a bold label, and a thin divider line.
+function SectionHeader({ icon: Icon, title }) {
+  return (
+    <div className="relative px-4 py-2 mt-1">
+      <div className="absolute inset-0 px-4 flex items-center" aria-hidden="true">
+        <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+      </div>
+      <div className="relative flex justify-start">
+        <span className="bg-white dark:bg-slate-800 pr-3 flex items-center gap-2">
+          <Icon className="w-4 h-4 text-brand" />
+          <span className="text-sm font-semibold text-ink dark:text-slate-200">{title}</span>
+        </span>
+      </div>
+    </div>
+  );
+}
 
 const NAV_SECTIONS = [
   {
     title: 'Learn',
+    icon: BookOpen,
     items: [
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
@@ -28,6 +47,7 @@ const NAV_SECTIONS = [
   },
   {
     title: 'Your Progress',
+    icon: TrendingUp,
     items: [
       { href: '/goals', icon: Target, label: 'Goals', desc: 'Set and track your learning goals' },
       { href: '/quests', icon: Rocket, label: 'Quests', desc: 'Build something real, start to finish' },
@@ -43,6 +63,7 @@ const NAV_SECTIONS = [
   },
   {
     title: 'Account',
+    icon: User,
     items: [
       { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
       { href: '/projects', icon: FolderKanban, label: 'Projects', desc: 'Add work projects to tailor lessons' },
@@ -162,9 +183,7 @@ export function SideNav() {
 
       {NAV_SECTIONS.map(section => (
         <div key={section.title} className="py-1">
-          <p className="px-4 pt-2 pb-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            {section.title}
-          </p>
+          <SectionHeader icon={section.icon} title={section.title} />
           {section.items.map(item => (
             <Link
               key={item.href}
@@ -182,14 +201,9 @@ export function SideNav() {
       ))}
 
       {/* HCP Skill Shop — external courses */}
-      <div className="py-1 border-t border-slate-100 dark:border-slate-700 mt-1 mb-2">
-        <div className="px-4 pt-2 pb-1 flex items-center gap-2">
-          <Store className="w-3.5 h-3.5 text-brand" />
-          <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            HCP Skill Shop
-          </p>
-        </div>
-        <p className="px-4 pb-2 text-xs text-slate-500 dark:text-slate-400">
+      <div className="py-1 mb-2">
+        <SectionHeader icon={Store} title="HCP Skill Shop" />
+        <p className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
           Want to learn more about AI? Explore the self-guided journey:
         </p>
         {SKILL_SHOP_LINKS.map(link => (
