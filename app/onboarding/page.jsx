@@ -22,7 +22,7 @@ const MAX_TASKS = 20;
 
 export default function OnboardingPage() {
   const { data: session } = useSession();
-  const { refreshProfile } = useProfile();
+  const { refreshProfile, profile: existingProfile } = useProfile();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState('forward');
 
@@ -107,13 +107,15 @@ export default function OnboardingPage() {
 
   async function handleFinish(selectedGoal) {
     const email = session?.user?.email?.toLowerCase() || '';
-    const name = session?.user?.name || '';
+    // Keep an existing name if one is already set (e.g. demo mode, where the
+    // session has no name) instead of blanking it on re-onboarding.
+    const name = session?.user?.name || existingProfile?.display_name || '';
     const nameParts = name.split(' ');
     const profile = {
       id: email,
       display_name: name,
-      first_name: nameParts[0] || '',
-      last_name: nameParts.slice(1).join(' ') || '',
+      first_name: nameParts[0] || existingProfile?.first_name || '',
+      last_name: nameParts.slice(1).join(' ') || existingProfile?.last_name || '',
       email,
       department,
       sub_team: subTeam || null,
