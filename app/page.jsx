@@ -2,7 +2,7 @@ import Link from 'next/link';
 import {
   Sparkles, TrendingUp,
   MessageCircle, BookOpen, Library, Gamepad2, Trophy,
-  ChevronRight, BarChart2, GitBranch,
+  ChevronRight, BarChart2, GitBranch, Compass,
 } from 'lucide-react';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
@@ -153,17 +153,25 @@ export default async function Dashboard() {
         {/* "Find AI for your work" hero */}
         <FindAiHero />
 
-        {/* Primary nav — 5 buttons */}
-        <div>
-          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
-            Other ways to learn
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" />
-            <QuickAction href="/lesson" icon={BookOpen} label="Quick Lesson" />
-            <QuickAction href="/library" icon={Library} label="Library" />
-            <QuickAction href="/games" icon={Gamepad2} label="Games" />
+        {/* Other ways to learn section header — matches "Find something to learn" */}
+        <div className="relative py-2">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
           </div>
+          <div className="relative flex justify-start">
+            <span className="bg-bg-warm dark:bg-slate-900 pr-4 flex items-center gap-2">
+              <Compass className="w-4 h-4 text-brand" />
+              <span className="text-sm font-semibold text-ink dark:text-slate-200">Other ways to learn</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Primary nav — 4 buttons */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" />
+          <QuickAction href="/lesson" icon={BookOpen} label="Quick Lesson" />
+          <QuickAction href="/library" icon={Library} label="Library" />
+          <QuickAction href="/games" icon={Gamepad2} label="Games" />
         </div>
 
         {/* Today's Pick */}
