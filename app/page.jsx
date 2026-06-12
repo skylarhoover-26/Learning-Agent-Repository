@@ -8,7 +8,7 @@ import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
 import LiveSourcesFeed from '@/components/live-sources-feed';
 import UserMenu from '@/components/user-menu';
-import HamburgerMenu from '@/components/hamburger-menu';
+import { SidebarProvider, SideNav, SidebarToggle, SidebarShell } from '@/components/sidebar';
 import WelcomeGreeting from '@/components/welcome-greeting';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
@@ -99,12 +99,15 @@ export default async function Dashboard() {
   const greetingPrefix = getGreetingPrefix();
 
   return (
+    <SidebarProvider>
+      <SideNav />
+      <SidebarShell>
     <div className="min-h-screen">
       {/* Header */}
       <header className="bg-ink sticky top-0 z-50 text-white">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <HamburgerMenu />
+            <SidebarToggle />
             <div className="w-9 h-9 rounded-md bg-brand flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
             </div>
@@ -259,6 +262,8 @@ export default async function Dashboard() {
       </main>
       <ImpactAssessmentModal />
     </div>
+      </SidebarShell>
+    </SidebarProvider>
   );
 }
 
