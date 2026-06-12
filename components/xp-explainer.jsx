@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { HelpCircle, X, BookOpen, Trophy, MessageCircle, Flame } from 'lucide-react';
+import { HelpCircle, X, BookOpen, Trophy, MessageCircle, Flame, Gamepad2, RefreshCw } from 'lucide-react';
 
-// Listed alphabetically by label.
+// Listed alphabetically by label. Amounts match lib/progression.js + the XP
+// awarded in chat, games, and review.
 const XP_SOURCES = [
-  { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+25 XP' },
+  { icon: RefreshCw, label: 'Answer a review card', amount: '+5 XP' },
+  { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+5 XP' },
   { icon: BookOpen, label: 'Complete a lesson', amount: '+50 XP' },
   { icon: Trophy, label: 'Finish a project milestone', amount: '+100 XP' },
   { icon: Flame, label: 'Keep your streak going', amount: '+10 XP/day' },
+  { icon: Gamepad2, label: 'Play a learning game', amount: '+25 XP' },
 ];
 
 export default function XpExplainer() {
