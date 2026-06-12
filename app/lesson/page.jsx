@@ -58,14 +58,15 @@ function LessonContent() {
     const f = searchParams.get('format');
     return ['quick_tip', 'standard', 'deep_dive'].includes(f) ? f : null;
   })();
+  const initialMode = searchParams.get('mode') === 'watch' ? 'watch' : 'read';
   const [view, setView] = useState(initialTopic ? 'lesson' : 'picker');
   const [topic, setTopic] = useState(initialTopic || '');
   const [customTopic, setCustomTopic] = useState('');
-  const [format, setFormat] = useState('standard');
+  const [format, setFormat] = useState(initialFormat || 'standard');
 
   // Learning mode: 'read' = interactive chat-driven lesson; 'watch' = narrated
   // video. In watch mode, selecting a topic opens the VideoLessonPlayer instead.
-  const [learnMode, setLearnMode] = useState('read');
+  const [learnMode, setLearnMode] = useState(initialMode);
   const [videoTopic, setVideoTopic] = useState(null);
 
   // Lesson state
@@ -280,7 +281,13 @@ function LessonContent() {
   useEffect(() => {
     if (initialTopic && !hasStarted.current && slides.length === 0) {
       hasStarted.current = true;
-      fetchStartLesson(initialTopic, initialFormat || 'standard');
+      // Launched in watch mode → open the narrated video; otherwise start the
+      // interactive read lesson.
+      if (initialMode === 'watch') {
+        setVideoTopic(initialTopic);
+      } else {
+        fetchStartLesson(initialTopic, initialFormat || 'standard');
+      }
     }
   }, [initialTopic]); // eslint-disable-line react-hooks/exhaustive-deps
 
