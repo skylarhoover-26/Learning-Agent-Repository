@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
@@ -22,7 +21,6 @@ const TOTAL_STEPS = 4;
 const MAX_TASKS = 20;
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const { refreshProfile } = useProfile();
   const [step, setStep] = useState(1);
@@ -135,7 +133,9 @@ export default function OnboardingPage() {
     } catch (error) {
       console.error('Failed to save profile:', error);
     }
-    router.push('/getting-started');
+    // Hard navigate so both the server render and the client profile context
+    // re-read the freshly saved profile (tasks, tier, goal) across the board.
+    window.location.href = '/getting-started';
   }
 
   const progressPercent = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
