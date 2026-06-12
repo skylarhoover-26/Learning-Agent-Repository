@@ -71,22 +71,12 @@ const SKILL_SHOP_LINKS = [
 ];
 
 const SidebarContext = createContext(null);
-const STORAGE_KEY = 'sidebar_open';
 
 export function SidebarProvider({ children }) {
-  // Open by default; remembers the learner's choice for the session.
+  // Always open by default on load. It stays open as you navigate within a
+  // session and you can close it anytime, but a fresh load/login starts open
+  // (we intentionally do NOT persist a closed state across sessions).
   const [open, setOpen] = useState(true);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved === 'false') setOpen(false);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, String(open)); } catch {}
-  }, [open]);
 
   useEffect(() => {
     function handleEscape(e) {
