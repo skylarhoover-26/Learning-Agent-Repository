@@ -7,7 +7,7 @@ import {
   CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
-  Rocket, RefreshCw, ExternalLink, Store, TrendingUp, UserCog, Briefcase,
+  Rocket, RefreshCw, ExternalLink, Store, TrendingUp, UserCog, Briefcase, Home,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 
@@ -31,48 +31,49 @@ function SectionHeader({ icon: Icon, title }) {
 
 const NAV_SECTIONS = [
   {
-    title: 'Learn',
-    icon: BookOpen,
-    items: [
-      { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson' },
-      { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
-      { href: '/modules', icon: GraduationCap, label: 'Modules', desc: 'Structured, multi-lesson learning paths' },
-      { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Hands-on exercises with instant feedback' },
-      { href: '/library', icon: Library, label: 'Library', desc: 'Browse saved AI resources and references' },
-      { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day' },
-      { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work' },
-      { href: '/quick-win', icon: Lightbulb, label: 'Quick Win', desc: 'A fast, practical AI task you can use now' },
-      { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
-      { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
-    ],
-  },
-  {
     title: 'Account',
     icon: User,
     themeToggle: true,
     items: [
-      { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
+      { href: '/', icon: Home, label: 'Dashboard', desc: 'Your learning home and overview' },
+      { href: '/manager', icon: BarChart3, label: 'Manager', desc: 'Team learning dashboard for managers' },
       { href: '/my-role', icon: UserCog, label: 'My Role', desc: 'Change your department, team, or tasks' },
       { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', desc: 'Manage your day-to-day tasks' },
+      { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
       { href: '/projects', icon: FolderKanban, label: 'Projects', desc: 'Add work projects to tailor lessons' },
-      { href: '/manager', icon: BarChart3, label: 'Manager', desc: 'Team learning dashboard for managers' },
       { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
+    ],
+  },
+  {
+    title: 'Learn',
+    icon: BookOpen,
+    items: [
+      { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day' },
+      { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work' },
+      { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
+      { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson' },
+      { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
+      { href: '/library', icon: Library, label: 'Library', desc: 'Browse saved AI resources and references' },
+      { href: '/modules', icon: GraduationCap, label: 'Modules', desc: 'Structured, multi-lesson learning paths' },
+      { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Hands-on exercises with instant feedback' },
+      { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
+      { href: '/quick-win', icon: Lightbulb, label: 'Quick Win', desc: 'A fast, practical AI task you can use now' },
     ],
   },
   {
     title: 'Your Progress',
     icon: TrendingUp,
     items: [
-      { href: '/goals', icon: Target, label: 'Goals', desc: 'Set and track your learning goals' },
-      { href: '/quests', icon: Rocket, label: 'Quests', desc: 'Build something real, start to finish' },
       { href: '/achievements', icon: Award, label: 'Achievements', desc: 'Badges and milestones you have earned' },
-      { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', desc: 'See how you rank across your team' },
-      { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap', desc: 'Where you are strong and where to grow' },
-      { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph', desc: 'A visual map of your AI skills' },
       { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact', desc: 'Measure how AI is helping your work' },
-      { href: '/review', icon: RefreshCw, label: 'Review', desc: 'Revisit key concepts so they stick' },
-      { href: '/checkin', icon: CalendarCheck, label: 'Check-in', desc: 'A quick pulse on your progress' },
       { href: '/calibration', icon: Crosshair, label: 'Calibrate', desc: 'Tune lessons to your current level' },
+      { href: '/checkin', icon: CalendarCheck, label: 'Check-in', desc: 'A quick pulse on your progress' },
+      { href: '/goals', icon: Target, label: 'Goals', desc: 'Set and track your learning goals' },
+      { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap', desc: 'Where you are strong and where to grow' },
+      { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', desc: 'See how you rank across your team' },
+      { href: '/quests', icon: Rocket, label: 'Quests', desc: 'Build something real, start to finish' },
+      { href: '/review', icon: RefreshCw, label: 'Review', desc: 'Revisit key concepts so they stick' },
+      { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph', desc: 'A visual map of your AI skills' },
     ],
   },
 ];
