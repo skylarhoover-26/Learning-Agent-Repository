@@ -7,50 +7,75 @@ import {
   CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
-  Rocket, RefreshCw,
+  Rocket, RefreshCw, ExternalLink, Store,
 } from 'lucide-react';
 
-// Full feature list, alphabetical by label.
-const NAV_ITEMS = [
-  { href: '/achievements', icon: Award, label: 'Achievements' },
-  { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact' },
-  { href: '/calibration', icon: Crosshair, label: 'Calibrate' },
-  { href: '/chat', icon: MessageCircle, label: 'Chat' },
-  { href: '/checkin', icon: CalendarCheck, label: 'Check-in' },
-  { href: '/daily', icon: CalendarDays, label: 'Daily' },
-  { href: '/discover', icon: Compass, label: 'Discover' },
-  { href: '/games', icon: Gamepad2, label: 'Games' },
-  { href: '/goals', icon: Target, label: 'Goals' },
-  { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap' },
-  { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-  { href: '/lesson', icon: BookOpen, label: 'Lesson' },
-  { href: '/library', icon: Library, label: 'Library' },
-  { href: '/manager', icon: BarChart3, label: 'Manager' },
-  { href: '/modules', icon: GraduationCap, label: 'Modules' },
-  { href: '/structured-lesson', icon: PenTool, label: 'Practice' },
-  { href: '/profile', icon: User, label: 'Profile' },
-  { href: '/projects', icon: FolderKanban, label: 'Projects' },
-  { href: '/prompts', icon: Terminal, label: 'Prompts' },
-  { href: '/quests', icon: Rocket, label: 'Quests' },
-  { href: '/quick-win', icon: Lightbulb, label: 'Quick Win' },
-  { href: '/review', icon: RefreshCw, label: 'Review' },
-  { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph' },
-  { href: '/tour', icon: Play, label: 'Tour' },
+// Grouped into sections so the menu is easier to scan than one long list.
+const NAV_SECTIONS = [
+  {
+    title: 'Learn',
+    items: [
+      { href: '/chat', icon: MessageCircle, label: 'Chat' },
+      { href: '/lesson', icon: BookOpen, label: 'Lesson' },
+      { href: '/modules', icon: GraduationCap, label: 'Modules' },
+      { href: '/structured-lesson', icon: PenTool, label: 'Practice' },
+      { href: '/library', icon: Library, label: 'Library' },
+      { href: '/daily', icon: CalendarDays, label: 'Daily' },
+      { href: '/discover', icon: Compass, label: 'Discover' },
+      { href: '/quick-win', icon: Lightbulb, label: 'Quick Win' },
+      { href: '/prompts', icon: Terminal, label: 'Prompts' },
+      { href: '/games', icon: Gamepad2, label: 'Games' },
+    ],
+  },
+  {
+    title: 'Your Progress',
+    items: [
+      { href: '/goals', icon: Target, label: 'Goals' },
+      { href: '/quests', icon: Rocket, label: 'Quests' },
+      { href: '/achievements', icon: Award, label: 'Achievements' },
+      { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+      { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap' },
+      { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph' },
+      { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact' },
+      { href: '/review', icon: RefreshCw, label: 'Review' },
+      { href: '/checkin', icon: CalendarCheck, label: 'Check-in' },
+      { href: '/calibration', icon: Crosshair, label: 'Calibrate' },
+    ],
+  },
+  {
+    title: 'Account',
+    items: [
+      { href: '/profile', icon: User, label: 'Profile' },
+      { href: '/projects', icon: FolderKanban, label: 'Projects' },
+      { href: '/manager', icon: BarChart3, label: 'Manager' },
+      { href: '/tour', icon: Play, label: 'Tour' },
+    ],
+  },
+];
+
+// External HCP Skill Shop courses — the AI Self-Guided Journey, by level.
+const SKILL_SHOP_LINKS = [
+  {
+    href: 'https://housecallpro.docebosaas.com/pages/214/ai-self-guided-journey-beginner',
+    label: 'Level 1 — Beginner',
+    desc: 'What it is, how it works & prompting basics',
+  },
+  {
+    href: 'https://housecallpro.docebosaas.com/pages/217/ai-self-guided-journey-level-2',
+    label: 'Level 2 — Intermediate',
+    desc: 'AI tool settings, custom agents & data visualizations',
+  },
+  {
+    href: 'https://housecallpro.docebosaas.com/pages/218/ai-self-guided-journey-level-3',
+    label: 'Level 3 — Advanced',
+    desc: 'Workflow optimization, automation & data analysis',
+  },
 ];
 
 export default function HamburgerMenu() {
-  const [open, setOpen] = useState(false);
+  // Open by default; the learner clicks the X to close it.
+  const [open, setOpen] = useState(true);
   const menuRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     function handleEscape(e) {
@@ -72,7 +97,7 @@ export default function HamburgerMenu() {
 
       {open && (
         <div className="absolute left-0 top-full mt-2 w-64 max-h-[70vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-2 z-50">
-          <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 flex items-center justify-between">
+          <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 flex items-center justify-between z-10">
             <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Menu</p>
             <button
               onClick={() => setOpen(false)}
@@ -82,17 +107,53 @@ export default function HamburgerMenu() {
               <X className="w-4 h-4" />
             </button>
           </div>
-          {NAV_ITEMS.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <item.icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              {item.label}
-            </Link>
+
+          {NAV_SECTIONS.map(section => (
+            <div key={section.title} className="py-1">
+              <p className="px-4 pt-2 pb-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                {section.title}
+              </p>
+              {section.items.map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <item.icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           ))}
+
+          {/* HCP Skill Shop — external courses */}
+          <div className="py-1 border-t border-slate-100 dark:border-slate-700 mt-1">
+            <div className="px-4 pt-2 pb-1 flex items-center gap-2">
+              <Store className="w-3.5 h-3.5 text-brand" />
+              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                HCP Skill Shop
+              </p>
+            </div>
+            <p className="px-4 pb-2 text-xs text-slate-500 dark:text-slate-400">
+              Want to learn more about AI? Explore the self-guided journey:
+            </p>
+            {SKILL_SHOP_LINKS.map(link => (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-3 px-4 py-2 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4 mt-0.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                <span>
+                  <span className="block font-medium">{link.label}</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">{link.desc}</span>
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>
