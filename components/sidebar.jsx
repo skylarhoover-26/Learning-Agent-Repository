@@ -7,7 +7,7 @@ import {
   CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
-  Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
+  Rocket, RefreshCw, ExternalLink, Store, TrendingUp, UserCog, Briefcase,
 } from 'lucide-react';
 
 // Section header styled like the dashboard's "Find something to learn":
@@ -66,6 +66,8 @@ const NAV_SECTIONS = [
     icon: User,
     items: [
       { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
+      { href: '/my-role', icon: UserCog, label: 'My Role', desc: 'Change your department, team, or tasks' },
+      { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', desc: 'Manage your day-to-day tasks' },
       { href: '/projects', icon: FolderKanban, label: 'Projects', desc: 'Add work projects to tailor lessons' },
       { href: '/manager', icon: BarChart3, label: 'Manager', desc: 'Team learning dashboard for managers' },
       { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
