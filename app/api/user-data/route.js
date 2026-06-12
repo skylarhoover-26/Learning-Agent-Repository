@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getUserData, saveUserData } from '@/lib/blob-store';
+import { getUserData, saveUserData, deleteUserData } from '@/lib/blob-store';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 
 export async function GET(request) {
@@ -40,5 +40,26 @@ export async function POST(request) {
   } catch (error) {
     console.error('POST /api/user-data error:', error);
     return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user?.email) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const dataType = searchParams.get('type');
+    if (!dataType) {
+      return NextResponse.json({ error: 'Missing type parameter' }, { status: 400 });
+    }
+
+    await deleteUserData(user.email, dataType);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('DELETE /api/user-data error:', error);
+    return NextResponse.json({ error: 'Failed to delete data' }, { status: 500 });
   }
 }

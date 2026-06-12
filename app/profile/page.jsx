@@ -70,8 +70,27 @@ export default function ProfilePage() {
     }
   }
 
-  function handleReset() {
-    router.push('/onboarding');
+  async function handleReset() {
+    // 1. Delete the server-side profile so the onboarding gate reopens.
+    try {
+      await fetch('/api/user-data?type=profile', { method: 'DELETE' });
+    } catch (error) {
+      console.error('Failed to delete profile:', error);
+    }
+    // 2. Clear all learning state held in this browser (XP, levels, badges,
+    //    quests, lessons, goals, calibration, tutorial flag, cached profile).
+    try {
+      const prefixes = [
+        'lp_', 'learner_', 'ai_impact_', 'calibration_', 'tutorial_completed',
+      ];
+      Object.keys(localStorage)
+        .filter((k) => prefixes.some((p) => k === p || k.startsWith(p)))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch (error) {
+      console.error('Failed to clear local state:', error);
+    }
+    // 3. Send the user back through onboarding from a clean slate.
+    window.location.href = '/onboarding';
   }
 
   function handleStartRoleEdit() {
