@@ -9,6 +9,7 @@ import LiveStreakCard from '@/components/live-streak-card';
 import LiveSourcesFeed from '@/components/live-sources-feed';
 import UserMenu from '@/components/user-menu';
 import HamburgerMenu from '@/components/hamburger-menu';
+import WelcomeGreeting from '@/components/welcome-greeting';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
 import ActiveProjectsPreview from '@/components/active-projects-preview';
@@ -124,9 +125,7 @@ export default async function Dashboard() {
 
         {/* Welcome text */}
         <div>
-          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight">
-            Welcome back, {displayName}!
-          </h2>
+          <WelcomeGreeting fallbackName={displayName} />
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             Your AI Learning Coach helps you discover and apply AI in your daily work.
             <span className={`inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-md text-xs font-medium ${tier.color}`}>
