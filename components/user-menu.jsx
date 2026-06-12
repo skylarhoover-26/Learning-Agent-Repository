@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { useProfile } from '@/components/profile-provider';
 import VoicePicker from '@/components/voice-picker';
-import { Settings, LogOut, FileText, ChevronDown, Briefcase, UserCog, Bell } from 'lucide-react';
+import { Settings, LogOut, FileText, ChevronDown, Briefcase, UserCog, Bell, User } from 'lucide-react';
 
 export default function UserMenu() {
   const { profile } = useProfile();
@@ -58,6 +58,15 @@ export default function UserMenu() {
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{profile.email}</p>
             )}
           </div>
+
+          <Link
+            href="/profile"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            Profile
+          </Link>
 
           <Link
             href="/my-role"
