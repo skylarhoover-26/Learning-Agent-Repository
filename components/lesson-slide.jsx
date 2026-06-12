@@ -236,6 +236,7 @@ function renderInline(text) {
 
 const PHASE_LABELS = {
   intro: 'Introduction',
+  concepts: 'Key Concepts',
   setup: 'Setup',
   steps: 'Walkthrough',
   verify: 'Verify',
