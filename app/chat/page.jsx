@@ -9,7 +9,6 @@ import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
 import { MessageCircle, Send, Loader2, Trash2 } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
-import { detectLessonTopic } from '@/lib/lesson-intent';
 import ChatLessonOffer from '@/components/chat-lesson-offer';
 
 const DEFAULT_SUGGESTIONS = [
@@ -93,9 +92,9 @@ function ChatPageInner() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Something went wrong');
-      // If the learner asked "what is / how does / explain X", offer a lesson.
-      const lessonTopic = detectLessonTopic(text);
-      const updatedMessages = [...newMessages, { role: 'assistant', content: data.reply, lessonTopic }];
+      // lessonTopic is detected server-side (see /api/chat) when the learner
+      // asks a what/how/explain question, so chat can offer a lesson.
+      const updatedMessages = [...newMessages, { role: 'assistant', content: data.reply, lessonTopic: data.lessonTopic }];
       setMessages(updatedMessages);
       saveChatHistory(updatedMessages);
       if (profile) {
