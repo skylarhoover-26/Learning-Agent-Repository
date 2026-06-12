@@ -14,40 +14,40 @@ const NAV_SECTIONS = [
   {
     title: 'Learn',
     items: [
-      { href: '/chat', icon: MessageCircle, label: 'Just Chat' },
-      { href: '/lesson', icon: BookOpen, label: 'Lesson' },
-      { href: '/modules', icon: GraduationCap, label: 'Modules' },
-      { href: '/structured-lesson', icon: PenTool, label: 'Practice' },
-      { href: '/library', icon: Library, label: 'Library' },
-      { href: '/daily', icon: CalendarDays, label: 'Daily' },
-      { href: '/discover', icon: Compass, label: 'Discover' },
-      { href: '/quick-win', icon: Lightbulb, label: 'Quick Win' },
-      { href: '/prompts', icon: Terminal, label: 'Prompts' },
-      { href: '/games', icon: Gamepad2, label: 'Games' },
+      { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson' },
+      { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
+      { href: '/modules', icon: GraduationCap, label: 'Modules', desc: 'Structured, multi-lesson learning paths' },
+      { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Hands-on exercises with instant feedback' },
+      { href: '/library', icon: Library, label: 'Library', desc: 'Browse saved AI resources and references' },
+      { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day' },
+      { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work' },
+      { href: '/quick-win', icon: Lightbulb, label: 'Quick Win', desc: 'A fast, practical AI task you can use now' },
+      { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
+      { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
     ],
   },
   {
     title: 'Your Progress',
     items: [
-      { href: '/goals', icon: Target, label: 'Goals' },
-      { href: '/quests', icon: Rocket, label: 'Quests' },
-      { href: '/achievements', icon: Award, label: 'Achievements' },
-      { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-      { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap' },
-      { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph' },
-      { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact' },
-      { href: '/review', icon: RefreshCw, label: 'Review' },
-      { href: '/checkin', icon: CalendarCheck, label: 'Check-in' },
-      { href: '/calibration', icon: Crosshair, label: 'Calibrate' },
+      { href: '/goals', icon: Target, label: 'Goals', desc: 'Set and track your learning goals' },
+      { href: '/quests', icon: Rocket, label: 'Quests', desc: 'Build something real, start to finish' },
+      { href: '/achievements', icon: Award, label: 'Achievements', desc: 'Badges and milestones you have earned' },
+      { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', desc: 'See how you rank across your team' },
+      { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap', desc: 'Where you are strong and where to grow' },
+      { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph', desc: 'A visual map of your AI skills' },
+      { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact', desc: 'Measure how AI is helping your work' },
+      { href: '/review', icon: RefreshCw, label: 'Review', desc: 'Revisit key concepts so they stick' },
+      { href: '/checkin', icon: CalendarCheck, label: 'Check-in', desc: 'A quick pulse on your progress' },
+      { href: '/calibration', icon: Crosshair, label: 'Calibrate', desc: 'Tune lessons to your current level' },
     ],
   },
   {
     title: 'Account',
     items: [
-      { href: '/profile', icon: User, label: 'Profile' },
-      { href: '/projects', icon: FolderKanban, label: 'Projects' },
-      { href: '/manager', icon: BarChart3, label: 'Manager' },
-      { href: '/tour', icon: Play, label: 'Tour' },
+      { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
+      { href: '/projects', icon: FolderKanban, label: 'Projects', desc: 'Add work projects to tailor lessons' },
+      { href: '/manager', icon: BarChart3, label: 'Manager', desc: 'Team learning dashboard for managers' },
+      { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
     ],
   },
 ];
@@ -169,10 +169,13 @@ export function SideNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="flex items-start gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
-              <item.icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              {item.label}
+              <item.icon className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
+              <span>
+                <span className="block text-sm font-semibold">{item.label}</span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400 leading-snug">{item.desc}</span>
+              </span>
             </Link>
           ))}
         </div>
