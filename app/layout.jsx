@@ -6,6 +6,7 @@ import { ProfileProvider } from '@/components/profile-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
 import PageTracker from '@/components/page-tracker';
 import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
+import HelpWidget from '@/components/help-widget';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -45,6 +46,7 @@ export default function RootLayout({ children }) {
           </ProfileProvider>
         </SessionWrapper>
         <PageTracker />
+        <HelpWidget />
         <ThemeToggle />
       </body>
     </html>
