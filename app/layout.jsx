@@ -1,6 +1,5 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
-import ThemeToggle from '@/components/theme-toggle';
 import { SessionWrapper } from '@/components/session-wrapper';
 import { ProfileProvider } from '@/components/profile-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
@@ -47,7 +46,6 @@ export default function RootLayout({ children }) {
         </SessionWrapper>
         <PageTracker />
         <HelpWidget />
-        <ThemeToggle />
       </body>
     </html>
   );
