@@ -56,7 +56,7 @@ const SKILL_SHOP_LINKS = [
   {
     href: 'https://housecallpro.docebosaas.com/pages/183/ai-resources-home-page',
     label: 'AI Resources Home',
-    desc: 'The full AI hub — library, coaching agents & tool guides',
+    desc: 'Explore the AI Learning Library, Coaching Agents, tool guides (ChatGPT, Claude, Gemini) & real-world AI uses',
   },
   {
     href: 'https://housecallpro.docebosaas.com/pages/214/ai-self-guided-journey-beginner',
