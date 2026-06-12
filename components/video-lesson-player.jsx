@@ -18,11 +18,11 @@ export default function VideoLessonPlayer({ topic, format = 'standard', onClose 
   const [script, setScript] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [sceneIdx, setSceneIdx] = useState(0);
-  // Start paused: browsers block audio that isn't triggered by a user gesture,
-  // so the first narration must begin from an explicit Play click. After that,
-  // audio is unlocked and scenes auto-advance.
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
+  // Auto-play once the script is ready. If the browser blocks the audio (it can
+  // require a user gesture), the watchdog below flips to a tap-to-start state so
+  // it's never stuck.
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [needsTap, setNeedsTap] = useState(false);
   const [finished, setFinished] = useState(false);
 
   const { isSpeaking, isLoading: ttsLoading, speak, stop } = useTts();
@@ -92,6 +92,20 @@ export default function VideoLessonPlayer({ topic, format = 'standard', onClose 
     return () => clearTimeout(timer);
   }, [isSpeaking, ttsLoading, isPlaying, sceneIdx, total]);
 
+  // --- Autoplay watchdog: if narration never begins (browser blocked audio),
+  //     fall back to a tap-to-start state so the player is never stuck. ---
+  useEffect(() => {
+    if (!isPlaying || finished || !scene) return;
+    if (startedSpeakingRef.current) return;
+    const t = setTimeout(() => {
+      if (!startedSpeakingRef.current) {
+        setIsPlaying(false);
+        setNeedsTap(true);
+      }
+    }, 7000);
+    return () => clearTimeout(t);
+  }, [isPlaying, finished, sceneIdx, script]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // --- Controls ---
   const togglePlay = useCallback(() => {
     if (finished) return;
@@ -100,7 +114,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', onClose 
       if (!next) {
         stop();
       } else {
-        setHasStarted(true);
+        setNeedsTap(false);
         startedSpeakingRef.current = false;
         if (scene) speak(scene.narration);
       }
@@ -286,8 +300,8 @@ export default function VideoLessonPlayer({ topic, format = 'standard', onClose 
               </button>
             </div>
 
-            {/* First-play hint */}
-            {!hasStarted && !finished && (
+            {/* Tap-to-start hint (shown only if autoplay was blocked) */}
+            {needsTap && !finished && (
               <p className="px-8 sm:px-14 pb-4 -mt-1 text-center text-xs text-slate-400">
                 Press play to start the narration.
               </p>
