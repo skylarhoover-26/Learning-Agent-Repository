@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   User, Zap, Trophy, Star, RotateCcw, Save, Check,
   Building2, Briefcase, Plus, Pencil, X, Loader2,
@@ -463,8 +464,15 @@ export default function ProfilePage() {
         {/* D. Reset / Sign Out */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="font-semibold text-ink dark:text-slate-200 mb-2">Danger Zone</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+            Resetting your profile will clear all your settings and progress (XP, badges, lessons) and send you back through onboarding.
+          </p>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            Resetting your profile will clear all your settings and send you back to onboarding.
+            Just want to change your department, team, or tasks?{' '}
+            <Link href="/my-role" className="font-medium text-brand hover:underline">
+              Update your role
+            </Link>{' '}
+            instead — it keeps all your progress.
           </p>
           {!showResetConfirm ? (
             <button
