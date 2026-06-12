@@ -61,7 +61,7 @@ export default function HelpWidget() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-6 z-50 flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-pill bg-brand text-white shadow-card hover:bg-brand-700 hover:shadow-card-hover transition-all"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-pill bg-brand text-white shadow-card hover:bg-brand-700 hover:shadow-card-hover transition-all"
         aria-label="Open help chat"
       >
         <MessageCircleQuestion className="w-5 h-5" />
@@ -71,7 +71,7 @@ export default function HelpWidget() {
   }
 
   return (
-    <div className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-3rem)] h-[480px] max-h-[calc(100vh-9rem)] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <div className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-3rem)] h-[480px] max-h-[calc(100vh-6rem)] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-ink text-white shrink-0">
         <div className="flex items-center gap-2">
