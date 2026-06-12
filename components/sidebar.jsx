@@ -14,7 +14,7 @@ const NAV_SECTIONS = [
   {
     title: 'Learn',
     items: [
-      { href: '/chat', icon: MessageCircle, label: 'Chat' },
+      { href: '/chat', icon: MessageCircle, label: 'Just Chat' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson' },
       { href: '/modules', icon: GraduationCap, label: 'Modules' },
       { href: '/structured-lesson', icon: PenTool, label: 'Practice' },
