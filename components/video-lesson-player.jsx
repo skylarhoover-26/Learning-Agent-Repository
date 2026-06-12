@@ -18,7 +18,11 @@ export default function VideoLessonPlayer({ topic, format = 'standard', onClose 
   const [script, setScript] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [sceneIdx, setSceneIdx] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
+  // Start paused: browsers block audio that isn't triggered by a user gesture,
+  // so the first narration must begin from an explicit Play click. After that,
+  // audio is unlocked and scenes auto-advance.
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const [finished, setFinished] = useState(false);
 
   const { isSpeaking, isLoading: ttsLoading, speak, stop } = useTts();
@@ -96,6 +100,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', onClose 
       if (!next) {
         stop();
       } else {
+        setHasStarted(true);
         startedSpeakingRef.current = false;
         if (scene) speak(scene.narration);
       }
@@ -280,6 +285,13 @@ export default function VideoLessonPlayer({ topic, format = 'standard', onClose 
                 <SkipForward className="w-5 h-5" />
               </button>
             </div>
+
+            {/* First-play hint */}
+            {!hasStarted && !finished && (
+              <p className="px-8 sm:px-14 pb-4 -mt-1 text-center text-xs text-slate-400">
+                Press play to start the narration.
+              </p>
+            )}
           </div>
         )}
       </div>
