@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
-export default function ThemeToggle() {
+function useTheme() {
   const [theme, setTheme] = useState('light');
   const [mounted, setMounted] = useState(false);
 
@@ -36,6 +36,33 @@ export default function ThemeToggle() {
     }
   }
 
+  return { theme, mounted, toggleTheme };
+}
+
+// Menu row variant — lives in the sidebar's Account section.
+export function MenuThemeToggle() {
+  const { theme, mounted, toggleTheme } = useTheme();
+  if (!mounted) return null;
+  return (
+    <button
+      onClick={toggleTheme}
+      className="w-full flex items-start gap-3 px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {theme === 'dark'
+        ? <Sun className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
+        : <Moon className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />}
+      <span>
+        <span className="block text-sm font-semibold">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+        <span className="block text-xs text-slate-500 dark:text-slate-400 leading-snug">Switch the app's appearance</span>
+      </span>
+    </button>
+  );
+}
+
+// Floating pill variant (legacy; no longer mounted globally).
+export default function ThemeToggle() {
+  const { theme, mounted, toggleTheme } = useTheme();
   if (!mounted) return null;
 
   return (

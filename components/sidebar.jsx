@@ -9,6 +9,7 @@ import {
   Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp, UserCog, Briefcase,
 } from 'lucide-react';
+import { MenuThemeToggle } from '@/components/theme-toggle';
 
 // Section header styled like the dashboard's "Find something to learn":
 // an icon, a bold label, and a thin divider line.
@@ -46,6 +47,19 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    title: 'Account',
+    icon: User,
+    themeToggle: true,
+    items: [
+      { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
+      { href: '/my-role', icon: UserCog, label: 'My Role', desc: 'Change your department, team, or tasks' },
+      { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', desc: 'Manage your day-to-day tasks' },
+      { href: '/projects', icon: FolderKanban, label: 'Projects', desc: 'Add work projects to tailor lessons' },
+      { href: '/manager', icon: BarChart3, label: 'Manager', desc: 'Team learning dashboard for managers' },
+      { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
+    ],
+  },
+  {
     title: 'Your Progress',
     icon: TrendingUp,
     items: [
@@ -59,18 +73,6 @@ const NAV_SECTIONS = [
       { href: '/review', icon: RefreshCw, label: 'Review', desc: 'Revisit key concepts so they stick' },
       { href: '/checkin', icon: CalendarCheck, label: 'Check-in', desc: 'A quick pulse on your progress' },
       { href: '/calibration', icon: Crosshair, label: 'Calibrate', desc: 'Tune lessons to your current level' },
-    ],
-  },
-  {
-    title: 'Account',
-    icon: User,
-    items: [
-      { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
-      { href: '/my-role', icon: UserCog, label: 'My Role', desc: 'Change your department, team, or tasks' },
-      { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', desc: 'Manage your day-to-day tasks' },
-      { href: '/projects', icon: FolderKanban, label: 'Projects', desc: 'Add work projects to tailor lessons' },
-      { href: '/manager', icon: BarChart3, label: 'Manager', desc: 'Team learning dashboard for managers' },
-      { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
     ],
   },
 ];
@@ -199,6 +201,7 @@ export function SideNav() {
               </span>
             </Link>
           ))}
+          {section.themeToggle && <MenuThemeToggle />}
         </div>
       ))}
 
