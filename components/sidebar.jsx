@@ -33,8 +33,8 @@ const NAV_SECTIONS = [
   {
     title: 'Account',
     icon: User,
-    themeToggle: true,
     items: [
+      { themeToggle: true },
       { href: '/', icon: Home, label: 'Dashboard', desc: 'Your learning home and overview' },
       { href: '/manager', icon: BarChart3, label: 'Manager', desc: 'Team learning dashboard for managers' },
       { href: '/my-role', icon: UserCog, label: 'My Role', desc: 'Change your department, team, or tasks' },
@@ -190,19 +190,22 @@ export function SideNav() {
         <div key={section.title} className="py-1">
           <SectionHeader icon={section.icon} title={section.title} />
           {section.items.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-start gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <item.icon className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
-              <span>
-                <span className="block text-sm font-semibold">{item.label}</span>
-                <span className="block text-xs text-slate-500 dark:text-slate-400 leading-snug">{item.desc}</span>
-              </span>
-            </Link>
+            item.themeToggle ? (
+              <MenuThemeToggle key="theme" />
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-start gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <item.icon className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                <span>
+                  <span className="block text-sm font-semibold">{item.label}</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400 leading-snug">{item.desc}</span>
+                </span>
+              </Link>
+            )
           ))}
-          {section.themeToggle && <MenuThemeToggle />}
         </div>
       ))}
 
