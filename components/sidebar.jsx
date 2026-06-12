@@ -108,6 +108,8 @@ export function useSidebar() {
 }
 
 // Hamburger button — lives in the page header and toggles the sidebar.
+// Always shows the menu icon; the sidebar's own X handles closing, so we avoid
+// a confusing double-X when the sidebar is open.
 export function SidebarToggle() {
   const { open, toggle } = useSidebar();
   return (
@@ -117,7 +119,7 @@ export function SidebarToggle() {
       aria-label="Navigation menu"
       aria-expanded={open}
     >
-      {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      <Menu className="w-5 h-5" />
     </button>
   );
 }
