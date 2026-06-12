@@ -54,6 +54,11 @@ const NAV_SECTIONS = [
 
 const SKILL_SHOP_LINKS = [
   {
+    href: 'https://housecallpro.docebosaas.com/pages/183/ai-resources-home-page',
+    label: 'AI Resources Home',
+    desc: 'The full AI hub — library, coaching agents & tool guides',
+  },
+  {
     href: 'https://housecallpro.docebosaas.com/pages/214/ai-self-guided-journey-beginner',
     label: 'Level 1 — Beginner',
     desc: 'What it is, how it works & prompting basics',
