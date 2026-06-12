@@ -2,15 +2,15 @@
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-store';
 import { addXpEvent } from '@/lib/learner-store';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
-import { MessageCircle, Send, Loader2, Trash2, GraduationCap } from 'lucide-react';
+import { MessageCircle, Send, Loader2, Trash2 } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import { detectLessonTopic } from '@/lib/lesson-intent';
+import ChatLessonOffer from '@/components/chat-lesson-offer';
 
 const DEFAULT_SUGGESTIONS = [
   'How do I write a good prompt?',
@@ -169,13 +169,7 @@ function ChatPageInner() {
                 }
               </div>
               {msg.role === 'assistant' && msg.lessonTopic && (
-                <Link
-                  href={`/lesson?topic=${encodeURIComponent(msg.lessonTopic)}`}
-                  className="inline-flex items-center gap-2 mt-1 px-3.5 py-2 text-sm font-medium rounded-pill bg-brand-50 dark:bg-slate-700 text-brand dark:text-brand-200 border border-brand-200 dark:border-slate-600 hover:bg-brand-100 dark:hover:bg-slate-600 transition-all"
-                >
-                  <GraduationCap className="w-4 h-4" />
-                  Take a lesson on “{msg.lessonTopic}”
-                </Link>
+                <ChatLessonOffer topic={msg.lessonTopic} />
               )}
             </div>
           ))}
