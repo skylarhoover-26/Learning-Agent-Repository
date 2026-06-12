@@ -238,9 +238,6 @@ export default async function Dashboard() {
           </div>
         </div>
 
-        {/* AI News Feed */}
-        <LiveSourcesFeed />
-
         {/* Active Projects preview */}
         <ActiveProjectsPreview />
 
@@ -264,6 +261,9 @@ export default async function Dashboard() {
             <ChevronRight className="w-6 h-6 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all shrink-0" />
           </div>
         </Link>
+
+        {/* AI News Feed — passive "stay current" content, kept last */}
+        <LiveSourcesFeed />
       </main>
       <ImpactAssessmentModal />
     </div>
