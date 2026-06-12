@@ -2,7 +2,7 @@ import Link from 'next/link';
 import {
   Sparkles, TrendingUp,
   MessageCircle, BookOpen, Library, Gamepad2, Trophy,
-  ChevronRight, BarChart2, GitBranch, Compass,
+  ChevronRight, BarChart2, GitBranch, Compass, Rss,
 } from 'lucide-react';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
@@ -12,7 +12,6 @@ import { SidebarToggle } from '@/components/sidebar';
 import WelcomeGreeting from '@/components/welcome-greeting';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
-import ActiveProjectsPreview from '@/components/active-projects-preview';
 import ImpactAssessmentModal from '@/components/impact-assessment-modal';
 import {
   getCurrentLearner, getAggregatedSkills,
@@ -166,12 +165,13 @@ export default async function Dashboard() {
           </div>
         </div>
 
-        {/* Primary nav — 4 buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" />
-          <QuickAction href="/lesson" icon={BookOpen} label="Quick Lesson" />
-          <QuickAction href="/library" icon={Library} label="Library" />
+        {/* Primary nav — alphabetized */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           <QuickAction href="/games" icon={Gamepad2} label="Games" />
+          <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" />
+          <QuickAction href="/library" icon={Library} label="Library" />
+          <QuickAction href="/quests" icon={Trophy} label="Project Quests" />
+          <QuickAction href="/lesson" icon={BookOpen} label="Quick Lesson" />
         </div>
 
         {/* Today's Pick */}
@@ -238,31 +238,20 @@ export default async function Dashboard() {
           </div>
         </div>
 
-        {/* Active Projects preview */}
-        <ActiveProjectsPreview />
-
-        {/* Project Quests CTA */}
-        <Link
-          href="/quests"
-          className="group block bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover shadow-card p-6 transition-all"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-xl bg-cta-50 dark:bg-slate-700 ring-1 ring-cta-200 dark:ring-slate-600 flex items-center justify-center text-cta-600 shrink-0">
-                <Trophy className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="font-bold text-ink dark:text-slate-200 text-lg mb-0.5">Project Quests</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Build something real in 20-60 minutes. Walk away with a working artifact you can use.
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-6 h-6 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all shrink-0" />
+        {/* AI News section header */}
+        <div className="relative py-2">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
           </div>
-        </Link>
+          <div className="relative flex justify-start">
+            <span className="bg-bg-warm dark:bg-slate-900 pr-4 flex items-center gap-2">
+              <Rss className="w-4 h-4 text-brand" />
+              <span className="text-sm font-semibold text-ink dark:text-slate-200">AI News</span>
+            </span>
+          </div>
+        </div>
 
-        {/* AI News Feed — passive "stay current" content, kept last */}
+        {/* AI News Feed */}
         <LiveSourcesFeed />
       </main>
       <ImpactAssessmentModal />
