@@ -220,6 +220,7 @@ function Panel({ panel }) {
         <ul className="mt-3 space-y-2">
           {panel.commands.map(item => (
             <li key={item.cmd} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand shrink-0" aria-hidden="true" />
               <code className="shrink-0 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-brand dark:text-brand-200 text-xs font-mono">
                 {item.cmd}
               </code>
