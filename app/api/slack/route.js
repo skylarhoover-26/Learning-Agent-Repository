@@ -96,7 +96,7 @@ async function generateQuickTip(topic) {
   try {
     const client = new Anthropic();
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 300,
       system: 'You are an AI learning assistant at Housecall Pro. Give a concise, practical tip about the requested AI topic. Keep it to 2-3 short paragraphs. Focus on real-world application for non-technical employees. Use simple language.',
       messages: [{ role: 'user', content: `Give me a quick practical tip about: ${topic}` }],

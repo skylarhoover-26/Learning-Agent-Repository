@@ -3,7 +3,7 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import Anthropic from '@anthropic-ai/sdk';
 import { logAuditEntry } from '@/lib/audit-log';
 
-const MODEL = 'claude-sonnet-4-20250514';
+const MODEL = 'claude-sonnet-4-6';
 
 function buildDiscussionPrompt(quizContext, profile) {
   const { question, options, correct, userAnswer, explanation } = quizContext;

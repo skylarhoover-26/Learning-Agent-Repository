@@ -10,7 +10,7 @@ function getClient() {
   return client;
 }
 
-const MODEL = 'claude-sonnet-4-20250514';
+const MODEL = 'claude-sonnet-4-6';
 
 function buildCuratedQuickWin(department, task, curatedData) {
   return {

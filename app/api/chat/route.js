@@ -24,7 +24,7 @@ export async function POST(request) {
       type: 'chat',
       endpoint: '/api/chat',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       input: { userMessage, messageCount: messages?.length || 0 },
       output: error ? null : { reply },
       durationMs: Date.now() - start,

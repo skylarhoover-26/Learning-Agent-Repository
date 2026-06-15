@@ -49,7 +49,7 @@ export async function POST(request) {
 
     const start = Date.now();
     const response = await getClient().messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 600,
       system: SYSTEM_PROMPT + learnerContext,
       messages: [
@@ -68,7 +68,7 @@ export async function POST(request) {
       type: 'score_prompt',
       endpoint: '/api/games/score-prompt',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       input: { scenario, prompt },
       output: scores,
       durationMs: Date.now() - start,
