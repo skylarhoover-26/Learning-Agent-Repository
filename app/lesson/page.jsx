@@ -13,7 +13,7 @@ import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-
 import BookLoader from '@/components/book-loader';
 import {
   BookOpen, ChevronRight, Zap, BookMarked, Trophy,
-  Loader2, Send, Mic, MicOff, MessageSquare, HelpCircle, PlayCircle,
+  Loader2, Send, Mic, MicOff, MessageSquare, HelpCircle, PlayCircle, Sparkles,
 } from 'lucide-react';
 import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
@@ -772,7 +772,7 @@ function LessonContent() {
               disabled={isLoading}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-brand-200 hover:text-brand hover:bg-brand-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
             >
-              <HelpCircle className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5" />
               Show me how
             </button>
           </div>

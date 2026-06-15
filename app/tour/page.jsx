@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { driver } from 'driver.js';
-import 'driver.js/dist/driver.css';
 import PageHeader from '@/components/page-header';
-import { useSidebar } from '@/components/sidebar';
-import { MENU_WALKTHROUGH_STEPS } from '@/lib/menu-walkthrough-steps';
+import WalkthroughIconButton from '@/components/walkthrough-icon-button';
+import { useMenuWalkthrough } from '@/components/use-menu-walkthrough';
 import {
   Play, ChevronRight, ChevronLeft, ArrowRight,
   MessageCircle, BarChart3, BookOpen, Zap,
@@ -18,9 +16,11 @@ const TOUR_STEPS = [
     title: 'Welcome to AI Learning Coach',
     description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey, step by step.',
     panels: {
-      left: {
-        label: 'Slack Bot',
-        content: 'The AI Learning Coach has a Slack bot for quick tips and commands. DM it any time and use:',
+      left: { label: 'Web App', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
+      right: {
+        label: 'Slack',
+        badge: 'Coming soon',
+        content: 'The Slack bot isn\'t installed yet. Once it is, you\'ll be able to DM it for quick tips and commands like:',
         commands: [
           { cmd: '/learn [topic]', desc: 'Get a quick AI tip on any topic' },
           { cmd: '/streak', desc: 'Check your learning streak & progress' },
@@ -28,117 +28,206 @@ const TOUR_STEPS = [
           { cmd: '/skills', desc: 'View your skill breakdown' },
         ],
       },
-      right: { label: 'Web Dashboard', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
     },
     icon: Play,
   },
   {
-    title: 'Step 1: Onboarding',
-    description: 'New users set up their profile — name, department, sub-team, top tasks, AI experience level, and learning goal. This takes under 2 minutes.',
+    title: 'Step 1: Set up your profile',
+    description: 'Tell the app a little about your work so it can personalize everything for you. It takes about two minutes.',
     panels: {
-      left: { label: 'Web', content: 'Onboarding runs at /onboarding — department selection, sub-team picker, top tasks, experience tier, and goal selection. Tasks are no longer capped; add as few as 1 or as many as you like.' },
-      right: { label: 'Slack', content: 'A guided onboarding conversation in Slack is planned but not live yet. For now, the bot points new users to the web to set up their profile.' },
+      left: {
+        label: 'Web App',
+        content: 'You\'ll share:',
+        bullets: [
+          'Your department and team',
+          'The tasks you do most (add as few or as many as you want)',
+          'How much you\'ve used AI so far',
+          'What you\'d like to get better at',
+        ],
+      },
+      right: { label: 'Slack', badge: 'Coming soon', content: 'The Slack bot isn\'t installed yet. Setting up your profile in Slack is planned — for now, do it in the web app.' },
     },
     icon: MessageCircle,
     link: '/onboarding',
   },
   {
-    title: 'Step 2: AI Impact Assessment',
-    description: 'Users answer 4 questions across Personal, Team, Org, and AI Development dimensions. Free-text follow-ups are scored by AI.',
+    title: 'Step 2: See where AI helps you',
+    description: 'A few quick questions show where AI is already helping your work and where it could help more.',
     panels: {
-      left: { label: 'Web', content: 'The /scoring page runs the assessment. Results show overall impact level (Low/Medium/High) with score bars for each dimension.' },
-      right: { label: 'Slack', content: 'This assessment runs on the web, not in Slack yet. The Slack bot focuses on quick tips and progress commands.' },
+      left: {
+        label: 'Web App',
+        content: 'What you\'ll do:',
+        bullets: [
+          'Answer four short questions about your work',
+          'Add a sentence or two where it helps',
+          'Get a simple Low, Medium, or High read on your AI impact',
+        ],
+      },
+      right: { label: 'Slack', badge: 'Coming soon', content: 'The Slack bot isn\'t installed yet, so this runs in the web app for now. Quick tips and progress checks will come to Slack later.' },
     },
     icon: BarChart3,
     link: '/scoring',
   },
   {
-    title: 'Step 3: Skill Calibration',
-    description: '6 scenario-based questions test real judgment (privacy, prompting, communication, evaluation, agents, data). Then users self-rate — the gap is the insight.',
+    title: 'Step 3: Check your AI skills',
+    description: 'Compare how your AI skills actually hold up against how confident you feel. The gap shows you where to focus.',
     panels: {
-      left: { label: 'Scenarios', content: 'Real HCP situations: data privacy in AI tools, analyzing 200 transcripts, handling a cancellation email, verifying AI-generated policy info.' },
-      right: { label: 'Results', content: 'Calibration chart shows Self vs Measured for each skill. Radar chart visualizes the full skill profile. Biggest gaps drive lesson recommendations.' },
+      left: {
+        label: 'What you\'ll do',
+        bullets: [
+          'Work through six real work situations, like keeping data private or writing a tricky email',
+          'Rate how confident you feel in each area',
+        ],
+      },
+      right: {
+        label: 'What you get',
+        bullets: [
+          'A clear picture of your strengths and gaps',
+          'Lesson suggestions aimed at your biggest gaps',
+        ],
+      },
     },
     icon: Crosshair,
     link: '/calibration',
   },
   {
-    title: 'Step 4: Personalized Quick Wins',
-    description: 'Based on department and top tasks, users get curated, ready-to-use AI prompts. ~60 pre-built quick wins across all 20 departments.',
+    title: 'Step 4: Get quick wins',
+    description: 'Ready-to-use AI prompts for the exact tasks you do, so you can try something useful right away.',
     panels: {
-      left: { label: 'How it works', content: 'User picks a task → gets a specific prompt they can try in AI Chat right now. No placeholders — complete and ready to use.' },
-      right: { label: 'Example', content: 'A CSM picks "QBR preparation" → gets a prompt that drafts a 45-min agenda with talking points, tailored to their customer\'s industry and goals.' },
+      left: {
+        label: 'How it works',
+        bullets: [
+          'Pick a task you do often',
+          'Get a complete prompt you can paste into AI chat',
+          'No blanks to fill in, it\'s ready to go',
+        ],
+      },
+      right: { label: 'For example', content: 'Pick "prep for a customer meeting" and get a prompt that drafts a full agenda with talking points, tailored to that customer.' },
     },
     icon: Zap,
     link: '/quick-win',
   },
   {
-    title: 'Step 5: Learning Path',
-    description: '5 modules from foundations to measuring impact. Each module has reading content, interactive activities, and links to hands-on practice.',
+    title: 'Step 5: Follow your learning path',
+    description: 'A step-by-step path from AI basics to using it confidently in your day-to-day work.',
     panels: {
-      left: { label: 'Modules', content: 'Module 1: AI Foundations → Module 2: Core Tasks → Module 3: Prompting → Module 4: Building & Automating → Module 5: Measuring Impact' },
-      right: { label: 'Structured Lessons', content: 'The 5-step lesson player (Read → Try → Compare → Ship → Reflect) grades submissions via AI and shows tone variants.' },
+      left: {
+        label: 'The five steps',
+        bullets: [
+          'Start with the basics',
+          'Use AI for your core tasks',
+          'Learn to write better prompts',
+          'Build and automate your work',
+          'Measure your impact',
+        ],
+      },
+      right: { label: 'How lessons work', content: 'Each lesson walks you through reading something, trying it yourself, and getting instant feedback on what you wrote.' },
     },
     icon: BookOpen,
     link: '/modules',
   },
   {
-    title: 'Step 6: Gamification & Progress',
-    description: 'XP, levels, badges, streaks, quests, spaced repetition, and a department leaderboard keep learners engaged over time.',
+    title: 'Step 6: Earn points and track progress',
+    description: 'Earn points and badges, keep a streak going, and watch your progress add up over time.',
     panels: {
-      left: { label: 'Earning', content: '50 XP per lesson, streak bonuses, 11 earnable badges. Quests are 20-60 min guided projects that build real artifacts. 10 structured lessons with AI-graded submissions.' },
-      right: { label: 'Tracking', content: 'Dashboard shows live stats, level progress, streak counter, recent lessons, and achievement badges. Data syncs to the cloud so managers can see team progress.' },
+      left: {
+        label: 'Ways to earn',
+        bullets: [
+          'Points for every lesson you finish',
+          'Bonuses for keeping a daily streak',
+          'Badges for hitting milestones',
+          'Quests: short guided projects that build something real',
+        ],
+      },
+      right: { label: 'Track your progress', content: 'Your dashboard shows your level, streak, recent lessons, and badges, all in one place.' },
     },
     icon: Trophy,
     link: '/achievements',
   },
   {
-    title: 'Step 7: Manager Dashboard',
-    description: 'Managers look up their team via Snowflake, see AI Impact Competency scores (P/T/O/D with Self + Manager ratings), and track learning progress.',
+    title: 'Step 7: For managers',
+    description: 'If you manage a team, see how everyone is progressing and where to lend a hand.',
     panels: {
-      left: { label: 'Team View', content: 'Direct reports table from Snowflake. Status badges: On Track, Not Started, Needs Nudge, Completed.' },
-      right: { label: 'Competencies', content: 'Color-coded dot pairs for each dimension (1=red → 5=purple). Rate Team button lets managers enter their own scores.' },
+      left: {
+        label: 'Your team at a glance',
+        bullets: [
+          'See each person\'s progress',
+          'Spot who\'s on track and who could use a nudge',
+        ],
+      },
+      right: { label: 'Support your team', content: 'Score your team on AI skills and use it to guide your coaching and recognition.' },
     },
     icon: BarChart3,
     link: '/manager',
   },
   {
-    title: 'Step 8: 6-Week Check-In',
-    description: 'Every 6 weeks, learners re-answer scoring questions. The check-in shows progress deltas and adjusts recommendations.',
+    title: 'Step 8: Check in every six weeks',
+    description: 'Every six weeks, a quick check-in shows how far you\'ve come and what to focus on next.',
     panels: {
-      left: { label: 'Flow', content: '2-3 quick questions about personal and team AI usage changes. Optional blocker question if no improvement. Free-text follow-ups scored by AI.' },
-      right: { label: 'Results', content: 'Side-by-side old → new scores with delta arrows. "Nice growth!" or "Focus on Module X next" messaging based on progress.' },
+      left: {
+        label: 'The check-in',
+        bullets: [
+          'A couple of quick questions about how your AI use has changed',
+          'Takes just a minute or two',
+        ],
+      },
+      right: { label: 'What you see', content: 'Your old and new scores side by side, plus a suggestion for what to work on next.' },
     },
     icon: RefreshCw,
     link: '/checkin',
   },
   {
-    title: 'Step 9: Auto-Refresh Pipeline',
-    description: 'The curriculum stays current. An automated scanner checks 13 AI news sources daily, AI generates update proposals, and admins review them behind the scenes.',
+    title: 'Step 9: Always up to date',
+    description: 'The content keeps itself fresh, so what you learn stays in step with how fast AI changes.',
     panels: {
-      left: { label: 'Scanner', content: 'Fetches RSS from OpenAI, Anthropic, DeepMind, Meta AI, Microsoft AI, Mistral, MIT Tech Review, The Verge, VentureBeat, Hugging Face, arXiv, and Hacker News. Dedupes and stores findings.' },
-      right: { label: 'Safety Filter', content: 'AI reviews every article for content safety — filtering out politics, off-topic content, and anything not work-appropriate before it reaches learners.' },
+      left: {
+        label: 'Always current',
+        bullets: [
+          'Scans trusted AI news every day',
+          'Drafts updates to lessons automatically',
+          'A person reviews every change before it goes live',
+        ],
+      },
+      right: { label: 'Safe and on-topic', content: 'Everything is checked to keep it work-appropriate and relevant before it reaches you.' },
     },
     icon: Rss,
     link: '/curriculum-pipeline',
   },
 ];
 
-// One column of a step card: a label, optional prose, and an optional list of
-// commands rendered as monospace chips with descriptions.
+// One column of a step card. A label, an optional intro line, then optional
+// layered lists: `bullets` (simple points) or `commands` (Slack command chips).
 function Panel({ panel }) {
   return (
     <div className="p-6">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-        {panel.label}
-      </p>
+      <div className="flex items-center gap-2 mb-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          {panel.label}
+        </p>
+        {panel.badge && (
+          <span className="px-1.5 py-0.5 rounded-full bg-cta-100 dark:bg-cta-700/25 text-cta-700 dark:text-cta-200 text-[10px] font-semibold uppercase tracking-wide">
+            {panel.badge}
+          </span>
+        )}
+      </div>
       {panel.content && (
         <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{panel.content}</p>
+      )}
+      {panel.bullets && (
+        <ul className="mt-3 space-y-2">
+          {panel.bullets.map((b, i) => (
+            <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand shrink-0" aria-hidden="true" />
+              <span className="leading-snug">{b}</span>
+            </li>
+          ))}
+        </ul>
       )}
       {panel.commands && (
         <ul className="mt-3 space-y-2">
           {panel.commands.map(item => (
             <li key={item.cmd} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand shrink-0" aria-hidden="true" />
               <code className="shrink-0 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-brand dark:text-brand-200 text-xs font-mono">
                 {item.cmd}
               </code>
@@ -153,25 +242,9 @@ function Panel({ panel }) {
 
 export default function TourPage() {
   const [currentStep, setCurrentStep] = useState(0);
-  const { setOpen } = useSidebar();
+  const startMenuWalkthrough = useMenuWalkthrough();
   const step = TOUR_STEPS[currentStep];
   const Icon = step.icon;
-
-  function startMenuWalkthrough() {
-    // The sidebar must be open for its anchors to be visible/highlightable.
-    setOpen(true);
-    // Let the sidebar finish its 200ms slide-in before driver measures elements.
-    setTimeout(() => {
-      driver({
-        showProgress: true,
-        allowClose: true,
-        nextBtnText: 'Next',
-        prevBtnText: 'Back',
-        doneBtnText: 'Done',
-        steps: MENU_WALKTHROUGH_STEPS,
-      }).drive();
-    }, 260);
-  }
 
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
@@ -179,6 +252,7 @@ export default function TourPage() {
         icon={Play}
         title="Platform Tour"
         subtitle="A guided walkthrough of the full learner + manager experience"
+        iconButton={<WalkthroughIconButton />}
       />
 
       <main className="max-w-4xl mx-auto px-6 py-10">
