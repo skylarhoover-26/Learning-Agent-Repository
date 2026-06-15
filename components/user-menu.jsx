@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { useProfile } from '@/components/profile-provider';
+import { displayNameFromProfile } from '@/lib/display-name';
 import VoicePicker from '@/components/voice-picker';
 import { Settings, LogOut, FileText, ChevronDown, Briefcase, UserCog, Bell, User, RefreshCw } from 'lucide-react';
 
@@ -52,7 +53,7 @@ export default function UserMenu() {
     signOut({ callbackUrl: '/auth/signin' });
   }
 
-  const displayName = profile?.display_name || profile?.slack_handle || 'Learner';
+  const displayName = displayNameFromProfile(profile);
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
