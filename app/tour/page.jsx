@@ -21,7 +21,8 @@ const TOUR_STEPS = [
       left: { label: 'Web App', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
       right: {
         label: 'Slack',
-        content: 'The AI Learning Coach has a Slack bot for quick tips and commands. DM it any time and use:',
+        badge: 'Coming soon',
+        content: 'The Slack bot isn\'t installed yet. Once it is, you\'ll be able to DM it for quick tips and commands like:',
         commands: [
           { cmd: '/learn [topic]', desc: 'Get a quick AI tip on any topic' },
           { cmd: '/streak', desc: 'Check your learning streak & progress' },
@@ -46,7 +47,7 @@ const TOUR_STEPS = [
           'What you\'d like to get better at',
         ],
       },
-      right: { label: 'Slack', content: 'Setting this up right inside Slack is coming soon. For now, the bot sends you to the web to get started.' },
+      right: { label: 'Slack', badge: 'Coming soon', content: 'The Slack bot isn\'t installed yet. Setting up your profile in Slack is planned — for now, do it in the web app.' },
     },
     icon: MessageCircle,
     link: '/onboarding',
@@ -64,7 +65,7 @@ const TOUR_STEPS = [
           'Get a simple Low, Medium, or High read on your AI impact',
         ],
       },
-      right: { label: 'Slack', content: 'This one lives on the web for now. In Slack, the bot sticks to quick tips and progress checks.' },
+      right: { label: 'Slack', badge: 'Coming soon', content: 'The Slack bot isn\'t installed yet, so this runs in the web app for now. Quick tips and progress checks will come to Slack later.' },
     },
     icon: BarChart3,
     link: '/scoring',
@@ -201,9 +202,16 @@ const TOUR_STEPS = [
 function Panel({ panel }) {
   return (
     <div className="p-6">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-        {panel.label}
-      </p>
+      <div className="flex items-center gap-2 mb-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          {panel.label}
+        </p>
+        {panel.badge && (
+          <span className="px-1.5 py-0.5 rounded-full bg-cta-100 dark:bg-cta-700/25 text-cta-700 dark:text-cta-200 text-[10px] font-semibold uppercase tracking-wide">
+            {panel.badge}
+          </span>
+        )}
+      </div>
       {panel.content && (
         <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{panel.content}</p>
       )}
