@@ -23,8 +23,8 @@ const TOUR_STEPS = [
     title: 'Step 1: Onboarding',
     description: 'New users set up their profile — name, department, sub-team, top tasks, AI experience level, and learning goal. This takes under 2 minutes.',
     panels: {
-      left: { label: 'Slack', content: 'Bot asks: "Which team are you on?" and "What are your top 3 tasks?" — shown as tap-to-select buttons. Results are saved to the user\'s profile.' },
-      right: { label: 'Web', content: 'Same flow available at /onboarding — department selection, sub-team picker, top tasks (up to 3), experience tier, and goal selection.' },
+      left: { label: 'Slack', content: 'Bot asks: "Which team are you on?" and "What are your top tasks?" — shown as tap-to-select buttons. Results are saved to the user\'s profile.' },
+      right: { label: 'Web', content: 'Same flow available at /onboarding — department selection, sub-team picker, top tasks, experience tier, and goal selection.' },
     },
     icon: MessageCircle,
     link: '/onboarding',

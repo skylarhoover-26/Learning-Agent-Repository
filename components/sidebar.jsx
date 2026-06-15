@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
   CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
@@ -168,6 +169,16 @@ export function SidebarShell({ children }) {
 // The docked, full-height left navigation rail.
 export function SideNav() {
   const { open, setOpen } = useSidebar();
+  const pathname = usePathname();
+
+  // The current tab is active if its href matches the path exactly, or (for
+  // non-root links) if we're on a nested route beneath it. Root '/' only matches
+  // exactly so it doesn't light up on every page.
+  function isActive(href) {
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(href + '/');
+  }
+
   return (
     <nav
       className={`fixed top-0 left-0 h-screen w-72 z-50 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 overflow-y-auto transition-transform duration-200 ${
@@ -193,17 +204,27 @@ export function SideNav() {
             item.themeToggle ? (
               <MenuThemeToggle key="theme" />
             ) : (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-start gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-              >
-                <item.icon className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                <span>
-                  <span className="block text-sm font-semibold">{item.label}</span>
-                  <span className="block text-xs text-slate-500 dark:text-slate-400 leading-snug">{item.desc}</span>
-                </span>
-              </Link>
+              (() => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
+                      active
+                        ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
+                        : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <item.icon className={`w-4 h-4 mt-0.5 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
+                    <span>
+                      <span className="block text-sm font-semibold">{item.label}</span>
+                      <span className={`block text-xs leading-snug ${active ? 'text-brand/70' : 'text-slate-500 dark:text-slate-400'}`}>{item.desc}</span>
+                    </span>
+                  </Link>
+                );
+              })()
             )
           ))}
         </div>

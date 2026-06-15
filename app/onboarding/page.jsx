@@ -17,8 +17,8 @@ const SUB_TEAMS = SUBTEAMS;
 
 const TOTAL_STEPS = 4;
 
-// Soft cap — generous enough that no one realistically hits it.
-const MAX_TASKS = 20;
+// No cap — users can add as many tasks as they want (minimum 1).
+const MAX_TASKS = Infinity;
 
 export default function OnboardingPage() {
   const { data: session } = useSession();

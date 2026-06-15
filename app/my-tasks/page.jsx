@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 import { getTaskList } from '@/lib/curriculum-data';
 
-// Soft cap — generous enough that no one realistically hits it.
-const MAX_TASKS = 20;
+// No cap — users can add as many tasks as they want (minimum 1).
+const MAX_TASKS = Infinity;
 
 function MyTasksContent() {
   const router = useRouter();
