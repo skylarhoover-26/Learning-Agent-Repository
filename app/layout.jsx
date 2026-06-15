@@ -6,6 +6,7 @@ import { ProgressionProvider } from '@/components/progression-provider';
 import PageTracker from '@/components/page-tracker';
 import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
 import HelpWidget from '@/components/help-widget';
+import IdentityGate from '@/components/identity-gate';
 import OnboardingTour from '@/components/onboarding-tour';
 
 const inter = Inter({
@@ -33,6 +34,7 @@ export default function RootLayout({ children }) {
         ` }} />
       </head>
       <body className="min-h-screen bg-bg-warm text-ink dark:bg-slate-900 dark:text-slate-200">
+        <IdentityGate />
         <SessionWrapper>
           <ProfileProvider>
             <ProgressionProvider>
