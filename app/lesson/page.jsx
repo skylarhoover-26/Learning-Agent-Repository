@@ -626,6 +626,120 @@ function LessonContent() {
     );
   }
 
+  // Quick Tips are a single 60-second insight, so finishing is the primary next
+  // step — show it first and treat chat as the optional "go deeper" path below.
+  // Longer formats are chat-driven, so the input leads and finish sits below.
+  const isQuickTip = format === 'quick_tip';
+
+  const chatArea = (
+    <>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+        <MessageSquare className="w-4 h-4 text-brand shrink-0" />
+        {userInput === SCENARIO_PROMPT
+          ? 'Press enter or tap the arrow → to try a scenario based on your work — or type your own.'
+          : 'Tap a suggestion to keep going, or type your own question or response.'}
+      </p>
+      {/* Suggested next-step chips from the current slide + a Show me how helper */}
+      <div className="mb-2 flex flex-wrap gap-2">
+        {(currentSlide?.buttons || [])
+          .filter((b) => b.action !== 'complete' && b.label)
+          .map((b, i) => {
+            const isPrimary = b.action === 'next';
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => !isLoading && continueLesson(b.label, b.label)}
+                disabled={isLoading}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${
+                  isPrimary
+                    ? 'bg-brand text-white hover:bg-brand-600 border border-brand'
+                    : 'border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 bg-brand-50 dark:bg-slate-700 hover:bg-brand-100 dark:hover:bg-slate-600'
+                }`}
+              >
+                {b.label}
+                {isPrimary && <ChevronRight className="w-3.5 h-3.5" />}
+              </button>
+            );
+          })}
+        <button
+          type="button"
+          onClick={() => !isLoading && continueLesson('Show me how to do this, step by step.', 'Show me how')}
+          disabled={isLoading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-brand-200 hover:text-brand hover:bg-brand-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          Show me how
+        </button>
+      </div>
+      <form onSubmit={handleSubmitInput} className="flex gap-2">
+        <input
+          ref={inputRef}
+          type="text"
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          placeholder={isListening ? 'Listening...' : 'Type a question or response...'}
+          disabled={isLoading}
+          className={`flex-1 px-4 py-3 rounded-xl border dark:bg-slate-900 dark:text-slate-200 bg-white focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50 shadow-sm ${
+            isListening
+              ? 'border-red-300 dark:border-red-700 ring-2 ring-red-100 dark:ring-red-900/30'
+              : 'border-slate-200 dark:border-slate-700'
+          }`}
+        />
+        {sttSupported && (
+          <button
+            type="button"
+            onClick={toggleStt}
+            className={`px-3 py-3 rounded-xl transition-all shadow-sm ${
+              isListening
+                ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+            }`}
+            aria-label={isListening ? 'Stop listening' : 'Voice input'}
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={!userInput.trim() || isLoading}
+          className="px-4 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </form>
+    </>
+  );
+
+  const finishCard = (
+    <div className="rounded-xl border border-brand-200 dark:border-slate-700 bg-brand-50/60 dark:bg-slate-800/60 p-4">
+      <p className="text-sm text-ink dark:text-slate-200 font-medium mb-1">
+        {isQuickTip ? "That's the tip — nice work!" : 'Done, or want to go deeper?'}
+      </p>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+        {isQuickTip
+          ? <>Finish to lock in your <span className="font-semibold text-brand dark:text-brand-200">+50 XP</span> — or keep learning in the chat below.</>
+          : <>Keep the conversation going above to learn more — or finish your {FORMAT_META[format].title} to earn <span className="font-semibold text-brand dark:text-brand-200">+50 XP</span>.</>}
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={finishLesson}
+          disabled={isLoading}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm shadow-sm hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          <Trophy className="w-4 h-4" />
+          Finish {FORMAT_META[format].title} · +50 XP
+        </button>
+        <button
+          onClick={resetToPickerView}
+          className="text-sm text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-all"
+        >
+          Exit without finishing
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
     <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
@@ -734,110 +848,26 @@ function LessonContent() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Engagement area: encouragement + chat-driven practice, finish as a quiet link */}
+      {/* Engagement area. Quick Tip: finish first, chat below as "go deeper".
+          Longer formats: chat-driven practice leads, finish sits below. */}
       {slides.length > 0 && !isComplete && (
         <div className="mt-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-            <MessageSquare className="w-4 h-4 text-brand shrink-0" />
-            {userInput === SCENARIO_PROMPT
-              ? 'Press enter or tap the arrow → to try a scenario based on your work — or type your own.'
-              : 'Tap a suggestion to keep going, or type your own question or response.'}
-          </p>
-          {/* Suggested next-step chips from the current slide + a Show me how helper */}
-          <div className="mb-2 flex flex-wrap gap-2">
-            {(currentSlide?.buttons || [])
-              .filter((b) => b.action !== 'complete' && b.label)
-              .map((b, i) => {
-                const isPrimary = b.action === 'next';
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => !isLoading && continueLesson(b.label, b.label)}
-                    disabled={isLoading}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${
-                      isPrimary
-                        ? 'bg-brand text-white hover:bg-brand-600 border border-brand'
-                        : 'border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 bg-brand-50 dark:bg-slate-700 hover:bg-brand-100 dark:hover:bg-slate-600'
-                    }`}
-                  >
-                    {b.label}
-                    {isPrimary && <ChevronRight className="w-3.5 h-3.5" />}
-                  </button>
-                );
-              })}
-            <button
-              type="button"
-              onClick={() => !isLoading && continueLesson('Show me how to do this, step by step.', 'Show me how')}
-              disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-brand-200 hover:text-brand hover:bg-brand-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Show me how
-            </button>
-          </div>
-          <form onSubmit={handleSubmitInput} className="flex gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              placeholder={isListening ? 'Listening...' : 'Type a question or response...'}
-              disabled={isLoading}
-              className={`flex-1 px-4 py-3 rounded-xl border dark:bg-slate-900 dark:text-slate-200 bg-white focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50 shadow-sm ${
-                isListening
-                  ? 'border-red-300 dark:border-red-700 ring-2 ring-red-100 dark:ring-red-900/30'
-                  : 'border-slate-200 dark:border-slate-700'
-              }`}
-            />
-            {sttSupported && (
-              <button
-                type="button"
-                onClick={toggleStt}
-                className={`px-3 py-3 rounded-xl transition-all shadow-sm ${
-                  isListening
-                    ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                }`}
-                aria-label={isListening ? 'Stop listening' : 'Voice input'}
-              >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
-            )}
-            <button
-              type="submit"
-              disabled={!userInput.trim() || isLoading}
-              className="px-4 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-
-          {/* Prominent finish: keep learning via chat above, or finish to earn XP. */}
-          <div className="mt-6 rounded-xl border border-brand-200 dark:border-slate-700 bg-brand-50/60 dark:bg-slate-800/60 p-4">
-            <p className="text-sm text-ink dark:text-slate-200 font-medium mb-1">
-              Done, or want to go deeper?
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-              Keep the conversation going above to learn more — or finish your {FORMAT_META[format].title} to earn <span className="font-semibold text-brand dark:text-brand-200">+50 XP</span>.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={finishLesson}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm shadow-sm hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <Trophy className="w-4 h-4" />
-                Finish {FORMAT_META[format].title} · +50 XP
-              </button>
-              <button
-                onClick={resetToPickerView}
-                className="text-sm text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-all"
-              >
-                Exit without finishing
-              </button>
-            </div>
-          </div>
+          {isQuickTip ? (
+            <>
+              {finishCard}
+              <div className="mt-6">
+                <p className="text-sm font-semibold text-ink dark:text-slate-200 mb-2">
+                  Want to go deeper?
+                </p>
+                {chatArea}
+              </div>
+            </>
+          ) : (
+            <>
+              {chatArea}
+              <div className="mt-6">{finishCard}</div>
+            </>
+          )}
         </div>
       )}
     </main>
