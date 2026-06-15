@@ -18,8 +18,9 @@ const TOUR_STEPS = [
     title: 'Welcome to AI Learning Coach',
     description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey, step by step.',
     panels: {
-      left: {
-        label: 'Slack Bot',
+      left: { label: 'Web App', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
+      right: {
+        label: 'Slack',
         content: 'The AI Learning Coach has a Slack bot for quick tips and commands. DM it any time and use:',
         commands: [
           { cmd: '/learn [topic]', desc: 'Get a quick AI tip on any topic' },
@@ -28,7 +29,6 @@ const TOUR_STEPS = [
           { cmd: '/skills', desc: 'View your skill breakdown' },
         ],
       },
-      right: { label: 'Web Dashboard', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
     },
     icon: Play,
   },
@@ -37,7 +37,7 @@ const TOUR_STEPS = [
     description: 'Tell the app a little about your work so it can personalize everything for you. It takes about two minutes.',
     panels: {
       left: {
-        label: 'On the web',
+        label: 'Web App',
         content: 'You\'ll share:',
         bullets: [
           'Your department and team',
@@ -46,7 +46,7 @@ const TOUR_STEPS = [
           'What you\'d like to get better at',
         ],
       },
-      right: { label: 'In Slack', content: 'Setting this up right inside Slack is coming soon. For now, the bot sends you to the web to get started.' },
+      right: { label: 'Slack', content: 'Setting this up right inside Slack is coming soon. For now, the bot sends you to the web to get started.' },
     },
     icon: MessageCircle,
     link: '/onboarding',
@@ -56,14 +56,15 @@ const TOUR_STEPS = [
     description: 'A few quick questions show where AI is already helping your work and where it could help more.',
     panels: {
       left: {
-        label: 'What you\'ll do',
+        label: 'Web App',
+        content: 'What you\'ll do:',
         bullets: [
           'Answer four short questions about your work',
           'Add a sentence or two where it helps',
           'Get a simple Low, Medium, or High read on your AI impact',
         ],
       },
-      right: { label: 'In Slack', content: 'This one lives on the web for now. In Slack, the bot sticks to quick tips and progress checks.' },
+      right: { label: 'Slack', content: 'This one lives on the web for now. In Slack, the bot sticks to quick tips and progress checks.' },
     },
     icon: BarChart3,
     link: '/scoring',
