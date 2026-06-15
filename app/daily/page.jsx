@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import BookLoader from '@/components/book-loader';
+import { useProfile } from '@/components/profile-provider';
 import {
   CalendarDays, ChevronLeft, ChevronRight, BookOpen,
   Clock, Zap, Pin, PinOff, ExternalLink, Sparkles,
@@ -22,6 +23,25 @@ const DIFFICULTY_STYLES = {
   'Beginner': 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
   'Intermediate': 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
   'Advanced': 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+};
+
+// Which lesson difficulties to surface for each experience tier. Beginners and
+// practitioners never see Advanced ("developer-level") cards; higher tiers skip
+// pure-beginner basics. Pinned lessons always show regardless (see below).
+const TIER_DIFFICULTIES = {
+  beginner: ['Beginner', 'Intermediate'],
+  practitioner: ['Beginner', 'Intermediate'],
+  power_user: ['Intermediate', 'Advanced'],
+  builder: ['Intermediate', 'Advanced'],
+  developer: ['Intermediate', 'Advanced'],
+};
+
+const TIER_LABELS = {
+  beginner: 'Beginner',
+  practitioner: 'Practitioner',
+  power_user: 'Power User',
+  builder: 'Builder',
+  developer: 'Developer',
 };
 
 function formatDate(dateStr) {
@@ -103,11 +123,13 @@ function LessonCard({ lesson, isAdmin, onTogglePin }) {
 }
 
 export default function DailyLessonsPage() {
+  const { profile } = useProfile();
   const [dates, setDates] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showAllLevels, setShowAllLevels] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -190,6 +212,17 @@ export default function DailyLessonsPage() {
     ? [...data.lessons].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
     : [];
 
+  // Curate to the learner's experience level. Pinned lessons always show.
+  // If filtering would leave nothing, fall back to showing all (never empty).
+  const tier = profile?.tier;
+  const allowedDifficulties = tier ? TIER_DIFFICULTIES[tier] : null;
+  const tierFiltered = allowedDifficulties
+    ? sortedLessons.filter(l => l.pinned || allowedDifficulties.includes(l.difficulty))
+    : sortedLessons;
+  const filterActive = !showAllLevels && allowedDifficulties && tierFiltered.length > 0;
+  const visibleLessons = filterActive ? tierFiltered : sortedLessons;
+  const hiddenCount = sortedLessons.length - visibleLessons.length;
+
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
@@ -252,7 +285,7 @@ export default function DailyLessonsPage() {
         {/* Lessons */}
         {loading ? (
           <BookLoader message="Loading today's lessons..." />
-        ) : sortedLessons.length === 0 ? (
+        ) : visibleLessons.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-12 text-center">
             <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-2">No lessons for this date</h3>
@@ -271,9 +304,10 @@ export default function DailyLessonsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {sortedLessons.length} lesson{sortedLessons.length !== 1 ? 's' : ''} for this day
+                {visibleLessons.length} lesson{visibleLessons.length !== 1 ? 's' : ''}
+                {filterActive && tier ? ` for your level (${TIER_LABELS[tier] || tier})` : ' for this day'}
               </p>
               {data?.generatedAt && (
                 <p className="text-xs text-slate-400">
@@ -281,7 +315,17 @@ export default function DailyLessonsPage() {
                 </p>
               )}
             </div>
-            {sortedLessons.map(lesson => (
+            {allowedDifficulties && (filterActive ? hiddenCount > 0 : tierFiltered.length > 0 && tierFiltered.length < sortedLessons.length) && (
+              <button
+                onClick={() => setShowAllLevels(prev => !prev)}
+                className="text-xs font-medium text-brand hover:underline"
+              >
+                {filterActive
+                  ? `Show all levels (${hiddenCount} more)`
+                  : 'Show only my level'}
+              </button>
+            )}
+            {visibleLessons.map(lesson => (
               <LessonCard
                 key={lesson.id}
                 lesson={lesson}
