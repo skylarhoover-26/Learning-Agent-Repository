@@ -27,7 +27,7 @@ export async function POST(request) {
       type: 'lesson_video',
       endpoint: '/api/lesson/video',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       input: { topic, format },
       output: error ? null : { title: response?.title, sceneCount: response?.scenes?.length },
       durationMs: Date.now() - start,

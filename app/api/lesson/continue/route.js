@@ -31,7 +31,7 @@ export async function POST(request) {
       type: 'lesson_continue',
       endpoint: '/api/lesson/continue',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       input: { topic, userInput, format, phase: response?.phase || 'unknown', messageCount: updatedMessages.length },
       output: error ? null : { slideTitle: response?.slideTitle, phase: response?.phase, message: response?.message, keyPoints: response?.keyPoints },
       durationMs: Date.now() - start,
