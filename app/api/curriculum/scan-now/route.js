@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdmin } from '@/lib/admin';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
@@ -168,7 +168,7 @@ No prose, only the JSON array.`,
 export async function POST() {
   try {
     const user = await getAuthenticatedUser();
-    if (!user?.email || !isAdminEmail(user.email)) {
+    if (!user?.email || !(await isAdmin(user.email))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

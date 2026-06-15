@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdmin } from '@/lib/admin';
 import { SKILL_CATALOG } from '@/lib/heatmap-data';
 import { getMergedSkillLevels, setSkillLevels, VALID_LEVELS } from '@/lib/skill-levels';
 
@@ -13,7 +13,7 @@ export async function GET() {
 // POST is admin-only: save the level overrides.
 export async function POST(request) {
   const user = await getAuthenticatedUser();
-  if (!user?.email || !isAdminEmail(user.email)) {
+  if (!user?.email || !(await isAdmin(user.email))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   try {

@@ -3,14 +3,14 @@
 
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdmin } from '@/lib/admin';
 import { sendDailyNotifications } from '@/lib/daily-notify';
 
 export const maxDuration = 60;
 
 export async function POST() {
   const user = await getAuthenticatedUser();
-  if (!user?.email || !isAdminEmail(user.email)) {
+  if (!user?.email || !(await isAdmin(user.email))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   try {

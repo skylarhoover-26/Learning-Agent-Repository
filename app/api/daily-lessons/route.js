@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readDailyLessons, writeDailyLessons, getAvailableDates, todayDateString } from '@/lib/daily-lessons';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdmin } from '@/lib/admin';
 
 export async function GET(request) {
   try {
@@ -31,7 +31,7 @@ export async function POST(request) {
     const body = await request.json();
     const { action, date, lessonId, userEmail } = body;
 
-    if (!await isAdminEmail(userEmail)) {
+    if (!await isAdmin(userEmail)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 

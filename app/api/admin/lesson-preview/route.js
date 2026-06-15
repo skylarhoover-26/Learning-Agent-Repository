@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdmin } from '@/lib/admin';
 import { generateLessonResponse } from '@/lib/ai';
 
 // Caps per format so a runaway lesson can't loop forever.
@@ -11,7 +11,7 @@ const MAX_SLIDES = { quick_tip: 2, standard: 6, deep_dive: 12 };
 export async function POST(request) {
   try {
     const user = await getAuthenticatedUser();
-    if (!user?.email || !isAdminEmail(user.email)) {
+    if (!user?.email || !(await isAdmin(user.email))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

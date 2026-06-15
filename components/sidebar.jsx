@@ -9,7 +9,7 @@ import {
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp, UserCog, Briefcase, Home,
-  Shield, Settings, SlidersHorizontal, FileText, Bell, LogOut,
+  Shield, Settings, SlidersHorizontal, FileText, Bell, LogOut, Users,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
@@ -88,6 +88,7 @@ const ADMIN_ITEMS = [
   { href: '/admin/skill-levels', icon: SlidersHorizontal, label: 'Skill Levels', desc: "Set each skill's difficulty level" },
   { href: '/curriculum-pipeline', icon: FileText, label: 'Content Updates', desc: 'Review AI-proposed curriculum updates' },
   { href: '/admin/notifications', icon: Bell, label: 'Notifications', desc: 'Who receives Slack notifications' },
+  { href: '/admin/admins', icon: Users, label: 'Admins', desc: 'Manage who has admin access' },
 ];
 
 const SKILL_SHOP_LINKS = [
@@ -190,12 +191,22 @@ export function SideNav() {
     fetch('/api/identity').then(r => r.json()).then(d => setSoftLogin(!d.oktaConfigured && d.email ? { email: d.email } : null)).catch(() => {});
   }, []);
 
-  // The current tab is active if its href matches the path exactly, or (for
-  // non-root links) if we're on a nested route beneath it. Root '/' only matches
-  // exactly so it doesn't light up on every page.
-  function isActive(href) {
+  // Highlight only the single most-specific matching item. Without this, a
+  // parent like /admin would also light up on /admin/skill-levels. We pick the
+  // longest href that matches the current path (exact or as a path prefix).
+  const allHrefs = [
+    ...ADMIN_ITEMS.map(i => i.href),
+    ...NAV_SECTIONS.flatMap(s => s.items.filter(i => i.href).map(i => i.href)),
+  ];
+  function pathMatches(href) {
     if (href === '/') return pathname === '/';
     return pathname === href || pathname.startsWith(href + '/');
+  }
+  const activeHref = allHrefs
+    .filter(pathMatches)
+    .sort((a, b) => b.length - a.length)[0] || null;
+  function isActive(href) {
+    return href === activeHref;
   }
 
   function renderNavItem(item) {
