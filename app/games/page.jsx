@@ -82,7 +82,7 @@ export default function GamesHub() {
           Sharpen your AI skills with interactive challenges. Pick a game and start playing.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div data-tour="page-games" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {GAMES.map((game) => {
             const gameStats = allStats[game.slug];
             return (

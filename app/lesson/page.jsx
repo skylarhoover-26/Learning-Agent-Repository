@@ -497,7 +497,7 @@ function LessonContent() {
           <p className="text-slate-600 dark:text-slate-400">Pick from popular topics or type your own.</p>
         </div>
 
-        <div className="mb-8">
+        <div data-tour="page-lesson" className="mb-8">
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             How deep do you want to go?
           </h3>

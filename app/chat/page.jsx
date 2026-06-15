@@ -195,7 +195,7 @@ function ChatPageInner() {
         </div>
       </main>
 
-      <footer className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 sticky bottom-0">
+      <footer data-tour="page-chat" className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 sticky bottom-0">
         <div className="max-w-3xl mx-auto px-6 py-4">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="text-[11px] text-slate-500 dark:text-slate-400">Need a human? Reach the team in Slack:</span>

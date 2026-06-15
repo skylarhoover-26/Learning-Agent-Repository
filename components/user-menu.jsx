@@ -9,11 +9,12 @@ import { displayNameFromProfile } from '@/lib/display-name';
 
 // Profile-related links that live under the name dropdown (everything that used
 // to be in the sidebar's "Account" section except Manager, which stays in the menu).
+// `tour` anchors let the guided tour spotlight each item with the dropdown open.
 const PROFILE_LINKS = [
-  { href: '/profile', icon: User, label: 'Profile' },
-  { href: '/my-role', icon: UserCog, label: 'My Role' },
-  { href: '/my-tasks', icon: Briefcase, label: 'My Tasks' },
-  { href: '/projects', icon: FolderKanban, label: 'Projects' },
+  { href: '/profile', icon: User, label: 'Profile', tour: 'nav-profile' },
+  { href: '/my-role', icon: UserCog, label: 'My Role', tour: 'nav-my-role' },
+  { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', tour: 'nav-my-tasks' },
+  { href: '/projects', icon: FolderKanban, label: 'Projects', tour: 'nav-projects' },
 ];
 
 // Top-right header cluster: a persistent "Home" link (always reachable without
@@ -24,11 +25,24 @@ export default function UserMenu() {
   const initial = displayName.charAt(0).toUpperCase();
 
   const [open, setOpen] = useState(false);
+  // When the guided tour drives the dropdown, we keep it open and ignore the
+  // outside-click handler (the tour's Next/Close buttons live outside it).
+  const [tourControlled, setTourControlled] = useState(false);
   const wrapRef = useRef(null);
 
-  // Close on outside click or Escape.
+  // The guided tour opens/closes this dropdown so it can highlight the items.
   useEffect(() => {
-    if (!open) return;
+    function onTour(e) {
+      if (e.detail === 'open') { setTourControlled(true); setOpen(true); }
+      else { setTourControlled(false); setOpen(false); }
+    }
+    window.addEventListener('tour:user-menu', onTour);
+    return () => window.removeEventListener('tour:user-menu', onTour);
+  }, []);
+
+  // Close on outside click or Escape — disabled while the tour is in control.
+  useEffect(() => {
+    if (!open || tourControlled) return;
     function onClick(e) {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
     }
@@ -41,7 +55,7 @@ export default function UserMenu() {
       document.removeEventListener('mousedown', onClick);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, tourControlled]);
 
   return (
     <div className="flex items-center gap-2">
@@ -83,6 +97,7 @@ export default function UserMenu() {
                 href={link.href}
                 onClick={() => setOpen(false)}
                 role="menuitem"
+                data-tour={link.tour}
                 className="flex items-center gap-3 px-4 py-2 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
                 <link.icon className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />

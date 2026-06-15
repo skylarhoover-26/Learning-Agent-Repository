@@ -233,7 +233,7 @@ export default function DailyLessonsPage() {
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         {/* Date navigation */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-4">
+        <div data-tour="page-daily" className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-4">
           <div className="flex items-center justify-between">
             <button
               onClick={goOlder}

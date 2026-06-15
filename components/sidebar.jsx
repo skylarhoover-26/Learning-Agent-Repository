@@ -13,12 +13,10 @@ import {
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
-import { driver } from 'driver.js';
-import 'driver.js/dist/driver.css';
-import { MENU_WALKTHROUGH_STEPS } from '@/lib/menu-walkthrough-steps';
+import { useTour } from '@/components/guided-tour-provider';
 
 // Stable tour anchor for a nav item, derived from its href so the sidebar and
-// the walkthrough step list stay in sync (e.g. '/my-tasks' -> 'nav-my-tasks').
+// the guided-tour step list stay in sync (e.g. '/my-tasks' -> 'nav-my-tasks').
 function navItemTour(href) {
   return 'nav' + href.replace(/\//g, '-');
 }
@@ -196,6 +194,7 @@ export function SidebarShell({ children }) {
 // The docked, full-height left navigation rail.
 export function SideNav() {
   const { open, setOpen } = useSidebar();
+  const { startTour } = useTour();
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -219,22 +218,6 @@ export function SideNav() {
     .sort((a, b) => b.length - a.length)[0] || null;
   function isActive(href) {
     return href === activeHref;
-  }
-
-  // Open the menu (so its anchors are visible), then run the interactive
-  // spotlight walkthrough of the real UI — same experience as first run.
-  function startTour() {
-    setOpen(true);
-    setTimeout(() => {
-      driver({
-        showProgress: true,
-        allowClose: true,
-        nextBtnText: 'Next',
-        prevBtnText: 'Back',
-        doneBtnText: 'Done',
-        steps: MENU_WALKTHROUGH_STEPS,
-      }).drive();
-    }, 260);
   }
 
   function renderNavItem(item) {

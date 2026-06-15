@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { driver } from 'driver.js';
-import 'driver.js/dist/driver.css';
 import { Sparkles, X } from 'lucide-react';
-import { useSidebar } from '@/components/sidebar';
 import { useProfile } from '@/components/profile-provider';
-import { MENU_WALKTHROUGH_STEPS } from '@/lib/menu-walkthrough-steps';
+import { useTour } from '@/components/guided-tour-provider';
 
 // FOR NOW: the welcome popup appears once per browser session on the dashboard.
 // When Supabase lands, gate this on a per-user `tour_completed` profile flag so
@@ -16,8 +13,8 @@ const SESSION_KEY = 'la_tour_seen_session';
 
 export default function OnboardingTour() {
   const pathname = usePathname();
-  const { setOpen } = useSidebar();
   const { profile } = useProfile();
+  const { startTour: startGuidedTour } = useTour();
   // 'hidden' = nothing to show, 'welcome' = prompt card, 'running' = driver active.
   const [phase, setPhase] = useState('hidden');
 
@@ -45,19 +42,7 @@ export default function OnboardingTour() {
   function startTour() {
     markSeen();
     setPhase('hidden');
-    // The sidebar must be open for its anchors to be visible/highlightable.
-    setOpen(true);
-    // Let the sidebar finish its 200ms slide-in before driver measures elements.
-    setTimeout(() => {
-      driver({
-        showProgress: true,
-        allowClose: true,
-        nextBtnText: 'Next',
-        prevBtnText: 'Back',
-        doneBtnText: 'Done',
-        steps: MENU_WALKTHROUGH_STEPS,
-      }).drive();
-    }, 260);
+    startGuidedTour();
   }
 
   function skip() {

@@ -5,6 +5,7 @@ import { ProfileProvider } from '@/components/profile-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
 import PageTracker from '@/components/page-tracker';
 import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
+import { TourProvider } from '@/components/guided-tour-provider';
 import HelpWidget from '@/components/help-widget';
 import IdentityGate from '@/components/identity-gate';
 import OnboardingTour from '@/components/onboarding-tour';
@@ -39,11 +40,13 @@ export default function RootLayout({ children }) {
           <ProfileProvider>
             <ProgressionProvider>
               <SidebarProvider>
-                <SideNav />
-                <SidebarShell>
-                  {children}
-                </SidebarShell>
-                <OnboardingTour />
+                <TourProvider>
+                  <SideNav />
+                  <SidebarShell>
+                    {children}
+                  </SidebarShell>
+                  <OnboardingTour />
+                </TourProvider>
               </SidebarProvider>
             </ProgressionProvider>
           </ProfileProvider>
