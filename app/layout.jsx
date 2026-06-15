@@ -6,6 +6,7 @@ import { ProgressionProvider } from '@/components/progression-provider';
 import PageTracker from '@/components/page-tracker';
 import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
 import HelpWidget from '@/components/help-widget';
+import OnboardingTour from '@/components/onboarding-tour';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -40,6 +41,7 @@ export default function RootLayout({ children }) {
                 <SidebarShell>
                   {children}
                 </SidebarShell>
+                <OnboardingTour />
               </SidebarProvider>
             </ProgressionProvider>
           </ProfileProvider>

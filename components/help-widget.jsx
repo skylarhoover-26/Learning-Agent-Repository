@@ -61,6 +61,7 @@ export default function HelpWidget() {
     return (
       <button
         onClick={() => setOpen(true)}
+        data-tour="help"
         className="fixed bottom-6 right-6 z-50 flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-pill bg-brand text-white shadow-card hover:bg-brand-700 hover:shadow-card-hover transition-all"
         aria-label="Open help chat"
       >

@@ -14,8 +14,8 @@ const TOUR_STEPS = [
     title: 'Welcome to AI Learning Coach',
     description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey in 9 steps.',
     panels: {
-      left: { label: 'Slack Bot', content: 'The AI Learning Coach lives in Slack. When an employee DMs the bot for the first time, it starts a 5-minute onboarding conversation.' },
-      right: { label: 'Web Dashboard', content: 'The web platform is where employees track progress, take lessons, and explore AI use cases. Managers see team views.' },
+      left: { label: 'Slack Bot', content: 'The AI Learning Coach has a Slack bot for quick tips and commands — `/learn [topic]`, `/streak`, `/heatmap`, and `/skills`. DM the bot any time and it replies with the command menu.' },
+      right: { label: 'Web Dashboard', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
     },
     icon: Play,
   },
@@ -23,8 +23,8 @@ const TOUR_STEPS = [
     title: 'Step 1: Onboarding',
     description: 'New users set up their profile — name, department, sub-team, top tasks, AI experience level, and learning goal. This takes under 2 minutes.',
     panels: {
-      left: { label: 'Slack', content: 'Bot asks: "Which team are you on?" and "What are your top tasks?" — shown as tap-to-select buttons. Results are saved to the user\'s profile.' },
-      right: { label: 'Web', content: 'Same flow available at /onboarding — department selection, sub-team picker, top tasks, experience tier, and goal selection.' },
+      left: { label: 'Web', content: 'Onboarding runs at /onboarding — department selection, sub-team picker, top tasks, experience tier, and goal selection. Tasks are no longer capped; add as few as 1 or as many as you like.' },
+      right: { label: 'Slack', content: 'A guided onboarding conversation in Slack is planned but not live yet. For now, the bot points new users to the web to set up their profile.' },
     },
     icon: MessageCircle,
     link: '/onboarding',
@@ -33,8 +33,8 @@ const TOUR_STEPS = [
     title: 'Step 2: AI Impact Assessment',
     description: 'Users answer 4 questions across Personal, Team, Org, and AI Development dimensions. Free-text follow-ups are scored by AI.',
     panels: {
-      left: { label: 'Slack', content: 'Bot asks multiple-choice questions with follow-up free text for top answers. AI scores responses and builds a P/T/O/D profile.' },
-      right: { label: 'Web', content: 'The /scoring page mirrors the same flow. Results show overall impact level (Low/Medium/High) with score bars for each dimension.' },
+      left: { label: 'Web', content: 'The /scoring page runs the assessment. Results show overall impact level (Low/Medium/High) with score bars for each dimension.' },
+      right: { label: 'Slack', content: 'This assessment runs on the web, not in Slack yet. The Slack bot focuses on quick tips and progress commands.' },
     },
     icon: BarChart3,
     link: '/scoring',

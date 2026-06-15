@@ -49,10 +49,10 @@ const NAV_SECTIONS = [
     title: 'Learn',
     icon: BookOpen,
     items: [
-      { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day' },
-      { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work' },
+      { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day', tour: 'nav-daily' },
+      { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work', tour: 'nav-discover' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
-      { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson' },
+      { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
       { href: '/library', icon: Library, label: 'Library', desc: 'Browse saved AI resources and references' },
       { href: '/modules', icon: GraduationCap, label: 'Modules', desc: 'Structured, multi-lesson learning paths' },
@@ -140,6 +140,7 @@ export function SidebarToggle() {
       className="flex items-center justify-center w-9 h-9 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all"
       aria-label="Navigation menu"
       aria-expanded={open}
+      data-tour="menu-toggle"
     >
       <Menu className="w-5 h-5" />
     </button>
@@ -181,6 +182,7 @@ export function SideNav() {
 
   return (
     <nav
+      data-tour="sidebar"
       className={`fixed top-0 left-0 h-screen w-72 z-50 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 overflow-y-auto transition-transform duration-200 ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
@@ -202,7 +204,9 @@ export function SideNav() {
           <SectionHeader icon={section.icon} title={section.title} />
           {section.items.map(item => (
             item.themeToggle ? (
-              <MenuThemeToggle key="theme" />
+              <div key="theme" data-tour="dark-mode">
+                <MenuThemeToggle />
+              </div>
             ) : (
               (() => {
                 const active = isActive(item.href);
@@ -210,6 +214,7 @@ export function SideNav() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    data-tour={item.tour}
                     aria-current={active ? 'page' : undefined}
                     className={`flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
                       active
