@@ -4,13 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { useProfile } from '@/components/profile-provider';
+import { displayNameFromProfile } from '@/lib/display-name';
 import VoicePicker from '@/components/voice-picker';
-import { Settings, LogOut, FileText, ChevronDown, Briefcase, UserCog, Bell, User } from 'lucide-react';
+import { Settings, LogOut, FileText, ChevronDown, Briefcase, UserCog, Bell, User, RefreshCw } from 'lucide-react';
 
 export default function UserMenu() {
   const { profile } = useProfile();
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Soft-login (pre-Okta): lets a tester switch which email they're using.
+  const [softLogin, setSoftLogin] = useState(null);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -19,6 +22,22 @@ export default function UserMenu() {
       .then(d => setIsAdmin(d.isAdmin))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetch('/api/identity')
+      .then(r => r.json())
+      .then(d => setSoftLogin(!d.oktaConfigured && d.email ? { email: d.email } : null))
+      .catch(() => {});
+  }, []);
+
+  async function handleSwitchUser() {
+    try {
+      await fetch('/api/identity', { method: 'DELETE' });
+    } catch {
+      // ignore — reload still surfaces the email gate
+    }
+    window.location.reload();
+  }
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -34,7 +53,7 @@ export default function UserMenu() {
     signOut({ callbackUrl: '/auth/signin' });
   }
 
-  const displayName = profile?.display_name || profile?.slack_handle || 'Learner';
+  const displayName = displayNameFromProfile(profile);
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -132,6 +151,18 @@ export default function UserMenu() {
               >
                 <LogOut className="w-4 h-4" />
                 Log Out
+              </button>
+            </div>
+          )}
+
+          {softLogin && (
+            <div className="border-t border-slate-100 dark:border-slate-700">
+              <button
+                onClick={handleSwitchUser}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                Switch user
               </button>
             </div>
           )}
