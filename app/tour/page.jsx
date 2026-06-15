@@ -2,20 +2,33 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import PageHeader from '@/components/page-header';
+import { useSidebar } from '@/components/sidebar';
+import { MENU_WALKTHROUGH_STEPS } from '@/lib/menu-walkthrough-steps';
 import {
   Play, ChevronRight, ChevronLeft, ArrowRight,
   MessageCircle, BarChart3, BookOpen, Zap,
-  Target, Trophy, Crosshair, RefreshCw, Rss,
+  Target, Trophy, Crosshair, RefreshCw, Rss, Compass,
 } from 'lucide-react';
 
 const TOUR_STEPS = [
   {
     title: 'Welcome to AI Learning Coach',
-    description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey in 9 steps.',
+    description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey, step by step.',
     panels: {
-      left: { label: 'Slack Bot', content: 'The AI Learning Coach lives in Slack. When an employee DMs the bot for the first time, it starts a 5-minute onboarding conversation.' },
-      right: { label: 'Web Dashboard', content: 'The web platform is where employees track progress, take lessons, and explore AI use cases. Managers see team views.' },
+      left: {
+        label: 'Slack Bot',
+        content: 'The AI Learning Coach has a Slack bot for quick tips and commands. DM it any time and use:',
+        commands: [
+          { cmd: '/learn [topic]', desc: 'Get a quick AI tip on any topic' },
+          { cmd: '/streak', desc: 'Check your learning streak & progress' },
+          { cmd: '/heatmap', desc: 'See your knowledge heatmap' },
+          { cmd: '/skills', desc: 'View your skill breakdown' },
+        ],
+      },
+      right: { label: 'Web Dashboard', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
     },
     icon: Play,
   },
@@ -23,8 +36,8 @@ const TOUR_STEPS = [
     title: 'Step 1: Onboarding',
     description: 'New users set up their profile — name, department, sub-team, top tasks, AI experience level, and learning goal. This takes under 2 minutes.',
     panels: {
-      left: { label: 'Slack', content: 'Bot asks: "Which team are you on?" and "What are your top 3 tasks?" — shown as tap-to-select buttons. Results are saved to the user\'s profile.' },
-      right: { label: 'Web', content: 'Same flow available at /onboarding — department selection, sub-team picker, top tasks (up to 3), experience tier, and goal selection.' },
+      left: { label: 'Web', content: 'Onboarding runs at /onboarding — department selection, sub-team picker, top tasks, experience tier, and goal selection. Tasks are no longer capped; add as few as 1 or as many as you like.' },
+      right: { label: 'Slack', content: 'A guided onboarding conversation in Slack is planned but not live yet. For now, the bot points new users to the web to set up their profile.' },
     },
     icon: MessageCircle,
     link: '/onboarding',
@@ -33,8 +46,8 @@ const TOUR_STEPS = [
     title: 'Step 2: AI Impact Assessment',
     description: 'Users answer 4 questions across Personal, Team, Org, and AI Development dimensions. Free-text follow-ups are scored by AI.',
     panels: {
-      left: { label: 'Slack', content: 'Bot asks multiple-choice questions with follow-up free text for top answers. AI scores responses and builds a P/T/O/D profile.' },
-      right: { label: 'Web', content: 'The /scoring page mirrors the same flow. Results show overall impact level (Low/Medium/High) with score bars for each dimension.' },
+      left: { label: 'Web', content: 'The /scoring page runs the assessment. Results show overall impact level (Low/Medium/High) with score bars for each dimension.' },
+      right: { label: 'Slack', content: 'This assessment runs on the web, not in Slack yet. The Slack bot focuses on quick tips and progress commands.' },
     },
     icon: BarChart3,
     link: '/scoring',
@@ -111,17 +124,61 @@ const TOUR_STEPS = [
   },
 ];
 
+// One column of a step card: a label, optional prose, and an optional list of
+// commands rendered as monospace chips with descriptions.
+function Panel({ panel }) {
+  return (
+    <div className="p-6">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+        {panel.label}
+      </p>
+      {panel.content && (
+        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{panel.content}</p>
+      )}
+      {panel.commands && (
+        <ul className="mt-3 space-y-2">
+          {panel.commands.map(item => (
+            <li key={item.cmd} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <code className="shrink-0 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-brand dark:text-brand-200 text-xs font-mono">
+                {item.cmd}
+              </code>
+              <span className="leading-snug">{item.desc}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function TourPage() {
   const [currentStep, setCurrentStep] = useState(0);
+  const { setOpen } = useSidebar();
   const step = TOUR_STEPS[currentStep];
   const Icon = step.icon;
+
+  function startMenuWalkthrough() {
+    // The sidebar must be open for its anchors to be visible/highlightable.
+    setOpen(true);
+    // Let the sidebar finish its 200ms slide-in before driver measures elements.
+    setTimeout(() => {
+      driver({
+        showProgress: true,
+        allowClose: true,
+        nextBtnText: 'Next',
+        prevBtnText: 'Back',
+        doneBtnText: 'Done',
+        steps: MENU_WALKTHROUGH_STEPS,
+      }).drive();
+    }, 260);
+  }
 
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Play}
         title="Platform Tour"
-        subtitle="9-step walkthrough of the full learner + manager experience"
+        subtitle="A guided walkthrough of the full learner + manager experience"
       />
 
       <main className="max-w-4xl mx-auto px-6 py-10">
@@ -165,18 +222,8 @@ export default function TourPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-              <div className="p-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  {step.panels.left.label}
-                </p>
-                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{step.panels.left.content}</p>
-              </div>
-              <div className="p-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  {step.panels.right.label}
-                </p>
-                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{step.panels.right.content}</p>
-              </div>
+              <Panel panel={step.panels.left} />
+              <Panel panel={step.panels.right} />
             </div>
 
             {step.link && (
@@ -218,13 +265,21 @@ export default function TourPage() {
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 transition-all"
-              >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/"
+                  className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
+                >
+                  Go to Dashboard
+                </Link>
+                <button
+                  onClick={startMenuWalkthrough}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 transition-all"
+                >
+                  <Compass className="w-4 h-4" />
+                  Walk me through the menu
+                </button>
+              </div>
             )}
           </div>
         </div>

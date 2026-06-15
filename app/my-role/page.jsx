@@ -78,13 +78,13 @@ export default function MyRolePage() {
 
   function toggleTask(t) {
     setTopTasks((prev) =>
-      prev.includes(t) ? prev.filter((x) => x !== t) : (prev.length >= 3 ? prev : [...prev, t])
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
     );
   }
 
   function addCustomTask() {
     const v = customTask.trim();
-    if (v && !topTasks.includes(v) && topTasks.length < 3) {
+    if (v && !topTasks.includes(v)) {
       setTopTasks((prev) => [...prev, v]);
       setCustomTask('');
     }
@@ -252,10 +252,10 @@ export default function MyRolePage() {
             )}
 
             {department && (!hasSubteams || subTeam) && (
-              <Section title={`Top tasks (${topTasks.length}/3)`}>
+              <Section title={`Top tasks (${topTasks.length})`}>
                 <div className="space-y-2">
                   {availableTasks.map((t) => (
-                    <TaskRow key={t} active={topTasks.includes(t)} disabled={!topTasks.includes(t) && topTasks.length >= 3} onClick={() => toggleTask(t)}>{t}</TaskRow>
+                    <TaskRow key={t} active={topTasks.includes(t)} onClick={() => toggleTask(t)}>{t}</TaskRow>
                   ))}
                   {topTasks.filter((t) => !availableTasks.includes(t)).map((t) => (
                     <TaskRow key={t} active onClick={() => toggleTask(t)}>{t}</TaskRow>
@@ -269,7 +269,7 @@ export default function MyRolePage() {
                       placeholder="Add your own task…"
                       className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand"
                     />
-                    <button onClick={addCustomTask} disabled={!customTask.trim() || topTasks.length >= 3} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 disabled:opacity-40">
+                    <button onClick={addCustomTask} disabled={!customTask.trim()} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 disabled:opacity-40">
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>

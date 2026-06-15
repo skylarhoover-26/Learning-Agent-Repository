@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
   CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
@@ -48,10 +49,10 @@ const NAV_SECTIONS = [
     title: 'Learn',
     icon: BookOpen,
     items: [
-      { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day' },
-      { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work' },
+      { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day', tour: 'nav-daily' },
+      { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work', tour: 'nav-discover' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
-      { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson' },
+      { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
       { href: '/library', icon: Library, label: 'Library', desc: 'Browse saved AI resources and references' },
       { href: '/modules', icon: GraduationCap, label: 'Modules', desc: 'Structured, multi-lesson learning paths' },
@@ -139,6 +140,7 @@ export function SidebarToggle() {
       className="flex items-center justify-center w-9 h-9 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all"
       aria-label="Navigation menu"
       aria-expanded={open}
+      data-tour="menu-toggle"
     >
       <Menu className="w-5 h-5" />
     </button>
@@ -168,8 +170,19 @@ export function SidebarShell({ children }) {
 // The docked, full-height left navigation rail.
 export function SideNav() {
   const { open, setOpen } = useSidebar();
+  const pathname = usePathname();
+
+  // The current tab is active if its href matches the path exactly, or (for
+  // non-root links) if we're on a nested route beneath it. Root '/' only matches
+  // exactly so it doesn't light up on every page.
+  function isActive(href) {
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(href + '/');
+  }
+
   return (
     <nav
+      data-tour="sidebar"
       className={`fixed top-0 left-0 h-screen w-72 z-50 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 overflow-y-auto transition-transform duration-200 ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
@@ -191,19 +204,32 @@ export function SideNav() {
           <SectionHeader icon={section.icon} title={section.title} />
           {section.items.map(item => (
             item.themeToggle ? (
-              <MenuThemeToggle key="theme" />
+              <div key="theme" data-tour="dark-mode">
+                <MenuThemeToggle />
+              </div>
             ) : (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-start gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-              >
-                <item.icon className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                <span>
-                  <span className="block text-sm font-semibold">{item.label}</span>
-                  <span className="block text-xs text-slate-500 dark:text-slate-400 leading-snug">{item.desc}</span>
-                </span>
-              </Link>
+              (() => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    data-tour={item.tour}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
+                      active
+                        ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
+                        : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <item.icon className={`w-4 h-4 mt-0.5 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
+                    <span>
+                      <span className="block text-sm font-semibold">{item.label}</span>
+                      <span className={`block text-xs leading-snug ${active ? 'text-brand/70' : 'text-slate-500 dark:text-slate-400'}`}>{item.desc}</span>
+                    </span>
+                  </Link>
+                );
+              })()
             )
           ))}
         </div>

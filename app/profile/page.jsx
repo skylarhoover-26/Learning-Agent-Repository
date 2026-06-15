@@ -121,14 +121,13 @@ export default function ProfilePage() {
   function handleEditTaskToggle(task) {
     setEditTopTasks(prev => {
       if (prev.includes(task)) return prev.filter(t => t !== task);
-      if (prev.length >= 3) return prev;
       return [...prev, task];
     });
   }
 
   function handleAddCustomTask() {
     const trimmed = customTask.trim();
-    if (trimmed && !editTopTasks.includes(trimmed) && editTopTasks.length < 3) {
+    if (trimmed && !editTopTasks.includes(trimmed)) {
       setEditTopTasks(prev => [...prev, trimmed]);
       setCustomTask('');
       setShowCustomInput(false);
@@ -158,7 +157,7 @@ export default function ProfilePage() {
   }
 
   const editAvailableTasks = editDept ? getTaskList(editDept, editSubTeam) : [];
-  const editAtLimit = editTopTasks.length >= 3;
+  const editAtLimit = false; // No cap — users can add as many tasks as they want (minimum 1).
   const editShowSubTeamPicker = editingRole && editDept && !!SUBTEAMS[editDept];
   const editShowTaskPicker = editingRole && editDept && (!SUBTEAMS[editDept] || editSubTeam);
   const canSaveRole = editDept && editTopTasks.length >= 1 && (!SUBTEAMS[editDept] || editSubTeam);
@@ -341,7 +340,7 @@ export default function ProfilePage() {
               {editShowTaskPicker && (
                 <div>
                   <label className="block text-sm font-medium text-ink dark:text-slate-300 mb-2">
-                    Top tasks ({editTopTasks.length}/3)
+                    Top tasks ({editTopTasks.length})
                   </label>
                   <div className="space-y-1.5">
                     {editAvailableTasks.map(task => {
