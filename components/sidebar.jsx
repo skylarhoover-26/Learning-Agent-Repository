@@ -190,12 +190,22 @@ export function SideNav() {
     fetch('/api/identity').then(r => r.json()).then(d => setSoftLogin(!d.oktaConfigured && d.email ? { email: d.email } : null)).catch(() => {});
   }, []);
 
-  // The current tab is active if its href matches the path exactly, or (for
-  // non-root links) if we're on a nested route beneath it. Root '/' only matches
-  // exactly so it doesn't light up on every page.
-  function isActive(href) {
+  // Highlight only the single most-specific matching item. Without this, a
+  // parent like /admin would also light up on /admin/skill-levels. We pick the
+  // longest href that matches the current path (exact or as a path prefix).
+  const allHrefs = [
+    ...ADMIN_ITEMS.map(i => i.href),
+    ...NAV_SECTIONS.flatMap(s => s.items.filter(i => i.href).map(i => i.href)),
+  ];
+  function pathMatches(href) {
     if (href === '/') return pathname === '/';
     return pathname === href || pathname.startsWith(href + '/');
+  }
+  const activeHref = allHrefs
+    .filter(pathMatches)
+    .sort((a, b) => b.length - a.length)[0] || null;
+  function isActive(href) {
+    return href === activeHref;
   }
 
   function renderNavItem(item) {
