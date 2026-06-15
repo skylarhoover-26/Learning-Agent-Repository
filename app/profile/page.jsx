@@ -38,6 +38,7 @@ export default function ProfilePage() {
   const [editName, setEditName] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showProgressConfirm, setShowProgressConfirm] = useState(false);
 
   const [editingRole, setEditingRole] = useState(false);
   const [editDept, setEditDept] = useState('');
@@ -92,6 +93,23 @@ export default function ProfilePage() {
     }
     // 3. Send the user back through onboarding from a clean slate.
     window.location.href = '/onboarding';
+  }
+
+  // Lighter reset: clear learning progress (XP, badges, lessons, modules,
+  // quests, calibration, impact) but KEEP the profile/role — so the user stays
+  // on the dashboard and does NOT go back through onboarding.
+  async function handleResetProgress() {
+    try {
+      const prefixes = ['lp_', 'learner_', 'ai_impact_', 'calibration_', 'tutorial_completed'];
+      const keep = new Set(['learner_profile']); // the role/tasks/level cache
+      Object.keys(localStorage)
+        .filter((k) => !keep.has(k) && prefixes.some((p) => k === p || k.startsWith(p)))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch (error) {
+      console.error('Failed to clear progress:', error);
+    }
+    // Back to the dashboard with a clean slate; profile/role stays intact.
+    window.location.href = '/';
   }
 
   function handleStartRoleEdit() {
@@ -463,15 +481,52 @@ export default function ProfilePage() {
         {/* D. Reset / Sign Out */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="font-semibold text-ink dark:text-slate-200 mb-2">Danger Zone</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-            Resetting your profile will clear all your settings and progress (XP, badges, lessons) and send you back through onboarding.
-          </p>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
             Just want to change your department, team, or tasks?{' '}
             <Link href="/my-role" className="font-medium text-brand hover:underline">
               Update your role
             </Link>{' '}
-            instead — it keeps all your progress.
+            instead — it keeps everything.
+          </p>
+
+          {/* Reset progress only — keeps the profile, no re-onboarding. */}
+          <div className="mb-5">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+              <span className="font-medium text-ink dark:text-slate-200">Reset progress only</span> — clears your XP, badges, lessons, quests, and assessments but keeps your role and tasks. You stay on the dashboard.
+            </p>
+            {!showProgressConfirm ? (
+              <button
+                onClick={() => setShowProgressConfirm(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-slate-600 transition-all"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset progress only
+              </button>
+            ) : (
+              <div className="bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
+                <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">
+                  Clear your progress but keep your role and tasks? You won&apos;t need to onboard again.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleResetProgress}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all"
+                  >
+                    Yes, reset progress
+                  </button>
+                  <button
+                    onClick={() => setShowProgressConfirm(false)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            <span className="font-medium text-ink dark:text-slate-200">Reset profile (full)</span> — clears all settings and progress and sends you back through onboarding.
           </p>
           {!showResetConfirm ? (
             <button
