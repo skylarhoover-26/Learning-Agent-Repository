@@ -46,6 +46,7 @@ const NAV_SECTIONS = [
       { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
       { href: '/projects', icon: FolderKanban, label: 'Projects', desc: 'Add work projects to tailor lessons' },
       { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
+      { voicePicker: true },
     ],
   },
   {
@@ -85,10 +86,10 @@ const NAV_SECTIONS = [
 // Shown only to admins, pinned to the top of the nav.
 const ADMIN_ITEMS = [
   { href: '/admin', icon: Settings, label: 'Admin Dashboard', desc: 'Curriculum proposals and admin tools' },
-  { href: '/admin/skill-levels', icon: SlidersHorizontal, label: 'Skill Levels', desc: "Set each skill's difficulty level" },
+  { href: '/admin/admins', icon: Users, label: 'Admins', desc: 'Manage who has admin access' },
   { href: '/curriculum-pipeline', icon: FileText, label: 'Content Updates', desc: 'Review AI-proposed curriculum updates' },
   { href: '/admin/notifications', icon: Bell, label: 'Notifications', desc: 'Who receives Slack notifications' },
-  { href: '/admin/admins', icon: Users, label: 'Admins', desc: 'Manage who has admin access' },
+  { href: '/admin/skill-levels', icon: SlidersHorizontal, label: 'Skill Levels', desc: "Set each skill's difficulty level" },
 ];
 
 const SKILL_SHOP_LINKS = [
@@ -271,6 +272,8 @@ export function SideNav() {
               <div key="theme" data-tour="dark-mode">
                 <MenuThemeToggle />
               </div>
+            ) : item.voicePicker ? (
+              <VoicePicker key="voice" />
             ) : (
               renderNavItem(item)
             )
@@ -301,28 +304,29 @@ export function SideNav() {
         ))}
       </div>
 
-      {/* Account actions — moved here from the old top-right menu. */}
-      <div className="py-1 mb-2 border-t border-slate-100 dark:border-slate-700">
-        <VoicePicker />
-        {softLogin && (
-          <button
-            onClick={handleSwitchUser}
-            className="w-full flex items-start gap-3 px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
-            <span className="text-sm font-semibold">Switch user</span>
-          </button>
-        )}
-        {process.env.NEXT_PUBLIC_OKTA_CONFIGURED && (
-          <button
-            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-            className="w-full flex items-start gap-3 px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-          >
-            <LogOut className="w-4 h-4 mt-0.5 shrink-0" />
-            <span className="text-sm font-semibold">Log out</span>
-          </button>
-        )}
-      </div>
+      {/* Session actions (Voice now lives in Account). */}
+      {(softLogin || process.env.NEXT_PUBLIC_OKTA_CONFIGURED) && (
+        <div className="py-1 mb-2 border-t border-slate-100 dark:border-slate-700">
+          {softLogin && (
+            <button
+              onClick={handleSwitchUser}
+              className="w-full flex items-start gap-3 px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
+              <span className="text-sm font-semibold">Switch user</span>
+            </button>
+          )}
+          {process.env.NEXT_PUBLIC_OKTA_CONFIGURED && (
+            <button
+              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+              className="w-full flex items-start gap-3 px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              <LogOut className="w-4 h-4 mt-0.5 shrink-0" />
+              <span className="text-sm font-semibold">Log out</span>
+            </button>
+          )}
+        </div>
+      )}
     </nav>
   );
 }
