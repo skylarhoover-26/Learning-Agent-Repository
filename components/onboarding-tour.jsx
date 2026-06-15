@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import { Sparkles, X, ArrowRight } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { useSidebar } from '@/components/sidebar';
 import { useProfile } from '@/components/profile-provider';
 import { MENU_WALKTHROUGH_STEPS } from '@/lib/menu-walkthrough-steps';
@@ -66,13 +65,6 @@ export default function OnboardingTour() {
     setPhase('hidden');
   }
 
-  // The link navigates to /tour; also dismiss the popup so it doesn't linger
-  // on the deck (this component persists across client-side navigation).
-  function seeFullTour() {
-    markSeen();
-    setPhase('hidden');
-  }
-
   if (phase !== 'welcome') return null;
 
   return (
@@ -94,7 +86,7 @@ export default function OnboardingTour() {
             Take a quick 60-second tour to learn your way around — the menu, your lessons, and where to get help.
           </p>
         </div>
-        <div className="p-4 space-y-3">
+        <div className="p-4">
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={skip}
@@ -109,14 +101,6 @@ export default function OnboardingTour() {
               Take the tour
             </button>
           </div>
-          <Link
-            href="/tour"
-            onClick={seeFullTour}
-            className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
-          >
-            Want more? See the full platform tour
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
       </div>
     </div>

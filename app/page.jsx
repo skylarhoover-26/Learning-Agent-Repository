@@ -16,7 +16,7 @@ import ImpactAssessmentModal from '@/components/impact-assessment-modal';
 import {
   getCurrentLearner, getAggregatedSkills,
 } from '@/lib/data';
-import { Play, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 const TIER_LABELS = {
   beginner: { label: 'Beginner', color: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
@@ -78,13 +78,6 @@ export default async function Dashboard() {
             >
               Get Started
               <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/tour"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium text-base hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-            >
-              <Play className="w-4 h-4" />
-              Take the Tour
             </Link>
           </div>
         </main>
