@@ -15,7 +15,14 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Missing type parameter' }, { status: 400 });
     }
 
-    const data = await getUserData(user.email, dataType);
+    let data = await getUserData(user.email, dataType);
+    // The profile blob is keyed by email and doesn't store the email as a
+    // field — attach it so the client can derive a display name from it.
+    if (dataType === 'profile' && data && typeof data === 'object') {
+      data = data.data && typeof data.data === 'object'
+        ? { ...data, data: { ...data.data, email: user.email } }
+        : { ...data, email: user.email };
+    }
     return NextResponse.json({ data });
   } catch (error) {
     console.error('GET /api/user-data error:', error);
