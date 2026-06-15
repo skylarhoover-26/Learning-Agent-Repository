@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
@@ -10,7 +11,7 @@ function getClient() {
   return client;
 }
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = MODELS.sonnet;
 
 function buildCuratedQuickWin(department, task, curatedData) {
   return {

@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import { put, list, del } from '@vercel/blob';
 import Anthropic from '@anthropic-ai/sdk';
@@ -64,7 +65,7 @@ async function filterUnsafeContent(findings) {
     const client = new Anthropic();
     const titles = findings.map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}`).join('\n');
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       max_tokens: 500,
       system: `You are a content safety filter for a corporate AI learning platform at Housecall Pro.
 
@@ -98,7 +99,7 @@ async function generateDailyLessons(client, findings) {
     .join('\n');
 
   const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: MODELS.haiku,
     max_tokens: 2000,
     system: `You are a learning experience designer for Housecall Pro's AI Academy.
 
@@ -233,7 +234,7 @@ export async function GET(request) {
       .join('\n');
 
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       max_tokens: 2000,
       system: `You are the AI Academy curriculum curator at Housecall Pro.
 

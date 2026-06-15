@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { logAuditEntry } from '@/lib/audit-log';
@@ -38,7 +39,7 @@ export async function POST(request) {
 
     try {
       const response = await getClient().messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: MODELS.haiku,
         max_tokens: 800,
         system: `You write 3 alternative versions of a workplace communication, each in a different tone.
 Context: ${context}.
@@ -72,7 +73,7 @@ Return ONLY JSON array: [{"tone":"warm","message":"...","whyItWorks":"one senten
       type: 'tones',
       endpoint: '/api/lesson/tones',
       user: { email: 'unknown', name: 'Unknown' },
-      model: tonesSource === 'ai' ? 'claude-haiku-4-5-20251001' : 'fallback',
+      model: tonesSource === 'ai' ? MODELS.haiku : 'fallback',
       input: { sourceText: source, toneContext: context },
       output: { tones: tonesResult.map((t) => t.tone), source: tonesSource },
       durationMs: Date.now() - start,

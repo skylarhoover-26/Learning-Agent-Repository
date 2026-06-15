@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonResponse } from '@/lib/ai';
@@ -24,7 +25,7 @@ export async function POST(request) {
       type: 'lesson_start',
       endpoint: '/api/lesson/start',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-6',
+      model: MODELS.sonnet,
       input: { topic, format },
       output: error ? null : { slideTitle: response?.slideTitle, phase: response?.phase, message: response?.message, keyPoints: response?.keyPoints },
       durationMs: Date.now() - start,
