@@ -18,7 +18,16 @@ const TOUR_STEPS = [
     title: 'Welcome to AI Learning Coach',
     description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey, step by step.',
     panels: {
-      left: { label: 'Slack Bot', content: 'The AI Learning Coach has a Slack bot for quick tips and commands — `/learn [topic]`, `/streak`, `/heatmap`, and `/skills`. DM the bot any time and it replies with the command menu.' },
+      left: {
+        label: 'Slack Bot',
+        content: 'The AI Learning Coach has a Slack bot for quick tips and commands. DM it any time and use:',
+        commands: [
+          { cmd: '/learn [topic]', desc: 'Get a quick AI tip on any topic' },
+          { cmd: '/streak', desc: 'Check your learning streak & progress' },
+          { cmd: '/heatmap', desc: 'See your knowledge heatmap' },
+          { cmd: '/skills', desc: 'View your skill breakdown' },
+        ],
+      },
       right: { label: 'Web Dashboard', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
     },
     icon: Play,
@@ -115,6 +124,33 @@ const TOUR_STEPS = [
   },
 ];
 
+// One column of a step card: a label, optional prose, and an optional list of
+// commands rendered as monospace chips with descriptions.
+function Panel({ panel }) {
+  return (
+    <div className="p-6">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+        {panel.label}
+      </p>
+      {panel.content && (
+        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{panel.content}</p>
+      )}
+      {panel.commands && (
+        <ul className="mt-3 space-y-2">
+          {panel.commands.map(item => (
+            <li key={item.cmd} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <code className="shrink-0 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-brand dark:text-brand-200 text-xs font-mono">
+                {item.cmd}
+              </code>
+              <span className="leading-snug">{item.desc}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function TourPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const { setOpen } = useSidebar();
@@ -186,18 +222,8 @@ export default function TourPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-              <div className="p-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  {step.panels.left.label}
-                </p>
-                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{step.panels.left.content}</p>
-              </div>
-              <div className="p-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  {step.panels.right.label}
-                </p>
-                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{step.panels.right.content}</p>
-              </div>
+              <Panel panel={step.panels.left} />
+              <Panel panel={step.panels.right} />
             </div>
 
             {step.link && (
