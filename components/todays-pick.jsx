@@ -4,9 +4,20 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Sparkles, ChevronRight } from 'lucide-react';
 import { useProgression } from '@/components/progression-provider';
+import { useProfile } from '@/components/profile-provider';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
+
+// Don't recommend topics above the learner's level (e.g. RAG to a beginner).
+const LEVEL_RANK = { beginner: 1, intermediate: 2, advanced: 3 };
+const TIER_MAX_RANK = {
+  beginner: 1,
+  practitioner: 2,
+  power_user: 3,
+  builder: 3,
+  developer: 3,
+};
 
 function generateDailyPick(skills, lessonHistory) {
   const today = new Date().toDateString();
@@ -66,6 +77,7 @@ function generateDailyPick(skills, lessonHistory) {
 
 export default function TodaysPick() {
   const prog = useProgression();
+  const { profile } = useProfile();
   const [pick, setPick] = useState(null);
 
   useEffect(() => {
@@ -80,9 +92,13 @@ export default function TodaysPick() {
       calibrationSkills,
     });
 
-    const dailyPick = generateDailyPick(skills, prog.lessonHistory);
+    // Only recommend skills at or below the learner's experience level.
+    const maxRank = TIER_MAX_RANK[profile?.tier] ?? 3;
+    const tierSkills = skills.filter(s => (LEVEL_RANK[s.level] ?? 1) <= maxRank);
+
+    const dailyPick = generateDailyPick(tierSkills, prog.lessonHistory);
     setPick(dailyPick);
-  }, [prog?.isLoaded, prog?.lessonHistory]);
+  }, [prog?.isLoaded, prog?.lessonHistory, profile?.tier]);
 
   if (!pick) return null;
 
