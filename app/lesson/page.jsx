@@ -813,22 +813,30 @@ function LessonContent() {
             </button>
           </form>
 
-          {/* Quiet finish + exit links */}
-          <div className="mt-4 flex items-center justify-center gap-4">
-            <button
-              onClick={finishLesson}
-              disabled={isLoading}
-              className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-brand dark:text-slate-400 transition-all disabled:opacity-50"
-            >
-              Finish lesson
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={resetToPickerView}
-              className="text-sm text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-all"
-            >
-              Exit lesson
-            </button>
+          {/* Prominent finish: keep learning via chat above, or finish to earn XP. */}
+          <div className="mt-6 rounded-xl border border-brand-200 dark:border-slate-700 bg-brand-50/60 dark:bg-slate-800/60 p-4">
+            <p className="text-sm text-ink dark:text-slate-200 font-medium mb-1">
+              Done, or want to go deeper?
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Keep the conversation going above to learn more — or finish your {FORMAT_META[format].title} to earn <span className="font-semibold text-brand dark:text-brand-200">+50 XP</span>.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={finishLesson}
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm shadow-sm hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <Trophy className="w-4 h-4" />
+                Finish {FORMAT_META[format].title} · +50 XP
+              </button>
+              <button
+                onClick={resetToPickerView}
+                className="text-sm text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-all"
+              >
+                Exit without finishing
+              </button>
+            </div>
           </div>
         </div>
       )}

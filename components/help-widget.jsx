@@ -7,6 +7,21 @@ import { FormattedContent } from '@/components/lesson-slide';
 
 const GREETING = 'Thanks for checking in! I can answer questions about the AI Learning Coach. How can I help?';
 
+// Persist the conversation + draft across page navigation so a learner never
+// loses what they typed when they move between pages. sessionStorage keeps it
+// for the browser tab/session and clears when the tab closes.
+const STORAGE_KEY = 'la_help_widget';
+
+function loadState() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 const SLACK_CHANNELS = [
   { label: 'HCP Skill Shop Help', href: 'https://housecall.slack.com/archives/C04BU29V4TH' },
   { label: 'HCP MX Skill Shop Help', href: 'https://housecall.slack.com/archives/C04J8BRUJQY' },
@@ -19,6 +34,25 @@ export default function HelpWidget() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef(null);
+
+  // Hydrate from sessionStorage on mount (after mount to avoid SSR mismatch).
+  useEffect(() => {
+    const saved = loadState();
+    if (saved) {
+      if (Array.isArray(saved.messages)) setMessages(saved.messages);
+      if (typeof saved.input === 'string') setInput(saved.input);
+      if (saved.open) setOpen(true);
+    }
+  }, []);
+
+  // Persist whenever the conversation, draft, or open state changes.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, input, open }));
+    } catch {
+      // sessionStorage unavailable — state just won't survive navigation.
+    }
+  }, [messages, input, open]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -7,9 +7,16 @@ import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-st
 import { addXpEvent } from '@/lib/learner-store';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
-import { MessageCircle, Send, Loader2, Trash2 } from 'lucide-react';
+import { MessageCircle, Send, Loader2, Trash2, ExternalLink } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import ChatLessonOffer from '@/components/chat-lesson-offer';
+
+// Same support channels surfaced by the floating help widget, pinned in the
+// chat footer so learners can reach the team without leaving the conversation.
+const SLACK_CHANNELS = [
+  { label: 'HCP Skill Shop Help', href: 'https://housecall.slack.com/archives/C04BU29V4TH' },
+  { label: 'HCP MX Skill Shop Help', href: 'https://housecall.slack.com/archives/C04J8BRUJQY' },
+];
 
 const DEFAULT_SUGGESTIONS = [
   'How do I write a good prompt?',
@@ -190,6 +197,21 @@ function ChatPageInner() {
 
       <footer className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 sticky bottom-0">
         <div className="max-w-3xl mx-auto px-6 py-4">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Need a human? Reach the team in Slack:</span>
+            {SLACK_CHANNELS.map(c => (
+              <a
+                key={c.href}
+                href={c.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium text-brand dark:text-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-all"
+              >
+                {c.label}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            ))}
+          </div>
           <div className="flex items-end gap-3">
             <textarea
               ref={inputRef}

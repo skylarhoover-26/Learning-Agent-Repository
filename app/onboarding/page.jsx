@@ -33,7 +33,7 @@ export default function OnboardingPage() {
   const [customTask, setCustomTask] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [tier, setTier] = useState('');
-  const [goal, setGoal] = useState('');
+  const [goals, setGoals] = useState([]);
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -45,9 +45,9 @@ export default function OnboardingPage() {
     }
     if (step === 2) return topTasks.length >= 1;
     if (step === 3) return tier.length > 0;
-    if (step === 4) return goal.length > 0;
+    if (step === 4) return goals.length > 0;
     return false;
-  }, [step, department, subTeam, topTasks, tier, goal]);
+  }, [step, department, subTeam, topTasks, tier, goals]);
 
   function goNext() {
     if (!canAdvance()) return;
@@ -101,11 +101,16 @@ export default function OnboardingPage() {
     setTier(tierId);
   }
 
-  function handleGoalSelect(selectedGoal) {
-    setGoal(selectedGoal);
+  function handleGoalToggle(selectedGoal) {
+    setGoals(prev =>
+      prev.includes(selectedGoal)
+        ? prev.filter(g => g !== selectedGoal)
+        : [...prev, selectedGoal]
+    );
   }
 
-  async function handleFinish(selectedGoal) {
+  async function handleFinish(selectedGoals) {
+    const chosenGoals = selectedGoals || goals;
     const email = session?.user?.email?.toLowerCase() || '';
     // Keep an existing name if one is already set (e.g. demo mode, where the
     // session has no name) instead of blanking it on re-onboarding.
@@ -121,7 +126,10 @@ export default function OnboardingPage() {
       sub_team: subTeam || null,
       top_tasks: topTasks,
       tier,
-      goal: selectedGoal || goal,
+      goals: chosenGoals,
+      // Keep the legacy single `goal` string in sync (joined) so lesson/AI
+      // prompts and other read sites that expect `profile.goal` keep working.
+      goal: chosenGoals.join('; '),
       onboarded_at: new Date().toISOString(),
     };
     try {
@@ -249,10 +257,10 @@ export default function OnboardingPage() {
           )}
           {step === 4 && (
             <StepGoal
-              selected={goal}
-              onSelect={handleGoalSelect}
-              onFinish={() => handleFinish(goal)}
-              canAdvance={goal.length > 0}
+              selected={goals}
+              onToggle={handleGoalToggle}
+              onFinish={() => handleFinish(goals)}
+              canAdvance={goals.length > 0}
             />
           )}
         </div>
@@ -494,7 +502,7 @@ function StepTier({ selected, onSelect, onNext, canAdvance }) {
   );
 }
 
-function StepGoal({ selected, onSelect, onFinish, canAdvance }) {
+function StepGoal({ selected, onToggle, onFinish, canAdvance }) {
   return (
     <div>
       <div className="text-center mb-8">
@@ -502,31 +510,37 @@ function StepGoal({ selected, onSelect, onFinish, canAdvance }) {
           <Target className="w-7 h-7 text-green-600" />
         </div>
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
-          What's your main goal?
+          What are your goals?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm">
-          Pick what excites you most — you can always change it later.
+          Pick everything that fits — we'll tailor your lessons to all of them. You can always change this later.
         </p>
       </div>
       <div className="space-y-2 max-w-lg mx-auto mb-6">
-        {GOALS.map(g => (
-          <button
-            key={g}
-            onClick={() => onSelect(g)}
-            className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
-              selected === g
-                ? 'bg-brand text-white border-brand shadow-sm'
-                : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
-            }`}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="font-medium">{g}</p>
-            </div>
-            {selected === g && (
-              <Check className="w-5 h-5 shrink-0" />
-            )}
-          </button>
-        ))}
+        {GOALS.map(g => {
+          const isSelected = selected.includes(g);
+          return (
+            <button
+              key={g}
+              onClick={() => onToggle(g)}
+              aria-pressed={isSelected}
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
+                isSelected
+                  ? 'bg-brand text-white border-brand shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
+                isSelected ? 'bg-white/20 border-white/40' : 'border-slate-300 dark:border-slate-600'
+              }`}>
+                {isSelected && <Check className="w-3.5 h-3.5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{g}</p>
+              </div>
+            </button>
+          );
+        })}
       </div>
       <div className="text-center">
         <button

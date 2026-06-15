@@ -1,5 +1,6 @@
 import { SidebarToggle } from '@/components/sidebar';
 import BackButton from '@/components/back-button';
+import UserMenu from '@/components/user-menu';
 
 // `iconButton` lets a page swap the static icon for an interactive client
 // button (e.g. the Tour's play button). When omitted, the icon is decorative.
@@ -19,6 +20,9 @@ export default function PageHeader({ icon: Icon, title, subtitle, iconButton }) 
             <h1 className="font-bold tracking-tight text-[17px] leading-tight">{title}</h1>
             {subtitle && <p className="text-xs text-white/60">{subtitle}</p>}
           </div>
+        </div>
+        <div className="ml-auto">
+          <UserMenu />
         </div>
       </div>
     </header>

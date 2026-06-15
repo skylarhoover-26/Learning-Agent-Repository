@@ -218,9 +218,9 @@ export default function ProfilePage() {
               {tier.label}
             </span>
           </div>
-          {profile.goal && (
+          {(profile.goals?.length || profile.goal) && (
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-              Goal: {profile.goal}
+              {profile.goals?.length > 1 ? 'Goals' : 'Goal'}: {profile.goals?.length ? profile.goals.join(', ') : profile.goal}
             </p>
           )}
           {profile.onboarded_at && (

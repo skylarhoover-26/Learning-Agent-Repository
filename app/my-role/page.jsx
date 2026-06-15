@@ -35,7 +35,7 @@ export default function MyRolePage() {
   const [topTasks, setTopTasks] = useState([]);
   const [customTask, setCustomTask] = useState('');
   const [tier, setTier] = useState('');
-  const [goal, setGoal] = useState('');
+  const [goals, setGoals] = useState([]);
   const [applyMode, setApplyMode] = useState('now');
   const [effectiveDate, setEffectiveDate] = useState('');
 
@@ -55,7 +55,7 @@ export default function MyRolePage() {
   const availableTasks = department ? getTaskList(department, subTeam) : [];
   const hasSubteams = !!SUBTEAMS[department];
   const canSave =
-    department && (!hasSubteams || subTeam) && topTasks.length >= 1 && tier && goal &&
+    department && (!hasSubteams || subTeam) && topTasks.length >= 1 && tier && goals.length >= 1 &&
     (applyMode === 'now' || !!effectiveDate);
 
   function startEdit() {
@@ -63,7 +63,7 @@ export default function MyRolePage() {
     setSubTeam(role.sub_team || null);
     setTopTasks(role.top_tasks || []);
     setTier(role.tier || '');
-    setGoal(role.goal || '');
+    setGoals(role.goals || []);
     setApplyMode('now');
     setEffectiveDate('');
     setStatus(null);
@@ -79,6 +79,12 @@ export default function MyRolePage() {
   function toggleTask(t) {
     setTopTasks((prev) =>
       prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
+    );
+  }
+
+  function toggleGoal(g) {
+    setGoals((prev) =>
+      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
     );
   }
 
@@ -99,7 +105,10 @@ export default function MyRolePage() {
       sub_team: hasSubteams ? subTeam : null,
       top_tasks: topTasks,
       tier,
-      goal,
+      goals,
+      // Keep the legacy single `goal` string in sync (joined) for lesson/AI
+      // prompt read sites that expect `profile.goal`.
+      goal: goals.join('; '),
     };
     try {
       if (applyMode === 'schedule') {
@@ -210,7 +219,7 @@ export default function MyRolePage() {
               <Row label="Department" value={role.department || '—'} />
               {role.sub_team && <Row label="Team" value={role.sub_team} />}
               <Row label="Experience" value={TIERS.find((t) => t.id === role.tier)?.label || role.tier || '—'} />
-              <Row label="Goal" value={role.goal || '—'} />
+              <Row label="Goals" value={role.goals?.length ? role.goals.join(', ') : '—'} />
               <div>
                 <dt className="text-slate-500 dark:text-slate-400 mb-1.5">Top tasks</dt>
                 <dd className="flex flex-wrap gap-2">
@@ -287,10 +296,10 @@ export default function MyRolePage() {
               </div>
             </Section>
 
-            <Section title="Goal">
+            <Section title="Goals">
               <div className="space-y-2">
                 {GOALS.map((g) => (
-                  <TaskRow key={g} active={goal === g} onClick={() => setGoal(g)}>{g}</TaskRow>
+                  <TaskRow key={g} active={goals.includes(g)} onClick={() => toggleGoal(g)}>{g}</TaskRow>
                 ))}
               </div>
             </Section>

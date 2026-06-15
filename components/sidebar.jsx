@@ -7,19 +7,18 @@ import {
   Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
   CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
-  Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
-  Rocket, RefreshCw, ExternalLink, Store, TrendingUp, UserCog, Briefcase, Home,
-  Shield, Settings, SlidersHorizontal, FileText, Bell, LogOut, Users,
+  Compass, Trophy, BookOpen, Library, Terminal,
+  Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
+  Shield, Settings, SlidersHorizontal, FileText, Bell, Users,
 } from 'lucide-react';
-import { signOut } from 'next-auth/react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
 
 // Section header styled like the dashboard's "Find something to learn":
 // an icon, a bold label, and a thin divider line.
-function SectionHeader({ icon: Icon, title }) {
+function SectionHeader({ icon: Icon, title, tour }) {
   return (
-    <div className="relative px-4 py-2 mt-1">
+    <div className="relative px-4 py-2 mt-1" data-tour={tour}>
       <div className="absolute inset-0 px-4 flex items-center" aria-hidden="true">
         <div className="w-full border-t border-slate-200 dark:border-slate-700" />
       </div>
@@ -35,23 +34,9 @@ function SectionHeader({ icon: Icon, title }) {
 
 const NAV_SECTIONS = [
   {
-    title: 'Account',
-    icon: User,
-    items: [
-      { themeToggle: true },
-      { href: '/', icon: Home, label: 'Dashboard', desc: 'Your learning home and overview' },
-      { href: '/manager', icon: BarChart3, label: 'Manager', desc: 'Team learning dashboard for managers' },
-      { href: '/my-role', icon: UserCog, label: 'My Role', desc: 'Change your department, team, or tasks' },
-      { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', desc: 'Manage your day-to-day tasks' },
-      { href: '/profile', icon: User, label: 'Profile', desc: 'Your name, settings, and reset options' },
-      { href: '/projects', icon: FolderKanban, label: 'Projects', desc: 'Add work projects to tailor lessons' },
-      { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
-      { voicePicker: true },
-    ],
-  },
-  {
     title: 'Learn',
     icon: BookOpen,
+    tour: 'section-learn',
     items: [
       { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day', tour: 'nav-daily' },
       { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work', tour: 'nav-discover' },
@@ -68,6 +53,7 @@ const NAV_SECTIONS = [
   {
     title: 'Your Progress',
     icon: TrendingUp,
+    tour: 'section-progress',
     items: [
       { href: '/achievements', icon: Award, label: 'Achievements', desc: 'Badges and milestones you have earned' },
       { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact', desc: 'Measure how AI is helping your work' },
@@ -79,6 +65,24 @@ const NAV_SECTIONS = [
       { href: '/quests', icon: Rocket, label: 'Quests', desc: 'Build something real, start to finish' },
       { href: '/review', icon: RefreshCw, label: 'Review', desc: 'Revisit key concepts so they stick' },
       { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph', desc: 'A visual map of your AI skills' },
+    ],
+  },
+  {
+    title: 'Manager',
+    icon: BarChart3,
+    tour: 'section-manager',
+    items: [
+      { href: '/manager', icon: BarChart3, label: 'Team Dashboard', desc: 'Team learning dashboard for managers' },
+    ],
+  },
+  {
+    title: 'Settings',
+    icon: Settings,
+    tour: 'section-settings',
+    items: [
+      { themeToggle: true },
+      { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
+      { voicePicker: true },
     ],
   },
 ];
@@ -185,11 +189,9 @@ export function SideNav() {
   const { open, setOpen } = useSidebar();
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [softLogin, setSoftLogin] = useState(null);
 
   useEffect(() => {
     fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(!!d.isAdmin)).catch(() => {});
-    fetch('/api/identity').then(r => r.json()).then(d => setSoftLogin(!d.oktaConfigured && d.email ? { email: d.email } : null)).catch(() => {});
   }, []);
 
   // Highlight only the single most-specific matching item. Without this, a
@@ -233,11 +235,6 @@ export function SideNav() {
     );
   }
 
-  async function handleSwitchUser() {
-    try { await fetch('/api/identity', { method: 'DELETE' }); } catch { /* reload still shows the gate */ }
-    window.location.reload();
-  }
-
   return (
     <nav
       data-tour="sidebar"
@@ -259,14 +256,14 @@ export function SideNav() {
 
       {isAdmin && (
         <div className="py-1">
-          <SectionHeader icon={Shield} title="Admin" />
+          <SectionHeader icon={Shield} title="Admin" tour="section-admin" />
           {ADMIN_ITEMS.map(renderNavItem)}
         </div>
       )}
 
       {NAV_SECTIONS.map(section => (
         <div key={section.title} className="py-1">
-          <SectionHeader icon={section.icon} title={section.title} />
+          <SectionHeader icon={section.icon} title={section.title} tour={section.tour} />
           {section.items.map(item => (
             item.themeToggle ? (
               <div key="theme" data-tour="dark-mode">
@@ -283,7 +280,7 @@ export function SideNav() {
 
       {/* HCP Skill Shop — external courses */}
       <div className="py-1 mb-2">
-        <SectionHeader icon={Store} title="HCP Skill Shop" />
+        <SectionHeader icon={Store} title="HCP Skill Shop" tour="section-skillshop" />
         <p className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
           Want to learn more about AI? Explore the self-guided journey:
         </p>
@@ -304,29 +301,6 @@ export function SideNav() {
         ))}
       </div>
 
-      {/* Session actions (Voice now lives in Account). */}
-      {(softLogin || process.env.NEXT_PUBLIC_OKTA_CONFIGURED) && (
-        <div className="py-1 mb-2 border-t border-slate-100 dark:border-slate-700">
-          {softLogin && (
-            <button
-              onClick={handleSwitchUser}
-              className="w-full flex items-start gap-3 px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
-              <span className="text-sm font-semibold">Switch user</span>
-            </button>
-          )}
-          {process.env.NEXT_PUBLIC_OKTA_CONFIGURED && (
-            <button
-              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              className="w-full flex items-start gap-3 px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            >
-              <LogOut className="w-4 h-4 mt-0.5 shrink-0" />
-              <span className="text-sm font-semibold">Log out</span>
-            </button>
-          )}
-        </div>
-      )}
     </nav>
   );
 }
