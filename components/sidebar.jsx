@@ -9,8 +9,11 @@ import {
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp, UserCog, Briefcase, Home,
+  Shield, Settings, SlidersHorizontal, FileText, Bell, LogOut,
 } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
+import VoicePicker from '@/components/voice-picker';
 
 // Section header styled like the dashboard's "Find something to learn":
 // an icon, a bold label, and a thin divider line.
@@ -77,6 +80,14 @@ const NAV_SECTIONS = [
       { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph', desc: 'A visual map of your AI skills' },
     ],
   },
+];
+
+// Shown only to admins, pinned to the top of the nav.
+const ADMIN_ITEMS = [
+  { href: '/admin', icon: Settings, label: 'Admin Dashboard', desc: 'Curriculum proposals and admin tools' },
+  { href: '/admin/skill-levels', icon: SlidersHorizontal, label: 'Skill Levels', desc: "Set each skill's difficulty level" },
+  { href: '/curriculum-pipeline', icon: FileText, label: 'Content Updates', desc: 'Review AI-proposed curriculum updates' },
+  { href: '/admin/notifications', icon: Bell, label: 'Notifications', desc: 'Who receives Slack notifications' },
 ];
 
 const SKILL_SHOP_LINKS = [
@@ -171,6 +182,13 @@ export function SidebarShell({ children }) {
 export function SideNav() {
   const { open, setOpen } = useSidebar();
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [softLogin, setSoftLogin] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(!!d.isAdmin)).catch(() => {});
+    fetch('/api/identity').then(r => r.json()).then(d => setSoftLogin(!d.oktaConfigured && d.email ? { email: d.email } : null)).catch(() => {});
+  }, []);
 
   // The current tab is active if its href matches the path exactly, or (for
   // non-root links) if we're on a nested route beneath it. Root '/' only matches
@@ -178,6 +196,34 @@ export function SideNav() {
   function isActive(href) {
     if (href === '/') return pathname === '/';
     return pathname === href || pathname.startsWith(href + '/');
+  }
+
+  function renderNavItem(item) {
+    const active = isActive(item.href);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        data-tour={item.tour}
+        aria-current={active ? 'page' : undefined}
+        className={`flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
+          active
+            ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
+            : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+        }`}
+      >
+        <item.icon className={`w-4 h-4 mt-0.5 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
+        <span>
+          <span className="block text-sm font-semibold">{item.label}</span>
+          <span className={`block text-xs leading-snug ${active ? 'text-brand/70' : 'text-slate-500 dark:text-slate-400'}`}>{item.desc}</span>
+        </span>
+      </Link>
+    );
+  }
+
+  async function handleSwitchUser() {
+    try { await fetch('/api/identity', { method: 'DELETE' }); } catch { /* reload still shows the gate */ }
+    window.location.reload();
   }
 
   return (
@@ -199,6 +245,13 @@ export function SideNav() {
         </button>
       </div>
 
+      {isAdmin && (
+        <div className="py-1">
+          <SectionHeader icon={Shield} title="Admin" />
+          {ADMIN_ITEMS.map(renderNavItem)}
+        </div>
+      )}
+
       {NAV_SECTIONS.map(section => (
         <div key={section.title} className="py-1">
           <SectionHeader icon={section.icon} title={section.title} />
@@ -208,28 +261,7 @@ export function SideNav() {
                 <MenuThemeToggle />
               </div>
             ) : (
-              (() => {
-                const active = isActive(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    data-tour={item.tour}
-                    aria-current={active ? 'page' : undefined}
-                    className={`flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
-                      active
-                        ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
-                        : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <item.icon className={`w-4 h-4 mt-0.5 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
-                    <span>
-                      <span className="block text-sm font-semibold">{item.label}</span>
-                      <span className={`block text-xs leading-snug ${active ? 'text-brand/70' : 'text-slate-500 dark:text-slate-400'}`}>{item.desc}</span>
-                    </span>
-                  </Link>
-                );
-              })()
+              renderNavItem(item)
             )
           ))}
         </div>
@@ -256,6 +288,29 @@ export function SideNav() {
             </span>
           </a>
         ))}
+      </div>
+
+      {/* Account actions — moved here from the old top-right menu. */}
+      <div className="py-1 mb-2 border-t border-slate-100 dark:border-slate-700">
+        <VoicePicker />
+        {softLogin && (
+          <button
+            onClick={handleSwitchUser}
+            className="w-full flex items-start gap-3 px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 mt-0.5 text-slate-500 dark:text-slate-400 shrink-0" />
+            <span className="text-sm font-semibold">Switch user</span>
+          </button>
+        )}
+        {process.env.NEXT_PUBLIC_OKTA_CONFIGURED && (
+          <button
+            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+            className="w-full flex items-start gap-3 px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          >
+            <LogOut className="w-4 h-4 mt-0.5 shrink-0" />
+            <span className="text-sm font-semibold">Log out</span>
+          </button>
+        )}
       </div>
     </nav>
   );
