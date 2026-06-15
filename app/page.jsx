@@ -13,6 +13,7 @@ import WelcomeGreeting from '@/components/welcome-greeting';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
 import ImpactAssessmentModal from '@/components/impact-assessment-modal';
+import FirstVisitRedirect from '@/components/first-visit-redirect';
 import {
   getCurrentLearner, getAggregatedSkills,
 } from '@/lib/data';
@@ -99,6 +100,7 @@ export default async function Dashboard() {
 
   return (
     <div className="min-h-screen">
+      <FirstVisitRedirect />
       {/* Header */}
       <header className="bg-ink sticky top-0 z-50 text-white">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

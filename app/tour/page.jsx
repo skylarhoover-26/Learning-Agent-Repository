@@ -2,17 +2,33 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import PageHeader from '@/components/page-header';
+import { useSidebar } from '@/components/sidebar';
 import {
   Play, ChevronRight, ChevronLeft, ArrowRight,
   MessageCircle, BarChart3, BookOpen, Zap,
-  Target, Trophy, Crosshair, RefreshCw, Rss,
+  Target, Trophy, Crosshair, RefreshCw, Rss, Compass,
 } from 'lucide-react';
+
+// Interactive walkthrough of the real UI. Each step highlights a live element
+// via its data-tour anchor (added in sidebar.jsx / help-widget.jsx). The
+// sidebar is opened before this runs so its anchors are visible.
+const MENU_WALKTHROUGH_STEPS = [
+  { element: '[data-tour="menu-toggle"]', popover: { title: 'This is your menu', description: 'Tap here to open or close the navigation anytime.' } },
+  { element: '[data-tour="sidebar"]', popover: { title: 'Everything lives here', description: 'Your navigation is grouped into Account, Learn, and Your Progress.' } },
+  { element: '[data-tour="dark-mode"]', popover: { title: 'Light or dark', description: "Switch the app's appearance whenever you like." } },
+  { element: '[data-tour="nav-daily"]', popover: { title: 'Daily', description: 'A fresh, bite-sized AI lesson every day — the easiest way to build a habit.' } },
+  { element: '[data-tour="nav-discover"]', popover: { title: 'Discover', description: 'Find AI for the real tasks you do at work, based on your role.' } },
+  { element: '[data-tour="nav-chat"]', popover: { title: 'Just Chat', description: 'Ask anything about AI — it can even launch a lesson for you.' } },
+  { element: '[data-tour="help"]', popover: { title: 'Need a hand?', description: 'Open this chat anytime for help with the platform.' } },
+];
 
 const TOUR_STEPS = [
   {
     title: 'Welcome to AI Learning Coach',
-    description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey in 9 steps.',
+    description: 'A personalized AI learning experience for every employee at Housecall Pro. This tour walks you through the full learner and manager journey, step by step.',
     panels: {
       left: { label: 'Slack Bot', content: 'The AI Learning Coach has a Slack bot for quick tips and commands — `/learn [topic]`, `/streak`, `/heatmap`, and `/skills`. DM the bot any time and it replies with the command menu.' },
       right: { label: 'Web Dashboard', content: 'The web platform is where employees onboard, take lessons, track progress, and explore AI use cases. Managers see team views.' },
@@ -113,15 +129,32 @@ const TOUR_STEPS = [
 
 export default function TourPage() {
   const [currentStep, setCurrentStep] = useState(0);
+  const { setOpen } = useSidebar();
   const step = TOUR_STEPS[currentStep];
   const Icon = step.icon;
+
+  function startMenuWalkthrough() {
+    // The sidebar must be open for its anchors to be visible/highlightable.
+    setOpen(true);
+    // Let the sidebar finish its 200ms slide-in before driver measures elements.
+    setTimeout(() => {
+      driver({
+        showProgress: true,
+        allowClose: true,
+        nextBtnText: 'Next',
+        prevBtnText: 'Back',
+        doneBtnText: 'Done',
+        steps: MENU_WALKTHROUGH_STEPS,
+      }).drive();
+    }, 260);
+  }
 
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Play}
         title="Platform Tour"
-        subtitle="9-step walkthrough of the full learner + manager experience"
+        subtitle="A guided walkthrough of the full learner + manager experience"
       />
 
       <main className="max-w-4xl mx-auto px-6 py-10">
@@ -218,13 +251,21 @@ export default function TourPage() {
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 transition-all"
-              >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/"
+                  className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
+                >
+                  Go to Dashboard
+                </Link>
+                <button
+                  onClick={startMenuWalkthrough}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 transition-all"
+                >
+                  <Compass className="w-4 h-4" />
+                  Walk me through the menu
+                </button>
+              </div>
             )}
           </div>
         </div>
