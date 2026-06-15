@@ -13,6 +13,15 @@ import {
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
+import { MENU_WALKTHROUGH_STEPS } from '@/lib/menu-walkthrough-steps';
+
+// Stable tour anchor for a nav item, derived from its href so the sidebar and
+// the walkthrough step list stay in sync (e.g. '/my-tasks' -> 'nav-my-tasks').
+function navItemTour(href) {
+  return 'nav' + href.replace(/\//g, '-');
+}
 
 // Section header styled like the dashboard's "Find something to learn":
 // an icon, a bold label, and a thin divider line.
@@ -81,7 +90,7 @@ const NAV_SECTIONS = [
     tour: 'section-settings',
     items: [
       { themeToggle: true },
-      { href: '/tour', icon: Play, label: 'Tour', desc: 'A guided walkthrough of the platform' },
+      { walkthrough: true, icon: Play, label: 'Tour', desc: 'Replay the guided walkthrough of the app' },
       { voicePicker: true },
     ],
   },
@@ -212,13 +221,29 @@ export function SideNav() {
     return href === activeHref;
   }
 
+  // Open the menu (so its anchors are visible), then run the interactive
+  // spotlight walkthrough of the real UI — same experience as first run.
+  function startTour() {
+    setOpen(true);
+    setTimeout(() => {
+      driver({
+        showProgress: true,
+        allowClose: true,
+        nextBtnText: 'Next',
+        prevBtnText: 'Back',
+        doneBtnText: 'Done',
+        steps: MENU_WALKTHROUGH_STEPS,
+      }).drive();
+    }, 260);
+  }
+
   function renderNavItem(item) {
     const active = isActive(item.href);
     return (
       <Link
         key={item.href}
         href={item.href}
-        data-tour={item.tour}
+        data-tour={navItemTour(item.href)}
         aria-current={active ? 'page' : undefined}
         className={`flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
           active
@@ -271,7 +296,22 @@ export function SideNav() {
                   <MenuThemeToggle />
                 </div>
               ) : item.voicePicker ? (
-                <VoicePicker key="voice" />
+                <div key="voice" data-tour="nav-voice">
+                  <VoicePicker />
+                </div>
+              ) : item.walkthrough ? (
+                <button
+                  key="tour"
+                  onClick={startTour}
+                  data-tour="nav-tour"
+                  className="w-full flex items-start gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <item.icon className="w-4 h-4 mt-0.5 shrink-0 text-slate-500 dark:text-slate-400" />
+                  <span>
+                    <span className="block text-sm font-semibold">{item.label}</span>
+                    <span className="block text-xs leading-snug text-slate-500 dark:text-slate-400">{item.desc}</span>
+                  </span>
+                </button>
               ) : (
                 renderNavItem(item)
               )

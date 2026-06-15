@@ -6,6 +6,11 @@ import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
+// This route does the heaviest work in the app — 13 RSS fetches + up to three
+// sequential Claude calls — so it needs far more than the platform default or
+// it times out before writing the daily lessons (which run last). 60s is ample.
+export const maxDuration = 60;
+
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
 const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
 
@@ -209,21 +214,19 @@ export async function GET(request) {
 
     const client = new Anthropic();
 
-    if (safeFindings.length === 0) {
-      let dailyLessonCount = 0;
-      try {
-        dailyLessonCount = await generateDailyLessons(client, merged.slice(0, 20));
-      } catch (err) {
-        errors.push({ source: 'daily-lessons', error: err.message });
-      }
-      return NextResponse.json({
-        ok: true,
-        step: 'scan',
-        message: 'No new findings — skipping proposals but generated daily lessons',
-        scannedAt: new Date().toISOString(),
-        dailyLessons: dailyLessonCount,
-      });
+    // Generate + write the daily lessons FIRST. They're the learner-facing output,
+    // so they must not be starved by a later timeout or a proposals-call failure.
+    let dailyLessonCount = 0;
+    try {
+      dailyLessonCount = await generateDailyLessons(client, merged.slice(0, 20));
+    } catch (err) {
+      console.error('Daily lesson generation error:', err);
+      errors.push({ source: 'daily-lessons', error: err.message });
     }
+
+    // Curriculum proposals are internal/admin-only — only run when new findings exist.
+    let newProposals = [];
+    if (safeFindings.length > 0) {
     const findingsList = merged
       .slice(0, 30)
       .map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}\n   ${f.url}`)
@@ -263,7 +266,6 @@ Output ONLY a JSON array. No prose. If no updates are warranted, return [].`,
       ],
     });
 
-    let newProposals = [];
     const text = response.content[0].text.trim();
     const match = text.match(/\[[\s\S]*\]/);
     if (match) {
@@ -281,13 +283,6 @@ Output ONLY a JSON array. No prose. If no updates are warranted, return [].`,
       const allProposals = [...newProposals, ...existingProposals];
       await writeBlob(BLOB_PROPOSALS_KEY, allProposals);
     }
-
-    let dailyLessonCount = 0;
-    try {
-      dailyLessonCount = await generateDailyLessons(client, merged.slice(0, 20));
-    } catch (err) {
-      console.error('Daily lesson generation error:', err);
-      errors.push({ source: 'daily-lessons', error: err.message });
     }
 
     return NextResponse.json({
