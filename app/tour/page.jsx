@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { driver } from 'driver.js';
-import 'driver.js/dist/driver.css';
 import PageHeader from '@/components/page-header';
-import { useSidebar } from '@/components/sidebar';
-import { MENU_WALKTHROUGH_STEPS } from '@/lib/menu-walkthrough-steps';
+import WalkthroughIconButton from '@/components/walkthrough-icon-button';
+import { useMenuWalkthrough } from '@/components/use-menu-walkthrough';
 import {
   Play, ChevronRight, ChevronLeft, ArrowRight,
   MessageCircle, BarChart3, BookOpen, Zap,
@@ -244,25 +242,9 @@ function Panel({ panel }) {
 
 export default function TourPage() {
   const [currentStep, setCurrentStep] = useState(0);
-  const { setOpen } = useSidebar();
+  const startMenuWalkthrough = useMenuWalkthrough();
   const step = TOUR_STEPS[currentStep];
   const Icon = step.icon;
-
-  function startMenuWalkthrough() {
-    // The sidebar must be open for its anchors to be visible/highlightable.
-    setOpen(true);
-    // Let the sidebar finish its 200ms slide-in before driver measures elements.
-    setTimeout(() => {
-      driver({
-        showProgress: true,
-        allowClose: true,
-        nextBtnText: 'Next',
-        prevBtnText: 'Back',
-        doneBtnText: 'Done',
-        steps: MENU_WALKTHROUGH_STEPS,
-      }).drive();
-    }, 260);
-  }
 
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
@@ -270,8 +252,7 @@ export default function TourPage() {
         icon={Play}
         title="Platform Tour"
         subtitle="A guided walkthrough of the full learner + manager experience"
-        onIconClick={startMenuWalkthrough}
-        iconLabel="Start the interactive walkthrough"
+        iconButton={<WalkthroughIconButton />}
       />
 
       <main className="max-w-4xl mx-auto px-6 py-10">
