@@ -66,6 +66,13 @@ export default function OnboardingTour() {
     setPhase('hidden');
   }
 
+  // The link navigates to /tour; also dismiss the popup so it doesn't linger
+  // on the deck (this component persists across client-side navigation).
+  function seeFullTour() {
+    markSeen();
+    setPhase('hidden');
+  }
+
   if (phase !== 'welcome') return null;
 
   return (
@@ -104,7 +111,7 @@ export default function OnboardingTour() {
           </div>
           <Link
             href="/tour"
-            onClick={markSeen}
+            onClick={seeFullTour}
             className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
           >
             Want more? See the full platform tour
