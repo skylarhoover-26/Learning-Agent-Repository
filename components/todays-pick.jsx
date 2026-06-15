@@ -79,9 +79,18 @@ export default function TodaysPick() {
   const prog = useProgression();
   const { profile } = useProfile();
   const [pick, setPick] = useState(null);
+  // Admin-editable skill → level overrides (falls back to code defaults).
+  const [levelOverrides, setLevelOverrides] = useState(null);
 
   useEffect(() => {
-    if (!prog?.isLoaded) return;
+    fetch('/api/skill-levels')
+      .then(r => (r.ok ? r.json() : { levels: {} }))
+      .then(d => setLevelOverrides(d.levels || {}))
+      .catch(() => setLevelOverrides({}));
+  }, []);
+
+  useEffect(() => {
+    if (!prog?.isLoaded || levelOverrides === null) return;
 
     const moduleProgress = typeof window !== 'undefined' ? getAllModuleProgress() : {};
     const calibrationSkills = typeof window !== 'undefined' ? getCalibrationSkills() : null;
@@ -92,13 +101,17 @@ export default function TodaysPick() {
       calibrationSkills,
     });
 
-    // Only recommend skills at or below the learner's experience level.
+    // Only recommend skills at or below the learner's experience level. The
+    // skill's level can be overridden by admins; otherwise use the code default.
     const maxRank = TIER_MAX_RANK[profile?.tier] ?? 3;
-    const tierSkills = skills.filter(s => (LEVEL_RANK[s.level] ?? 1) <= maxRank);
+    const tierSkills = skills.filter(s => {
+      const level = levelOverrides[s.name] || s.level;
+      return (LEVEL_RANK[level] ?? 1) <= maxRank;
+    });
 
     const dailyPick = generateDailyPick(tierSkills, prog.lessonHistory);
     setPick(dailyPick);
-  }, [prog?.isLoaded, prog?.lessonHistory, profile?.tier]);
+  }, [prog?.isLoaded, prog?.lessonHistory, profile?.tier, levelOverrides]);
 
   if (!pick) return null;
 
