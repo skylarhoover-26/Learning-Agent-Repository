@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
@@ -49,7 +50,7 @@ export async function POST(request) {
 
     const start = Date.now();
     const response = await getClient().messages.create({
-      model: 'claude-sonnet-4-6',
+      model: MODELS.sonnet,
       max_tokens: 600,
       system: SYSTEM_PROMPT + learnerContext,
       messages: [
@@ -68,7 +69,7 @@ export async function POST(request) {
       type: 'score_prompt',
       endpoint: '/api/games/score-prompt',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-6',
+      model: MODELS.sonnet,
       input: { scenario, prompt },
       output: scores,
       durationMs: Date.now() - start,

@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateChatReply } from '@/lib/ai';
@@ -24,7 +25,7 @@ export async function POST(request) {
       type: 'chat',
       endpoint: '/api/chat',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-6',
+      model: MODELS.sonnet,
       input: { userMessage, messageCount: messages?.length || 0 },
       output: error ? null : { reply },
       durationMs: Date.now() - start,

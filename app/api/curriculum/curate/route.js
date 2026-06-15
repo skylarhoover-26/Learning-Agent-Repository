@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
@@ -25,7 +26,7 @@ export async function POST(request) {
       .join('\n');
 
     const response = await getClient().messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       max_tokens: 2000,
       system: `You are the AI Academy curriculum curator at Housecall Pro.
 

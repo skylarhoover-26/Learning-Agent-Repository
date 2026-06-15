@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { FEEDS } from '@/lib/feeds';
@@ -31,7 +32,7 @@ async function filterUnsafeContent(findings) {
     const client = new Anthropic();
     const titles = findings.map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}`).join('\n');
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODELS.haiku,
       max_tokens: 500,
       system: `You are a content safety filter for a corporate AI learning platform at Housecall Pro.
 

@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateDiscoverOpportunities } from '@/lib/ai';
@@ -22,7 +23,7 @@ export async function POST(request) {
       type: 'discover',
       endpoint: '/api/discover',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-6',
+      model: MODELS.sonnet,
       input: { workDescription },
       output: error ? null : { opportunityCount: opportunities?.length || 0, opportunities },
       durationMs: Date.now() - start,

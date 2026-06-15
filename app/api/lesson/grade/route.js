@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { logAuditEntry } from '@/lib/audit-log';
@@ -55,7 +56,7 @@ export async function POST(request) {
 
     try {
       const response = await getClient().messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: MODELS.haiku,
         max_tokens: 400,
         system: `You grade written responses for a workplace AI learning platform.
 You receive source material and the learner's written response.
@@ -92,7 +93,7 @@ Return ONLY JSON: {"score": int, "strength": "one sentence praise", "improvement
       type: 'grade',
       endpoint: '/api/lesson/grade',
       user: { email: 'unknown', name: 'Unknown' },
-      model: gradeSource === 'ai' ? 'claude-haiku-4-5-20251001' : 'fallback',
+      model: gradeSource === 'ai' ? MODELS.haiku : 'fallback',
       input: { learnerResponse: trimmed, sourceText: source, gradingCriteria: criteria },
       output: gradeResult,
       durationMs: Date.now() - start,

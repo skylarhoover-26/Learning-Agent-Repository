@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { logAuditEntry } from '@/lib/audit-log';
@@ -8,7 +9,7 @@ function getClient() {
   return client;
 }
 
-const MODEL = 'claude-haiku-4-5-20251001';
+const MODEL = MODELS.haiku;
 
 async function scoreWithClaude(prompt, validScores) {
   try {

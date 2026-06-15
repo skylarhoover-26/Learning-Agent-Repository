@@ -1,3 +1,4 @@
+import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateVideoScript } from '@/lib/ai';
@@ -27,7 +28,7 @@ export async function POST(request) {
       type: 'lesson_video',
       endpoint: '/api/lesson/video',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
-      model: 'claude-sonnet-4-6',
+      model: MODELS.sonnet,
       input: { topic, format },
       output: error ? null : { title: response?.title, sceneCount: response?.scenes?.length },
       durationMs: Date.now() - start,
