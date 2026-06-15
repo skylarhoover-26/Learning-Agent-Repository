@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -262,44 +262,47 @@ export function SideNav() {
       )}
 
       {NAV_SECTIONS.map(section => (
-        <div key={section.title} className="py-1">
-          <SectionHeader icon={section.icon} title={section.title} tour={section.tour} />
-          {section.items.map(item => (
-            item.themeToggle ? (
-              <div key="theme" data-tour="dark-mode">
-                <MenuThemeToggle />
-              </div>
-            ) : item.voicePicker ? (
-              <VoicePicker key="voice" />
-            ) : (
-              renderNavItem(item)
-            )
-          ))}
-        </div>
+        <Fragment key={section.title}>
+          <div className="py-1">
+            <SectionHeader icon={section.icon} title={section.title} tour={section.tour} />
+            {section.items.map(item => (
+              item.themeToggle ? (
+                <div key="theme" data-tour="dark-mode">
+                  <MenuThemeToggle />
+                </div>
+              ) : item.voicePicker ? (
+                <VoicePicker key="voice" />
+              ) : (
+                renderNavItem(item)
+              )
+            ))}
+          </div>
+          {/* HCP Skill Shop sits right under Learn — it's external learning content. */}
+          {section.title === 'Learn' && (
+            <div className="py-1">
+              <SectionHeader icon={Store} title="HCP Skill Shop" tour="section-skillshop" />
+              <p className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
+                Want to learn more about AI? Explore the self-guided journey:
+              </p>
+              {SKILL_SHOP_LINKS.map(link => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 px-4 py-2 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4 mt-0.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                  <span>
+                    <span className="block font-medium">{link.label}</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">{link.desc}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+        </Fragment>
       ))}
-
-      {/* HCP Skill Shop — external courses */}
-      <div className="py-1 mb-2">
-        <SectionHeader icon={Store} title="HCP Skill Shop" tour="section-skillshop" />
-        <p className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
-          Want to learn more about AI? Explore the self-guided journey:
-        </p>
-        {SKILL_SHOP_LINKS.map(link => (
-          <a
-            key={link.href}
-            href={link.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-start gap-3 px-4 py-2 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          >
-            <ExternalLink className="w-4 h-4 mt-0.5 text-slate-400 dark:text-slate-500 shrink-0" />
-            <span>
-              <span className="block font-medium">{link.label}</span>
-              <span className="block text-xs text-slate-500 dark:text-slate-400">{link.desc}</span>
-            </span>
-          </a>
-        ))}
-      </div>
 
     </nav>
   );
