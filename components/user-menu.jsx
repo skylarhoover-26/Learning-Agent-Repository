@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, RefreshCw, LogOut } from 'lucide-react';
+import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { displayNameFromProfile } from '@/lib/display-name';
 
@@ -24,15 +24,7 @@ export default function UserMenu() {
   const initial = displayName.charAt(0).toUpperCase();
 
   const [open, setOpen] = useState(false);
-  const [softLogin, setSoftLogin] = useState(false);
   const wrapRef = useRef(null);
-
-  useEffect(() => {
-    fetch('/api/identity')
-      .then(r => r.json())
-      .then(d => setSoftLogin(!d.oktaConfigured && !!d.email))
-      .catch(() => {});
-  }, []);
 
   // Close on outside click or Escape.
   useEffect(() => {
@@ -50,11 +42,6 @@ export default function UserMenu() {
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
-
-  async function handleSwitchUser() {
-    try { await fetch('/api/identity', { method: 'DELETE' }); } catch { /* reload still shows the gate */ }
-    window.location.reload();
-  }
 
   return (
     <div className="flex items-center gap-2">
@@ -102,28 +89,16 @@ export default function UserMenu() {
                 {link.label}
               </Link>
             ))}
-            {(softLogin || process.env.NEXT_PUBLIC_OKTA_CONFIGURED) && (
+            {process.env.NEXT_PUBLIC_OKTA_CONFIGURED && (
               <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
-                {softLogin && (
-                  <button
-                    onClick={handleSwitchUser}
-                    role="menuitem"
-                    className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <RefreshCw className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
-                    Switch user
-                  </button>
-                )}
-                {process.env.NEXT_PUBLIC_OKTA_CONFIGURED && (
-                  <button
-                    onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                    role="menuitem"
-                    className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4 shrink-0" />
-                    Log out
-                  </button>
-                )}
+                <button
+                  onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                  role="menuitem"
+                  className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <LogOut className="w-4 h-4 shrink-0" />
+                  Log out
+                </button>
               </div>
             )}
           </div>
