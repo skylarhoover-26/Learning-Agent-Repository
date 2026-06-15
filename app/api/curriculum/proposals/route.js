@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { put, list, del } from '@vercel/blob';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdmin } from '@/lib/admin';
 
 const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
@@ -36,7 +36,7 @@ async function writeBlob(key, data) {
 export async function GET() {
   try {
     const user = await getAuthenticatedUser();
-    if (!user?.email || !isAdminEmail(user.email)) {
+    if (!user?.email || !(await isAdmin(user.email))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -64,7 +64,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const user = await getAuthenticatedUser();
-    if (!user?.email || !isAdminEmail(user.email)) {
+    if (!user?.email || !(await isAdmin(user.email))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdmin } from '@/lib/admin';
 import { getAuditEntries, getAuditDates, getAuditStats } from '@/lib/audit-log';
 
 export async function GET(request) {
   try {
     const user = await getAuthenticatedUser();
-    if (!user?.email || !isAdminEmail(user.email)) {
+    if (!user?.email || !(await isAdmin(user.email))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

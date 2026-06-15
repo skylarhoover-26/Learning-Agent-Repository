@@ -9,7 +9,7 @@ import {
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Library, User, FolderKanban, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp, UserCog, Briefcase, Home,
-  Shield, Settings, SlidersHorizontal, FileText, Bell, LogOut,
+  Shield, Settings, SlidersHorizontal, FileText, Bell, LogOut, Users,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
@@ -88,6 +88,7 @@ const ADMIN_ITEMS = [
   { href: '/admin/skill-levels', icon: SlidersHorizontal, label: 'Skill Levels', desc: "Set each skill's difficulty level" },
   { href: '/curriculum-pipeline', icon: FileText, label: 'Content Updates', desc: 'Review AI-proposed curriculum updates' },
   { href: '/admin/notifications', icon: Bell, label: 'Notifications', desc: 'Who receives Slack notifications' },
+  { href: '/admin/admins', icon: Users, label: 'Admins', desc: 'Manage who has admin access' },
 ];
 
 const SKILL_SHOP_LINKS = [
