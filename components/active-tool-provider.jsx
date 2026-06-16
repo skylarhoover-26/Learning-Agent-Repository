@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { useProfile } from './profile-provider';
-import { resolveTools, normalizeTool, normalizeTools, serializeTools, toolKey } from '@/lib/ai-tools';
+import { chosenTools, normalizeTool, normalizeTools, serializeTools, toolKey } from '@/lib/ai-tools';
 
 // Holds the AI tool(s) the learner is currently working in. The saved set lives
 // on the profile (`preferred_tools`, primary first); a per-session override set
@@ -17,10 +17,9 @@ export function useActiveTool() {
   const ctx = useContext(ActiveToolContext);
   if (ctx) return ctx;
   // Safe fallback if used outside the provider (e.g. in isolation).
-  const tools = resolveTools(null);
   return {
-    tools,
-    primaryTool: tools[0],
+    tools: [],
+    primaryTool: null,
     isOverridden: false,
     hasPreference: false,
     toggleTool: () => {},
@@ -34,21 +33,16 @@ export function ActiveToolProvider({ children }) {
   // null = follow the saved profile set; an array = a session-only override.
   const [overrideTools, setOverrideTools] = useState(null);
 
-  const tools = useMemo(() => resolveTools(profile, overrideTools), [profile, overrideTools]);
+  const tools = useMemo(() => chosenTools(profile, overrideTools), [profile, overrideTools]);
 
-  // Add or remove a tool from the active set (session-only). Never empties.
+  // Add or remove a tool from the active set (session-only). May empty out —
+  // we never force a tool the learner doesn't use.
   const toggleTool = useCallback(
     (choice) => {
       const t = normalizeTool(choice);
       const key = toolKey(t);
       const exists = tools.some((x) => toolKey(x) === key);
-      let next;
-      if (exists) {
-        next = tools.filter((x) => toolKey(x) !== key);
-        if (next.length === 0) return; // keep at least one tool
-      } else {
-        next = [...tools, t];
-      }
+      const next = exists ? tools.filter((x) => toolKey(x) !== key) : [...tools, t];
       setOverrideTools(next);
     },
     [tools]
@@ -78,7 +72,7 @@ export function ActiveToolProvider({ children }) {
   const value = useMemo(
     () => ({
       tools,
-      primaryTool: tools[0],
+      primaryTool: tools[0] || null,
       isOverridden: overrideTools !== null,
       hasPreference: Boolean(profile?.preferred_tools?.length || profile?.preferred_tool),
       toggleTool,

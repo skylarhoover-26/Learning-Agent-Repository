@@ -11,7 +11,7 @@ import {
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
 } from '@/lib/curriculum-data';
-import { AI_TOOLS, DEFAULT_TOOL_ID, toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
+import { AI_TOOLS, toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
 
 const SUB_TEAMS = SUBTEAMS;
@@ -35,9 +35,9 @@ export default function OnboardingPage() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [tier, setTier] = useState('');
   const [goals, setGoals] = useState([]);
-  // Default to Gemini — everyone has it through Google Workspace — but let them
-  // pick one or more tools (or type their own). First entry is the primary.
-  const [aiTools, setAiTools] = useState([DEFAULT_TOOL_ID]);
+  // No tool is pre-selected — the learner actively picks the one(s) they use
+  // (first entry is the primary). Step 5 requires at least one to finish.
+  const [aiTools, setAiTools] = useState([]);
   const [customTool, setCustomTool] = useState('');
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];

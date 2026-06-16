@@ -34,8 +34,10 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
     }
   }
 
+  const hasTools = tools.length > 0;
+
   function openTool() {
-    if (primaryTool.url) window.open(primaryTool.url, '_blank', 'noopener,noreferrer');
+    if (primaryTool?.url) window.open(primaryTool.url, '_blank', 'noopener,noreferrer');
   }
 
   function addCustom() {
@@ -49,6 +51,7 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
 
   const selectedKeys = new Set(tools.map(toolKey));
   const extras = tools.length - 1;
+  const primaryKey = primaryTool ? toolKey(primaryTool) : null;
 
   return (
     <div
@@ -61,17 +64,23 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-ink dark:text-slate-200">
-            You&rsquo;ll do the hands-on AI work in your own tool. Keep{' '}
-            <span className="font-semibold">
-              {primaryTool.emoji} {primaryTool.label}
-            </span>{' '}
-            open in another window so you can follow along here
-            {extras > 0 && <span className="text-slate-500 dark:text-slate-400"> (+{extras} more {extras === 1 ? 'tool' : 'tools'})</span>}.
-          </p>
+          {hasTools ? (
+            <p className="text-sm text-ink dark:text-slate-200">
+              You&rsquo;ll do the hands-on AI work in your own tool. Keep{' '}
+              <span className="font-semibold">
+                {primaryTool.emoji} {primaryTool.label}
+              </span>{' '}
+              open in another window so you can follow along here
+              {extras > 0 && <span className="text-slate-500 dark:text-slate-400"> (+{extras} more {extras === 1 ? 'tool' : 'tools'})</span>}.
+            </p>
+          ) : (
+            <p className="text-sm text-ink dark:text-slate-200">
+              You&rsquo;ll do the hands-on AI work in your own AI tool, open beside the coach. Pick the tool(s) you use so we can tailor lessons and give prompts you can paste in.
+            </p>
+          )}
 
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
-            {primaryTool.url && (
+            {hasTools && primaryTool.url && (
               <button
                 onClick={openTool}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-pill bg-brand text-white hover:bg-brand-700 transition-colors"
@@ -84,7 +93,7 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
               onClick={() => setSwitching((s) => !s)}
               className="px-3 py-1.5 text-sm font-medium rounded-pill border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 hover:bg-brand-100/60 dark:hover:bg-slate-700 transition-colors"
             >
-              {tools.length > 1 ? 'Manage your tools' : 'Using a different tool?'}
+              {!hasTools ? 'Choose your tools' : tools.length > 1 ? 'Manage your tools' : 'Using a different tool?'}
             </button>
             {isOverridden && (
               <button
@@ -105,7 +114,7 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
               <div className="flex flex-wrap gap-2">
                 {AI_TOOLS.map((t) => {
                   const selected = selectedKeys.has(toolKey(t));
-                  const isPrimary = toolKey(t) === toolKey(primaryTool);
+                  const isPrimary = toolKey(t) === primaryKey;
                   return (
                     <div
                       key={t.id}

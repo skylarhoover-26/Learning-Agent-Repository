@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { useProfile } from '@/components/profile-provider';
-import { AI_TOOLS, resolveTools, serializeTools, toolKey, normalizeTool } from '@/lib/ai-tools';
+import { AI_TOOLS, chosenTools, serializeTools, toolKey, normalizeTool } from '@/lib/ai-tools';
 import { PanelsTopLeft, Check, Star, Plus, ExternalLink } from 'lucide-react';
 
 // Dedicated page to manage the AI tool(s) the learner works in. Multi-select,
@@ -19,7 +19,7 @@ export default function MyToolsPage() {
   // Seed from the saved profile until the user starts editing (and re-seed
   // after a save, when `dirty` flips back to false).
   useEffect(() => {
-    if (!dirty) setSet(resolveTools(profile));
+    if (!dirty) setSet(chosenTools(profile));
   }, [profile, dirty]);
 
   const selectedKeys = new Set(set.map(toolKey));
