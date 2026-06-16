@@ -98,6 +98,7 @@ function DiscoverContent() {
 
             <div data-tour="page-discover" className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 mb-6">
               <textarea
+                data-tour="discover-input"
                 value={workDescription}
                 onChange={(e) => setWorkDescription(e.target.value)}
                 placeholder="e.g., I'm a Director of Operations. My typical day is split between status meetings, reviewing team work, planning, and writing executive summaries..."
@@ -111,6 +112,7 @@ function DiscoverContent() {
                   {workDescription.length >= 30 && 'Looks good — ready to find AI opportunities'}
                 </p>
                 <button
+                  data-tour="discover-send"
                   onClick={findOpportunities}
                   disabled={!workDescription.trim() || workDescription.length < 10 || isSearching}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"

@@ -598,6 +598,7 @@ function LessonContent() {
           </h3>
           <div className="flex gap-2">
             <input
+              data-tour="lesson-custom-input"
               type="text"
               value={customTopic}
               onChange={(e) => setCustomTopic(e.target.value)}
@@ -606,6 +607,7 @@ function LessonContent() {
               className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
             />
             <button
+              data-tour="lesson-start"
               onClick={() => customTopic.trim() && chooseTopic(customTopic.trim())}
               disabled={!customTopic.trim()}
               className="px-5 py-3 rounded-xl bg-brand text-white font-medium hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all inline-flex items-center gap-1.5"
