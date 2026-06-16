@@ -106,7 +106,7 @@ function DiscoverContent() {
     <div className="min-h-screen">
       <PageHeader icon={Search} title="Find AI for Your Work" subtitle="Discover specific ways AI can help" />
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 py-10">
         {!hasSearched && (
           <div>
             <div className="text-center mb-10">

@@ -178,12 +178,17 @@ export function TourProvider({ children }) {
     }));
 
     // Move to the next step (shared by the Next button and auto-advance).
+    // Use moveTo(index) rather than moveNext() and guard with drive() — if the
+    // previously spotlighted element was removed (e.g. a form replaced by its
+    // result), moveNext() can throw and strand the tour.
     const advance = async () => {
       const next = idxRef.current + 1;
       if (next >= steps.length) { d.destroy(); return; }
       idxRef.current = next;
       await prepareStep(next);
-      if (driverRef.current) d.moveNext();
+      if (!driverRef.current) return;
+      try { d.moveTo(next); }
+      catch { try { d.drive(next); } catch {} }
     };
 
     const d = driver({
