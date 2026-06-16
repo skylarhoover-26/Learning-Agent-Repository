@@ -6,20 +6,21 @@ import { logAuditEntry } from '@/lib/audit-log';
 
 export async function POST(request) {
   try {
-    const { topic, format } = await request.json();
+    const { topic, format, tool } = await request.json();
 
     if (!topic || typeof topic !== 'string' || !topic.trim()) {
       return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
     }
 
     const profile = await getAuthenticatedProfile();
+    const profileForGen = tool ? { ...profile, preferred_tool: tool } : profile;
 
     const start = Date.now();
     let response;
     let error;
 
     try {
-      response = await generateVideoScript(topic, profile, { format });
+      response = await generateVideoScript(topic, profileForGen, { format });
     } catch (err) {
       error = err;
     }

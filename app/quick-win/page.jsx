@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { useProfile } from '@/components/profile-provider';
+import LlmWindowCallout from '@/components/llm-window-callout';
+import { useActiveTool } from '@/components/active-tool-provider';
 import { getTaskList } from '@/lib/curriculum-data';
 import BookLoader from '@/components/book-loader';
 import {
@@ -13,6 +15,7 @@ import {
 
 export default function QuickWinPage() {
   const { profile } = useProfile();
+  const { tool } = useActiveTool();
   const [department, setDepartment] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -36,7 +39,7 @@ export default function QuickWinPage() {
     setCopied(false);
 
     try {
-      const body = task ? { task } : {};
+      const body = task ? { task, tool } : { tool };
       const res = await fetch('/api/quick-win', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,6 +77,8 @@ export default function QuickWinPage() {
       />
 
       <main className="max-w-3xl mx-auto px-6 py-10">
+        <LlmWindowCallout storageKey="quick-win" className="mb-6" />
+
         {/* Initial State */}
         {!isLoading && !quickWin && !error && (
           <InitialCard

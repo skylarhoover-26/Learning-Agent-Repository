@@ -7,15 +7,16 @@ import { detectLessonTopic } from '@/lib/lesson-intent';
 
 export async function POST(request) {
   try {
-    const { messages } = await request.json();
+    const { messages, tool } = await request.json();
     const profile = await getAuthenticatedProfile();
+    const profileForGen = tool ? { ...profile, preferred_tool: tool } : profile;
 
     const start = Date.now();
     let reply;
     let error;
 
     try {
-      reply = await generateChatReply(messages, profile);
+      reply = await generateChatReply(messages, profileForGen);
     } catch (err) {
       error = err;
     }

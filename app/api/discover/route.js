@@ -6,15 +6,16 @@ import { logAuditEntry } from '@/lib/audit-log';
 
 export async function POST(request) {
   try {
-    const { workDescription } = await request.json();
+    const { workDescription, tool } = await request.json();
     const profile = await getAuthenticatedProfile();
+    const profileForGen = tool ? { ...profile, preferred_tool: tool } : profile;
 
     const start = Date.now();
     let opportunities;
     let error;
 
     try {
-      opportunities = await generateDiscoverOpportunities(workDescription, profile);
+      opportunities = await generateDiscoverOpportunities(workDescription, profileForGen);
     } catch (err) {
       error = err;
     }

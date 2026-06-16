@@ -6,16 +6,17 @@ import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft,
-  Building2, Zap, Target, Check, Briefcase, Plus,
+  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft,
 } from 'lucide-react';
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
 } from '@/lib/curriculum-data';
+import { AI_TOOLS, DEFAULT_TOOL_ID } from '@/lib/ai-tools';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
 
 const SUB_TEAMS = SUBTEAMS;
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 // No cap — users can add as many tasks as they want (minimum 1).
 const MAX_TASKS = Infinity;
@@ -34,6 +35,10 @@ export default function OnboardingPage() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [tier, setTier] = useState('');
   const [goals, setGoals] = useState([]);
+  // Default to Gemini — everyone has it through Google Workspace — but let them
+  // pick another tool (or type their own).
+  const [aiTool, setAiTool] = useState(DEFAULT_TOOL_ID);
+  const [customTool, setCustomTool] = useState('');
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -46,8 +51,9 @@ export default function OnboardingPage() {
     if (step === 2) return topTasks.length >= 1;
     if (step === 3) return tier.length > 0;
     if (step === 4) return goals.length > 0;
+    if (step === 5) return aiTool !== 'other' || customTool.trim().length > 0;
     return false;
-  }, [step, department, subTeam, topTasks, tier, goals]);
+  }, [step, department, subTeam, topTasks, tier, goals, aiTool, customTool]);
 
   function goNext() {
     if (!canAdvance()) return;
@@ -130,6 +136,7 @@ export default function OnboardingPage() {
       // Keep the legacy single `goal` string in sync (joined) so lesson/AI
       // prompts and other read sites that expect `profile.goal` keep working.
       goal: chosenGoals.join('; '),
+      preferred_tool: aiTool === 'other' ? { id: 'other', label: customTool.trim() } : aiTool,
       onboarded_at: new Date().toISOString(),
     };
     try {
@@ -259,8 +266,18 @@ export default function OnboardingPage() {
             <StepGoal
               selected={goals}
               onToggle={handleGoalToggle}
-              onFinish={() => handleFinish(goals)}
+              onNext={goNext}
               canAdvance={goals.length > 0}
+            />
+          )}
+          {step === 5 && (
+            <StepTool
+              selected={aiTool}
+              onSelect={setAiTool}
+              customTool={customTool}
+              onCustomToolChange={setCustomTool}
+              onFinish={() => handleFinish(goals)}
+              canAdvance={canAdvance()}
             />
           )}
         </div>
@@ -502,7 +519,7 @@ function StepTier({ selected, onSelect, onNext, canAdvance }) {
   );
 }
 
-function StepGoal({ selected, onToggle, onFinish, canAdvance }) {
+function StepGoal({ selected, onToggle, onNext, canAdvance }) {
   return (
     <div>
       <div className="text-center mb-8">
@@ -542,6 +559,84 @@ function StepGoal({ selected, onToggle, onFinish, canAdvance }) {
           );
         })}
       </div>
+      <div className="text-center">
+        <button
+          onClick={onNext}
+          disabled={!canAdvance}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          Continue
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StepTool({ selected, onSelect, customTool, onCustomToolChange, onFinish, canAdvance }) {
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-brand-50 mb-4">
+          <PanelsTopLeft className="w-7 h-7 text-brand" />
+        </div>
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
+          Which AI tool will you use?
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
+          You'll do the hands-on work in your own AI tool, open beside the coach. We'll tailor lessons to it — and tell you when another tool is better for a task. You can change this anytime.
+        </p>
+      </div>
+      <div className="space-y-2 max-w-lg mx-auto mb-4">
+        {AI_TOOLS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => onSelect(t.id)}
+            className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
+              selected === t.id
+                ? 'bg-brand text-white border-brand shadow-sm'
+                : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
+            }`}
+          >
+            <span className="text-2xl shrink-0">{t.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold">{t.label}</p>
+              <p className={`text-sm ${selected === t.id ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
+                Best for {t.strengths}
+              </p>
+            </div>
+            {selected === t.id && <Check className="w-5 h-5 shrink-0" />}
+          </button>
+        ))}
+        <button
+          onClick={() => onSelect('other')}
+          className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
+            selected === 'other'
+              ? 'bg-brand text-white border-brand shadow-sm'
+              : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
+          }`}
+        >
+          <span className="text-2xl shrink-0">🛠️</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold">Something else</p>
+            <p className={`text-sm ${selected === 'other' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
+              Use a different AI tool
+            </p>
+          </div>
+          {selected === 'other' && <Check className="w-5 h-5 shrink-0" />}
+        </button>
+      </div>
+      {selected === 'other' && (
+        <div className="max-w-lg mx-auto mb-4">
+          <input
+            type="text"
+            value={customTool}
+            onChange={(e) => onCustomToolChange(e.target.value)}
+            placeholder="Which tool? (e.g. Perplexity)"
+            className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-ink dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-brand"
+          />
+        </div>
+      )}
       <div className="text-center">
         <button
           onClick={onFinish}

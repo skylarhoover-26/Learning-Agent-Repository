@@ -2,6 +2,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { SessionWrapper } from '@/components/session-wrapper';
 import { ProfileProvider } from '@/components/profile-provider';
+import { ActiveToolProvider } from '@/components/active-tool-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
 import PageTracker from '@/components/page-tracker';
 import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
@@ -38,6 +39,7 @@ export default function RootLayout({ children }) {
         <IdentityGate />
         <SessionWrapper>
           <ProfileProvider>
+            <ActiveToolProvider>
             <ProgressionProvider>
               <SidebarProvider>
                 <TourProvider>
@@ -49,6 +51,7 @@ export default function RootLayout({ children }) {
                 </TourProvider>
               </SidebarProvider>
             </ProgressionProvider>
+            </ActiveToolProvider>
           </ProfileProvider>
         </SessionWrapper>
         <PageTracker />

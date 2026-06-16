@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import LlmWindowCallout from '@/components/llm-window-callout';
+import { useActiveTool } from '@/components/active-tool-provider';
 import {
   Search, Sparkles, ChevronRight, Clock, Lightbulb,
   RefreshCw, Loader2,
@@ -30,6 +32,7 @@ const CATEGORY_COLORS = {
 
 function DiscoverContent() {
   const searchParams = useSearchParams();
+  const { tool } = useActiveTool();
   const [workDescription, setWorkDescription] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -55,7 +58,7 @@ function DiscoverContent() {
     const res = await fetch('/api/discover', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workDescription: text }),
+      body: JSON.stringify({ workDescription: text, tool }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Search failed');
@@ -107,6 +110,7 @@ function DiscoverContent() {
       <PageHeader icon={Search} title="Find AI for Your Work" subtitle="Discover specific ways AI can help" />
 
       <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 py-10">
+        <LlmWindowCallout storageKey="discover" className="mb-6" />
         {!hasSearched && (
           <div>
             <div className="text-center mb-10">

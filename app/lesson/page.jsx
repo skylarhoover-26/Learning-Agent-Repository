@@ -20,6 +20,8 @@ import { useTts } from '@/lib/use-tts';
 import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
+import LlmWindowCallout from '@/components/llm-window-callout';
+import { useActiveTool } from '@/components/active-tool-provider';
 
 // Prefilled into the chat bar at the lesson's first practice point so the learner
 // can hit enter to kick off an interactive, personalized scenario.
@@ -177,6 +179,7 @@ function LessonContent() {
   const hasRecordedCompletion = useRef(false);
   const { refresh: refreshProgression } = useProgression() || {};
   const { profile } = useProfile();
+  const { tool } = useActiveTool();
 
   useEffect(() => {
     const saved = getSavedLesson();
@@ -332,7 +335,7 @@ function LessonContent() {
       const res = await fetch('/api/lesson/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: t, format: fmt }),
+        body: JSON.stringify({ topic: t, format: fmt, tool }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start lesson');
@@ -373,7 +376,7 @@ function LessonContent() {
       const res = await fetch('/api/lesson/continue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, messages, userInput: input, format }),
+        body: JSON.stringify({ topic, messages, userInput: input, format, tool }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to continue lesson');
@@ -621,6 +624,7 @@ function LessonContent() {
         <VideoLessonPlayer
           topic={videoTopic}
           format={format}
+          tool={tool}
           onClose={() => setVideoTopic(null)}
         />
       )}
@@ -747,6 +751,8 @@ function LessonContent() {
     <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
     <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
       <XpToast result={progressionResult} onDismiss={() => setProgressionResult(null)} />
+
+      {!isComplete && <LlmWindowCallout storageKey="lesson" className="mb-6" />}
 
       {/* Progress bar + voice mode toggle */}
       {slides.length > 0 && (

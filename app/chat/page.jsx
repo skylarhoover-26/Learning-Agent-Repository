@@ -10,6 +10,8 @@ import { useProfile } from '@/components/profile-provider';
 import { MessageCircle, Send, Loader2, Trash2, ExternalLink } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import ChatLessonOffer from '@/components/chat-lesson-offer';
+import LlmWindowCallout from '@/components/llm-window-callout';
+import { useActiveTool } from '@/components/active-tool-provider';
 
 // Same support channels surfaced by the floating help widget, pinned in the
 // chat footer so learners can reach the team without leaving the conversation.
@@ -60,6 +62,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const { profile } = useProfile();
+  const { tool } = useActiveTool();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -106,7 +109,7 @@ function ChatPageInner() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, tool }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Something went wrong');
@@ -149,6 +152,7 @@ function ChatPageInner() {
 
       <main className="flex-1 overflow-y-auto">
         <div data-tour="chat-thread" className="max-w-3xl mx-auto px-6 py-6 space-y-4">
+          <LlmWindowCallout storageKey="chat" />
           {messages.length === 0 && (
             <div className="text-center py-12">
               <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 ring-1 ring-brand-100 dark:ring-slate-600 mx-auto mb-4 flex items-center justify-center">

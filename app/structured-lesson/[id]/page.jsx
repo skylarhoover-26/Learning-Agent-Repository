@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import LlmWindowCallout from '@/components/llm-window-callout';
 import {
   BookOpen, ChevronRight, ChevronLeft, Check,
   Loader2, Send, Sparkles, ArrowRight, ArrowLeft,
@@ -150,6 +151,7 @@ export default function StructuredLessonPlayer({ params }) {
       </div>
 
       <main className="max-w-3xl mx-auto px-6 py-10">
+        <LlmWindowCallout storageKey="structured-lesson" className="mb-6" />
         <div key={stepIdx} className="animate-fade-in">
           {step === 'Read' && <ReadStep lesson={lesson} onNext={goNext} />}
           {step === 'Try' && (
