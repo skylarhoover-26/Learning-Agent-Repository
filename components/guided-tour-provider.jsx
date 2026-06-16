@@ -72,6 +72,25 @@ function setProfileMenu(state) {
   window.dispatchEvent(new CustomEvent('tour:user-menu', { detail: state }));
 }
 
+// A full-screen shield that swallows every click during the tour so people can't
+// navigate off-script (e.g. tapping a sidebar link). It sits just below driver's
+// popover (z-index 1000000000), so Next/Back/× stay clickable; our typing and
+// auto-clicks fire programmatically, so they pass through fine.
+const SHIELD_ID = 'tour-click-shield';
+function showClickShield() {
+  if (document.getElementById(SHIELD_ID)) return;
+  const el = document.createElement('div');
+  el.id = SHIELD_ID;
+  el.style.cssText = 'position:fixed;inset:0;z-index:999999999;background:transparent;';
+  const swallow = (e) => { e.preventDefault(); e.stopPropagation(); };
+  ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'wheel']
+    .forEach((t) => el.addEventListener(t, swallow, { capture: true, passive: false }));
+  document.body.appendChild(el);
+}
+function hideClickShield() {
+  document.getElementById(SHIELD_ID)?.remove();
+}
+
 // Disable / re-enable the popover's Next button while content is generating, so
 // people can't skip ahead before the result lands.
 function setNextLocked(locked) {
@@ -194,10 +213,12 @@ export function TourProvider({ children }) {
       onDestroyed: () => {
         driverRef.current = null;
         setProfileMenu('close');
+        hideClickShield();
       },
     });
 
     driverRef.current = d;
+    showClickShield();
     setOpen(true);
     // Let the sidebar finish its slide-in, then prep + show the first step.
     await new Promise(r => setTimeout(r, 280));
