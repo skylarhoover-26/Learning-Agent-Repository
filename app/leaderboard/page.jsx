@@ -27,7 +27,7 @@ export default function LeaderboardPage() {
   const userRank = userRow?.rank ?? null;
 
   return (
-    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
+    <div data-tour="page-leaderboard" className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={Trophy}
         title="Leaderboard & Updates"

@@ -316,7 +316,7 @@ export default function SkillGraphPage() {
   const categories = [...new Set(enrichedNodes.map(n => n.category))];
 
   return (
-    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
+    <div data-tour="page-skill-graph" className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader
         icon={GitBranch}
         title="Skill Graph"
