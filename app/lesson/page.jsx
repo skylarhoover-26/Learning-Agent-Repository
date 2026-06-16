@@ -606,18 +606,9 @@ function LessonContent() {
         </div>
 
         <div data-tour="lesson-topics" className="mb-8">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">
-              Suggested for you
-            </h3>
-            <button
-              onClick={() => setSurpriseMode(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 shadow-sm transition-all active:scale-[0.98]"
-            >
-              <Zap className="w-4 h-4" />
-              Surprise me
-            </button>
-          </div>
+          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
+            Suggested for you
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => (
               <button
@@ -633,6 +624,15 @@ function LessonContent() {
                 <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
               </button>
             ))}
+          </div>
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => setSurpriseMode(true)}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 shadow-sm transition-all active:scale-[0.98]"
+            >
+              <Zap className="w-4 h-4" />
+              Surprise me
+            </button>
           </div>
         </div>
 
