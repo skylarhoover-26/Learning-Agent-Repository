@@ -58,6 +58,24 @@ function setProfileMenu(state) {
   window.dispatchEvent(new CustomEvent('tour:user-menu', { detail: state }));
 }
 
+// Disable / re-enable the popover's Next button while content is generating, so
+// people can't skip ahead before the result lands.
+function setNextLocked(locked) {
+  const btn = document.querySelector('.driver-popover-next-btn');
+  if (!btn) return;
+  if (locked) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+    btn.textContent = 'Generating…';
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+    btn.textContent = 'Next →';
+  }
+}
+
 export function TourProvider({ children }) {
   const router = useRouter();
   const { setOpen } = useSidebar();
@@ -66,6 +84,8 @@ export function TourProvider({ children }) {
   // Track which steps have already auto-clicked so going back then forward doesn't
   // fire a second real send (e.g. a duplicate chat message).
   const clickedRef = useRef(new Set());
+  // True while a step is waiting on generated content — blocks Next (button + keys).
+  const lockedRef = useRef(false);
 
   // Run a step's side effects (navigate, open the sidebar/dropdown) and wait for
   // its target element to exist before driver highlights it.
@@ -79,10 +99,13 @@ export function TourProvider({ children }) {
   }, [router, setOpen]);
 
   // After a step is spotlighted, run its demo actions: animate typing into a box,
-  // and/or auto-click the real button to show how it works.
+  // auto-click the real button, and lock Next until the generated result appears.
   const runStepActions = useCallback(async (index) => {
     const step = GUIDED_TOUR_STEPS[index];
     if (!step) return;
+    // Lock immediately if this step waits on generated content, so a fast click
+    // can't skip the demo before it runs.
+    if (step.waitFor) { lockedRef.current = true; setNextLocked(true); }
     if (step.type) {
       await typeIntoElement(step.type.selector, step.type.text);
     }
@@ -91,12 +114,23 @@ export function TourProvider({ children }) {
       await sleep(step.autoClickDelay ?? 600);
       await clickElement(step.autoClick);
     }
+    if (step.waitFor) {
+      // Unlock once the result lands; a generous timeout guards against a stuck
+      // tour if generation fails. Only unlock if we're still on this step (the
+      // user may have stepped back while it was generating).
+      await waitForElement(step.waitFor, step.waitForTimeout ?? 20000);
+      if (idxRef.current === index) {
+        lockedRef.current = false;
+        setNextLocked(false);
+      }
+    }
   }, []);
 
   const startTour = useCallback(async () => {
     if (driverRef.current) return; // already running
     idxRef.current = 0;
     clickedRef.current = new Set();
+    lockedRef.current = false;
     const steps = GUIDED_TOUR_STEPS.map(s => ({
       element: s.element,
       popover: { title: s.popover.title, description: s.popover.description },
@@ -111,6 +145,7 @@ export function TourProvider({ children }) {
       steps,
       onHighlighted: () => { runStepActions(idxRef.current); },
       onNextClick: async () => {
+        if (lockedRef.current) return; // content still generating — don't skip ahead
         const next = idxRef.current + 1;
         if (next >= steps.length) { d.destroy(); return; }
         idxRef.current = next;
@@ -118,6 +153,7 @@ export function TourProvider({ children }) {
         if (driverRef.current) d.moveNext();
       },
       onPrevClick: async () => {
+        lockedRef.current = false; // stepping back cancels any pending wait-lock
         const prev = idxRef.current - 1;
         if (prev < 0) return;
         idxRef.current = prev;

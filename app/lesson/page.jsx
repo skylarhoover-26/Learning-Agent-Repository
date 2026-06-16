@@ -750,7 +750,7 @@ function LessonContent() {
 
       {/* Progress bar + voice mode toggle */}
       {slides.length > 0 && (
-        <div className="flex items-center gap-3 mb-6">
+        <div data-tour="lesson-content" className="flex items-center gap-3 mb-6">
           <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-brand rounded-full transition-all duration-500"

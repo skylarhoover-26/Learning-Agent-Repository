@@ -163,6 +163,7 @@ function ChatPageInner() {
           {messages.map((msg, i) => (
             <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
               <div
+                data-tour={msg.role === 'assistant' ? 'chat-reply' : undefined}
                 className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                   msg.role === 'user'
                     ? 'bg-brand text-white'
