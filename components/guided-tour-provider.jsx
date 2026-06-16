@@ -221,10 +221,14 @@ export function TourProvider({ children }) {
         driverRef.current = null;
         setProfileMenu('close');
         hideClickShield();
+        try { window.sessionStorage.removeItem('tourActive'); } catch {}
       },
     });
 
     driverRef.current = d;
+    // Flag the tour as running so pages (e.g. chat) can show a clean demo state
+    // instead of the learner's real saved data.
+    try { window.sessionStorage.setItem('tourActive', '1'); } catch {}
     showClickShield();
     setOpen(true);
     // Let the sidebar finish its slide-in, then prep + show the first step.

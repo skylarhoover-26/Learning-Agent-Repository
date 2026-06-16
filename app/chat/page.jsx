@@ -66,12 +66,23 @@ function ChatPageInner() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const searchParams = useSearchParams();
+  // During the guided tour we show a clean, empty chat (so the suggestion chips
+  // and the typed-question demo read clearly) and never persist the demo — the
+  // learner's real saved history is left untouched.
+  const [tourMode, setTourMode] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
   useEffect(() => {
+    const inTour = typeof window !== 'undefined' && window.sessionStorage.getItem('tourActive') === '1';
+    if (inTour) {
+      setTourMode(true);
+      setMessages([]); // ignore saved history for the demo
+      inputRef.current?.focus();
+      return;
+    }
     const existing = getChatHistory();
     setMessages(existing);
     const prefill = searchParams.get('q');
@@ -103,13 +114,16 @@ function ChatPageInner() {
       // asks a what/how/explain question, so chat can offer a lesson.
       const updatedMessages = [...newMessages, { role: 'assistant', content: data.reply, lessonTopic: data.lessonTopic }];
       setMessages(updatedMessages);
-      saveChatHistory(updatedMessages);
-      if (profile) {
-        addXpEvent(resolveLearnerId(profile), {
-          source: 'chat_message',
-          amount: 5,
-          created_at: new Date().toISOString(),
-        });
+      // In tour mode, don't save the demo to history or award XP for it.
+      if (!tourMode) {
+        saveChatHistory(updatedMessages);
+        if (profile) {
+          addXpEvent(resolveLearnerId(profile), {
+            source: 'chat_message',
+            amount: 5,
+            created_at: new Date().toISOString(),
+          });
+        }
       }
     } catch (error) {
       console.error('Chat error:', error);
