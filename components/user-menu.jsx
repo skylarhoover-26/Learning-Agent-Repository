@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut } from 'lucide-react';
+import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { displayNameFromProfile } from '@/lib/display-name';
 
@@ -13,6 +13,7 @@ import { displayNameFromProfile } from '@/lib/display-name';
 const PROFILE_LINKS = [
   { href: '/profile', icon: User, label: 'Profile', tour: 'nav-profile' },
   { href: '/my-role', icon: UserCog, label: 'My Role', tour: 'nav-my-role' },
+  { href: '/my-tools', icon: PanelsTopLeft, label: 'My AI Tools', tour: 'nav-my-tools' },
   { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', tour: 'nav-my-tasks' },
   { href: '/projects', icon: FolderKanban, label: 'Projects', tour: 'nav-projects' },
 ];

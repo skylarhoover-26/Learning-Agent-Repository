@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ExternalLink, X, PanelsTopLeft, Check } from 'lucide-react';
-import { AI_TOOLS } from '@/lib/ai-tools';
+import { ExternalLink, X, PanelsTopLeft, Check, Star } from 'lucide-react';
+import { AI_TOOLS, toolKey } from '@/lib/ai-tools';
 import { useActiveTool } from './active-tool-provider';
 
-// A dismissible header callout that reminds the learner to keep their AI tool
+// A dismissible header callout that reminds the learner to keep their AI tool(s)
 // open in a separate window so they can follow along beside the coach. It also
-// lets them switch the tool for this session (and optionally save it as their
-// default). `storageKey` keeps the dismissal scoped per surface for the session.
+// lets them adjust their tools for this session — toggle which tools they use
+// and pick a primary — and optionally save the set as their default.
 export default function LlmWindowCallout({ storageKey = 'default', className = '' }) {
-  const { tool, isOverridden, hasPreference, setOverride, saveAsDefault } = useActiveTool();
+  const { tools, primaryTool, isOverridden, hasPreference, toggleTool, setPrimary, saveAsDefault } = useActiveTool();
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid a flash before we read sessionStorage
   const [switching, setSwitching] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
@@ -35,23 +35,20 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
   }
 
   function openTool() {
-    if (tool.url) window.open(tool.url, '_blank', 'noopener,noreferrer');
+    if (primaryTool.url) window.open(primaryTool.url, '_blank', 'noopener,noreferrer');
   }
 
-  function pick(choice) {
-    setOverride(choice);
-    setSwitching(false);
-  }
-
-  function pickCustom() {
+  function addCustom() {
     const label = customLabel.trim();
     if (!label) return;
-    setOverride({ id: 'other', label });
+    toggleTool({ id: 'other', label });
     setCustomLabel('');
-    setSwitching(false);
   }
 
   if (dismissed) return null;
+
+  const selectedKeys = new Set(tools.map(toolKey));
+  const extras = tools.length - 1;
 
   return (
     <div
@@ -67,18 +64,19 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
           <p className="text-sm text-ink dark:text-slate-200">
             You&rsquo;ll do the hands-on AI work in your own tool. Keep{' '}
             <span className="font-semibold">
-              {tool.emoji} {tool.label}
+              {primaryTool.emoji} {primaryTool.label}
             </span>{' '}
-            open in another window so you can follow along here.
+            open in another window so you can follow along here
+            {extras > 0 && <span className="text-slate-500 dark:text-slate-400"> (+{extras} more {extras === 1 ? 'tool' : 'tools'})</span>}.
           </p>
 
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
-            {tool.url && (
+            {primaryTool.url && (
               <button
                 onClick={openTool}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-pill bg-brand text-white hover:bg-brand-700 transition-colors"
               >
-                Open {tool.label}
+                Open {primaryTool.label}
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
             )}
@@ -86,59 +84,78 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
               onClick={() => setSwitching((s) => !s)}
               className="px-3 py-1.5 text-sm font-medium rounded-pill border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 hover:bg-brand-100/60 dark:hover:bg-slate-700 transition-colors"
             >
-              Using a different tool?
+              {tools.length > 1 ? 'Manage your tools' : 'Using a different tool?'}
             </button>
             {isOverridden && (
               <button
-                onClick={() => saveAsDefault(tool)}
+                onClick={() => saveAsDefault()}
                 className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand dark:hover:text-brand-200 transition-colors"
               >
                 <Check className="w-3.5 h-3.5" />
-                Save {tool.label} as my default
+                Save as my default
               </button>
             )}
           </div>
 
           {switching && (
-            <div className="mt-3 pt-3 border-t border-brand-200/70 dark:border-slate-600">
+            <div className="mt-3 pt-3 border-t border-brand-200/70 dark:border-slate-600 space-y-3">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Pick every tool you use. Tap the star to set the one we&rsquo;ll open by default.
+              </p>
               <div className="flex flex-wrap gap-2">
                 {AI_TOOLS.map((t) => {
-                  const active = t.id === tool.id;
+                  const selected = selectedKeys.has(toolKey(t));
+                  const isPrimary = toolKey(t) === toolKey(primaryTool);
                   return (
-                    <button
+                    <div
                       key={t.id}
-                      onClick={() => pick(t.id)}
-                      className={`px-3 py-1.5 text-sm rounded-pill border transition-colors ${
-                        active
+                      className={`inline-flex items-center rounded-pill border transition-colors ${
+                        selected
                           ? 'border-brand bg-brand text-white'
-                          : 'border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 hover:border-brand'
+                          : 'border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200'
                       }`}
                     >
-                      {t.emoji} {t.label}
-                    </button>
+                      <button
+                        onClick={() => toggleTool(t.id)}
+                        className="pl-3 pr-2 py-1.5 text-sm hover:opacity-90"
+                      >
+                        {selected && <Check className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />}
+                        {t.emoji} {t.label}
+                      </button>
+                      {selected && (
+                        <button
+                          onClick={() => setPrimary(t.id)}
+                          title={isPrimary ? 'Primary tool' : 'Set as primary'}
+                          className="pr-2.5 pl-1 py-1.5"
+                          aria-label={isPrimary ? 'Primary tool' : 'Set as primary'}
+                        >
+                          <Star className={`w-3.5 h-3.5 ${isPrimary ? 'fill-cta text-cta' : 'text-white/70'}`} />
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={customLabel}
                   onChange={(e) => setCustomLabel(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && pickCustom()}
-                  placeholder="Something else (e.g. Perplexity)"
+                  onKeyDown={(e) => e.key === 'Enter' && addCustom()}
+                  placeholder="Add another (e.g. Perplexity)"
                   className="flex-1 min-w-0 px-3 py-1.5 text-sm rounded-pill border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-ink dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-brand"
                 />
                 <button
-                  onClick={pickCustom}
+                  onClick={addCustom}
                   disabled={!customLabel.trim()}
                   className="px-3 py-1.5 text-sm font-medium rounded-pill bg-ink text-white disabled:opacity-40 transition-colors"
                 >
-                  Use it
+                  Add
                 </button>
               </div>
               {!hasPreference && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                  Tip: set a default tool in your profile so the coach always tailors lessons to it.
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Tip: set your tools in <span className="font-medium">My AI Tools</span> so the coach always tailors lessons to them.
                 </p>
               )}
             </div>

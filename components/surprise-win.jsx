@@ -13,7 +13,7 @@ import { Zap, Copy, Check, Clock, ArrowRight, RefreshCw } from 'lucide-react';
 // steps. Rendered inline on the lesson screen.
 export default function SurpriseWin({ onStartLesson }) {
   const { profile } = useProfile();
-  const { tool } = useActiveTool();
+  const { tools } = useActiveTool();
   const [quickWin, setQuickWin] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,7 +28,7 @@ export default function SurpriseWin({ onStartLesson }) {
       const res = await fetch('/api/quick-win', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool }),
+        body: JSON.stringify({ tools }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to get a quick win');
@@ -39,7 +39,7 @@ export default function SurpriseWin({ onStartLesson }) {
     } finally {
       setIsLoading(false);
     }
-  }, [tool]);
+  }, [tools]);
 
   useEffect(() => {
     fetchQuickWin();

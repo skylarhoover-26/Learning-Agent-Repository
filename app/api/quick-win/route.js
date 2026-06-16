@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { getQuickWin, getTaskList } from '@/lib/curriculum-data';
 import { logAuditEntry } from '@/lib/audit-log';
-import { buildToolGuidance, resolveTool } from '@/lib/ai-tools';
+import { buildToolGuidance, resolveTools } from '@/lib/ai-tools';
 
 let client;
 function getClient() {
@@ -42,7 +42,8 @@ function pickRandomTask(department, subTeam, topTasks) {
 function buildSystemPrompt(profile) {
   const { department, sub_team, tier, goal, display_name } = profile || {};
   const isDevTier = tier === 'developer';
-  const tool = resolveTool(profile);
+  const tools = resolveTools(profile);
+  const primaryTool = tools[0];
 
   return [
     'You are an AI productivity coach on an internal learning platform.',
@@ -53,7 +54,7 @@ function buildSystemPrompt(profile) {
     '- description (string): 1-2 sentences explaining why this is useful and how it saves time',
     '- timeEstimate (string): estimated time like "~2 minutes" or "~4 minutes" — always under 5 minutes',
     '- steps (array of strings): 3-5 numbered step instructions to complete this win',
-    `- prompt (string): the actual copy-paste prompt they can paste into ${tool.label}. It MUST follow the RCTF framework: start with a Role ("You are a..."), then Context (background info), then Task (what to do), then Format (desired output structure). It must be COMPLETE — no placeholders like [insert X]. Make it specific and ready to use.`,
+    `- prompt (string): the actual copy-paste prompt they can paste into ${primaryTool.label}. It MUST follow the RCTF framework: start with a Role ("You are a..."), then Context (background info), then Task (what to do), then Format (desired output structure). It must be COMPLETE — no placeholders like [insert X]. Make it specific and ready to use.`,
     '- expectedResult (string): 1-2 sentences describing what they will get back when they use the prompt',
     '',
     'Rules:',
@@ -61,7 +62,7 @@ function buildSystemPrompt(profile) {
     '- The prompt must be specific and complete — no brackets, no fill-in-the-blank placeholders.',
     '- Keep it practical, not theoretical. Something they can literally do RIGHT NOW.',
     '- Vary your suggestions — cover different use cases: writing, analysis, planning, communication, brainstorming, summarizing.',
-    buildToolGuidance(tool),
+    buildToolGuidance(tools),
     !isDevTier
       ? '- The user is NOT a developer. Never suggest coding, APIs, or terminal commands. Focus on prompts they can paste into their AI tool.'
       : '- The user is a developer. You may suggest technical wins involving code, APIs, or developer tools.',
@@ -84,10 +85,10 @@ export async function POST(request) {
     }
 
     const requestedTask = body.task;
-    // A per-lesson tool override (from the callout's switcher) wins over the
+    // A per-session tool override (from the callout's switcher) wins over the
     // learner's saved preference for this generation only.
-    const profileForGen = body.tool ? { ...profile, preferred_tool: body.tool } : profile;
-    const tool = resolveTool(profileForGen);
+    const profileForGen = body.tools ? { ...profile, preferred_tools: body.tools } : profile;
+    const primaryTool = resolveTools(profileForGen)[0];
 
     if (department) {
       const task = requestedTask || pickRandomTask(department, sub_team, top_tasks);
@@ -95,7 +96,7 @@ export async function POST(request) {
         const curated = getQuickWin(department, task);
         if (curated) {
           return NextResponse.json({
-            quickWin: buildCuratedQuickWin(department, task, curated, tool),
+            quickWin: buildCuratedQuickWin(department, task, curated, primaryTool),
             source: 'curated',
             task,
           });

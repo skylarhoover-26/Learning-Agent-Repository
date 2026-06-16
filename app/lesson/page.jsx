@@ -182,7 +182,7 @@ function LessonContent() {
   const hasRecordedCompletion = useRef(false);
   const { refresh: refreshProgression } = useProgression() || {};
   const { profile } = useProfile();
-  const { tool } = useActiveTool();
+  const { tools } = useActiveTool();
 
   useEffect(() => {
     const saved = getSavedLesson();
@@ -338,7 +338,7 @@ function LessonContent() {
       const res = await fetch('/api/lesson/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: t, format: fmt, tool }),
+        body: JSON.stringify({ topic: t, format: fmt, tools }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start lesson');
@@ -379,7 +379,7 @@ function LessonContent() {
       const res = await fetch('/api/lesson/continue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, messages, userInput: input, format, tool }),
+        body: JSON.stringify({ topic, messages, userInput: input, format, tools }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to continue lesson');
@@ -665,7 +665,7 @@ function LessonContent() {
         <VideoLessonPlayer
           topic={videoTopic}
           format={format}
-          tool={tool}
+          tools={tools}
           onClose={() => setVideoTopic(null)}
         />
       )}

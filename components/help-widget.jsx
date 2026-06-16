@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 import { MessageCircleQuestion, X, Send, Loader2, ExternalLink } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 
@@ -28,7 +27,6 @@ const SLACK_CHANNELS = [
 ];
 
 export default function HelpWidget() {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]); // real convo (greeting is UI-only)
   const [input, setInput] = useState('');
@@ -57,9 +55,6 @@ export default function HelpWidget() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, open]);
-
-  // Redundant on the dedicated chat page.
-  if (pathname?.startsWith('/chat')) return null;
 
   async function send() {
     const text = input.trim();

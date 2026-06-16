@@ -62,7 +62,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const { profile } = useProfile();
-  const { tool } = useActiveTool();
+  const { tools } = useActiveTool();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -109,7 +109,7 @@ function ChatPageInner() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, tool }),
+        body: JSON.stringify({ messages: newMessages, tools }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Something went wrong');

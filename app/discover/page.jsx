@@ -33,7 +33,7 @@ const CATEGORY_COLORS = {
 
 function DiscoverContent() {
   const searchParams = useSearchParams();
-  const { tool } = useActiveTool();
+  const { tools } = useActiveTool();
   const [workDescription, setWorkDescription] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -59,7 +59,7 @@ function DiscoverContent() {
     const res = await fetch('/api/discover', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workDescription: text, tool }),
+      body: JSON.stringify({ workDescription: text, tools }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Search failed');

@@ -7,9 +7,9 @@ import { detectLessonTopic } from '@/lib/lesson-intent';
 
 export async function POST(request) {
   try {
-    const { messages, tool } = await request.json();
+    const { messages, tools } = await request.json();
     const profile = await getAuthenticatedProfile();
-    const profileForGen = tool ? { ...profile, preferred_tool: tool } : profile;
+    const profileForGen = tools ? { ...profile, preferred_tools: tools } : profile;
 
     const start = Date.now();
     let reply;

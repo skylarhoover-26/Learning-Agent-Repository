@@ -6,9 +6,9 @@ import { logAuditEntry } from '@/lib/audit-log';
 
 export async function POST(request) {
   try {
-    const { topic, format, tool } = await request.json();
+    const { topic, format, tools } = await request.json();
     const profile = await getAuthenticatedProfile();
-    const profileForGen = tool ? { ...profile, preferred_tool: tool } : profile;
+    const profileForGen = tools ? { ...profile, preferred_tools: tools } : profile;
 
     const messages = [{ role: 'user', content: 'Start the lesson' }];
 

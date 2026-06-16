@@ -6,14 +6,14 @@ import { logAuditEntry } from '@/lib/audit-log';
 
 export async function POST(request) {
   try {
-    const { topic, format, tool } = await request.json();
+    const { topic, format, tools } = await request.json();
 
     if (!topic || typeof topic !== 'string' || !topic.trim()) {
       return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
     }
 
     const profile = await getAuthenticatedProfile();
-    const profileForGen = tool ? { ...profile, preferred_tool: tool } : profile;
+    const profileForGen = tools ? { ...profile, preferred_tools: tools } : profile;
 
     const start = Date.now();
     let response;

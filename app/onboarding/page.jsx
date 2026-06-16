@@ -6,12 +6,12 @@ import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft,
-  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft,
+  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Star,
 } from 'lucide-react';
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
 } from '@/lib/curriculum-data';
-import { AI_TOOLS, DEFAULT_TOOL_ID } from '@/lib/ai-tools';
+import { AI_TOOLS, DEFAULT_TOOL_ID, toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
 
 const SUB_TEAMS = SUBTEAMS;
@@ -36,8 +36,8 @@ export default function OnboardingPage() {
   const [tier, setTier] = useState('');
   const [goals, setGoals] = useState([]);
   // Default to Gemini — everyone has it through Google Workspace — but let them
-  // pick another tool (or type their own).
-  const [aiTool, setAiTool] = useState(DEFAULT_TOOL_ID);
+  // pick one or more tools (or type their own). First entry is the primary.
+  const [aiTools, setAiTools] = useState([DEFAULT_TOOL_ID]);
   const [customTool, setCustomTool] = useState('');
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
@@ -51,9 +51,9 @@ export default function OnboardingPage() {
     if (step === 2) return topTasks.length >= 1;
     if (step === 3) return tier.length > 0;
     if (step === 4) return goals.length > 0;
-    if (step === 5) return aiTool !== 'other' || customTool.trim().length > 0;
+    if (step === 5) return aiTools.length > 0;
     return false;
-  }, [step, department, subTeam, topTasks, tier, goals, aiTool, customTool]);
+  }, [step, department, subTeam, topTasks, tier, goals, aiTools]);
 
   function goNext() {
     if (!canAdvance()) return;
@@ -115,6 +115,31 @@ export default function OnboardingPage() {
     );
   }
 
+  function toggleAiTool(choice) {
+    const t = normalizeTool(choice);
+    const key = toolKey(t);
+    setAiTools(prev => {
+      const exists = prev.some(x => toolKey(normalizeTool(x)) === key);
+      if (exists) {
+        const next = prev.filter(x => toolKey(normalizeTool(x)) !== key);
+        return next.length ? next : prev; // keep at least one
+      }
+      return [...prev, choice];
+    });
+  }
+
+  function setPrimaryAiTool(choice) {
+    const key = toolKey(normalizeTool(choice));
+    setAiTools(prev => [choice, ...prev.filter(x => toolKey(normalizeTool(x)) !== key)]);
+  }
+
+  function addCustomAiTool() {
+    const label = customTool.trim();
+    if (!label) return;
+    toggleAiTool({ id: 'other', label });
+    setCustomTool('');
+  }
+
   async function handleFinish(selectedGoals) {
     const chosenGoals = selectedGoals || goals;
     const email = session?.user?.email?.toLowerCase() || '';
@@ -136,7 +161,7 @@ export default function OnboardingPage() {
       // Keep the legacy single `goal` string in sync (joined) so lesson/AI
       // prompts and other read sites that expect `profile.goal` keep working.
       goal: chosenGoals.join('; '),
-      preferred_tool: aiTool === 'other' ? { id: 'other', label: customTool.trim() } : aiTool,
+      preferred_tools: serializeTools(aiTools),
       onboarded_at: new Date().toISOString(),
     };
     try {
@@ -272,10 +297,12 @@ export default function OnboardingPage() {
           )}
           {step === 5 && (
             <StepTool
-              selected={aiTool}
-              onSelect={setAiTool}
+              selected={aiTools}
+              onToggle={toggleAiTool}
+              onSetPrimary={setPrimaryAiTool}
               customTool={customTool}
               onCustomToolChange={setCustomTool}
+              onAddCustom={addCustomAiTool}
               onFinish={() => handleFinish(goals)}
               canAdvance={canAdvance()}
             />
@@ -573,7 +600,12 @@ function StepGoal({ selected, onToggle, onNext, canAdvance }) {
   );
 }
 
-function StepTool({ selected, onSelect, customTool, onCustomToolChange, onFinish, canAdvance }) {
+function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolChange, onAddCustom, onFinish, canAdvance }) {
+  const selectedKeys = new Set(selected.map((s) => toolKey(normalizeTool(s))));
+  const primaryKey = selected.length ? toolKey(normalizeTool(selected[0])) : null;
+  const customSelected = selected.map(normalizeTool).filter((t) => t.id === 'other');
+  const rows = [...AI_TOOLS, ...customSelected];
+
   return (
     <div>
       <div className="text-center mb-8">
@@ -581,62 +613,69 @@ function StepTool({ selected, onSelect, customTool, onCustomToolChange, onFinish
           <PanelsTopLeft className="w-7 h-7 text-brand" />
         </div>
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
-          Which AI tool will you use?
+          Which AI tools do you use?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
-          You'll do the hands-on work in your own AI tool, open beside the coach. We'll tailor lessons to it — and tell you when another tool is better for a task. You can change this anytime.
+          Pick all that apply — you might use one or several. We&apos;ll tailor lessons to them and tell you when one fits a task better. Star the one to open by default. You can change this anytime.
         </p>
       </div>
       <div className="space-y-2 max-w-lg mx-auto mb-4">
-        {AI_TOOLS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => onSelect(t.id)}
-            className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
-              selected === t.id
-                ? 'bg-brand text-white border-brand shadow-sm'
-                : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
-            }`}
-          >
-            <span className="text-2xl shrink-0">{t.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold">{t.label}</p>
-              <p className={`text-sm ${selected === t.id ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
-                Best for {t.strengths}
-              </p>
+        {rows.map((t) => {
+          const key = toolKey(t);
+          const isSelected = selectedKeys.has(key);
+          const isPrimary = key === primaryKey;
+          return (
+            <div
+              key={key}
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border transition-all ${
+                isSelected
+                  ? 'bg-brand text-white border-brand shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
+              }`}
+            >
+              <button onClick={() => onToggle(t.id === 'other' ? t : t.id)} className="flex items-center gap-4 flex-1 min-w-0 text-left">
+                <span className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${isSelected ? 'bg-white/20 border-white/50' : 'border-slate-300 dark:border-slate-600'}`}>
+                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                </span>
+                <span className="text-2xl shrink-0">{t.emoji}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block font-semibold">{t.label}</span>
+                  {t.strengths && (
+                    <span className={`block text-sm ${isSelected ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>Best for {t.strengths}</span>
+                  )}
+                </span>
+              </button>
+              {isSelected && (
+                <button
+                  onClick={() => onSetPrimary(t.id === 'other' ? t : t.id)}
+                  title={isPrimary ? 'Primary tool' : 'Set as primary'}
+                  aria-label={isPrimary ? 'Primary tool' : 'Set as primary'}
+                  className="shrink-0 p-1"
+                >
+                  <Star className={`w-5 h-5 ${isPrimary ? 'fill-cta text-cta' : 'text-white/70'}`} />
+                </button>
+              )}
             </div>
-            {selected === t.id && <Check className="w-5 h-5 shrink-0" />}
-          </button>
-        ))}
+          );
+        })}
+      </div>
+      <div className="max-w-lg mx-auto mb-6 flex items-center gap-2">
+        <input
+          type="text"
+          value={customTool}
+          onChange={(e) => onCustomToolChange(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onAddCustom()}
+          placeholder="Add another tool (e.g. Perplexity)"
+          className="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-ink dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-brand"
+        />
         <button
-          onClick={() => onSelect('other')}
-          className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
-            selected === 'other'
-              ? 'bg-brand text-white border-brand shadow-sm'
-              : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
-          }`}
+          onClick={onAddCustom}
+          disabled={!customTool.trim()}
+          className="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200 text-sm font-medium disabled:opacity-40 transition-all"
         >
-          <span className="text-2xl shrink-0">🛠️</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold">Something else</p>
-            <p className={`text-sm ${selected === 'other' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
-              Use a different AI tool
-            </p>
-          </div>
-          {selected === 'other' && <Check className="w-5 h-5 shrink-0" />}
+          Add
         </button>
       </div>
-      {selected === 'other' && (
-        <div className="max-w-lg mx-auto mb-4">
-          <input
-            type="text"
-            value={customTool}
-            onChange={(e) => onCustomToolChange(e.target.value)}
-            placeholder="Which tool? (e.g. Perplexity)"
-            className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-ink dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-brand"
-          />
-        </div>
-      )}
       <div className="text-center">
         <button
           onClick={onFinish}

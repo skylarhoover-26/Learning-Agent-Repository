@@ -10,9 +10,8 @@ import {
   extractRole, roleLabel, buildApplyNow, buildSchedule, buildRevert,
 } from '@/lib/role-manager';
 import {
-  UserCog, Check, Calendar, History, Plus, RotateCcw, Loader2, PanelsTopLeft,
+  UserCog, Check, Calendar, History, Plus, RotateCcw, Loader2,
 } from 'lucide-react';
-import { AI_TOOLS, normalizeTool } from '@/lib/ai-tools';
 
 function formatDate(iso) {
   if (!iso) return '';
@@ -238,8 +237,6 @@ export default function MyRolePage() {
           </div>
         )}
 
-        <ToolCard profile={profile} updateProfile={updateProfile} />
-
         {/* Edit form */}
         {editing && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 space-y-6">
@@ -379,82 +376,6 @@ function Row({ label, value }) {
     <div className="flex justify-between gap-4">
       <dt className="text-slate-500 dark:text-slate-400">{label}</dt>
       <dd className="text-ink dark:text-slate-200 font-medium text-right">{value}</dd>
-    </div>
-  );
-}
-
-// Standalone preference (not part of the role-change/scheduling flow): the AI
-// tool the learner works in. Saves immediately so the coach tailors lessons.
-function ToolCard({ profile, updateProfile }) {
-  const current = normalizeTool(profile?.preferred_tool);
-  const [selected, setSelected] = useState(current.id);
-  const [customLabel, setCustomLabel] = useState(current.id === 'other' ? current.label : '');
-  const [saved, setSaved] = useState(false);
-
-  function flashSaved() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1800);
-  }
-
-  function selectTool(id) {
-    setSelected(id);
-    setSaved(false);
-    if (id !== 'other') {
-      updateProfile?.({ preferred_tool: id });
-      flashSaved();
-    }
-  }
-
-  function saveCustom() {
-    const label = customLabel.trim();
-    if (!label) return;
-    updateProfile?.({ preferred_tool: { id: 'other', label } });
-    flashSaved();
-  }
-
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
-      <div className="flex items-center gap-2 mb-1">
-        <PanelsTopLeft className="w-5 h-5 text-brand" />
-        <h2 className="text-lg font-bold text-ink dark:text-slate-200">Your AI tool</h2>
-        {saved && (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
-            <Check className="w-3.5 h-3.5" /> Saved
-          </span>
-        )}
-      </div>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-        You'll do the hands-on work in this tool, open beside the coach. Lessons are tailored to it — and we'll flag when another tool fits a task better.
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {AI_TOOLS.map((t) => (
-          <Chip key={t.id} active={selected === t.id} onClick={() => selectTool(t.id)}>
-            {t.emoji} {t.label}
-          </Chip>
-        ))}
-        <Chip active={selected === 'other'} onClick={() => selectTool('other')}>
-          🛠️ Something else
-        </Chip>
-      </div>
-      {selected === 'other' && (
-        <div className="flex items-center gap-2 mt-3">
-          <input
-            type="text"
-            value={customLabel}
-            onChange={(e) => setCustomLabel(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && saveCustom()}
-            placeholder="Which tool? (e.g. Perplexity)"
-            className="flex-1 px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-ink dark:text-slate-200 text-sm placeholder:text-slate-400 focus:outline-none focus:border-brand"
-          />
-          <button
-            onClick={saveCustom}
-            disabled={!customLabel.trim()}
-            className="px-4 py-2.5 rounded-lg bg-brand text-white text-sm font-medium disabled:opacity-40 transition-all"
-          >
-            Save
-          </button>
-        </div>
-      )}
     </div>
   );
 }
