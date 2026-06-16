@@ -28,22 +28,36 @@ function waitForElement(selector, timeout = 4000) {
   });
 }
 
-// Animate typing `text` into a controlled React input/textarea. We use the native
-// value setter + a dispatched 'input' event so React's onChange actually fires and
-// its state updates (just setting el.value would be ignored by React).
+// Push a value into a controlled React input/textarea so its onChange fires and
+// state updates. We must use the prototype's native value setter (React tracks the
+// node's value internally; assigning el.value directly is ignored).
+function setReactValue(el, value) {
+  const proto = el.tagName === 'TEXTAREA'
+    ? window.HTMLTextAreaElement.prototype
+    : window.HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, value);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// Animate typing `text` into the box, character by character, for the demo.
 async function typeIntoElement(selector, text) {
   const el = await waitForElement(selector, 2000);
   if (!el) return;
   el.focus();
-  const proto = el.tagName === 'TEXTAREA'
-    ? window.HTMLTextAreaElement.prototype
-    : window.HTMLInputElement.prototype;
-  const setNativeValue = Object.getOwnPropertyDescriptor(proto, 'value').set;
   for (let i = 1; i <= text.length; i++) {
-    setNativeValue.call(el, text.slice(0, i));
-    el.dispatchEvent(new Event('input', { bubbles: true }));
+    setReactValue(el, text.slice(0, i));
     await sleep(16);
   }
+}
+
+// Make sure the box holds the full text before we click its button — guards
+// against a missed/partial animation (or a fast click) leaving the button
+// disabled so nothing generates. Returns once React has had a tick to re-enable.
+async function ensureValue(selector, text) {
+  const el = await waitForElement(selector, 2000);
+  if (!el) return;
+  if (el.value !== text) setReactValue(el, text);
+  await sleep(120);
 }
 
 // Programmatically click a real button so the user sees the actual action happen
@@ -111,6 +125,8 @@ export function TourProvider({ children }) {
     }
     if (step.autoClick && !clickedRef.current.has(index)) {
       clickedRef.current.add(index);
+      // Guarantee the input is populated so the button is enabled, then click.
+      if (step.ensure) await ensureValue(step.ensure.selector, step.ensure.text);
       await sleep(step.autoClickDelay ?? 600);
       await clickElement(step.autoClick);
     }
