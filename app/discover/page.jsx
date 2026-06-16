@@ -36,6 +36,9 @@ function DiscoverContent() {
   const [opportunities, setOpportunities] = useState([]);
   const [cameFromTasks, setCameFromTasks] = useState(false);
   const prefilledRef = useRef(false);
+  // Holds a background-generated result during the guided tour so the results
+  // step is already populated when the tour "clicks" Find AI (no spinner wait).
+  const prefetchRef = useRef({ text: null, promise: null });
 
   // Prefill (but DON'T auto-run) when arriving from the "Find AI for your work"
   // hero, so the user can review/update their saved tasks before searching.
@@ -48,18 +51,41 @@ function DiscoverContent() {
     }
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  async function fetchOpportunities(text) {
+    const res = await fetch('/api/discover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workDescription: text }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Search failed');
+    return data;
+  }
+
+  // During the tour, pre-generate results in the background as the work text is
+  // typed (debounced), so the results are ready when Find AI is clicked.
+  useEffect(() => {
+    const inTour = typeof window !== 'undefined' && window.sessionStorage.getItem('tourActive') === '1';
+    if (!inTour) return;
+    const text = workDescription.trim();
+    if (text.length < 10 || prefetchRef.current.text === text) return;
+    const t = setTimeout(() => {
+      prefetchRef.current = { text, promise: fetchOpportunities(text).catch(() => null) };
+    }, 500);
+    return () => clearTimeout(t);
+  }, [workDescription]);
+
   async function findOpportunities(desc) {
     const text = (typeof desc === 'string' ? desc : workDescription).trim();
     if (!text) return;
     setIsSearching(true);
     try {
-      const res = await fetch('/api/discover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workDescription: text }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Search failed');
+      // Reuse the tour's background prefetch if it matches; otherwise fetch live.
+      let data = null;
+      if (prefetchRef.current.text === text && prefetchRef.current.promise) {
+        data = await prefetchRef.current.promise;
+      }
+      if (!data) data = await fetchOpportunities(text);
       setOpportunities(data.opportunities || []);
       setHasSearched(true);
     } catch (error) {
