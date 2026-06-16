@@ -201,12 +201,14 @@ export function TourProvider({ children }) {
       onHighlighted: async () => {
         const idx = idxRef.current;
         const shouldAdvance = await runStepActions(idx);
-        // Defer to a fresh tick: the result often replaces the spotlighted element
-        // (form -> results), so let the DOM settle before driver re-anchors.
+        // Once the generated content is ready, pause so the learner can see it,
+        // then auto-advance. advanceDelay lets a step linger on its result (e.g.
+        // Discover's opportunities) before moving on.
         if (shouldAdvance) {
+          const delay = GUIDED_TOUR_STEPS[idx]?.advanceDelay ?? 150;
           setTimeout(() => {
             if (driverRef.current && idxRef.current === idx) advance();
-          }, 150);
+          }, delay);
         }
       },
       onNextClick: async () => {
