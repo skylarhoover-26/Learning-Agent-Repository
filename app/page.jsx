@@ -163,7 +163,7 @@ export default async function Dashboard() {
           <QuickAction href="/games" icon={Gamepad2} label="Games" tour="home-qa-games" />
           <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" tour="home-qa-chat" />
           <QuickAction href="/lesson" icon={BookOpen} label="Lesson" tour="home-qa-lesson" />
-          <QuickAction href="/library" icon={Library} label="Library" tour="home-qa-library" />
+          <QuickAction href="/discover" icon={Library} label="Discovery Library" tour="home-qa-library" />
         </div>
 
         {/* Today's Pick */}

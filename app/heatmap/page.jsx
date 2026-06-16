@@ -209,7 +209,7 @@ function EmptyState() {
         Complete lessons, modules, or calibration to start tracking your knowledge across skills.
       </p>
       <div className="flex flex-wrap gap-3 justify-center">
-        <Link href="/library" className="px-4 py-2 rounded-xl bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">
+        <Link href="/lesson" className="px-4 py-2 rounded-xl bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">
           Start a lesson
         </Link>
         <Link href="/modules" className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">

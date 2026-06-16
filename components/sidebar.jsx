@@ -7,7 +7,7 @@ import {
   Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
   CalendarDays, Play, GraduationCap, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
-  Compass, Trophy, BookOpen, Library, Terminal,
+  Compass, Trophy, BookOpen, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
   Shield, Settings, SlidersHorizontal, FileText, Bell, Users,
 } from 'lucide-react';
@@ -46,11 +46,10 @@ const NAV_SECTIONS = [
     tour: 'section-learn',
     items: [
       { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day', tour: 'nav-daily' },
-      { href: '/discover', icon: Compass, label: 'Discover', desc: 'Find AI opportunities for your real work', tour: 'nav-discover' },
+      { href: '/discover', icon: Compass, label: 'Discovery Library', desc: 'Find AI for your work + browse the use case library', tour: 'nav-discover' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
-      { href: '/library', icon: Library, label: 'Library', desc: 'Browse saved AI resources and references' },
       { href: '/modules', icon: GraduationCap, label: 'Modules', desc: 'Structured, multi-lesson learning paths' },
       { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Hands-on exercises with instant feedback' },
       { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },

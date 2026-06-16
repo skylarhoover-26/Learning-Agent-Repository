@@ -6,9 +6,10 @@ import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import LlmWindowCallout from '@/components/llm-window-callout';
 import { useActiveTool } from '@/components/active-tool-provider';
+import UseCaseLibrary from '@/components/use-case-library';
 import {
   Search, Sparkles, ChevronRight, Clock, Lightbulb,
-  RefreshCw, Loader2,
+  RefreshCw, Loader2, Library,
 } from 'lucide-react';
 
 const SAMPLE_PROMPTS = [
@@ -107,7 +108,7 @@ function DiscoverContent() {
 
   return (
     <div className="min-h-screen">
-      <PageHeader icon={Search} title="Find AI for Your Work" subtitle="Discover specific ways AI can help" />
+      <PageHeader icon={Search} title="Discovery Library" subtitle="Find AI for your work, then browse the use case library" />
 
       <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 py-10">
         <LlmWindowCallout storageKey="discover" className="mb-6" />
@@ -261,6 +262,20 @@ function DiscoverContent() {
             </div>
           </div>
         )}
+
+        {/* Use Case Library — browse concrete, ready-to-use AI use cases. */}
+        <div className="relative py-2 mt-10 mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+          </div>
+          <div className="relative flex justify-start">
+            <span className="bg-bg-warm dark:bg-slate-900 pr-4 flex items-center gap-2">
+              <Library className="w-4 h-4 text-brand" />
+              <span className="text-sm font-semibold text-ink dark:text-slate-200">Or browse the use case library</span>
+            </span>
+          </div>
+        </div>
+        <UseCaseLibrary />
       </main>
     </div>
   );
