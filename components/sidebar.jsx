@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
-  CalendarDays, Play, GraduationCap, Lightbulb, ClipboardCheck,
+  CalendarDays, Play, GraduationCap, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Library, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
@@ -54,7 +54,6 @@ const NAV_SECTIONS = [
       { href: '/modules', icon: GraduationCap, label: 'Modules', desc: 'Structured, multi-lesson learning paths' },
       { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Hands-on exercises with instant feedback' },
       { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
-      { href: '/quick-win', icon: Lightbulb, label: 'Quick Win', desc: 'A fast, practical AI task you can use now' },
     ],
   },
   {

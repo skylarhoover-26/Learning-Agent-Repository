@@ -22,6 +22,7 @@ import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import LlmWindowCallout from '@/components/llm-window-callout';
 import { useActiveTool } from '@/components/active-tool-provider';
+import SurpriseWin from '@/components/surprise-win';
 
 // Prefilled into the chat bar at the lesson's first practice point so the learner
 // can hit enter to kick off an interactive, personalized scenario.
@@ -61,6 +62,8 @@ function LessonContent() {
     return ['quick_tip', 'standard', 'deep_dive'].includes(f) ? f : null;
   })();
   const initialMode = searchParams.get('mode') === 'watch' ? 'watch' : 'read';
+  // "Surprise me" mode shows an auto-picked Quick Win (relocated from /quick-win).
+  const [surpriseMode, setSurpriseMode] = useState(searchParams.get('surprise') === '1');
   const [view, setView] = useState(initialTopic ? 'lesson' : 'picker');
   const [topic, setTopic] = useState(initialTopic || '');
   const [customTopic, setCustomTopic] = useState('');
@@ -447,6 +450,26 @@ function LessonContent() {
   }, [isComplete, handleLessonComplete]);
 
   if (view === 'picker') {
+    if (surpriseMode) {
+      return (
+        <>
+          <PageHeader icon={Zap} title="Quick Win" subtitle="One thing you can do with AI right now" />
+          <main className="max-w-3xl mx-auto px-6 py-10">
+            <button
+              onClick={() => setSurpriseMode(false)}
+              className="inline-flex items-center gap-1.5 mb-6 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" />
+              Back to lessons
+            </button>
+            <SurpriseWin
+              onStartLesson={(t) => { setSurpriseMode(false); startLesson(t); }}
+            />
+          </main>
+        </>
+      );
+    }
+
     function resumeSavedLesson() {
       if (!savedLesson) return;
       setTopic(savedLesson.topic);
@@ -504,11 +527,11 @@ function LessonContent() {
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             How deep do you want to go?
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { key: 'quick_tip', icon: Zap, label: 'Quick Tip', duration: '60 seconds', desc: 'A single insight. No exercise.' },
-              { key: 'standard', icon: BookOpen, label: 'Quick Lesson', duration: '3-5 min', desc: 'Hands-on, one exercise.' },
-              { key: 'deep_dive', icon: BookMarked, label: 'Deep Dive', duration: '15-20 min', desc: 'Thorough, multiple exercises.' },
+              { key: 'quick_tip', icon: Zap, label: 'Quick Tip', duration: '60 seconds', desc: 'One bite-sized insight you can read and apply right away. No exercise.' },
+              { key: 'standard', icon: BookOpen, label: 'Quick Lesson', duration: '3-5 min', desc: 'A focused walkthrough with one hands-on exercise to practice the skill.' },
+              { key: 'deep_dive', icon: BookMarked, label: 'Deep Dive', duration: '15-20 min', desc: 'A thorough, step-by-step lesson with multiple exercises to master the topic.' },
             ].map(f => (
               <button
                 key={f.key}
@@ -531,15 +554,24 @@ function LessonContent() {
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{f.desc}</p>
               </button>
             ))}
+            {/* Project Quest isn't a lesson depth — it's a build-something-real path. */}
+            <Link
+              href="/quests"
+              className="group p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-left transition-all hover:border-cta-300 hover:shadow-card"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-cta-50 text-cta-700 dark:bg-slate-700 dark:text-cta-400">
+                  <Trophy className="w-4 h-4" />
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">20-60 min</span>
+              </div>
+              <div className="font-bold text-ink dark:text-slate-200 flex items-center gap-1">
+                Project Quest
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Build something real start to finish, guided the whole way.</p>
+            </Link>
           </div>
-          <Link
-            href="/quests"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm text-brand hover:underline"
-          >
-            <Trophy className="w-4 h-4" />
-            Want to build something real instead? Try a Project Quest (20-60 min)
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
 
         <div data-tour="lesson-mode" className="mb-8">
@@ -574,9 +606,18 @@ function LessonContent() {
         </div>
 
         <div data-tour="lesson-topics" className="mb-8">
-          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-            Suggested for you
-          </h3>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">
+              Suggested for you
+            </h3>
+            <button
+              onClick={() => setSurpriseMode(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 shadow-sm transition-all active:scale-[0.98]"
+            >
+              <Zap className="w-4 h-4" />
+              Surprise me
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => (
               <button

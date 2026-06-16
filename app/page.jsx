@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   Sparkles, TrendingUp,
-  MessageCircle, BookOpen, Library, Gamepad2, Trophy,
+  MessageCircle, BookOpen, Library, Gamepad2,
   ChevronRight, BarChart2, GitBranch, Compass, Rss,
 } from 'lucide-react';
 import LiveLevelBadges from '@/components/live-level-badges';
@@ -159,12 +159,11 @@ export default async function Dashboard() {
         </div>
 
         {/* Primary nav — alphabetized */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <QuickAction href="/games" icon={Gamepad2} label="Games" tour="home-qa-games" />
           <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" tour="home-qa-chat" />
+          <QuickAction href="/lesson" icon={BookOpen} label="Lesson" tour="home-qa-lesson" />
           <QuickAction href="/library" icon={Library} label="Library" tour="home-qa-library" />
-          <QuickAction href="/quests" icon={Trophy} label="Project Quests" tour="home-qa-quests" />
-          <QuickAction href="/lesson" icon={BookOpen} label="Quick Lesson" tour="home-qa-lesson" />
         </div>
 
         {/* Today's Pick */}

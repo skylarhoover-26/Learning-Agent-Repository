@@ -22,9 +22,9 @@ const TUTORIAL_STEPS = [
   {
     icon: Zap,
     title: 'Quick Wins',
-    description: 'Get a ready-to-use AI prompt for your specific role and tasks. Pick a task, copy the prompt, try it in AI Chat, and see results in under 5 minutes.',
+    description: 'Get a ready-to-use AI prompt for your specific role and tasks. Tap Surprise me on the Lesson screen, copy the prompt, try it in your AI tool, and see results in under 5 minutes.',
     tip: 'Start here — it\'s the fastest way to see AI help with your actual work.',
-    action: { label: 'Try a Quick Win', href: '/quick-win' },
+    action: { label: 'Surprise me', href: '/lesson?surprise=1' },
     color: 'bg-cta',
   },
   {

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
-import { Search, ChevronRight } from 'lucide-react';
+import { Search, ChevronRight, Compass } from 'lucide-react';
 
 export default function FindAiHero() {
   const router = useRouter();
@@ -30,7 +30,8 @@ export default function FindAiHero() {
         <div className="flex items-start justify-between gap-6">
           <div className="flex-1">
             <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-cta text-ink px-3 py-1 rounded-pill mb-3">
-              Start Here
+              <Compass className="w-3 h-3" />
+              Discover
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 leading-tight tracking-tight">
               Find AI for your work
