@@ -161,7 +161,7 @@ function DiscoverContent() {
         )}
 
         {hasSearched && (
-          <div>
+          <div data-tour="discover-results">
             <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 mb-6 flex items-start gap-3">
               <Lightbulb className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
