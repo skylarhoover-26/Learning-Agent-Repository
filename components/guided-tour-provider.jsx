@@ -82,6 +82,9 @@ function showClickShield() {
   const el = document.createElement('div');
   el.id = SHIELD_ID;
   el.style.cssText = 'position:fixed;inset:0;z-index:999999999;background:transparent;';
+  // driver.js sets `.driver-active * { pointer-events: none }` on every element,
+  // which would make this shield click-through — force it back on.
+  el.style.setProperty('pointer-events', 'auto', 'important');
   const swallow = (e) => { e.preventDefault(); e.stopPropagation(); };
   ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'wheel']
     .forEach((t) => el.addEventListener(t, swallow, { capture: true, passive: false }));
