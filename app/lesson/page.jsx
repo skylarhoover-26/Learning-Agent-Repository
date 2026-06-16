@@ -468,7 +468,7 @@ function LessonContent() {
     return (
       <>
       <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
-      <main className="max-w-4xl mx-auto px-6 py-10">
+      <main data-tour="lesson-main" className="max-w-4xl mx-auto px-6 py-10">
         {savedLesson && (
           <div className="mb-8 bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800 rounded-xl p-4 flex items-center justify-between gap-4">
             <p className="text-sm text-slate-700 dark:text-slate-300">
@@ -745,7 +745,7 @@ function LessonContent() {
   return (
     <>
     <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
-    <main className="max-w-3xl mx-auto px-6 py-10">
+    <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
       <XpToast result={progressionResult} onDismiss={() => setProgressionResult(null)} />
 
       {/* Progress bar + voice mode toggle */}
