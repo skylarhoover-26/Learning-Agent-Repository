@@ -138,8 +138,13 @@ export function TourProvider({ children }) {
       if (idxRef.current === index) {
         lockedRef.current = false;
         setNextLocked(false);
+        // The button we were pointing at is often replaced by the result, leaving
+        // the popover floating. Auto-advance straight to the result step so the
+        // spotlight lands on the freshly generated content.
+        if (step.advanceOnReady) return true;
       }
     }
+    return false;
   }, []);
 
   const startTour = useCallback(async () => {
@@ -152,6 +157,15 @@ export function TourProvider({ children }) {
       popover: { title: s.popover.title, description: s.popover.description },
     }));
 
+    // Move to the next step (shared by the Next button and auto-advance).
+    const advance = async () => {
+      const next = idxRef.current + 1;
+      if (next >= steps.length) { d.destroy(); return; }
+      idxRef.current = next;
+      await prepareStep(next);
+      if (driverRef.current) d.moveNext();
+    };
+
     const d = driver({
       showProgress: true,
       allowClose: true,
@@ -159,14 +173,14 @@ export function TourProvider({ children }) {
       prevBtnText: '← Back',
       doneBtnText: 'Done',
       steps,
-      onHighlighted: () => { runStepActions(idxRef.current); },
+      onHighlighted: async () => {
+        const idx = idxRef.current;
+        const shouldAdvance = await runStepActions(idx);
+        if (shouldAdvance && driverRef.current && idxRef.current === idx) await advance();
+      },
       onNextClick: async () => {
         if (lockedRef.current) return; // content still generating — don't skip ahead
-        const next = idxRef.current + 1;
-        if (next >= steps.length) { d.destroy(); return; }
-        idxRef.current = next;
-        await prepareStep(next);
-        if (driverRef.current) d.moveNext();
+        await advance();
       },
       onPrevClick: async () => {
         lockedRef.current = false; // stepping back cancels any pending wait-lock
