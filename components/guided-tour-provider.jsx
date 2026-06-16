@@ -153,17 +153,15 @@ export function TourProvider({ children }) {
       await clickElement(step.autoClick);
     }
     if (step.waitFor) {
-      // Unlock once the result lands; a generous timeout guards against a stuck
-      // tour if generation fails. Only unlock if we're still on this step (the
-      // user may have stepped back while it was generating).
-      await waitForElement(step.waitFor, step.waitForTimeout ?? 20000);
+      // Wait for the generated result to actually appear (returns null on timeout).
+      const found = await waitForElement(step.waitFor, step.waitForTimeout ?? 30000);
       if (idxRef.current === index) {
         lockedRef.current = false;
         setNextLocked(false);
-        // The button we were pointing at is often replaced by the result, leaving
-        // the popover floating. Auto-advance straight to the result step so the
-        // spotlight lands on the freshly generated content.
-        if (step.advanceOnReady) return true;
+        // Only auto-advance once the content is really there — otherwise we'd jump
+        // to the "results" step while the page is still generating. On a timeout we
+        // just unlock Next so the user can proceed manually.
+        if (step.advanceOnReady && found) return true;
       }
     }
     return false;
