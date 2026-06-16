@@ -196,7 +196,13 @@ export function TourProvider({ children }) {
       onHighlighted: async () => {
         const idx = idxRef.current;
         const shouldAdvance = await runStepActions(idx);
-        if (shouldAdvance && driverRef.current && idxRef.current === idx) await advance();
+        // Defer to a fresh tick: the result often replaces the spotlighted element
+        // (form -> results), so let the DOM settle before driver re-anchors.
+        if (shouldAdvance) {
+          setTimeout(() => {
+            if (driverRef.current && idxRef.current === idx) advance();
+          }, 150);
+        }
       },
       onNextClick: async () => {
         if (lockedRef.current) return; // content still generating — don't skip ahead
