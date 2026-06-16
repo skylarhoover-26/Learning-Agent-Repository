@@ -19,7 +19,7 @@ export default function FindAiHero() {
   }
 
   return (
-    <div className="relative bg-gradient-to-br from-brand to-brand-700 rounded-2xl shadow-card overflow-hidden">
+    <div data-tour="home-find-ai" className="relative bg-gradient-to-br from-brand to-brand-700 rounded-2xl shadow-card overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-white/5" />
         <div className="absolute right-24 top-24 w-36 h-36 rounded-full bg-white/5" />

@@ -118,6 +118,7 @@ export default function TodaysPick() {
   return (
     <Link
       href={pick.href}
+      data-tour="home-todays-pick"
       className="group block bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card-hover p-5 transition-all"
     >
       <div className="flex items-start gap-4">

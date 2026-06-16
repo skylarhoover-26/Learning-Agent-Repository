@@ -134,7 +134,7 @@ function ChatPageInner() {
       <PageHeader icon={MessageCircle} title="Just Chat" subtitle="Ask me anything about AI" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-6 py-6 space-y-4">
+        <div data-tour="chat-thread" className="max-w-3xl mx-auto px-6 py-6 space-y-4">
           {messages.length === 0 && (
             <div className="text-center py-12">
               <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 ring-1 ring-brand-100 dark:ring-slate-600 mx-auto mb-4 flex items-center justify-center">
@@ -146,7 +146,7 @@ function ChatPageInner() {
               <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
                 I'll adapt to your level and teach by example. Try asking about prompting, agents, or anything you're curious about.
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div data-tour="chat-suggestions" className="flex flex-wrap gap-2 justify-center">
                 {buildSuggestions(profile).map((s) => (
                   <button
                     key={s}
@@ -214,6 +214,7 @@ function ChatPageInner() {
           </div>
           <div className="flex items-end gap-3">
             <textarea
+              data-tour="chat-input"
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -224,6 +225,7 @@ function ChatPageInner() {
               disabled={isLoading}
             />
             <button
+              data-tour="chat-send"
               onClick={sendMessage}
               disabled={!input.trim() || isLoading}
               className="p-3 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"

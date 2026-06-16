@@ -539,7 +539,7 @@ function LessonContent() {
           </Link>
         </div>
 
-        <div className="mb-8">
+        <div data-tour="lesson-mode" className="mb-8">
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             How do you want to learn?
           </h3>
@@ -570,7 +570,7 @@ function LessonContent() {
           </p>
         </div>
 
-        <div className="mb-8">
+        <div data-tour="lesson-topics" className="mb-8">
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             Suggested for you
           </h3>

@@ -52,7 +52,7 @@ export default function QuestsPage() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div data-tour="page-quests" className="space-y-4">
           {QUESTS.map(quest => {
             const progress = progressMap[quest.id] || { status: 'not_started', percent: 0, completedSteps: 0, totalSteps: quest.steps.length };
             return (

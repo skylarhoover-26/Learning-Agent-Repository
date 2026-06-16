@@ -25,7 +25,7 @@ export default function LiveSourcesFeed() {
   const recentFindings = findings.slice(0, 6);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
+    <div data-tour="home-news" className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
       {loaded && findings.length > 0 && (
         <div className="flex justify-end mb-3">
           <span className="text-xs text-slate-500 dark:text-slate-400">Updated daily</span>

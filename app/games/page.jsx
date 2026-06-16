@@ -83,11 +83,12 @@ export default function GamesHub() {
         </p>
 
         <div data-tour="page-games" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {GAMES.map((game) => {
+          {GAMES.map((game, i) => {
             const gameStats = allStats[game.slug];
             return (
               <Link
                 key={game.slug}
+                data-tour={i === 0 ? 'game-card' : undefined}
                 href={`/games/${game.slug}`}
                 className="group bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all flex flex-col"
               >

@@ -109,7 +109,7 @@ export default async function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <main data-tour="page-home" className="max-w-6xl mx-auto px-6 py-8 space-y-6">
 
         {/* ═══════════════════════════════════════════ */}
         {/* TOP ZONE: LEARNING                         */}
@@ -160,11 +160,11 @@ export default async function Dashboard() {
 
         {/* Primary nav — alphabetized */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-          <QuickAction href="/games" icon={Gamepad2} label="Games" />
-          <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" />
-          <QuickAction href="/library" icon={Library} label="Library" />
-          <QuickAction href="/quests" icon={Trophy} label="Project Quests" />
-          <QuickAction href="/lesson" icon={BookOpen} label="Quick Lesson" />
+          <QuickAction href="/games" icon={Gamepad2} label="Games" tour="home-qa-games" />
+          <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" tour="home-qa-chat" />
+          <QuickAction href="/library" icon={Library} label="Library" tour="home-qa-library" />
+          <QuickAction href="/quests" icon={Trophy} label="Project Quests" tour="home-qa-quests" />
+          <QuickAction href="/lesson" icon={BookOpen} label="Quick Lesson" tour="home-qa-lesson" />
         </div>
 
         {/* Today's Pick */}
@@ -192,7 +192,7 @@ export default async function Dashboard() {
         {/* Streak + Leaderboard row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <LiveStreakCard />
-          <div className="md:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
+          <div data-tour="home-leaderboard" className="md:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-ink dark:text-slate-200">Department Leaderboard</h3>
               <Link
@@ -209,7 +209,7 @@ export default async function Dashboard() {
         </div>
 
         {/* Skills: Strong / Growing / Gaps */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
+        <div data-tour="home-skills" className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between gap-2 mb-5">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-brand" />
@@ -273,10 +273,11 @@ function SkillColumn({ label, dotColor, items, bgClass, emptyText }) {
   );
 }
 
-function QuickAction({ href, icon: Icon, label }) {
+function QuickAction({ href, icon: Icon, label, tour }) {
   return (
     <Link
       href={href}
+      data-tour={tour}
       className="group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:shadow-card transition-all"
     >
       <div className="w-10 h-10 rounded-lg bg-brand-50 dark:bg-slate-700 text-brand-600 dark:text-brand-400 group-hover:bg-brand group-hover:text-white flex items-center justify-center transition-all">

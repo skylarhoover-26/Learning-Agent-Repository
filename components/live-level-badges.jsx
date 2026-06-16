@@ -35,7 +35,7 @@ export default function LiveLevelBadges() {
     .slice(0, 4);
 
   return (
-    <div className="group relative bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all">
+    <div data-tour="home-xp" className="group relative bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all">
       <Link href="/achievements" aria-label="View achievements and badges" className="absolute inset-0 z-0 rounded-2xl" />
       <div className="relative z-10 pointer-events-none grid grid-cols-1 md:grid-cols-[1fr,auto] gap-5 items-center">
         <div className="flex items-center gap-5">
