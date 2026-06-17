@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { useProfile } from '@/components/profile-provider';
-import { AI_TOOLS, chosenTools, serializeTools, toolKey, normalizeTool } from '@/lib/ai-tools';
+import { useToolCatalog } from '@/components/tool-catalog-provider';
+import { chosenTools, serializeTools, toolKey, normalizeTool } from '@/lib/ai-tools';
 import { PanelsTopLeft, Check, Star, Plus, ExternalLink } from 'lucide-react';
 
 // Dedicated page to manage the AI tool(s) the learner works in. Multi-select,
@@ -11,9 +12,11 @@ import { PanelsTopLeft, Check, Star, Plus, ExternalLink } from 'lucide-react';
 // profile as `preferred_tools`.
 export default function MyToolsPage() {
   const { profile, updateProfile } = useProfile() || {};
+  const { catalog } = useToolCatalog();
   const [set, setSet] = useState([]);
   const [dirty, setDirty] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
+  const [adding, setAdding] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // Seed from the saved profile until the user starts editing (and re-seed
@@ -31,10 +34,9 @@ export default function MyToolsPage() {
     setSaved(false);
     setSet((prev) => {
       const exists = prev.some((x) => toolKey(x) === key);
-      if (exists) {
-        const next = prev.filter((x) => toolKey(x) !== key);
-        return next.length ? next : prev; // keep at least one
-      }
+      // Allow deselecting everything — tools are opt-in, so an empty set is a
+      // valid choice (the coach falls back to a default only for generation).
+      if (exists) return prev.filter((x) => toolKey(x) !== key);
       return [...prev, t];
     });
   }
@@ -47,11 +49,24 @@ export default function MyToolsPage() {
     setSet((prev) => [t, ...prev.filter((x) => toolKey(x) !== key)]);
   }
 
-  function addCustom() {
+  async function addCustom() {
     const label = customLabel.trim();
-    if (!label) return;
-    toggle({ id: 'other', label });
+    if (!label || adding) return;
     setCustomLabel('');
+    setAdding(true);
+    let extra = {};
+    try {
+      const res = await fetch('/api/tools/describe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: label }),
+      });
+      if (res.ok) extra = await res.json();
+    } catch {
+      // fall back to just the name
+    }
+    toggle({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null });
+    setAdding(false);
   }
 
   function save() {
@@ -76,7 +91,7 @@ export default function MyToolsPage() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {AI_TOOLS.map((t) => {
+            {catalog.map((t) => {
               const selected = selectedKeys.has(toolKey(t));
               const isPrimary = toolKey(t) === primaryKey;
               return (
@@ -119,10 +134,10 @@ export default function MyToolsPage() {
             />
             <button
               onClick={addCustom}
-              disabled={!customLabel.trim()}
+              disabled={!customLabel.trim() || adding}
               className="px-4 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200 text-sm font-medium disabled:opacity-40 transition-all"
             >
-              Add
+              {adding ? 'Adding…' : 'Add'}
             </button>
           </div>
 
@@ -174,9 +189,9 @@ function ToolRow({ tool, selected, isPrimary, onToggle, onMakePrimary }) {
         </span>
         <span className="text-xl shrink-0">{tool.emoji}</span>
         <span className="flex-1 min-w-0">
-          <span className="block font-semibold text-ink dark:text-slate-200 truncate">{tool.label}</span>
+          <span className="block font-semibold text-ink dark:text-slate-200">{tool.label}</span>
           {tool.strengths && (
-            <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">Best for {tool.strengths}</span>
+            <span className="block text-xs text-slate-500 dark:text-slate-400">Best for {tool.strengths}</span>
           )}
         </span>
       </button>

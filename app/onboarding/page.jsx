@@ -11,7 +11,8 @@ import {
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
 } from '@/lib/curriculum-data';
-import { AI_TOOLS, toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
+import { toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
+import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
 
 const SUB_TEAMS = SUBTEAMS;
@@ -39,6 +40,7 @@ export default function OnboardingPage() {
   // (first entry is the primary). Step 5 requires at least one to finish.
   const [aiTools, setAiTools] = useState([]);
   const [customTool, setCustomTool] = useState('');
+  const [addingTool, setAddingTool] = useState(false);
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -133,11 +135,24 @@ export default function OnboardingPage() {
     setAiTools(prev => [choice, ...prev.filter(x => toolKey(normalizeTool(x)) !== key)]);
   }
 
-  function addCustomAiTool() {
+  async function addCustomAiTool() {
     const label = customTool.trim();
-    if (!label) return;
-    toggleAiTool({ id: 'other', label });
+    if (!label || addingTool) return;
     setCustomTool('');
+    setAddingTool(true);
+    let extra = {};
+    try {
+      const res = await fetch('/api/tools/describe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: label }),
+      });
+      if (res.ok) extra = await res.json();
+    } catch {
+      // fall back to just the name
+    }
+    toggleAiTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null });
+    setAddingTool(false);
   }
 
   async function handleFinish(selectedGoals) {
@@ -303,6 +318,7 @@ export default function OnboardingPage() {
               customTool={customTool}
               onCustomToolChange={setCustomTool}
               onAddCustom={addCustomAiTool}
+              adding={addingTool}
               onFinish={() => handleFinish(goals)}
               canAdvance={canAdvance()}
             />
@@ -600,11 +616,12 @@ function StepGoal({ selected, onToggle, onNext, canAdvance }) {
   );
 }
 
-function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolChange, onAddCustom, onFinish, canAdvance }) {
+function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolChange, onAddCustom, adding, onFinish, canAdvance }) {
+  const { catalog } = useToolCatalog();
   const selectedKeys = new Set(selected.map((s) => toolKey(normalizeTool(s))));
   const primaryKey = selected.length ? toolKey(normalizeTool(selected[0])) : null;
   const customSelected = selected.map(normalizeTool).filter((t) => t.id === 'other');
-  const rows = [...AI_TOOLS, ...customSelected];
+  const rows = [...catalog, ...customSelected];
 
   return (
     <div>
@@ -670,10 +687,10 @@ function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolCh
         />
         <button
           onClick={onAddCustom}
-          disabled={!customTool.trim()}
+          disabled={!customTool.trim() || adding}
           className="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200 text-sm font-medium disabled:opacity-40 transition-all"
         >
-          Add
+          {adding ? 'Adding…' : 'Add'}
         </button>
       </div>
       <div className="text-center">

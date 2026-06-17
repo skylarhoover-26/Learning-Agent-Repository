@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { SessionWrapper } from '@/components/session-wrapper';
 import { ProfileProvider } from '@/components/profile-provider';
 import { ActiveToolProvider } from '@/components/active-tool-provider';
+import { ToolCatalogProvider } from '@/components/tool-catalog-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
 import PageTracker from '@/components/page-tracker';
 import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
@@ -39,6 +40,7 @@ export default function RootLayout({ children }) {
         <IdentityGate />
         <SessionWrapper>
           <ProfileProvider>
+            <ToolCatalogProvider>
             <ActiveToolProvider>
             <ProgressionProvider>
               <SidebarProvider>
@@ -52,6 +54,7 @@ export default function RootLayout({ children }) {
               </SidebarProvider>
             </ProgressionProvider>
             </ActiveToolProvider>
+            </ToolCatalogProvider>
           </ProfileProvider>
         </SessionWrapper>
         <PageTracker />
