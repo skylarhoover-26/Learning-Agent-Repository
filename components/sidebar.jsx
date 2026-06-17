@@ -9,7 +9,7 @@ import {
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
-  Shield, Settings, SlidersHorizontal, FileText, Bell, Users, Wrench,
+  Shield, Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
@@ -45,7 +45,7 @@ const NAV_SECTIONS = [
     icon: BookOpen,
     tour: 'section-learn',
     items: [
-      { href: '/daily', icon: CalendarDays, label: 'Daily', desc: 'A fresh bite-sized lesson each day', tour: 'nav-daily' },
+      { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
       { href: '/discover', icon: Compass, label: 'Discovery Library', desc: 'Find AI for your work + browse the use case library', tour: 'nav-discover' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
