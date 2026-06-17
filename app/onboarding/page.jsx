@@ -122,10 +122,9 @@ export default function OnboardingPage() {
     const key = toolKey(t);
     setAiTools(prev => {
       const exists = prev.some(x => toolKey(normalizeTool(x)) === key);
-      if (exists) {
-        const next = prev.filter(x => toolKey(normalizeTool(x)) !== key);
-        return next.length ? next : prev; // keep at least one
-      }
+      // Allow deselecting freely (even to empty) — the "Start Learning" button
+      // stays disabled until at least one tool is picked (see canAdvance).
+      if (exists) return prev.filter(x => toolKey(normalizeTool(x)) !== key);
       return [...prev, choice];
     });
   }
