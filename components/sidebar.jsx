@@ -125,6 +125,12 @@ const SKILL_SHOP_LINKS = [
   },
 ];
 
+// Routes that are full-screen flows with no app chrome (nav rail / content
+// shift) until the user is set up.
+function isChromeHiddenRoute(pathname) {
+  return pathname.startsWith('/onboarding') || pathname.startsWith('/auth');
+}
+
 const SidebarContext = createContext(null);
 
 export function SidebarProvider({ children }) {
@@ -173,17 +179,20 @@ export function SidebarToggle() {
 // Wraps page content; shifts it right of the rail on large screens when open.
 export function SidebarShell({ children }) {
   const { open, setOpen } = useSidebar();
+  const pathname = usePathname();
+  // No nav on onboarding/auth — don't show the backdrop or shift content.
+  const showNav = open && !isChromeHiddenRoute(pathname);
   return (
     <>
       {/* Backdrop on small screens only — desktop keeps the rail persistent. */}
-      {open && (
+      {showNav && (
         <div
           className="fixed inset-0 bg-black/30 z-40 lg:hidden"
           onClick={() => setOpen(false)}
           aria-hidden="true"
         />
       )}
-      <div className={`transition-[padding] duration-200 ${open ? 'lg:pl-72' : ''}`}>
+      <div className={`transition-[padding] duration-200 ${showNav ? 'lg:pl-72' : ''}`}>
         {children}
       </div>
     </>
@@ -200,6 +209,10 @@ export function SideNav() {
   useEffect(() => {
     fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(!!d.isAdmin)).catch(() => {});
   }, []);
+
+  // The app nav shouldn't appear during onboarding or auth — those are
+  // full-screen flows with no menu until the user is set up.
+  if (isChromeHiddenRoute(pathname)) return null;
 
   // Highlight only the single most-specific matching item. Without this, a
   // parent like /admin would also light up on /admin/skill-levels. We pick the
