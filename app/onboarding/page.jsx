@@ -191,7 +191,9 @@ export default function OnboardingPage() {
     }
     // Hard navigate so both the server render and the client profile context
     // re-read the freshly saved profile (tasks, tier, goal) across the board.
-    window.location.href = '/getting-started';
+    // Land on the dashboard, where the interactive (driver.js) welcome tour
+    // fires — NOT the static /getting-started slide deck.
+    window.location.href = '/';
   }
 
   const progressPercent = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
