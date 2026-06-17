@@ -34,10 +34,9 @@ export default function MyToolsPage() {
     setSaved(false);
     setSet((prev) => {
       const exists = prev.some((x) => toolKey(x) === key);
-      if (exists) {
-        const next = prev.filter((x) => toolKey(x) !== key);
-        return next.length ? next : prev; // keep at least one
-      }
+      // Allow deselecting everything — tools are opt-in, so an empty set is a
+      // valid choice (the coach falls back to a default only for generation).
+      if (exists) return prev.filter((x) => toolKey(x) !== key);
       return [...prev, t];
     });
   }
