@@ -9,7 +9,7 @@ import {
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
-  Shield, Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles,
+  Shield, Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles, ChevronDown,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
@@ -23,17 +23,27 @@ function navItemTour(href) {
 
 // Section header styled like the dashboard's "Find something to learn":
 // an icon, a bold label, and a thin divider line.
-function SectionHeader({ icon: Icon, title, tour }) {
+// Section header doubles as a collapse toggle when `onToggle` is provided.
+function SectionHeader({ icon: Icon, title, tour, collapsed, onToggle }) {
   return (
     <div className="relative px-4 py-2 mt-1" data-tour={tour}>
       <div className="absolute inset-0 px-4 flex items-center" aria-hidden="true">
         <div className="w-full border-t border-slate-200 dark:border-slate-700" />
       </div>
       <div className="relative flex justify-start">
-        <span className="bg-white dark:bg-slate-800 pr-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+          aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${title}`}
+          className="bg-white dark:bg-slate-800 pr-3 flex items-center gap-2 rounded-md hover:opacity-80 transition-opacity"
+        >
           <Icon className="w-4 h-4 text-brand" />
           <span className="text-sm font-semibold text-ink dark:text-slate-200">{title}</span>
-        </span>
+          <ChevronDown
+            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
+          />
+        </button>
       </div>
     </div>
   );
@@ -205,10 +215,34 @@ export function SideNav() {
   const { startTour } = useTour();
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
+  // Which sections the user has collapsed (keyed by title). Persisted so the
+  // preference sticks across sessions.
+  const [collapsed, setCollapsed] = useState({});
 
   useEffect(() => {
     fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(!!d.isAdmin)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('sidebar_collapsed') || '{}');
+      if (saved && typeof saved === 'object') setCollapsed(saved);
+    } catch {
+      // ignore unreadable/old value
+    }
+  }, []);
+
+  function toggleSection(title) {
+    setCollapsed(prev => {
+      const next = { ...prev, [title]: !prev[title] };
+      try {
+        localStorage.setItem('sidebar_collapsed', JSON.stringify(next));
+      } catch {
+        // localStorage unavailable — collapse still works for this session
+      }
+      return next;
+    });
+  }
 
   // The app nav shouldn't appear during onboarding or auth — those are
   // full-screen flows with no menu until the user is set up.
@@ -276,16 +310,16 @@ export function SideNav() {
 
       {isAdmin && (
         <div className="py-1">
-          <SectionHeader icon={Shield} title="Admin" tour="section-admin" />
-          {ADMIN_ITEMS.map(renderNavItem)}
+          <SectionHeader icon={Shield} title="Admin" tour="section-admin" collapsed={collapsed['Admin']} onToggle={() => toggleSection('Admin')} />
+          {!collapsed['Admin'] && ADMIN_ITEMS.map(renderNavItem)}
         </div>
       )}
 
       {NAV_SECTIONS.map(section => (
         <Fragment key={section.title}>
           <div className="py-1">
-            <SectionHeader icon={section.icon} title={section.title} tour={section.tour} />
-            {section.items.map(item => (
+            <SectionHeader icon={section.icon} title={section.title} tour={section.tour} collapsed={collapsed[section.title]} onToggle={() => toggleSection(section.title)} />
+            {!collapsed[section.title] && section.items.map(item => (
               item.themeToggle ? (
                 <div key="theme" data-tour="dark-mode">
                   <MenuThemeToggle />
@@ -315,7 +349,8 @@ export function SideNav() {
           {/* HCP Skill Shop sits right under Learn — it's external learning content. */}
           {section.title === 'Learn' && (
             <div className="py-1">
-              <SectionHeader icon={Store} title="HCP Skill Shop" tour="section-skillshop" />
+              <SectionHeader icon={Store} title="HCP Skill Shop" tour="section-skillshop" collapsed={collapsed['HCP Skill Shop']} onToggle={() => toggleSection('HCP Skill Shop')} />
+              {!collapsed['HCP Skill Shop'] && (<>
               <p className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
                 Want to learn more about AI? Explore the self-guided journey:
               </p>
@@ -334,6 +369,7 @@ export function SideNav() {
                   </span>
                 </a>
               ))}
+              </>)}
             </div>
           )}
         </Fragment>
