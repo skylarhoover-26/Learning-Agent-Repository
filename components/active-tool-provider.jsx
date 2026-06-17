@@ -1,15 +1,14 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useProfile } from './profile-provider';
-import { chosenTools, normalizeTool, normalizeTools, serializeTools, toolKey } from '@/lib/ai-tools';
+import { chosenTools, normalizeTool, serializeTools, toolKey } from '@/lib/ai-tools';
 
-// Holds the AI tool(s) the learner is currently working in. The saved set lives
-// on the profile (`preferred_tools`, primary first); a per-session override set
-// from the "open your tool" callout wins for the current session without
-// changing the saved default. Pages read `tools` and pass it to the generation
-// APIs so the coach tailors its guidance; the callout reads `primaryTool` to
-// show the right "open" button.
+// Holds the AI tool(s) the learner is currently working in. There is ONE source
+// of truth: the saved profile (`preferred_tools`, primary first). Changing tools
+// anywhere — the lesson callout or the My AI Tools page — writes straight back to
+// the profile, so every surface stays in sync. We keep a local optimistic copy
+// so the UI updates instantly while the save is in flight.
 
 const ActiveToolContext = createContext(null);
 
@@ -20,32 +19,51 @@ export function useActiveTool() {
   return {
     tools: [],
     primaryTool: null,
-    isOverridden: false,
     hasPreference: false,
     toggleTool: () => {},
     setPrimary: () => {},
-    saveAsDefault: () => {},
   };
 }
 
 export function ActiveToolProvider({ children }) {
   const { profile, updateProfile } = useProfile() || {};
-  // null = follow the saved profile set; an array = a session-only override.
-  const [overrideTools, setOverrideTools] = useState(null);
+  const saved = useMemo(() => chosenTools(profile), [profile]);
 
-  const tools = useMemo(() => chosenTools(profile, overrideTools), [profile, overrideTools]);
+  // Optimistic local copy of the saved set. Re-syncs whenever the saved set
+  // changes from elsewhere (a fresh load, or an edit on the My AI Tools page).
+  const [tools, setTools] = useState(saved);
+  const toolsRef = useRef(tools);
+  toolsRef.current = tools;
 
-  // Add or remove a tool from the active set (session-only). May empty out —
-  // we never force a tool the learner doesn't use.
+  const savedKey = saved.map(toolKey).join('|');
+  useEffect(() => {
+    if (toolsRef.current.map(toolKey).join('|') !== savedKey) {
+      setTools(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedKey]);
+
+  // Apply a new set: optimistic local update + persist to the profile.
+  const apply = useCallback(
+    (next) => {
+      setTools(next);
+      toolsRef.current = next;
+      updateProfile?.({ preferred_tools: serializeTools(next) });
+    },
+    [updateProfile]
+  );
+
+  // Add or remove a tool from the set. May empty out — we never force a tool the
+  // learner doesn't use; generation falls back to a default on its own.
   const toggleTool = useCallback(
     (choice) => {
       const t = normalizeTool(choice);
       const key = toolKey(t);
-      const exists = tools.some((x) => toolKey(x) === key);
-      const next = exists ? tools.filter((x) => toolKey(x) !== key) : [...tools, t];
-      setOverrideTools(next);
+      const prev = toolsRef.current;
+      const exists = prev.some((x) => toolKey(x) === key);
+      apply(exists ? prev.filter((x) => toolKey(x) !== key) : [...prev, t]);
     },
-    [tools]
+    [apply]
   );
 
   // Make a tool the primary (move it to the front), adding it if needed.
@@ -53,33 +71,21 @@ export function ActiveToolProvider({ children }) {
     (choice) => {
       const t = normalizeTool(choice);
       const key = toolKey(t);
-      const rest = tools.filter((x) => toolKey(x) !== key);
-      setOverrideTools([t, ...rest]);
+      const prev = toolsRef.current;
+      apply([t, ...prev.filter((x) => toolKey(x) !== key)]);
     },
-    [tools]
-  );
-
-  // Persist the given set (or the current effective set) as the saved default.
-  const saveAsDefault = useCallback(
-    (set) => {
-      const next = normalizeTools(set || tools);
-      updateProfile?.({ preferred_tools: serializeTools(next) });
-      setOverrideTools(null);
-    },
-    [tools, updateProfile]
+    [apply]
   );
 
   const value = useMemo(
     () => ({
       tools,
       primaryTool: tools[0] || null,
-      isOverridden: overrideTools !== null,
       hasPreference: Boolean(profile?.preferred_tools?.length || profile?.preferred_tool),
       toggleTool,
       setPrimary,
-      saveAsDefault,
     }),
-    [tools, overrideTools, profile, toggleTool, setPrimary, saveAsDefault]
+    [tools, profile, toggleTool, setPrimary]
   );
 
   return <ActiveToolContext.Provider value={value}>{children}</ActiveToolContext.Provider>;

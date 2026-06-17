@@ -2,18 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { ExternalLink, X, PanelsTopLeft, Check, Star } from 'lucide-react';
-import { AI_TOOLS, toolKey } from '@/lib/ai-tools';
+import { toolKey } from '@/lib/ai-tools';
 import { useActiveTool } from './active-tool-provider';
+import { useToolCatalog } from './tool-catalog-provider';
 
 // A dismissible header callout that reminds the learner to keep their AI tool(s)
 // open in a separate window so they can follow along beside the coach. It also
 // lets them adjust their tools for this session — toggle which tools they use
 // and pick a primary — and optionally save the set as their default.
 export default function LlmWindowCallout({ storageKey = 'default', className = '' }) {
-  const { tools, primaryTool, isOverridden, hasPreference, toggleTool, setPrimary, saveAsDefault } = useActiveTool();
+  const { tools, primaryTool, hasPreference, toggleTool, setPrimary } = useActiveTool();
+  const { catalog } = useToolCatalog();
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid a flash before we read sessionStorage
   const [switching, setSwitching] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  // The live "what it's good for" for a tool — catalog wins for built-ins, custom
+  // tools carry their own.
+  const strengthsFor = (tool) =>
+    (tool && catalog.find((c) => c.id === tool.id)?.strengths) || tool?.strengths || '';
 
   const dismissKey = `llmCallout_${storageKey}`;
 
@@ -40,11 +48,24 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
     if (primaryTool?.url) window.open(primaryTool.url, '_blank', 'noopener,noreferrer');
   }
 
-  function addCustom() {
+  async function addCustom() {
     const label = customLabel.trim();
-    if (!label) return;
-    toggleTool({ id: 'other', label });
+    if (!label || adding) return;
     setCustomLabel('');
+    setAdding(true);
+    let extra = {};
+    try {
+      const res = await fetch('/api/tools/describe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: label }),
+      });
+      if (res.ok) extra = await res.json();
+    } catch {
+      // fall back to just the name
+    }
+    toggleTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null });
+    setAdding(false);
   }
 
   if (dismissed) return null;
@@ -79,6 +100,12 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
             </p>
           )}
 
+          {hasTools && strengthsFor(primaryTool) && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Best for {strengthsFor(primaryTool)}.
+            </p>
+          )}
+
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {hasTools && primaryTool.url && (
               <button
@@ -95,24 +122,15 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
             >
               {!hasTools ? 'Choose your tools' : tools.length > 1 ? 'Manage your tools' : 'Using a different tool?'}
             </button>
-            {isOverridden && (
-              <button
-                onClick={() => saveAsDefault()}
-                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand dark:hover:text-brand-200 transition-colors"
-              >
-                <Check className="w-3.5 h-3.5" />
-                Save as my default
-              </button>
-            )}
           </div>
 
           {switching && (
             <div className="mt-3 pt-3 border-t border-brand-200/70 dark:border-slate-600 space-y-3">
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Pick every tool you use. Tap the star to set the one we&rsquo;ll open by default.
+                Pick every tool you use. Tap the star to set the one we&rsquo;ll open by default. Changes save automatically.
               </p>
               <div className="flex flex-wrap gap-2">
-                {AI_TOOLS.map((t) => {
+                {catalog.map((t) => {
                   const selected = selectedKeys.has(toolKey(t));
                   const isPrimary = toolKey(t) === primaryKey;
                   return (
@@ -156,10 +174,10 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
                 />
                 <button
                   onClick={addCustom}
-                  disabled={!customLabel.trim()}
+                  disabled={!customLabel.trim() || adding}
                   className="px-3 py-1.5 text-sm font-medium rounded-pill bg-ink text-white disabled:opacity-40 transition-colors"
                 >
-                  Add
+                  {adding ? 'Adding…' : 'Add'}
                 </button>
               </div>
               {!hasPreference && (

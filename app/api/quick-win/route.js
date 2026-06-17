@@ -5,6 +5,7 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { getQuickWin, getTaskList } from '@/lib/curriculum-data';
 import { logAuditEntry } from '@/lib/audit-log';
 import { buildToolGuidance, resolveTools } from '@/lib/ai-tools';
+import { getMergedTools } from '@/lib/ai-tools-store';
 
 let client;
 function getClient() {
@@ -39,7 +40,7 @@ function pickRandomTask(department, subTeam, topTasks) {
   return tasks[Math.floor(Math.random() * tasks.length)];
 }
 
-function buildSystemPrompt(profile) {
+function buildSystemPrompt(profile, catalog) {
   const { department, sub_team, tier, goal, display_name } = profile || {};
   const isDevTier = tier === 'developer';
   const tools = resolveTools(profile);
@@ -62,7 +63,7 @@ function buildSystemPrompt(profile) {
     '- The prompt must be specific and complete — no brackets, no fill-in-the-blank placeholders.',
     '- Keep it practical, not theoretical. Something they can literally do RIGHT NOW.',
     '- Vary your suggestions — cover different use cases: writing, analysis, planning, communication, brainstorming, summarizing.',
-    buildToolGuidance(tools),
+    buildToolGuidance(tools, catalog),
     !isDevTier
       ? '- The user is NOT a developer. Never suggest coding, APIs, or terminal commands. Focus on prompts they can paste into their AI tool.'
       : '- The user is a developer. You may suggest technical wins involving code, APIs, or developer tools.',
@@ -104,7 +105,8 @@ export async function POST(request) {
       }
     }
 
-    const systemPrompt = buildSystemPrompt(profileForGen);
+    const catalog = await getMergedTools();
+    const systemPrompt = buildSystemPrompt(profileForGen, catalog);
     const userMessage = requestedTask
       ? `Give me one quick AI win specifically for this task: "${requestedTask}". Make the prompt directly usable for this task.`
       : 'Give me one quick AI win I can do right now. Make it different from common suggestions — surprise me with something useful.';

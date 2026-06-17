@@ -9,7 +9,7 @@ import {
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Terminal,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
-  Shield, Settings, SlidersHorizontal, FileText, Bell, Users,
+  Shield, Settings, SlidersHorizontal, FileText, Bell, Users, Wrench,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
@@ -99,6 +99,7 @@ const ADMIN_ITEMS = [
   { href: '/curriculum-pipeline', icon: FileText, label: 'Content Updates', desc: 'Review AI-proposed curriculum updates' },
   { href: '/admin/notifications', icon: Bell, label: 'Notifications', desc: 'Who receives Slack notifications' },
   { href: '/admin/skill-levels', icon: SlidersHorizontal, label: 'Skill Levels', desc: "Set each skill's difficulty level" },
+  { href: '/admin/ai-tools', icon: Wrench, label: 'AI Tools', desc: "Edit what each AI tool is good for" },
 ];
 
 const SKILL_SHOP_LINKS = [
