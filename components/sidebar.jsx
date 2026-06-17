@@ -45,7 +45,6 @@ const NAV_SECTIONS = [
     icon: BookOpen,
     tour: 'section-learn',
     items: [
-      { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
       { href: '/discover', icon: Compass, label: 'Discovery Library', desc: 'Find AI for your work + browse the use case library', tour: 'nav-discover' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
@@ -53,6 +52,7 @@ const NAV_SECTIONS = [
       { href: '/modules', icon: GraduationCap, label: 'Modules', desc: 'Structured, multi-lesson learning paths' },
       { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Hands-on exercises with instant feedback' },
       { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
+      { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
     ],
   },
   {
@@ -96,10 +96,10 @@ const NAV_SECTIONS = [
 const ADMIN_ITEMS = [
   { href: '/admin', icon: Settings, label: 'Admin Dashboard', desc: 'Curriculum proposals and admin tools' },
   { href: '/admin/admins', icon: Users, label: 'Admins', desc: 'Manage who has admin access' },
+  { href: '/admin/ai-tools', icon: Wrench, label: 'AI Tools', desc: "Edit what each AI tool is good for" },
   { href: '/curriculum-pipeline', icon: FileText, label: 'Content Updates', desc: 'Review AI-proposed curriculum updates' },
   { href: '/admin/notifications', icon: Bell, label: 'Notifications', desc: 'Who receives Slack notifications' },
   { href: '/admin/skill-levels', icon: SlidersHorizontal, label: 'Skill Levels', desc: "Set each skill's difficulty level" },
-  { href: '/admin/ai-tools', icon: Wrench, label: 'AI Tools', desc: "Edit what each AI tool is good for" },
 ];
 
 const SKILL_SHOP_LINKS = [
