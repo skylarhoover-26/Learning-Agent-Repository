@@ -36,7 +36,7 @@ function SectionHeader({ icon: Icon, title, tour, collapsed, onToggle }) {
           onClick={onToggle}
           aria-expanded={!collapsed}
           aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${title}`}
-          className="bg-white dark:bg-slate-800 pr-3 flex items-center gap-2 rounded-md hover:opacity-80 transition-opacity"
+          className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 pl-1.5 pr-3 py-0.5 -ml-1.5 flex items-center gap-2 rounded-md transition-colors"
         >
           <Icon className="w-4 h-4 text-brand" />
           <span className="text-sm font-semibold text-ink dark:text-slate-200">{title}</span>
