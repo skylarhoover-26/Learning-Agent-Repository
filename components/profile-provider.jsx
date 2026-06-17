@@ -90,6 +90,22 @@ export function ProfileProvider({ children }) {
     updateProfile(buildApplyScheduled(profile, profile.id, due)).catch(() => {});
   }, [profile, updateProfile]);
 
+  // Lazily migrate the legacy single `preferred_tool` to the `preferred_tools`
+  // array so older profiles aren't stuck on a tool they can't manage. Runs once,
+  // the next time the user loads the app (same approach as scheduled changes).
+  const toolMigratedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || toolMigratedRef.current) return;
+    const hasArray = Array.isArray(profile.preferred_tools) && profile.preferred_tools.length > 0;
+    const legacy = profile.preferred_tool;
+    const hasLegacy = legacy !== undefined && legacy !== null && legacy !== '';
+    if (hasArray || !hasLegacy) return;
+    toolMigratedRef.current = true;
+    // `preferred_tool` is already stored in serialized form (an id string or a
+    // custom-tool object), so it drops straight into the array.
+    updateProfile({ preferred_tools: [legacy], preferred_tool: null }).catch(() => {});
+  }, [profile, updateProfile]);
+
   const value = { profile, isLoading, updateProfile, refreshProfile, session };
 
   return (
