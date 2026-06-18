@@ -79,6 +79,39 @@ export function ProgressionProvider({ children }) {
     }
   }, [profile, load]);
 
+  // Detect an admin "Reset all progress" and apply it locally: clear this
+  // learner's cached XP/badges/lessons so the reset takes effect for them and
+  // one-time XP (the welcome bonus) is re-earned from a clean slate.
+  const resetCheckedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || resetCheckedRef.current) return;
+    resetCheckedRef.current = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/xp-reset-epoch', { cache: 'no-store' });
+        const { resetAt } = await res.json();
+        if (!resetAt) return;
+        const seen = Number(localStorage.getItem('lp_reset_seen') || 0);
+        if (resetAt <= seen) return;
+
+        const lid = resolveLearnerId(profile);
+        localStorage.removeItem(`lp_xp_${lid}`);
+        localStorage.removeItem(`lp_badges_${lid}`);
+        localStorage.removeItem(`lp_lessons_${lid}`);
+        localStorage.removeItem('learner_game_state');
+        localStorage.setItem('lp_reset_seen', String(resetAt));
+
+        // Re-grant the one-time welcome bonus from the clean slate.
+        firstLoginCheckedRef.current = null;
+        const result = awardFirstLoginXp(lid);
+        load();
+        if (result) setWelcomeBonus(result);
+      } catch {
+        // best-effort
+      }
+    })();
+  }, [profile, load]);
+
   const clearWelcomeBonus = useCallback(() => setWelcomeBonus(null), []);
 
   const value = { ...data, refresh: load, welcomeBonus, clearWelcomeBonus };

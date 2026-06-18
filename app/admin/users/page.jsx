@@ -168,7 +168,7 @@ export default function AdminUsersPage() {
   }
 
   async function resetAllXp() {
-    if (!window.confirm('Reset XP to 0 for EVERYONE? This clears all points and admin grants. This cannot be undone.')) return;
+    if (!window.confirm('Reset progress for EVERYONE? This clears all XP, admin grants, badges, and lesson history, and lets one-time XP (like the welcome bonus) be earned again. This cannot be undone.')) return;
     setResetting(true);
     try {
       const res = await fetch('/api/admin/reset-xp', { method: 'POST' });
@@ -210,7 +210,7 @@ export default function AdminUsersPage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
           >
             {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-            {resetting ? 'Resetting…' : 'Reset all XP'}
+            {resetting ? 'Resetting…' : 'Reset all progress'}
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[320px,1fr] gap-6">

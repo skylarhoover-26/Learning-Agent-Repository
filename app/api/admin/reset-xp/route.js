@@ -13,9 +13,11 @@ export async function POST() {
 
   try {
     const { blobs } = await list({ prefix: 'users/' });
-    const xpBlobs = blobs.filter((b) => /\/lp_xp_.*\.json$/.test(b.pathname));
+    // Empty everyone's XP, badges and lesson history so a clean slate also lets
+    // one-time XP (the welcome bonus, first-lesson, etc.) be earned again.
+    const progressBlobs = blobs.filter((b) => /\/(lp_xp_|lp_badges_|lp_lessons_).*\.json$/.test(b.pathname));
     let reset = 0;
-    for (const b of xpBlobs) {
+    for (const b of progressBlobs) {
       await put(b.pathname, JSON.stringify([]), {
         access: 'public',
         contentType: 'application/json',
@@ -25,6 +27,18 @@ export async function POST() {
       });
       reset += 1;
     }
+
+    // Stamp a reset epoch. Clients compare this to what they've seen and clear
+    // their local copy, so the reset takes effect for everyone (and one-time XP
+    // like the welcome bonus re-grants).
+    await put('config/xp-reset.json', JSON.stringify({ resetAt: Date.now() }), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      cacheControlMaxAge: 0,
+    });
+
     return NextResponse.json({ ok: true, reset });
   } catch (error) {
     console.error('POST /api/admin/reset-xp error:', error);
