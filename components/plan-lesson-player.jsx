@@ -13,7 +13,7 @@ import { onLessonComplete } from '@/lib/progression';
 import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
 import {
-  Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare,
+  Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare, RefreshCw,
 } from 'lucide-react';
 
 const SAVE_KEY = 'lp_plan_lesson';
@@ -47,6 +47,9 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
   const [retryTick, setRetryTick] = useState(0);     // bump to re-run the teach fetch
   const [question, setQuestion] = useState('');
   const [asking, setAsking] = useState(false);
+  const [rebuildNonce, setRebuildNonce] = useState(0);          // bump to rebuild for a new tool
+  const [dismissedForToolId, setDismissedForToolId] = useState(null); // "keep" choice, per tool
+  const [confirmingRebuild, setConfirmingRebuild] = useState(false);
   // Inline Q&A thread shown under the chat on the current step (no navigation,
   // no inserted step). Each entry: { id, q, a, loading, error }.
   const [qaThread, setQaThread] = useState([]);
@@ -144,7 +147,7 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
       }
     })();
     return () => { active = false; };
-  }, [topic, format, toolKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [topic, format, toolKey, rebuildNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tick an elapsed-seconds counter while the lesson is being designed, so the
   // loading bar can advance and the message can reassure on longer runs.
@@ -157,6 +160,40 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
   const objectives = plan?.objectives || [];
   const step = steps[stepIdx] || null;
   const total = steps.length;
+
+  // ---- Detect a mid-lesson tool switch --------------------------------------
+  // Recompute the tool this lesson WOULD resolve to from the learner's current
+  // tools (recommended-if-owned, else primary) and compare to the tool it was
+  // actually built on. No extra API call — uses the persisted recommendation.
+  const owned = tools || [];
+  const recTool = recommendation?.tool;
+  const currentPrimary = (recTool ? owned.find((t) => (t.label || '').toLowerCase() === recTool.toLowerCase()) : null) || owned[0] || null;
+  const currentToolId = currentPrimary?.id || null;
+  const builtToolId = lessonToolIds?.[0] || null;
+  const newToolLabel = currentPrimary?.label || 'your new tool';
+  const builtToolLabel = owned.find((t) => t.id === builtToolId)?.label || 'a different tool';
+  const toolMismatch = !!builtToolId && !!currentToolId && builtToolId !== currentToolId;
+  const showToolSwitch = toolMismatch && dismissedForToolId !== currentToolId && !loading && !!plan;
+
+  // Fresh rebuild: wipe this lesson's saved state and regenerate from scratch on
+  // the learner's current tool.
+  function rebuildForCurrentTool() {
+    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    recorded.current = false;
+    startedAt.current = new Date().toISOString();
+    setPlan(null);
+    setSteps([]);
+    setStepIdx(0);
+    setTeachContent({});
+    setResolved({});
+    setQaThread([]);
+    setTeachError({});
+    setError(null);
+    setConfirmingRebuild(false);
+    setDismissedForToolId(null);
+    setLoading(true);
+    setRebuildNonce((n) => n + 1);
+  }
 
   // ---- Persist progress (pause/resume) --------------------------------------
   const persist = useCallback((next = {}) => {
@@ -350,6 +387,47 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
 
   return (
     <div className="space-y-5">
+      {/* Tool switched mid-lesson — offer to rebuild on the new tool */}
+      {showToolSwitch && (
+        <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+          {!confirmingRebuild ? (
+            <div className="flex items-center gap-3">
+              <RefreshCw className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <p className="flex-1 text-sm text-ink dark:text-slate-200">
+                You switched your AI tool to <strong>{newToolLabel}</strong>, but this lesson was built for <strong>{builtToolLabel}</strong>.
+              </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => setConfirmingRebuild(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-brand text-white text-sm font-semibold hover:bg-brand-600 transition-all">
+                  <RefreshCw className="w-3.5 h-3.5" /> Rebuild for {newToolLabel}
+                </button>
+                <button onClick={() => setDismissedForToolId(currentToolId)}
+                  className="px-3 py-2 rounded-pill text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all">
+                  Keep {builtToolLabel}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <RefreshCw className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <p className="flex-1 text-sm text-ink dark:text-slate-200">
+                This will <strong>restart the lesson</strong> from the beginning, built for {newToolLabel}. Your current progress here will be cleared.
+              </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={rebuildForCurrentTool}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-brand text-white text-sm font-semibold hover:bg-brand-600 transition-all">
+                  <RefreshCw className="w-3.5 h-3.5" /> Rebuild &amp; restart
+                </button>
+                <button onClick={() => setConfirmingRebuild(false)}
+                  className="px-3 py-2 rounded-pill text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Progress + step count */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
