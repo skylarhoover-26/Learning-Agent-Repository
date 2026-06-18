@@ -109,18 +109,16 @@ export default function UserMenu() {
                 {link.label}
               </Link>
             ))}
-            {process.env.NEXT_PUBLIC_OKTA_CONFIGURED && (
-              <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
-                <button
-                  onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                  role="menuitem"
-                  className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                >
-                  <LogOut className="w-4 h-4 shrink-0" />
-                  Log out
-                </button>
-              </div>
-            )}
+            <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
+              <button
+                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                role="menuitem"
+                className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                Log out
+              </button>
+            </div>
           </div>
         )}
       </div>

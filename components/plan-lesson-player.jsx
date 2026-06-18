@@ -36,13 +36,18 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
   const [steps, setSteps] = useState([]);      // base steps + inserted Q&A
   const [stepIdx, setStepIdx] = useState(0);
   const [teachContent, setTeachContent] = useState({}); // stepId -> {message, keyPoints}
-  const [passedIds, setPassedIds] = useState(() => new Set());
+  // stepId -> passed(bool). Presence means the activity is settled (passed, or
+  // 3 attempts used). Continue unlocks once settled either way.
+  const [resolved, setResolved] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [teachLoading, setTeachLoading] = useState(false);
   const [question, setQuestion] = useState('');
   const [asking, setAsking] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
+  // The tool the lesson is actually built around (recommended-if-owned, else the
+  // learner's starred tool). Sent first so generation centers on it.
+  const [lessonToolIds, setLessonToolIds] = useState(null);
   const startedAt = useRef(new Date().toISOString());
   const recorded = useRef(false);
 
@@ -59,7 +64,7 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
           setSteps(saved.steps || saved.plan.steps);
           setStepIdx(saved.stepIdx || 0);
           setTeachContent(saved.teachContent || {});
-          setPassedIds(new Set(saved.passedIds || []));
+          setResolved(saved.resolved || {});
           startedAt.current = saved.startedAt || startedAt.current;
           setLoading(false);
           return;
@@ -68,11 +73,32 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
         // ignore bad save
       }
 
+      // First, find the best tool for this lesson and resolve which tool the
+      // lesson should be built around: the recommended one IF the learner owns
+      // it, otherwise their starred/primary tool.
+      const owned = tools || [];
+      let recTool = null;
+      try {
+        const rr = await fetch('/api/lesson/recommend-tool', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic }),
+        });
+        const rd = rr.ok ? await rr.json() : null;
+        if (rd?.tool) { recTool = rd.tool; if (active) setRecommendation(rd); }
+      } catch {
+        // recommendation is best-effort
+      }
+      const match = recTool ? owned.find((t) => (t.label || '').toLowerCase() === recTool.toLowerCase()) : null;
+      const orderedIds = match
+        ? [match.id, ...owned.filter((t) => t.id !== match.id).map((t) => t.id)]
+        : owned.map((t) => t.id);
+      const lessonTools = orderedIds.length ? orderedIds : undefined;
+      if (active) setLessonToolIds(lessonTools);
+
       try {
         const res = await fetch('/api/lesson/plan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, format, tools: toolIds }),
+          body: JSON.stringify({ topic, format, tools: lessonTools }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to plan lesson');
@@ -84,10 +110,6 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
         if (active) { setError(err.message); setLoading(false); }
       }
     })();
-    // Which tool fits this lesson.
-    fetch('/api/lesson/recommend-tool', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic }),
-    }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.tool && active) setRecommendation(d); }).catch(() => {});
     return () => { active = false; };
   }, [topic, format, toolKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -103,13 +125,13 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
         steps: next.steps || steps,
         stepIdx: next.stepIdx ?? stepIdx,
         teachContent: next.teachContent || teachContent,
-        passedIds: [...(next.passedIds || passedIds)],
+        resolved: next.resolved || resolved,
         startedAt: startedAt.current,
       }));
     } catch {
       // localStorage full/unavailable
     }
-  }, [topic, format, plan, steps, stepIdx, teachContent, passedIds]);
+  }, [topic, format, plan, steps, stepIdx, teachContent, resolved]);
 
   // ---- Lazily generate teach content for the current step -------------------
   useEffect(() => {
@@ -121,7 +143,7 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
     fetch('/api/lesson/teach', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, objectives, step, priorTitles, tools: toolIds }),
+      body: JSON.stringify({ topic, objectives, step, priorTitles, tools: lessonToolIds || toolIds }),
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -137,18 +159,18 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
     return () => { active = false; };
   }, [step, stepIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function passActivity(id) {
-    setPassedIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      persist({ passedIds: next });
+  function resolveActivity(id, passed) {
+    setResolved((prev) => {
+      if (id in prev) return prev;
+      const next = { ...prev, [id]: passed };
+      persist({ resolved: next });
       return next;
     });
   }
 
   const isActivity = step?.kind === 'activity';
-  const activityPassed = isActivity ? passedIds.has(step.id) : true;
-  const canAdvance = step?.kind === 'recap' ? false : (!isActivity || activityPassed);
+  const activitySettled = isActivity ? step.id in resolved : true;
+  const canAdvance = step?.kind === 'recap' ? false : (!isActivity || activitySettled);
 
   function goNext() {
     if (stepIdx < total - 1) {
@@ -176,7 +198,7 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
       const res = await fetch('/api/lesson/teach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, objectives, mode: 'answer', question: q, tools: toolIds }),
+        body: JSON.stringify({ topic, objectives, mode: 'answer', question: q, tools: lessonToolIds || toolIds }),
       });
       const d = await res.json();
       const qaId = `q_${Date.now()}`;
@@ -203,10 +225,12 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
       localStorage.removeItem(SAVE_KEY);
       if (profile) {
         const durationMs = Date.now() - new Date(startedAt.current).getTime();
+        const activityCount = steps.filter((s) => s.kind === 'activity').length;
+        const passedCount = Object.values(resolved).filter(Boolean).length;
         const result = onLessonComplete(resolveLearnerId(profile), topic, startedAt.current, {
           format,
-          correctness: 1, // all activities were required and passed
-          quizCorrect: passedIds.size,
+          correctness: activityCount ? passedCount / activityCount : 1,
+          quizCorrect: passedCount,
         });
         emitXp(result);
         trackLessonComplete(topic, format, durationMs);
@@ -309,8 +333,9 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
             activityType={step.activityType}
             activity={step.activity}
             objective={objectives.find((o) => o.id === step.objectiveId)?.text}
-            passed={activityPassed}
-            onPass={() => passActivity(step.id)}
+            resolved={step.id in resolved}
+            passed={resolved[step.id] === true}
+            onResolve={(p) => resolveActivity(step.id, p)}
           />
         )}
 
@@ -333,8 +358,8 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
             className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-40 transition-colors">
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
-          {isActivity && !activityPassed ? (
-            <span className="text-xs text-slate-400">Complete the activity to continue</span>
+          {isActivity && !activitySettled ? (
+            <span className="text-xs text-slate-400">Give the activity a try to continue</span>
           ) : (
             <button onClick={goNext}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">

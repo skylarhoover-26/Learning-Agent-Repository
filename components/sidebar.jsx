@@ -303,13 +303,6 @@ export function SideNav() {
         </button>
       </div>
 
-      {isAdmin && (
-        <div className="py-1">
-          <SectionHeader icon={Shield} title="Admin" tour="section-admin" collapsed={collapsed['Admin']} onToggle={() => toggleSection('Admin')} />
-          {!collapsed['Admin'] && ADMIN_ITEMS.map(renderNavItem)}
-        </div>
-      )}
-
       {NAV_SECTIONS.map(section => (
         <Fragment key={section.title}>
           <div className="py-1">
@@ -369,6 +362,14 @@ export function SideNav() {
           )}
         </Fragment>
       ))}
+
+      {/* Admin lives at the bottom — it's not a daily-use section. */}
+      {isAdmin && (
+        <div className="py-1">
+          <SectionHeader icon={Shield} title="Admin" tour="section-admin" collapsed={collapsed['Admin']} onToggle={() => toggleSection('Admin')} />
+          {!collapsed['Admin'] && ADMIN_ITEMS.map(renderNavItem)}
+        </div>
+      )}
 
     </nav>
   );

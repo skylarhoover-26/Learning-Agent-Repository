@@ -85,9 +85,13 @@ export default function MyToolsPage() {
 
       <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
             Pick every AI tool you use — you can choose more than one. Lessons are tailored to your tools, and
-            we&rsquo;ll flag when one fits a task better than another. Star the one you want us to open by default.
+            we&rsquo;ll flag when one fits a task better than another.
+          </p>
+          <p className="flex items-center gap-1.5 text-sm font-medium text-ink dark:text-slate-200 bg-cta-50 dark:bg-slate-700/60 border border-cta-200 dark:border-slate-600 rounded-lg px-3 py-2 mb-5">
+            <Star className="w-4 h-4 fill-cta text-cta shrink-0" />
+            Tap the star on a tool to make it your <span className="font-semibold">default</span> — it&rsquo;s the one we&rsquo;ll open for you in lessons.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
