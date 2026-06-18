@@ -20,7 +20,14 @@ export async function POST(request) {
       endpoint: '/api/lesson/qa',
       user: { email: profile?.email || 'unknown', name: profile?.display_name || 'Unknown' },
       model: 'qa',
-      input: { topic, format, tool, objectives: (plan.objectives || []).length, steps: (plan.steps || []).length },
+      // Store the full plan so admins can review the exact lesson a learner got
+      // (objectives + every step incl. activity content) and apply updates.
+      input: {
+        topic, format, tool,
+        objectives: (plan.objectives || []).length,
+        steps: (plan.steps || []).length,
+        plan: { objectives: plan.objectives || [], steps: plan.steps || [] },
+      },
       output: { score: qa.score, verdict: qa.verdict, issues: qa.issues },
       durationMs: 0,
       error: qa.issues?.length ? `${qa.issues.length} issue(s)` : null,

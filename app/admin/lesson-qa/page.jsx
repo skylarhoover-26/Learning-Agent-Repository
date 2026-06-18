@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
-import { ClipboardCheck, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import AdminLessonContent from '@/components/admin-lesson-content';
+import { ClipboardCheck, Loader2, AlertTriangle, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
 
 // Admin-only review of the hidden lesson self-QA. Shows each generated lesson's
 // quality score, verdict, issues, and who it was shown to. Learners never see this.
@@ -10,6 +11,7 @@ export default function LessonQaPage() {
   const [allowed, setAllowed] = useState(null);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
     fetch('/api/admin-check').then((r) => r.json()).then((d) => setAllowed(!!d.isAdmin)).catch(() => setAllowed(false));
@@ -86,6 +88,20 @@ export default function LessonQaPage() {
                         </li>
                       ))}
                     </ul>
+                  )}
+
+                  {/* See the exact lesson this learner was given */}
+                  <button
+                    onClick={() => setExpanded((p) => ({ ...p, [e.id]: !p[e.id] }))}
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:text-brand-600 transition-colors"
+                  >
+                    {expanded[e.id] ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    {expanded[e.id] ? 'Hide lesson content' : 'View lesson content'}
+                  </button>
+                  {expanded[e.id] && (
+                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                      <AdminLessonContent plan={e.input?.plan} topic={e.input?.topic} format={e.input?.format} />
+                    </div>
                   )}
                 </div>
               );
