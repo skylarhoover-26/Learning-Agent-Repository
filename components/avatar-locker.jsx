@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Avatar from '@/components/avatar';
 import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
+import { useChampions } from '@/components/champion-provider';
+import { resolveLearnerId } from '@/lib/learner-id';
 import {
   AVATAR_SLOTS, SLOT_LABELS, itemsForSlot, isItemUnlocked,
   unlockLabel, normalizeAvatar, unlockedCount,
@@ -23,11 +25,13 @@ import { Lock, Check, Loader2 } from 'lucide-react';
 export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
   const { profile, updateProfile } = useProfile();
   const prog = useProgression();
+  const { championIds } = useChampions();
   const controlled = value !== undefined && typeof onChange === 'function';
 
   const level = ctxProp?.level ?? (prog?.levelProgress?.level || 1);
   const badgeIds = ctxProp?.badgeIds ?? new Set((prog?.badgesEarned || []).map((b) => b.badge_id));
-  const ctx = { level, badgeIds };
+  const isChampion = ctxProp?.isChampion ?? (profile ? championIds.has(resolveLearnerId(profile)) : false);
+  const ctx = { level, badgeIds, isChampion };
 
   const [internal, setInternal] = useState(() => normalizeAvatar(profile?.avatar));
   const [activeSlot, setActiveSlot] = useState('base');

@@ -928,6 +928,14 @@ function renderHat(id) {
           <circle cx="50" cy="1" r="3" fill="#fde047" />
         </g>
       );
+    case 'hat_crown':
+      return (
+        <g key="hat">
+          <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <rect x="36" y="18" width="28" height="4" rx="1" fill="#f59e0b" />
+          <circle cx="50" cy="6" r="1.8" fill="#fde68a" />
+        </g>
+      );
     case 'hat_none':
     default:
       return null;
@@ -1189,7 +1197,8 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       {renderAccessory(a.accessory)}
       {renderHat(a.hat)}
       {renderPet(a.pet)}
-      {crown && renderCrown()}
+      {/* Auto champion crown — skip if they've already equipped the Crown hat. */}
+      {crown && a.hat !== 'hat_crown' && renderCrown()}
     </svg>
   );
 }
