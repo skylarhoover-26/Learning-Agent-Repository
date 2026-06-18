@@ -50,7 +50,7 @@ export default function AvatarPreviewPage() {
                     className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 flex flex-col items-center gap-1"
                   >
                     <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center overflow-hidden">
-                      <Avatar avatar={{ ...DEFAULT_AVATAR, [slot]: item.id }} size={60} title={item.name} />
+                      <Avatar avatar={{ ...DEFAULT_AVATAR, [slot]: item.id }} size={60} title={item.name} crown={item.id === 'hat_crown'} />
                     </div>
                     <span className="text-[11px] font-medium text-ink dark:text-slate-200 text-center leading-tight">{item.name}</span>
                     <span className="text-[9px] text-slate-400 text-center leading-tight">

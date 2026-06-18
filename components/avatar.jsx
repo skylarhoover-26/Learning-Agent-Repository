@@ -850,8 +850,11 @@ function renderEarrings(id) {
   }
 }
 
-// Hats — drawn over the top of the head, above hair/face.
-function renderHat(id) {
+// Hats — drawn over the top of the head, above hair/face. The Crown is special:
+// it only renders while the wearer is actually the current champion, so losing
+// the top spot takes it off even if it's still "equipped".
+function renderHat(id, isChampion) {
+  if (id === 'hat_crown' && !isChampion) return null;
   switch (id) {
     case 'hat_cap':
       return (
@@ -1195,7 +1198,7 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       {renderFace(a.face)}
       {renderEarrings(a.earrings)}
       {renderAccessory(a.accessory)}
-      {renderHat(a.hat)}
+      {renderHat(a.hat, crown)}
       {renderPet(a.pet)}
       {/* Auto champion crown — skip if they've already equipped the Crown hat. */}
       {crown && a.hat !== 'hat_crown' && renderCrown()}
