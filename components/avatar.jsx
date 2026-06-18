@@ -206,6 +206,109 @@ function renderBase(baseItem, uid) {
   );
 }
 
+// Hair: style shapes (over the head, eyes drawn on top) tinted by the chosen
+// hair color. Rainbow color uses a per-instance gradient.
+function hairShape(id, fill) {
+  switch (id) {
+    case 'hair_crop':
+      return <path d="M30 38 Q29 18 50 18 Q71 18 70 38 Q66 25 50 25 Q34 25 30 38 Z" fill={fill} />;
+    case 'hair_buzz':
+      return <path d="M31 34 Q31 20 50 20 Q69 20 69 34 Q62 27 50 27 Q38 27 31 34 Z" fill={fill} opacity="0.85" />;
+    case 'hair_long':
+      return <path d="M30 80 Q30 22 30 28 Q30 16 50 16 Q70 16 70 28 Q70 22 70 80 Q66 82 64 60 Q64 33 50 29 Q36 33 36 60 Q34 82 30 80 Z" fill={fill} />;
+    case 'hair_ponytail':
+      return (
+        <g>
+          <path d="M30 38 Q29 18 50 18 Q71 18 70 38 Q66 25 50 25 Q34 25 30 38 Z" fill={fill} />
+          <path d="M67 26 Q84 30 82 54 Q78 46 70 40 Z" fill={fill} />
+          <rect x="66" y="26" width="6" height="4" rx="2" fill="#00000033" />
+        </g>
+      );
+    case 'hair_curly':
+      return (
+        <g fill={fill}>
+          {[[34, 25], [42, 20], [50, 18], [58, 20], [66, 25], [31, 32], [69, 32]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="6" />
+          ))}
+        </g>
+      );
+    case 'hair_bob':
+      return <path d="M30 54 Q30 18 50 18 Q70 18 70 54 Q66 56 64 48 Q64 30 50 28 Q36 30 36 48 Q34 56 30 54 Z" fill={fill} />;
+    case 'hair_spiky':
+      return <path d="M30 34 L34 18 L40 30 L46 15 L52 30 L58 15 L64 30 L70 18 L70 34 Q50 26 30 34 Z" fill={fill} />;
+    case 'hair_mohawk':
+      return <path d="M45 34 L45 16 L48 6 L50 16 L52 6 L55 16 L55 34 Z" fill={fill} />;
+    case 'hair_bun':
+      return (
+        <g fill={fill}>
+          <circle cx="50" cy="13" r="6" />
+          <path d="M31 36 Q31 20 50 20 Q69 20 69 36 Q62 27 50 27 Q38 27 31 36 Z" />
+        </g>
+      );
+    case 'hair_afro':
+      return (
+        <g fill={fill}>
+          <circle cx="50" cy="17" r="16" />
+          <circle cx="32" cy="30" r="9" />
+          <circle cx="68" cy="30" r="9" />
+        </g>
+      );
+    case 'hair_pigtails':
+      return (
+        <g fill={fill}>
+          <path d="M30 38 Q29 18 50 18 Q71 18 70 38 Q66 25 50 25 Q34 25 30 38 Z" />
+          <circle cx="28" cy="44" r="7" />
+          <circle cx="72" cy="44" r="7" />
+        </g>
+      );
+    case 'hair_wavy':
+      return <path d="M30 80 Q26 20 50 16 Q74 20 70 80 Q64 74 66 60 Q70 40 50 30 Q30 40 34 60 Q36 74 30 80 Z" fill={fill} />;
+    case 'hair_undercut':
+      return <path d="M34 28 Q34 16 50 16 Q66 16 66 28 Q58 23 50 23 Q42 23 34 28 Z" fill={fill} />;
+    case 'hair_locs':
+      return (
+        <g fill={fill}>
+          <path d="M31 34 Q31 18 50 18 Q69 18 69 34 Q60 26 50 26 Q40 26 31 34 Z" />
+          {[30, 37, 50, 63, 70].map((x, i) => (
+            <rect key={i} x={x - 1.6} y="24" width="3.2" height={i % 2 ? 30 : 24} rx="1.6" />
+          ))}
+        </g>
+      );
+    case 'hair_mullet':
+      return (
+        <g fill={fill}>
+          <path d="M30 36 Q31 18 50 18 Q69 18 70 36 Q62 26 50 26 Q38 26 30 36 Z" />
+          <path d="M30 38 Q26 56 33 62 L39 52 Q33 46 31 38 Z" />
+          <path d="M70 38 Q74 56 67 62 L61 52 Q67 46 69 38 Z" />
+        </g>
+      );
+    default:
+      return null;
+  }
+}
+
+function renderHair(id, colorItem, uid) {
+  if (!id || id === 'hair_none') return null;
+  const grad = colorItem?.gradient;
+  const fill = grad ? `url(#${uid}-hair)` : (colorItem?.color || '#6b4423');
+  return (
+    <g key="hair">
+      {grad && (
+        <defs>
+          <linearGradient id={`${uid}-hair`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#f87171" />
+            <stop offset="25%" stopColor="#fbbf24" />
+            <stop offset="50%" stopColor="#4ade80" />
+            <stop offset="75%" stopColor="#38bdf8" />
+            <stop offset="100%" stopColor="#a78bfa" />
+          </linearGradient>
+        </defs>
+      )}
+      {hairShape(id, fill)}
+    </g>
+  );
+}
+
 const TORSO = 'M28 100 L28 74 Q28 56 50 56 Q72 56 72 74 L72 100 Z';
 const NECK = 'M44 57 Q50 63 56 57 L56 60 Q50 65 44 60 Z';
 
@@ -919,6 +1022,7 @@ function renderCrown() {
 export default function Avatar({ avatar, size = 64, crown = false, className = '', title }) {
   const a = normalizeAvatar(avatar);
   const baseItem = getItem(a.base);
+  const hairColorItem = getItem(a.haircolor);
   const uid = useId();
   return (
     <svg
@@ -937,6 +1041,7 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       <g clipPath={`url(#${uid}-bgclip)`}>{renderBackground(a.background, uid)}</g>
       {renderBase(baseItem, uid)}
       {renderOutfit(a.outfit)}
+      {renderHair(a.hair, hairColorItem, uid)}
       {renderMakeup(a.makeup)}
       {renderBeard(a.beard)}
       {renderFace(a.face)}
