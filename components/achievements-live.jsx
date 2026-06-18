@@ -31,22 +31,22 @@ function xpSourceLabel(source) {
 }
 
 const ALL_BADGES = [
-  { id: 'first_lesson', name: 'First Steps', emoji: '🎓', description: 'Complete your first lesson', href: '/library' },
-  { id: 'three_lessons', name: 'Getting Going', emoji: '📚', description: 'Complete 3 lessons', href: '/library' },
-  { id: 'ten_lessons', name: 'Bookworm', emoji: '🤓', description: 'Complete 10 lessons', href: '/library' },
-  { id: 'three_day_streak', name: 'On Fire', emoji: '🔥', description: 'Learn 3 days in a row', href: '/library' },
-  { id: 'seven_day_streak', name: 'Unstoppable', emoji: '⚡', description: 'Learn 7 days in a row', href: '/library' },
-  { id: 'first_quiz', name: 'Pop Quiz', emoji: '✏️', description: 'Answer your first quiz question', href: '/library' },
-  { id: 'quiz_master', name: 'Quiz Master', emoji: '💯', description: 'Get 10 quiz answers correct', href: '/library' },
+  { id: 'first_lesson', name: 'First Steps', emoji: '🎓', description: 'Complete your first lesson', href: '/lesson' },
+  { id: 'three_lessons', name: 'Getting Going', emoji: '📚', description: 'Complete 3 lessons', href: '/lesson' },
+  { id: 'ten_lessons', name: 'Bookworm', emoji: '🤓', description: 'Complete 10 lessons', href: '/lesson' },
+  { id: 'three_day_streak', name: 'On Fire', emoji: '🔥', description: 'Learn 3 days in a row', href: '/lesson' },
+  { id: 'seven_day_streak', name: 'Unstoppable', emoji: '⚡', description: 'Learn 7 days in a row', href: '/lesson' },
+  { id: 'first_quiz', name: 'Pop Quiz', emoji: '✏️', description: 'Answer your first quiz question', href: '/lesson' },
+  { id: 'quiz_master', name: 'Quiz Master', emoji: '💯', description: 'Get 10 quiz answers correct', href: '/lesson' },
   { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest', href: '/quests' },
   { id: 'first_project', name: 'Goal Getter', emoji: '🎯', description: 'Add your first work project', href: '/projects' },
   { id: 'first_goal', name: 'Aim High', emoji: '⭐', description: 'Set your first learning goal', href: '/goals' },
   { id: 'first_game', name: 'Game On', emoji: '🎮', description: 'Play your first learning game', href: '/games' },
   { id: 'five_games', name: 'High Scorer', emoji: '🕹️', description: 'Play 5 learning games', href: '/games' },
-  { id: 'level_5', name: 'Power Learner', emoji: '🚀', description: 'Reach Level 5', href: '/library' },
-  { id: 'level_10', name: 'Double Digits', emoji: '🔟', description: 'Reach Level 10', href: '/library' },
-  { id: 'level_25', name: 'Quarter Way', emoji: '🌟', description: 'Reach Level 25', href: '/library' },
-  { id: 'level_50', name: 'Halfway Hero', emoji: '🏔️', description: 'Reach Level 50', href: '/library' },
+  { id: 'level_5', name: 'Power Learner', emoji: '🚀', description: 'Reach Level 5', href: '/lesson' },
+  { id: 'level_10', name: 'Double Digits', emoji: '🔟', description: 'Reach Level 10', href: '/lesson' },
+  { id: 'level_25', name: 'Quarter Way', emoji: '🌟', description: 'Reach Level 25', href: '/lesson' },
+  { id: 'level_50', name: 'Halfway Hero', emoji: '🏔️', description: 'Reach Level 50', href: '/lesson' },
 ];
 
 export default function AchievementsLive() {
