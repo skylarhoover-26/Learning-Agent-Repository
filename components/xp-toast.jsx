@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Zap, Award, TrendingUp, Flame } from 'lucide-react';
+import { getLevelTitle } from '@/lib/level-titles';
 
 const BADGE_META = {
   first_lesson: { name: 'First Steps', emoji: '🎓' },
@@ -40,13 +41,20 @@ export default function XpToast({ result, onDismiss }) {
     >
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 min-w-[280px] max-w-[340px]">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-cta-50 dark:bg-cta-900/30 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-xl bg-cta-50 dark:bg-cta-900/30 flex items-center justify-center">
             <Zap className="w-5 h-5 text-cta-600" />
           </div>
           <div>
-            <div className="font-bold text-ink dark:text-slate-200">+{result.xpAwarded} XP</div>
+            {result.welcome && (
+              <div className="text-xs font-semibold text-brand-600 dark:text-brand-300 uppercase tracking-wide">
+                Welcome aboard!
+              </div>
+            )}
+            <div className="text-2xl font-extrabold text-ink dark:text-slate-100 leading-tight">
+              +{result.xpAwarded} XP
+            </div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              {result.totalXp.toLocaleString()} XP total
+              {(result.totalXp ?? 0).toLocaleString()} XP total
             </div>
           </div>
         </div>
@@ -55,7 +63,7 @@ export default function XpToast({ result, onDismiss }) {
           <div className="flex items-center gap-2 px-3 py-2 bg-brand-50 dark:bg-brand-900/30 rounded-lg mb-2">
             <TrendingUp className="w-4 h-4 text-brand" />
             <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">
-              Level Up! You're now Level {result.level}
+              Level Up! You&apos;re now {getLevelTitle(result.level)} (Level {result.level})
             </span>
           </div>
         )}
@@ -69,7 +77,7 @@ export default function XpToast({ result, onDismiss }) {
           </div>
         )}
 
-        {result.newBadges.length > 0 && (
+        {result.newBadges?.length > 0 && (
           <div className="space-y-2 mt-2">
             {result.newBadges.map(badgeId => {
               const meta = BADGE_META[badgeId];

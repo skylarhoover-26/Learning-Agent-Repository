@@ -39,7 +39,7 @@ const TUTORIAL_STEPS = [
     icon: BookOpen,
     title: 'Interactive Lessons',
     description: 'AI-generated lessons adapt to your department and skill level. The structured lesson player grades your work and shows you how AI would approach the same task differently.',
-    tip: 'Each lesson takes 5-10 minutes and earns you 50 XP.',
+    tip: 'Each lesson takes 5-10 minutes. Answer the checkpoint questions correctly to earn the most XP.',
     action: { label: 'Start a Lesson', href: '/lesson' },
     color: 'bg-green-500',
   },

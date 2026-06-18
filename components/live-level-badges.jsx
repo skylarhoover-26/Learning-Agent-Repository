@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useProgression } from './progression-provider';
 import XpExplainer from './xp-explainer';
+import { getLevelTitle } from '@/lib/level-titles';
 import { Award, ChevronRight } from 'lucide-react';
 
 const BADGE_META = {
@@ -49,7 +50,8 @@ export default function LiveLevelBadges() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
-              <h3 className="font-bold text-ink dark:text-slate-200">Level {levelProgress.level}</h3>
+              <h3 className="font-bold text-ink dark:text-slate-200">{getLevelTitle(levelProgress.level)}</h3>
+              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Level {levelProgress.level}</span>
             </div>
             <div className="flex items-center gap-3 max-w-md">
               <div className="flex-1 h-2 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">

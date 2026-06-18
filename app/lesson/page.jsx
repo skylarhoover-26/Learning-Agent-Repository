@@ -5,7 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
-import XpToast from '@/components/xp-toast';
+import LessonQuiz from '@/components/lesson-quiz';
+import { emitXp } from '@/lib/xp-bus';
 import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
@@ -177,9 +178,16 @@ function LessonContent() {
   const debounceSaveRef = useRef(null);
 
   // Progression state
-  const [progressionResult, setProgressionResult] = useState(null);
   const lessonStartedAt = useRef(null);
   const hasRecordedCompletion = useRef(false);
+
+  // End-of-lesson quiz (gates XP for standard/deep_dive; quick tips skip it).
+  const [quizQuestions, setQuizQuestions] = useState(null);
+  const [quizActive, setQuizActive] = useState(false);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  // Correctness (0..1) from the quiz, read when completion is recorded.
+  const quizCorrectnessRef = useRef(1);
   const { refresh: refreshProgression } = useProgression() || {};
   const { profile } = useProfile();
   const { tools } = useActiveTool();
@@ -332,7 +340,10 @@ function LessonContent() {
     lessonStartedAt.current = new Date().toISOString();
     hasRecordedCompletion.current = false;
     practicePrefilledRef.current = false;
-    setProgressionResult(null);
+    setQuizQuestions(null);
+    setQuizActive(false);
+    quizCorrectnessRef.current = 1;
+    setFinishing(false);
 
     try {
       const res = await fetch('/api/lesson/start', {
@@ -396,9 +407,52 @@ function LessonContent() {
     }
   }
 
-  function finishLesson() {
-    if (isLoading) return;
+  function wrapUpLesson() {
     continueLesson("I'm ready to wrap up the lesson.", 'Finish lesson');
+  }
+
+  async function finishLesson() {
+    if (isLoading || quizLoading) return;
+
+    // Quick tips are completion-only — no quiz, full XP.
+    if (format === 'quick_tip') {
+      quizCorrectnessRef.current = 1;
+      wrapUpLesson();
+      return;
+    }
+
+    // Standard / deep dive: gate XP behind a checkpoint quiz grounded in the
+    // lesson. If the quiz can't be generated, never block finishing — fall back
+    // to completing with full credit.
+    setQuizLoading(true);
+    try {
+      const res = await fetch('/api/lesson/quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, format, messages }),
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.questions) && data.questions.length > 0) {
+        setQuizQuestions(data.questions);
+        setQuizActive(true);
+      } else {
+        quizCorrectnessRef.current = 1;
+        wrapUpLesson();
+      }
+    } catch {
+      quizCorrectnessRef.current = 1;
+      wrapUpLesson();
+    } finally {
+      setQuizLoading(false);
+    }
+  }
+
+  // Called when the learner finishes the checkpoint quiz. correctness is 0..1.
+  function handleQuizFinish(correctness) {
+    quizCorrectnessRef.current = correctness;
+    setFinishing(true);
+    setQuizActive(false);
+    wrapUpLesson();
   }
 
   function handleSubmitInput(e) {
@@ -419,7 +473,10 @@ function LessonContent() {
     setCurrentSlideIdx(0);
     setError(null);
     hasRecordedCompletion.current = false;
-    setProgressionResult(null);
+    setQuizQuestions(null);
+    setQuizActive(false);
+    quizCorrectnessRef.current = 1;
+    setFinishing(false);
   }
 
   // --- Progression: record completion (must be before any early return) ---
@@ -433,13 +490,18 @@ function LessonContent() {
     try {
       if (profile && topic) {
         const durationMs = lessonStartedAt.current ? Date.now() - lessonStartedAt.current : 0;
-        const result = onLessonComplete(resolveLearnerId(profile), topic, lessonStartedAt.current);
-        setProgressionResult(result);
+        const result = onLessonComplete(resolveLearnerId(profile), topic, lessonStartedAt.current, {
+          format,
+          correctness: quizCorrectnessRef.current,
+        });
+        emitXp(result);
         refreshProgression?.();
         trackLessonComplete(topic, format, durationMs);
       }
     } catch {
       // progression is best-effort
+    } finally {
+      setFinishing(false);
     }
   }, [topic, format, profile, refreshProgression]);
 
@@ -481,7 +543,6 @@ function LessonContent() {
       lessonStartedAt.current = savedLesson.lessonStartedAt || new Date().toISOString();
       hasRecordedCompletion.current = false;
       practicePrefilledRef.current = true; // don't auto-prefill mid-lesson on resume
-      setProgressionResult(null);
       setView('lesson');
       setSavedLesson(null);
     }
@@ -765,17 +826,19 @@ function LessonContent() {
       </p>
       <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
         {isQuickTip
-          ? <>Finish to lock in your <span className="font-semibold text-brand dark:text-brand-200">+50 XP</span> — or keep learning in the chat below.</>
-          : <>Keep the conversation going above to learn more — or finish your {FORMAT_META[format].title} to earn <span className="font-semibold text-brand dark:text-brand-200">+50 XP</span>.</>}
+          ? <>Finish to lock in your progress — or keep learning in the chat below.</>
+          : <>Keep the conversation going above to learn more — or finish your {FORMAT_META[format].title} when you&apos;re ready. You&apos;ll answer a couple of quick questions to earn your XP.</>}
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={finishLesson}
-          disabled={isLoading}
+          disabled={isLoading || quizLoading}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm shadow-sm hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
-          <Trophy className="w-4 h-4" />
-          Finish {FORMAT_META[format].title} · +50 XP
+          {quizLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
+          {quizLoading
+            ? 'Preparing quick check…'
+            : (isQuickTip ? 'Finish' : `Finish ${FORMAT_META[format].title}`)}
         </button>
         <button
           onClick={resetToPickerView}
@@ -791,7 +854,6 @@ function LessonContent() {
     <>
     <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
     <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
-      <XpToast result={progressionResult} onDismiss={() => setProgressionResult(null)} />
 
       {!isComplete && <LlmWindowCallout storageKey="lesson" className="mb-6" />}
 
@@ -897,9 +959,17 @@ function LessonContent() {
         <div ref={bottomRef} />
       </div>
 
+      {/* Checkpoint quiz — shown when finishing a standard/deep-dive lesson.
+          Replaces the chat/finish area until the learner finishes the quiz. */}
+      {quizActive && quizQuestions && !isComplete && (
+        <div className="mt-4">
+          <LessonQuiz questions={quizQuestions} onFinish={handleQuizFinish} finishing={finishing} />
+        </div>
+      )}
+
       {/* Engagement area. Quick Tip: finish first, chat below as "go deeper".
           Longer formats: chat-driven practice leads, finish sits below. */}
-      {slides.length > 0 && !isComplete && (
+      {slides.length > 0 && !isComplete && !quizActive && (
         <div className="mt-4">
           {isQuickTip ? (
             <>

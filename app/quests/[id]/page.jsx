@@ -7,7 +7,9 @@ import PageHeader from '@/components/page-header';
 import { Trophy, ChevronRight, ChevronLeft, CheckCircle2, Circle, Lightbulb, Target, ArrowLeft, PartyPopper } from 'lucide-react';
 import { QUESTS } from '@/lib/quest-data';
 import { getQuestState, startQuest, completeStep, completeQuest } from '@/lib/quest-store';
-import { addXpEvent, addBadgeEarned } from '@/lib/learner-store';
+import { addXpEvent, addBadgeEarned, getXpEvents } from '@/lib/learner-store';
+import { getTotalXp, getLevel } from '@/lib/progression';
+import { emitXp } from '@/lib/xp-bus';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
@@ -55,9 +57,25 @@ export default function QuestDetailPage() {
       const completedCount = Object.values(
         JSON.parse(localStorage.getItem('learner_quest_state') || '{}')
       ).filter(q => q.status === 'completed').length;
+      const newBadges = [];
       if (completedCount === 1) {
         addBadgeEarned(lid, 'first_quest');
+        newBadges.push('first_quest');
       }
+
+      // Surface the reward through the shared popup (consistent with everywhere
+      // else). The XP amount is revealed here, after finishing — not on a button.
+      const totalXp = getTotalXp(getXpEvents(lid));
+      const level = getLevel(totalXp);
+      emitXp({
+        xpAwarded: quest.xpReward,
+        totalXp,
+        level,
+        leveledUp: level > getLevel(totalXp - quest.xpReward),
+        streak: 0,
+        newBadges,
+        source: 'quest_complete',
+      });
       refreshProgression?.();
 
       setQuestState(completed);

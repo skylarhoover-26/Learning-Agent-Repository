@@ -3,15 +3,16 @@
 import { useState } from 'react';
 import { HelpCircle, X, BookOpen, Trophy, MessageCircle, Flame, Gamepad2, RefreshCw } from 'lucide-react';
 
-// Listed alphabetically by label. Amounts match lib/progression.js + the XP
-// awarded in chat, games, and review.
+// Listed by label. Amounts match lib/progression.js (XP_AMOUNTS + DAILY_CAPS).
+// Lessons scale with how many checkpoint questions you get right, so they show a
+// range rather than a fixed number.
 const XP_SOURCES = [
-  { icon: RefreshCw, label: 'Answer a review card', amount: '+5 XP' },
-  { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+5 XP' },
-  { icon: BookOpen, label: 'Complete a lesson', amount: '+50 XP' },
-  { icon: Trophy, label: 'Finish a project milestone', amount: '+100 XP' },
+  { icon: RefreshCw, label: 'Answer a review card', amount: 'up to +5 XP' },
+  { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+2 XP (5/day)' },
+  { icon: BookOpen, label: 'Finish a quick lesson or deep dive', amount: 'up to +40–100 XP' },
+  { icon: Trophy, label: 'Complete a project quest', amount: '+200 XP' },
   { icon: Flame, label: 'Keep your streak going', amount: '+10 XP/day' },
-  { icon: Gamepad2, label: 'Play a learning game', amount: '+25 XP' },
+  { icon: Gamepad2, label: 'Play a learning game', amount: '+25 XP (3/day)' },
 ];
 
 export default function XpExplainer() {

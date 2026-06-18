@@ -5,7 +5,9 @@ import { ProfileProvider } from '@/components/profile-provider';
 import { ActiveToolProvider } from '@/components/active-tool-provider';
 import { ToolCatalogProvider } from '@/components/tool-catalog-provider';
 import { ProgressionProvider } from '@/components/progression-provider';
+import { ChampionProvider } from '@/components/champion-provider';
 import PageTracker from '@/components/page-tracker';
+import GlobalXpPopup from '@/components/global-xp-popup';
 import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
 import { TourProvider } from '@/components/guided-tour-provider';
 import HelpWidget from '@/components/help-widget';
@@ -43,6 +45,7 @@ export default function RootLayout({ children }) {
             <ToolCatalogProvider>
             <ActiveToolProvider>
             <ProgressionProvider>
+              <ChampionProvider>
               <SidebarProvider>
                 <TourProvider>
                   <SideNav />
@@ -50,8 +53,10 @@ export default function RootLayout({ children }) {
                     {children}
                   </SidebarShell>
                   <OnboardingTour />
+                  <GlobalXpPopup />
                 </TourProvider>
               </SidebarProvider>
+              </ChampionProvider>
             </ProgressionProvider>
             </ActiveToolProvider>
             </ToolCatalogProvider>

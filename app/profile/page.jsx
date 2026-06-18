@@ -9,6 +9,10 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { useProfile } from '@/components/profile-provider';
+import Avatar from '@/components/avatar';
+import AvatarLocker from '@/components/avatar-locker';
+import { useChampions } from '@/components/champion-provider';
+import { resolveLearnerId } from '@/lib/learner-id';
 import { DEPARTMENTS, SUBTEAMS, getTaskList } from '@/lib/curriculum-data';
 
 const TIER_LABELS = {
@@ -34,6 +38,7 @@ function formatDate(isoString) {
 export default function ProfilePage() {
   const router = useRouter();
   const { profile: ctxProfile, updateProfile, isLoading: profileLoading } = useProfile();
+  const { championIds } = useChampions();
   const [profile, setProfile] = useState(null);
   const [editName, setEditName] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
@@ -192,7 +197,6 @@ export default function ProfilePage() {
   }
 
   const tier = TIER_LABELS[profile.tier] || TIER_LABELS.beginner;
-  const initial = (profile.display_name || 'L').charAt(0).toUpperCase();
   const nameChanged = editName.trim() !== profile.display_name;
 
   return (
@@ -202,8 +206,13 @@ export default function ProfilePage() {
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-6">
         {/* A. Profile Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-brand to-brand-700 mb-4">
-            <span className="text-4xl font-bold text-white">{initial}</span>
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800 mb-4 ring-1 ring-slate-200 dark:ring-slate-700">
+            <Avatar
+              avatar={profile.avatar}
+              size={80}
+              crown={championIds.has(resolveLearnerId(profile))}
+              title={profile.display_name}
+            />
           </div>
           <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-1">
             {profile.display_name}
@@ -228,6 +237,18 @@ export default function ProfilePage() {
               Member since {formatDate(profile.onboarded_at)}
             </p>
           )}
+        </div>
+
+        {/* A2. Avatar Locker */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
+          <h3 className="font-semibold text-ink dark:text-slate-200 mb-1 flex items-center gap-2">
+            <Star className="w-4 h-4 text-cta-500" />
+            Avatar Locker
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
+            Mix and match what you&apos;ve unlocked. Level up and earn badges to unlock more — outfits, accessories, and sidekicks.
+          </p>
+          <AvatarLocker />
         </div>
 
         {/* B. Edit Name */}

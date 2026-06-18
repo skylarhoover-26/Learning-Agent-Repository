@@ -6,7 +6,8 @@ import PageHeader from '@/components/page-header';
 import { Brain, ChevronRight, Check, X, RotateCcw, BarChart3, Zap } from 'lucide-react';
 import { QUALITY_BUTTONS, formatNextReview } from '@/lib/sm2';
 import { buildReviewQueue, updateCardAfterReview, getCardState, getReviewStats } from '@/lib/review-store';
-import { addXpEvent } from '@/lib/learner-store';
+import { onReviewCorrect } from '@/lib/progression';
+import { emitXp } from '@/lib/xp-bus';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
@@ -49,11 +50,8 @@ export default function ReviewPage() {
     const updated = updateCardAfterReview(card.id, quality);
     const correct = quality >= 3;
     if (correct) {
-      addXpEvent(resolveLearnerId(profile), {
-        source: 'review_correct',
-        amount: 5,
-        created_at: new Date().toISOString(),
-      });
+      const xpResult = onReviewCorrect(resolveLearnerId(profile));
+      emitXp(xpResult);
       refreshProgression?.();
     }
     trackReviewCard(card.id, card.category, quality, correct);

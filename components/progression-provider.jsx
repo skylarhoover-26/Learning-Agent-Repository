@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { getAllData } from '@/lib/learner-store';
-import { getTotalXp, getLevel, calculateStreak, LEVEL_THRESHOLDS } from '@/lib/progression';
+import { getTotalXp, getLevel, getLevelProgress, calculateStreak, awardFirstLoginXp } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 
@@ -16,10 +16,6 @@ function buildStats(learnerId) {
   const { xpEvents, badgesEarned, lessonHistory } = getAllData(learnerId);
   const totalXp = getTotalXp(xpEvents);
   const level = getLevel(totalXp);
-  const currentThreshold = LEVEL_THRESHOLDS[level - 1] || 0;
-  const nextThreshold = LEVEL_THRESHOLDS[level] || (currentThreshold + 2000);
-  const xpIntoLevel = totalXp - currentThreshold;
-  const xpForLevel = nextThreshold - currentThreshold;
 
   return {
     learnerId,
@@ -30,16 +26,7 @@ function buildStats(learnerId) {
     ),
     totalXp,
     level,
-    levelProgress: {
-      level,
-      totalXp,
-      currentThreshold,
-      nextThreshold,
-      xpIntoLevel,
-      xpForLevel,
-      percent: Math.min(100, Math.round((xpIntoLevel / xpForLevel) * 100)),
-      xpToNext: nextThreshold - totalXp,
-    },
+    levelProgress: getLevelProgress(totalXp),
     streak: calculateStreak(lessonHistory),
   };
 }
@@ -60,6 +47,10 @@ const EMPTY = {
 export function ProgressionProvider({ children }) {
   const { profile } = useProfile();
   const [data, setData] = useState(EMPTY);
+  // Holds a one-time welcome-bonus result so the global XP popup can celebrate
+  // it. Cleared once shown.
+  const [welcomeBonus, setWelcomeBonus] = useState(null);
+  const firstLoginCheckedRef = useRef(null);
 
   const load = useCallback(() => {
     if (profile) {
@@ -73,7 +64,24 @@ export function ProgressionProvider({ children }) {
     load();
   }, [load]);
 
-  const value = { ...data, refresh: load };
+  // Award the one-time first-login bonus the first time a learner's profile is
+  // available. Guarded per learner here, and idempotent in awardFirstLoginXp,
+  // so it can never double-award.
+  useEffect(() => {
+    if (!profile) return;
+    const learnerId = resolveLearnerId(profile);
+    if (firstLoginCheckedRef.current === learnerId) return;
+    firstLoginCheckedRef.current = learnerId;
+    const result = awardFirstLoginXp(learnerId);
+    if (result) {
+      load();
+      setWelcomeBonus(result);
+    }
+  }, [profile, load]);
+
+  const clearWelcomeBonus = useCallback(() => setWelcomeBonus(null), []);
+
+  const value = { ...data, refresh: load, welcomeBonus, clearWelcomeBonus };
 
   return (
     <ProgressionContext.Provider value={value}>

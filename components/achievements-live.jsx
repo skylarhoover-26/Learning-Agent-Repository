@@ -2,10 +2,15 @@
 
 import Link from 'next/link';
 import { useProgression } from './progression-provider';
+import { getLevelTitle } from '@/lib/level-titles';
 import { ArrowLeft, Award, Sparkles, TrendingUp } from 'lucide-react';
 
 const XP_SOURCE_LABELS = {
+  first_login: 'Welcome bonus',
   lesson_complete: 'Lesson completed',
+  quick_tip: 'Quick tip finished',
+  quick_lesson: 'Quick lesson completed',
+  deep_dive: 'Deep dive completed',
   game_complete: 'Game completed',
   quiz_correct: 'Quiz answered',
   streak_day: 'Daily streak',
@@ -13,6 +18,7 @@ const XP_SOURCE_LABELS = {
   goal_set: 'Goal set',
   quest_complete: 'Quest completed',
   chat: 'Chatted with the coach',
+  chat_message: 'Chatted with the coach',
 };
 
 function xpSourceLabel(source) {
@@ -91,8 +97,8 @@ export default function AchievementsLive() {
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-cta-400 to-cta-600 mx-auto mb-4 flex items-center justify-center shadow-sm">
             <span className="text-4xl font-bold text-ink dark:text-slate-900">{levelProgress.level}</span>
           </div>
-          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1">Level {levelProgress.level}</h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-4">{totalXp.toLocaleString()} XP total</p>
+          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1">{getLevelTitle(levelProgress.level)}</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-4">Level {levelProgress.level} · {totalXp.toLocaleString()} XP total</p>
           <div className="max-w-sm mx-auto">
             <div className="flex items-center gap-3">
               <div className="flex-1 h-3 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden">

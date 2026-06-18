@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
+import Avatar from '@/components/avatar';
+import { useChampions } from '@/components/champion-provider';
+import { resolveLearnerId } from '@/lib/learner-id';
 import { displayNameFromProfile } from '@/lib/display-name';
 
 // Profile-related links that live under the name dropdown (everything that used
@@ -22,8 +25,9 @@ const PROFILE_LINKS = [
 // opening the menu) + a name dropdown with profile items and session actions.
 export default function UserMenu() {
   const { profile } = useProfile();
+  const { championIds } = useChampions();
   const displayName = displayNameFromProfile(profile);
-  const initial = displayName.charAt(0).toUpperCase();
+  const isChampion = profile ? championIds.has(resolveLearnerId(profile)) : false;
 
   const [open, setOpen] = useState(false);
   // When the guided tour drives the dropdown, we keep it open and ignore the
@@ -78,8 +82,8 @@ export default function UserMenu() {
           aria-expanded={open}
         >
           <span className="hidden sm:inline">{displayName}</span>
-          <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white font-semibold text-sm">
-            {initial}
+          <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center overflow-hidden">
+            <Avatar avatar={profile?.avatar} size={32} crown={isChampion} title={displayName} />
           </div>
           <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>

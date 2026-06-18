@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-store';
-import { addXpEvent } from '@/lib/learner-store';
+import { onChatMessage } from '@/lib/progression';
+import { emitXp } from '@/lib/xp-bus';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
 import { MessageCircle, Send, Loader2, Trash2, ExternalLink } from 'lucide-react';
@@ -121,11 +122,9 @@ function ChatPageInner() {
       if (!tourMode) {
         saveChatHistory(updatedMessages);
         if (profile) {
-          addXpEvent(resolveLearnerId(profile), {
-            source: 'chat_message',
-            amount: 5,
-            created_at: new Date().toISOString(),
-          });
+          // Capped at DAILY_CAPS.chat_message/day; returns null-ish when capped.
+          const xpResult = onChatMessage(resolveLearnerId(profile));
+          emitXp(xpResult);
         }
       }
     } catch (error) {
