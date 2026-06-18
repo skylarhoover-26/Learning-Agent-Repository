@@ -6,6 +6,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
 import LessonQuiz from '@/components/lesson-quiz';
+import PlanLessonPlayer from '@/components/plan-lesson-player';
 import { emitXp } from '@/lib/xp-bus';
 import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete } from '@/lib/progression';
@@ -305,9 +306,10 @@ function LessonContent() {
       // interactive read lesson.
       if (initialMode === 'watch') {
         setVideoTopic(initialTopic);
-      } else {
-        fetchStartLesson(initialTopic, initialFormat || 'standard');
+      } else if ((initialFormat || 'standard') === 'quick_tip') {
+        fetchStartLesson(initialTopic, 'quick_tip');
       }
+      // Quick Lesson / Deep Dive: the plan-driven player handles its own start.
     }
   }, [initialTopic]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -386,7 +388,9 @@ function LessonContent() {
   function startLesson(t) {
     setTopic(t);
     setView('lesson');
-    fetchStartLesson(t);
+    // Quick Lessons & Deep Dives use the plan-driven player (it fetches its own
+    // plan). Only Quick Tips use the conversational start.
+    if (format === 'quick_tip') fetchStartLesson(t);
   }
 
   // Entry point from the picker: watch a narrated video or start a read lesson.
@@ -869,6 +873,19 @@ function LessonContent() {
       </div>
     </div>
   );
+
+  // Quick Lessons & Deep Dives (read mode) use the plan-driven player: Bloom
+  // objectives, required interactive activities, Step X of N, pause/resume.
+  if (view === 'lesson' && learnMode === 'read' && (format === 'standard' || format === 'deep_dive')) {
+    return (
+      <>
+        <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
+        <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
+          <PlanLessonPlayer topic={topic} format={format} onExit={resetToPickerView} />
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
