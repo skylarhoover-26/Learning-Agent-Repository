@@ -18,6 +18,16 @@ function star(cx, cy, r, key, fill = INK) {
   return <polygon key={key} points={p} fill={fill} />;
 }
 
+// A cartoon eye with a white so pupils stay visible on any skin tone.
+function eye(cx, cy, r = 2) {
+  return (
+    <g key={`eye${cx}`}>
+      <circle cx={cx} cy={cy} r={r + 1.4} fill="#ffffff" />
+      <circle cx={cx} cy={cy} r={r} fill={INK} />
+    </g>
+  );
+}
+
 // Background scene — the bottom layer, fills the whole viewBox. `uid` namespaces
 // gradient ids so multiple avatars on one page don't collide.
 function renderBackground(id, uid) {
@@ -416,8 +426,8 @@ function renderFace(id) {
     case 'face_cool':
       return (
         <g key="face">
-          <circle cx={eyeL} cy={eyeY} r="2.6" fill={INK} />
-          <circle cx={eyeR} cy={eyeY} r="2.6" fill={INK} />
+          {eye(eyeL, eyeY)}
+          {eye(eyeR, eyeY)}
           <line x1="45" y1="47" x2="55" y2="47" stroke={INK} strokeWidth="2.2" strokeLinecap="round" />
         </g>
       );
@@ -425,7 +435,7 @@ function renderFace(id) {
       return (
         <g key="face">
           <path d="M40 37 Q43 34 46 37" stroke={INK} strokeWidth="2.2" fill="none" strokeLinecap="round" />
-          <circle cx={eyeR} cy={eyeY} r="2.6" fill={INK} />
+          {eye(eyeR, eyeY)}
           {smile}
         </g>
       );
@@ -434,8 +444,8 @@ function renderFace(id) {
         <g key="face">
           <line x1="39" y1="31" x2="47" y2="34" stroke={INK} strokeWidth="2" strokeLinecap="round" />
           <line x1="61" y1="31" x2="53" y2="34" stroke={INK} strokeWidth="2" strokeLinecap="round" />
-          <circle cx={eyeL} cy={eyeY + 1} r="2.6" fill={INK} />
-          <circle cx={eyeR} cy={eyeY + 1} r="2.6" fill={INK} />
+          {eye(eyeL, eyeY + 1)}
+          {eye(eyeR, eyeY + 1)}
           <line x1="45" y1="48" x2="55" y2="48" stroke={INK} strokeWidth="2.2" strokeLinecap="round" />
         </g>
       );
@@ -450,8 +460,8 @@ function renderFace(id) {
     case 'face_grin':
       return (
         <g key="face">
-          <circle cx={eyeL} cy={eyeY} r="2.8" fill={INK} />
-          <circle cx={eyeR} cy={eyeY} r="2.8" fill={INK} />
+          {eye(eyeL, eyeY)}
+          {eye(eyeR, eyeY)}
           <path d="M42 45 Q50 56 58 45 Z" fill={INK} />
           <path d="M44 46 Q50 49 56 46" fill="#fff" />
         </g>
@@ -459,7 +469,7 @@ function renderFace(id) {
     case 'face_cyborg':
       return (
         <g key="face">
-          <circle cx={eyeL} cy={eyeY} r="2.6" fill={INK} />
+          {eye(eyeL, eyeY)}
           <rect x={eyeR - 3} y={eyeY - 2} width="6" height="4" rx="1" fill="#06b6d4" />
           <line x1="60" y1="29" x2="66" y2="27" stroke={INK} strokeWidth="1.5" strokeLinecap="round" />
           <line x1="45" y1="47" x2="55" y2="47" stroke={INK} strokeWidth="2.2" strokeLinecap="round" />
@@ -501,8 +511,8 @@ function renderFace(id) {
     default:
       return (
         <g key="face">
-          <circle cx={eyeL} cy={eyeY} r="2.8" fill={INK} />
-          <circle cx={eyeR} cy={eyeY} r="2.8" fill={INK} />
+          {eye(eyeL, eyeY)}
+          {eye(eyeR, eyeY)}
           {smile}
         </g>
       );
@@ -535,22 +545,6 @@ function renderAccessory(id) {
           <rect x="66" y="34" width="8" height="12" rx="3" fill="#334155" />
         </g>
       );
-    case 'acc_party':
-      return (
-        <g key="acc">
-          <path d="M50 0 L40 20 L60 20 Z" fill="#ec4899" />
-          <path d="M50 0 L45 10 L55 10 Z" fill="#f9a8d4" />
-          <circle cx="50" cy="1" r="3" fill="#fde047" />
-        </g>
-      );
-    case 'acc_beanie':
-      return (
-        <g key="acc">
-          <path d="M30 30 Q30 10 50 10 Q70 10 70 30 Z" fill="#0ea5e9" />
-          <rect x="29" y="28" width="42" height="5" rx="2.5" fill="#0284c7" />
-          <circle cx="50" cy="9" r="3.5" fill="#e0f2fe" />
-        </g>
-      );
     case 'acc_visor':
       return (
         <g key="acc">
@@ -569,25 +563,6 @@ function renderAccessory(id) {
           <circle cx="37" cy="52" r="2" fill="#ef4444" />
         </g>
       );
-    case 'acc_tophat':
-      return (
-        <g key="acc">
-          <rect x="30" y="20" width="40" height="4" rx="1" fill="#111827" />
-          <rect x="38" y="2" width="24" height="20" rx="1" fill="#111827" />
-          <rect x="38" y="15" width="24" height="4" fill="#dc2626" />
-        </g>
-      );
-    case 'acc_flowers':
-      return (
-        <g key="acc">
-          {[['#f472b6', 34], ['#fde047', 42], ['#fb7185', 50], ['#a78bfa', 58], ['#fdba74', 66]].map(([c, cx], i) => (
-            <g key={i}>
-              <circle cx={cx} cy="20" r="3" fill={c} />
-              <circle cx={cx} cy="20" r="1" fill="#fff7ed" />
-            </g>
-          ))}
-        </g>
-      );
     case 'acc_halo':
       return (
         <g key="acc">
@@ -603,6 +578,224 @@ function renderAccessory(id) {
         </g>
       );
     case 'acc_none':
+    default:
+      return null;
+  }
+}
+
+// Facial hair — drawn over the lower head, under the mouth (which sits at ~y46),
+// so the smile still reads.
+function renderBeard(id) {
+  const HAIR = '#3f2d23';
+  switch (id) {
+    case 'beard_stubble':
+      return <path key="beard" d="M32 44 A18 18 0 0 0 68 44 Q50 60 32 44 Z" fill={HAIR} opacity="0.25" />;
+    case 'beard_mustache':
+      return (
+        <g key="beard">
+          <path d="M42 49 Q46 46 50 49 Q54 46 58 49 Q54 53 50 50 Q46 53 42 49 Z" fill={HAIR} />
+        </g>
+      );
+    case 'beard_goatee':
+      return (
+        <g key="beard">
+          <path d="M44 50 Q50 54 56 50 L54 58 Q50 61 46 58 Z" fill={HAIR} />
+          <path d="M43 49 Q50 47 57 49 Q50 52 43 49 Z" fill={HAIR} />
+        </g>
+      );
+    case 'beard_full':
+      return (
+        <g key="beard">
+          <path d="M31 42 Q33 64 50 66 Q67 64 69 42 Q60 56 50 56 Q40 56 31 42 Z" fill={HAIR} />
+          <path d="M42 49 Q50 47 58 49 Q50 52 42 49 Z" fill={HAIR} />
+        </g>
+      );
+    case 'beard_long':
+      return (
+        <g key="beard">
+          <path d="M32 42 Q34 70 50 76 Q66 70 68 42 Q60 56 50 56 Q40 56 32 42 Z" fill={HAIR} />
+          <path d="M42 49 Q50 47 58 49 Q50 52 42 49 Z" fill={HAIR} />
+        </g>
+      );
+    case 'beard_wizard':
+      return (
+        <g key="beard">
+          <path d="M33 42 Q36 86 50 92 Q64 86 67 42 Q58 56 50 56 Q42 56 33 42 Z" fill="#e2e8f0" />
+          <path d="M42 49 Q50 47 58 49 Q50 53 42 49 Z" fill="#e2e8f0" />
+        </g>
+      );
+    case 'beard_none':
+    default:
+      return null;
+  }
+}
+
+// Makeup — drawn before the face features so eyes/mouth stay on top.
+function renderMakeup(id) {
+  switch (id) {
+    case 'makeup_blush':
+      return (
+        <g key="makeup">
+          <ellipse cx="38" cy="43" rx="4" ry="2.6" fill="#fb7185" opacity="0.5" />
+          <ellipse cx="62" cy="43" rx="4" ry="2.6" fill="#fb7185" opacity="0.5" />
+        </g>
+      );
+    case 'makeup_freckles':
+      return (
+        <g key="makeup" fill="#9a6a44">
+          {[[40, 42], [44, 44], [36, 45], [60, 42], [56, 44], [64, 45]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="0.9" />
+          ))}
+        </g>
+      );
+    case 'makeup_eyeshadow':
+      return (
+        <g key="makeup">
+          <path d="M39 33 Q43 30 47 33" stroke="#a855f7" strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M53 33 Q57 30 61 33" stroke="#a855f7" strokeWidth="2" fill="none" strokeLinecap="round" />
+        </g>
+      );
+    case 'makeup_glam':
+      return (
+        <g key="makeup">
+          <ellipse cx="38" cy="43" rx="4" ry="2.6" fill="#f472b6" opacity="0.5" />
+          <ellipse cx="62" cy="43" rx="4" ry="2.6" fill="#f472b6" opacity="0.5" />
+          {star(64, 31, 2, 'g1', '#fde047')}
+          {star(36, 31, 1.5, 'g2', '#fde047')}
+        </g>
+      );
+    case 'makeup_facepaint':
+      return <g key="makeup">{star(62, 44, 3.4, 'fp', '#ef4444')}</g>;
+    case 'makeup_none':
+    default:
+      return null;
+  }
+}
+
+// Earrings — drawn at the sides of the head (~ear height).
+function renderEarrings(id) {
+  const L = 31, R = 69, y = 44;
+  switch (id) {
+    case 'ear_studs':
+      return (
+        <g key="ear">
+          <circle cx={L} cy={y} r="1.6" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="0.5" />
+          <circle cx={R} cy={y} r="1.6" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="0.5" />
+        </g>
+      );
+    case 'ear_hoops':
+      return (
+        <g key="ear" fill="none" stroke="#eab308" strokeWidth="1.5">
+          <circle cx={L} cy={y + 2} r="3" />
+          <circle cx={R} cy={y + 2} r="3" />
+        </g>
+      );
+    case 'ear_drops':
+      return (
+        <g key="ear" fill="#eab308">
+          <circle cx={L} cy={y} r="1.4" /><rect x={L - 0.8} y={y} width="1.6" height="5" rx="0.8" /><circle cx={L} cy={y + 6} r="1.6" />
+          <circle cx={R} cy={y} r="1.4" /><rect x={R - 0.8} y={y} width="1.6" height="5" rx="0.8" /><circle cx={R} cy={y + 6} r="1.6" />
+        </g>
+      );
+    case 'ear_gems':
+      return (
+        <g key="ear">
+          <path d={`M${L} ${y - 2} L${L + 2} ${y} L${L} ${y + 2} L${L - 2} ${y} Z`} fill="#22d3ee" />
+          <path d={`M${R} ${y - 2} L${R + 2} ${y} L${R} ${y + 2} L${R - 2} ${y} Z`} fill="#22d3ee" />
+        </g>
+      );
+    case 'ear_stars':
+      return (
+        <g key="ear">
+          {star(L, y + 4, 2.4, 'esl', '#fde047')}
+          {star(R, y + 4, 2.4, 'esr', '#fde047')}
+        </g>
+      );
+    case 'ear_none':
+    default:
+      return null;
+  }
+}
+
+// Hats — drawn over the top of the head, above hair/face.
+function renderHat(id) {
+  switch (id) {
+    case 'hat_cap':
+      return (
+        <g key="hat">
+          <path d="M31 26 Q50 8 69 26 Q50 22 31 26 Z" fill="#dc2626" />
+          <path d="M31 26 Q22 28 24 31 L40 28 Z" fill="#b91c1c" />
+          <circle cx="50" cy="13" r="1.6" fill="#fca5a5" />
+        </g>
+      );
+    case 'hat_bucket':
+      return (
+        <g key="hat">
+          <path d="M32 24 Q50 10 68 24 L68 27 L32 27 Z" fill="#84cc16" />
+          <path d="M27 27 Q50 33 73 27 L71 31 Q50 36 29 31 Z" fill="#65a30d" />
+        </g>
+      );
+    case 'hat_beanie':
+      return (
+        <g key="hat">
+          <path d="M30 30 Q30 10 50 10 Q70 10 70 30 Z" fill="#0ea5e9" />
+          <rect x="29" y="28" width="42" height="5" rx="2.5" fill="#0284c7" />
+          <circle cx="50" cy="9" r="3.5" fill="#e0f2fe" />
+        </g>
+      );
+    case 'hat_cowboy':
+      return (
+        <g key="hat">
+          <path d="M22 27 Q50 36 78 27 Q70 31 50 31 Q30 31 22 27 Z" fill="#92400e" />
+          <path d="M34 27 Q34 12 50 12 Q66 12 66 27 Q50 23 34 27 Z" fill="#b45309" />
+          <rect x="34" y="23" width="32" height="3" fill="#78350f" />
+        </g>
+      );
+    case 'hat_chef':
+      return (
+        <g key="hat">
+          <rect x="37" y="20" width="26" height="8" rx="1" fill="#f8fafc" />
+          <circle cx="42" cy="14" r="7" fill="#f8fafc" />
+          <circle cx="58" cy="14" r="7" fill="#f8fafc" />
+          <circle cx="50" cy="11" r="8" fill="#f8fafc" />
+        </g>
+      );
+    case 'hat_tophat':
+      return (
+        <g key="hat">
+          <rect x="30" y="20" width="40" height="4" rx="1" fill="#111827" />
+          <rect x="38" y="2" width="24" height="20" rx="1" fill="#111827" />
+          <rect x="38" y="15" width="24" height="4" fill="#dc2626" />
+        </g>
+      );
+    case 'hat_wizard':
+      return (
+        <g key="hat">
+          <path d="M30 28 L50 -2 L70 28 Q50 22 30 28 Z" fill="#5b21b6" />
+          <path d="M26 28 Q50 34 74 28 L72 31 Q50 37 28 31 Z" fill="#4c1d95" />
+          {star(50, 14, 2.4, 'wh', '#fde047')}
+        </g>
+      );
+    case 'hat_flowers':
+      return (
+        <g key="hat">
+          {[['#f472b6', 34], ['#fde047', 42], ['#fb7185', 50], ['#a78bfa', 58], ['#fdba74', 66]].map(([c, cx], i) => (
+            <g key={i}>
+              <circle cx={cx} cy="20" r="3" fill={c} />
+              <circle cx={cx} cy="20" r="1" fill="#fff7ed" />
+            </g>
+          ))}
+        </g>
+      );
+    case 'hat_party':
+      return (
+        <g key="hat">
+          <path d="M50 0 L40 20 L60 20 Z" fill="#ec4899" />
+          <path d="M50 0 L45 10 L55 10 Z" fill="#f9a8d4" />
+          <circle cx="50" cy="1" r="3" fill="#fde047" />
+        </g>
+      );
+    case 'hat_none':
     default:
       return null;
   }
@@ -744,8 +937,12 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       <g clipPath={`url(#${uid}-bgclip)`}>{renderBackground(a.background, uid)}</g>
       {renderBase(baseItem, uid)}
       {renderOutfit(a.outfit)}
+      {renderMakeup(a.makeup)}
+      {renderBeard(a.beard)}
       {renderFace(a.face)}
+      {renderEarrings(a.earrings)}
       {renderAccessory(a.accessory)}
+      {renderHat(a.hat)}
       {renderPet(a.pet)}
       {crown && renderCrown()}
     </svg>
