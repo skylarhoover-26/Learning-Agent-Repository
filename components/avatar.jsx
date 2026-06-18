@@ -94,19 +94,104 @@ function renderBackground(id, uid) {
           ))}
         </g>
       );
+    case 'bg_ocean':
+      return (
+        <g key="bg">
+          <defs>
+            <linearGradient id={`${uid}-ocean`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#67e8f9" />
+              <stop offset="100%" stopColor="#0e7490" />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" fill={`url(#${uid}-ocean)`} />
+          <path d="M0 72 Q25 66 50 72 T100 72" fill="none" stroke="#a5f3fc" strokeWidth="2" opacity="0.7" />
+          <path d="M0 84 Q25 78 50 84 T100 84" fill="none" stroke="#a5f3fc" strokeWidth="2" opacity="0.5" />
+        </g>
+      );
+    case 'bg_aurora':
+      return (
+        <g key="bg">
+          <defs>
+            <linearGradient id={`${uid}-aurora`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#1e293b" />
+              <stop offset="45%" stopColor="#15803d" />
+              <stop offset="75%" stopColor="#7e22ce" />
+              <stop offset="100%" stopColor="#1e293b" />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" fill={`url(#${uid}-aurora)`} />
+          {[[20, 14], [70, 10], [45, 22]].map(([cx, cy], i) => <circle key={i} cx={cx} cy={cy} r="1" fill="#fef9c3" />)}
+        </g>
+      );
+    case 'bg_galaxy':
+      return (
+        <g key="bg">
+          <defs>
+            <radialGradient id={`${uid}-galaxy`} cx="35%" cy="30%" r="90%">
+              <stop offset="0%" stopColor="#4c1d95" />
+              <stop offset="100%" stopColor="#0b1020" />
+            </radialGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" fill={`url(#${uid}-galaxy)`} />
+          {[[14, 18], [82, 14], [30, 64], [88, 72], [60, 28], [10, 84], [70, 90]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r={i % 2 ? 1.2 : 0.8} fill="#fde68a" />
+          ))}
+          <circle cx="78" cy="80" r="6" fill="#f59e0b" opacity="0.9" />
+        </g>
+      );
+    case 'bg_circuit':
+      return (
+        <g key="bg">
+          <rect x="0" y="0" width="100" height="100" fill="#052e16" />
+          <g stroke="#22c55e" strokeWidth="1" fill="none" opacity="0.6">
+            <path d="M10 20 H40 V50 H70" />
+            <path d="M90 30 H60 V70 H30 V90" />
+            <path d="M20 80 H50" />
+          </g>
+          {[[40, 50], [70, 50], [60, 70], [30, 70], [50, 80]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="1.6" fill="#4ade80" />
+          ))}
+        </g>
+      );
+    case 'bg_rainbow':
+      return (
+        <g key="bg">
+          <defs>
+            <linearGradient id={`${uid}-rainbow`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#f87171" />
+              <stop offset="25%" stopColor="#fbbf24" />
+              <stop offset="50%" stopColor="#4ade80" />
+              <stop offset="75%" stopColor="#38bdf8" />
+              <stop offset="100%" stopColor="#a78bfa" />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" fill={`url(#${uid}-rainbow)`} />
+        </g>
+      );
     case 'bg_none':
     default:
       return null;
   }
 }
 
-function renderBase(color) {
+function renderBase(baseItem, uid) {
+  const solid = baseItem?.color || '#6366f1';
+  const fill = baseItem?.gradient ? `url(#${uid}-base)` : solid;
   return (
     <g key="base">
+      {baseItem?.gradient && (
+        <defs>
+          <linearGradient id={`${uid}-base`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#a78bfa" />
+            <stop offset="50%" stopColor="#22d3ee" />
+            <stop offset="100%" stopColor="#f472b6" />
+          </linearGradient>
+        </defs>
+      )}
       {/* torso */}
-      <path d="M28 100 L28 74 Q28 56 50 56 Q72 56 72 74 L72 100 Z" fill={color} />
+      <path d="M28 100 L28 74 Q28 56 50 56 Q72 56 72 74 L72 100 Z" fill={fill} />
       {/* head */}
-      <circle cx="50" cy="38" r="20" fill={color} />
+      <circle cx="50" cy="38" r="20" fill={fill} />
     </g>
   );
 }
@@ -362,6 +447,56 @@ function renderFace(id) {
           {smile}
         </g>
       );
+    case 'face_grin':
+      return (
+        <g key="face">
+          <circle cx={eyeL} cy={eyeY} r="2.8" fill={INK} />
+          <circle cx={eyeR} cy={eyeY} r="2.8" fill={INK} />
+          <path d="M42 45 Q50 56 58 45 Z" fill={INK} />
+          <path d="M44 46 Q50 49 56 46" fill="#fff" />
+        </g>
+      );
+    case 'face_cyborg':
+      return (
+        <g key="face">
+          <circle cx={eyeL} cy={eyeY} r="2.6" fill={INK} />
+          <rect x={eyeR - 3} y={eyeY - 2} width="6" height="4" rx="1" fill="#06b6d4" />
+          <line x1="60" y1="29" x2="66" y2="27" stroke={INK} strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="45" y1="47" x2="55" y2="47" stroke={INK} strokeWidth="2.2" strokeLinecap="round" />
+        </g>
+      );
+    case 'face_zen':
+      return (
+        <g key="face">
+          <path d="M40 37 Q43 34 46 37" stroke={INK} strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M54 37 Q57 34 60 37" stroke={INK} strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M45 46 Q50 49 55 46" stroke={INK} strokeWidth="2" fill="none" strokeLinecap="round" />
+        </g>
+      );
+    case 'face_hearts': {
+      const heart = (cx, key) => (
+        <path
+          key={key}
+          d={`M${cx} ${eyeY + 3} C ${cx - 4} ${eyeY - 2}, ${cx - 1} ${eyeY - 4}, ${cx} ${eyeY - 1} C ${cx + 1} ${eyeY - 4}, ${cx + 4} ${eyeY - 2}, ${cx} ${eyeY + 3} Z`}
+          fill="#ef4444"
+        />
+      );
+      return (
+        <g key="face">
+          {heart(eyeL, 'hl')}
+          {heart(eyeR, 'hr')}
+          {smile}
+        </g>
+      );
+    }
+    case 'face_cosmic':
+      return (
+        <g key="face">
+          {star(eyeL, eyeY, 4, 'cl', '#06b6d4')}
+          {star(eyeR, eyeY, 4, 'cr', '#a855f7')}
+          {smile}
+        </g>
+      );
     case 'face_happy':
     default:
       return (
@@ -416,6 +551,57 @@ function renderAccessory(id) {
           <circle cx="50" cy="9" r="3.5" fill="#e0f2fe" />
         </g>
       );
+    case 'acc_visor':
+      return (
+        <g key="acc">
+          <rect x="32" y="31" width="36" height="8" rx="4" fill="#0891b2" opacity="0.55" />
+          <rect x="32" y="31" width="36" height="8" rx="4" fill="none" stroke="#06b6d4" strokeWidth="1.5" />
+          <line x1="36" y1="35" x2="64" y2="33" stroke="#a5f3fc" strokeWidth="1" opacity="0.8" />
+        </g>
+      );
+    case 'acc_headset':
+      return (
+        <g key="acc">
+          <path d="M30 36 Q30 16 50 16 Q70 16 70 36" fill="none" stroke="#1f2937" strokeWidth="3" />
+          <rect x="26" y="34" width="8" height="12" rx="3" fill="#1f2937" />
+          <rect x="66" y="34" width="8" height="12" rx="3" fill="#1f2937" />
+          <path d="M30 44 Q26 52 36 52" fill="none" stroke="#1f2937" strokeWidth="2" />
+          <circle cx="37" cy="52" r="2" fill="#ef4444" />
+        </g>
+      );
+    case 'acc_tophat':
+      return (
+        <g key="acc">
+          <rect x="30" y="20" width="40" height="4" rx="1" fill="#111827" />
+          <rect x="38" y="2" width="24" height="20" rx="1" fill="#111827" />
+          <rect x="38" y="15" width="24" height="4" fill="#dc2626" />
+        </g>
+      );
+    case 'acc_flowers':
+      return (
+        <g key="acc">
+          {[['#f472b6', 34], ['#fde047', 42], ['#fb7185', 50], ['#a78bfa', 58], ['#fdba74', 66]].map(([c, cx], i) => (
+            <g key={i}>
+              <circle cx={cx} cy="20" r="3" fill={c} />
+              <circle cx={cx} cy="20" r="1" fill="#fff7ed" />
+            </g>
+          ))}
+        </g>
+      );
+    case 'acc_halo':
+      return (
+        <g key="acc">
+          <ellipse cx="50" cy="12" rx="14" ry="4" fill="none" stroke="#fde047" strokeWidth="2.5" />
+          <ellipse cx="50" cy="12" rx="14" ry="4" fill="none" stroke="#fef9c3" strokeWidth="1" opacity="0.8" />
+        </g>
+      );
+    case 'acc_helmet':
+      return (
+        <g key="acc">
+          <circle cx="50" cy="38" r="24" fill="#bae6fd" opacity="0.25" stroke="#e2e8f0" strokeWidth="2.5" />
+          <path d="M34 26 Q40 22 46 24" fill="none" stroke="#fff" strokeWidth="2" opacity="0.8" />
+        </g>
+      );
     case 'acc_none':
     default:
       return null;
@@ -465,6 +651,62 @@ function renderPet(id) {
           <circle cx="87" cy="83" r="1.5" fill={INK} />
         </g>
       );
+    case 'pet_owl':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="86" rx="8" ry="9" fill="#a16207" />
+          <path d="M77 79 L79 74 L82 79 Z" fill="#854d0e" />
+          <path d="M91 79 L89 74 L86 79 Z" fill="#854d0e" />
+          <circle cx="81" cy="84" r="2.4" fill="#fef3c7" />
+          <circle cx="87" cy="84" r="2.4" fill="#fef3c7" />
+          <circle cx="81" cy="84" r="1.1" fill={INK} />
+          <circle cx="87" cy="84" r="1.1" fill={INK} />
+          <path d="M84 87 L82 89 L86 89 Z" fill="#f59e0b" />
+        </g>
+      );
+    case 'pet_penguin':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="86" rx="7.5" ry="9" fill="#1f2937" />
+          <ellipse cx="84" cy="88" rx="4.5" ry="6" fill="#f8fafc" />
+          <circle cx="81.5" cy="83" r="1.2" fill="#f8fafc" />
+          <circle cx="86.5" cy="83" r="1.2" fill="#f8fafc" />
+          <circle cx="81.5" cy="83" r="0.6" fill={INK} />
+          <circle cx="86.5" cy="83" r="0.6" fill={INK} />
+          <path d="M84 85 L82 87 L86 87 Z" fill="#f59e0b" />
+        </g>
+      );
+    case 'pet_phoenix':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="86" rx="7" ry="8" fill="#f97316" />
+          <path d="M77 84 L70 78 L75 88 Z" fill="#ef4444" />
+          <path d="M91 84 L98 78 L93 88 Z" fill="#ef4444" />
+          <path d="M84 78 L82 72 L86 72 Z" fill="#fbbf24" />
+          <circle cx="82" cy="85" r="1.1" fill={INK} />
+          <circle cx="86" cy="85" r="1.1" fill={INK} />
+        </g>
+      );
+    case 'pet_unicorn':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="86" rx="8" ry="8" fill="#fce7f3" />
+          <path d="M81 79 L80 73 L83 79 Z" fill="#f9a8d4" />
+          <path d="M84 78 L84 70 L86 78 Z" fill="#fde047" />
+          <path d="M88 80 Q94 78 92 86" fill="none" stroke="#a78bfa" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="82" cy="85" r="1.1" fill={INK} />
+          <circle cx="87" cy="85" r="1.1" fill={INK} />
+        </g>
+      );
+    case 'pet_ufo':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="90" rx="11" ry="3.5" fill="#64748b" />
+          <ellipse cx="84" cy="86" rx="6" ry="5" fill="#94a3b8" />
+          <path d="M78 90 Q84 98 90 90 Z" fill="#22c55e" opacity="0.4" />
+          {[80, 84, 88].map((cx) => <circle key={cx} cx={cx} cy="90" r="1" fill="#fde047" />)}
+        </g>
+      );
     case 'pet_none':
     default:
       return null;
@@ -483,7 +725,7 @@ function renderCrown() {
 
 export default function Avatar({ avatar, size = 64, crown = false, className = '', title }) {
   const a = normalizeAvatar(avatar);
-  const color = getItem(a.base)?.color || '#6366f1';
+  const baseItem = getItem(a.base);
   const uid = useId();
   return (
     <svg
@@ -500,7 +742,7 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
         </clipPath>
       </defs>
       <g clipPath={`url(#${uid}-bgclip)`}>{renderBackground(a.background, uid)}</g>
-      {renderBase(color)}
+      {renderBase(baseItem, uid)}
       {renderOutfit(a.outfit)}
       {renderFace(a.face)}
       {renderAccessory(a.accessory)}
