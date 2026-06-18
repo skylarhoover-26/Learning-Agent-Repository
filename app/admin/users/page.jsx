@@ -127,21 +127,10 @@ export default function AdminUsersPage() {
           ? { ...p, totalXp: result.totalXp ?? p.totalXp, level: result.level ?? p.level }
           : p))
         .sort((a, b) => b.totalXp - a.totalXp || (a.name || '').localeCompare(b.name || '')));
-      // Quietly reconcile the full detail (event list, badges) once the write has
-      // propagated — without blanking the panel.
-      const reconcileId = selected;
-      setTimeout(async () => {
-        try {
-          const r = await fetch(`/api/admin/user?learnerId=${encodeURIComponent(reconcileId)}`);
-          if (r.ok) {
-            const fresh = await r.json();
-            setDetail((cur) => (cur && cur.learnerId === reconcileId ? fresh : cur));
-          }
-        } catch {
-          // best-effort
-        }
-        loadPeople();
-      }, 1800);
+      // NOTE: we intentionally do NOT re-read from the blob after a grant. The
+      // store is eventually-consistent and briefly serves a stale snapshot,
+      // which would replace the correct optimistic numbers with old events. The
+      // server response is authoritative; storage catches up on its own.
     } catch {
       setGrantStatus('error');
     } finally {
