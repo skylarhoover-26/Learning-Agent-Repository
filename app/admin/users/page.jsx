@@ -103,24 +103,30 @@ export default function AdminUsersPage() {
       });
       if (!res.ok) throw new Error();
       const result = await res.json();
+      const appliedAmt = result.amount ?? amt;
       setGrantStatus('saved');
       setGrantedTotal(result.totalXp ?? null);
       const reasonUsed = grantReason;
       setGrantAmount('');
       setGrantReason('');
-      // Reflect the new total immediately from the server response, then refresh
-      // from the blob in the background.
+      // Reflect the new total immediately from the AUTHORITATIVE server response.
+      // We deliberately do NOT re-fetch from the blob here — the write hasn't
+      // propagated yet and a stale read would overwrite the correct value.
       setDetail((d) => (d ? {
         ...d,
         totalXp: result.totalXp ?? d.totalXp,
         level: result.level ?? d.level,
         xpEvents: [
-          { id: `xp_admin_${Date.now()}`, source: 'admin_grant', amount: amt, meta: { by: 'you', reason: reasonUsed } },
+          { id: `xp_admin_${Date.now()}`, source: 'admin_grant', amount: appliedAmt, meta: { by: 'you', reason: reasonUsed } },
           ...(d.xpEvents || []),
         ],
       } : d));
-      loadDetail(selected);
-      loadPeople();
+      // Update the left list in place and re-sort it the same way the server does.
+      setPeople((prev) => prev
+        .map((p) => (p.learnerId === selected
+          ? { ...p, totalXp: result.totalXp ?? p.totalXp, level: result.level ?? p.level }
+          : p))
+        .sort((a, b) => b.totalXp - a.totalXp || (a.name || '').localeCompare(b.name || '')));
     } catch {
       setGrantStatus('error');
     } finally {
