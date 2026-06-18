@@ -327,7 +327,7 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
             {objectives.map((o) => (
               <li key={o.id} className="flex items-start gap-2 text-sm text-ink dark:text-slate-300">
                 <Check className="w-4 h-4 text-brand mt-0.5 shrink-0" />
-                <span>{o.text}{o.level ? <span className="text-slate-400"> · {o.level}</span> : null}</span>
+                <span>{o.text}</span>
               </li>
             ))}
           </ul>
