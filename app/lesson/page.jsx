@@ -7,6 +7,7 @@ import PageHeader from '@/components/page-header';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
 import LessonQuiz from '@/components/lesson-quiz';
 import PlanLessonPlayer from '@/components/plan-lesson-player';
+import { QUESTS } from '@/lib/quest-data';
 import { emitXp } from '@/lib/xp-bus';
 import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete } from '@/lib/progression';
@@ -30,10 +31,18 @@ import SurpriseWin from '@/components/surprise-win';
 // can hit enter to kick off an interactive, personalized scenario.
 const SCENARIO_PROMPT = "I'd like to try a scenario based on my work.";
 
+// Small numbered badge for the picker's step headers.
+function StepNum({ n }) {
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand text-white text-[11px] font-bold shrink-0">{n}</span>
+  );
+}
+
 const FORMAT_META = {
   quick_tip: { title: 'Quick Tip', subtitle: 'Pick a topic — 60-second insight' },
   standard: { title: 'Quick Lesson', subtitle: 'Pick a topic — 3-5 minute hands-on lesson' },
   deep_dive: { title: 'Deep Dive', subtitle: 'Pick a topic — 15-20 minute thorough lesson' },
+  project_quest: { title: 'Project Quest', subtitle: 'Build something real, guided start to finish' },
 };
 
 function getSavedFormat() {
@@ -609,8 +618,8 @@ function LessonContent() {
         </div>
 
         <div data-tour="page-lesson" className="mb-8">
-          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-            How deep do you want to go?
+          <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
+            <StepNum n={1} /> How deep do you want to go?
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
@@ -639,29 +648,32 @@ function LessonContent() {
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{f.desc}</p>
               </button>
             ))}
-            {/* Project Quest isn't a lesson depth — it's a build-something-real path. */}
-            <Link
-              href="/quests"
-              className="group p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-left transition-all hover:border-cta-300 hover:shadow-card"
+            {/* Project Quest is a depth too — selecting it shows the curated
+                quests right here instead of jumping to another page. */}
+            <button
+              onClick={() => selectFormat('project_quest')}
+              className={`group p-4 rounded-xl border text-left transition-all ${
+                format === 'project_quest'
+                  ? 'bg-cta-50 dark:bg-slate-700 border-cta-300 ring-2 ring-cta-100 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card'
+              }`}
             >
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-cta-50 text-cta-700 dark:bg-slate-700 dark:text-cta-400">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${format === 'project_quest' ? 'bg-cta text-ink' : 'bg-cta-50 text-cta-700 dark:bg-slate-700 dark:text-cta-400'}`}>
                   <Trophy className="w-4 h-4" />
                 </div>
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">20-60 min</span>
               </div>
-              <div className="font-bold text-ink dark:text-slate-200 flex items-center gap-1">
-                Project Quest
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-0.5 transition-all" />
-              </div>
+              <div className="font-bold text-ink dark:text-slate-200">Project Quest</div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Build something real start to finish, guided the whole way.</p>
-            </Link>
+            </button>
           </div>
         </div>
 
+        {format !== 'project_quest' && (
         <div data-tour="lesson-mode" className="mb-8">
-          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-            How do you want to learn?
+          <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
+            <StepNum n={2} /> How do you want to learn?
           </h3>
           <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
             {[
@@ -689,10 +701,43 @@ function LessonContent() {
               : 'Pick a topic below for a hands-on lesson you work through step by step.'}
           </p>
         </div>
+        )}
 
+        {/* Project Quest: show the curated quests right here (no page jump). */}
+        {format === 'project_quest' && (
+          <div className="mb-8">
+            <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
+              <StepNum n={2} /> Pick a project
+            </h3>
+            <div className="space-y-3">
+              {QUESTS.map((q) => (
+                <Link
+                  key={q.id}
+                  href={`/quests/${q.id}`}
+                  className="group flex items-start gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card transition-all"
+                >
+                  <span className="text-2xl mt-0.5 shrink-0">{q.icon || '🏆'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-ink dark:text-slate-200">{q.title}</div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{q.description}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                      {q.difficulty && <span>{q.difficulty}</span>}
+                      {q.duration && <span>· {q.duration}</span>}
+                      {q.steps?.length && <span>· {q.steps.length} steps</span>}
+                      {q.xpReward && <span>· {q.xpReward} XP</span>}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-1 transition-all" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {format !== 'project_quest' && (<>
         <div data-tour="lesson-topics" className="mb-8">
-          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-            Suggested for you
+          <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
+            <StepNum n={3} /> Pick a topic
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => (
@@ -745,6 +790,7 @@ function LessonContent() {
             </button>
           </div>
         </div>
+        </>)}
       </main>
       {videoTopic && (
         <VideoLessonPlayer

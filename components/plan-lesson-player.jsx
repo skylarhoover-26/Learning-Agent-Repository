@@ -106,6 +106,12 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
         setPlan(data);
         setSteps(data.steps);
         setLoading(false);
+        // Hidden self-QA for admins (never shown to the learner).
+        const toolLabel = match?.label || owned[0]?.label || '';
+        fetch('/api/lesson/qa', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: data, topic, format, tool: toolLabel }),
+        }).catch(() => {});
       } catch (err) {
         if (active) { setError(err.message); setLoading(false); }
       }

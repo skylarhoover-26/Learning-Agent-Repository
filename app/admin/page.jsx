@@ -6,7 +6,7 @@ import Link from 'next/link';
 import PageHeader from '../../components/page-header';
 import {
   Shield, Activity, Users, Zap, FlaskConical, SlidersHorizontal,
-  Wrench, Bell, UserCog, Sparkles,
+  Wrench, Bell, UserCog, Sparkles, ClipboardCheck,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 
@@ -15,6 +15,7 @@ import BookLoader from '@/components/book-loader';
 const ADMIN_TOOLS = [
   { href: '/admin/users', icon: Users, title: 'People & XP', desc: "See anyone's level, badges, lessons, and XP history — and grant or deduct XP" },
   { href: '/admin/activity-log', icon: Activity, title: 'Activity Log', desc: 'Review all AI interactions, inputs, and outputs across users' },
+  { href: '/admin/lesson-qa', icon: ClipboardCheck, title: 'Lesson QA', desc: 'Hidden quality review of generated lessons — scores, issues, who got them' },
   { href: '/admin/lesson-preview', icon: FlaskConical, title: 'Lesson Content Preview', desc: 'Generate and review what a lesson produces for any topic and depth' },
   { href: '/admin/skill-levels', icon: SlidersHorizontal, title: 'Skill Levels', desc: "Set each AI skill's difficulty to control who gets recommended it" },
   { href: '/admin/ai-tools', icon: Wrench, title: 'AI Tools', desc: 'Edit what each AI tool is good for' },
