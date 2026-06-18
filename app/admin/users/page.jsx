@@ -53,6 +53,7 @@ export default function AdminUsersPage() {
   const [grantReason, setGrantReason] = useState('');
   const [granting, setGranting] = useState(false);
   const [grantStatus, setGrantStatus] = useState(null);
+  const [grantedTotal, setGrantedTotal] = useState(null);
 
   useEffect(() => {
     fetch('/api/admin-check').then((r) => r.json()).then((d) => setAllowed(!!d.isAdmin)).catch(() => setAllowed(false));
@@ -103,6 +104,7 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error();
       const result = await res.json();
       setGrantStatus('saved');
+      setGrantedTotal(result.totalXp ?? null);
       const reasonUsed = grantReason;
       setGrantAmount('');
       setGrantReason('');
@@ -241,7 +243,11 @@ export default function AdminUsersPage() {
                       Grant
                     </button>
                   </div>
-                  {grantStatus === 'saved' && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><Check className="w-3 h-3" /> XP updated.</p>}
+                  {grantStatus === 'saved' && (
+                    <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Updated{grantedTotal != null ? ` — now at ${grantedTotal.toLocaleString()} XP` : ''}.
+                    </p>
+                  )}
                   {grantStatus === 'error' && <p className="text-xs text-red-600 mt-2">Couldn&apos;t grant XP. Try again.</p>}
                   <p className="text-[11px] text-slate-400 mt-2">Use a negative number to deduct. Grants are recorded with your name.</p>
                 </div>
