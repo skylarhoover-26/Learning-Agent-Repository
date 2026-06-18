@@ -58,14 +58,24 @@ export async function POST(request) {
       const response = await getClient().messages.create({
         model: MODELS.haiku,
         max_tokens: 400,
-        system: `You grade written responses for a workplace AI learning platform.
-You receive source material and the learner's written response.
-Score 0-100 based on: ${criteria}.
-Return ONLY JSON: {"score": int, "strength": "one sentence praise", "improvement": "one sentence specific suggestion"}.`,
+        system: `You grade a learner's attempt at a hands-on practice exercise on a workplace AI learning platform. Be fair and encouraging — this is practice, not a high-stakes test.
+
+THE TASK THE LEARNER WAS GIVEN (grade against THIS):
+"${source}"
+
+GRADE ONLY ON: ${criteria}
+
+RULES:
+- Judge only whether the response reasonably does what THE TASK asked. Do NOT penalize for anything the task did not explicitly require.
+- If the task invited the learner to use their own example or scenario, ACCEPT their own content — never expect quotes from a specific document or any material they were not given.
+- Give partial credit for a genuine, on-task attempt. A solid attempt should land around or above the pass mark. Reserve low scores (under 40) for responses that are off-topic, empty, or clearly ignore the task.
+- Keep feedback specific, kind, and actionable.
+
+Return ONLY JSON: {"score": int 0-100, "strength": "one sentence praise", "improvement": "one sentence specific, encouraging suggestion"}.`,
         messages: [
           {
             role: 'user',
-            content: `Source material:\n"${source}"\n\nLearner's response:\n"${trimmed}"\n\nGrade it.`,
+            content: `The learner's response:\n"${trimmed}"\n\nGrade it against the task and criteria above.`,
           },
         ],
       });
