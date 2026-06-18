@@ -10,7 +10,7 @@ import PlanLessonPlayer from '@/components/plan-lesson-player';
 import { QUESTS } from '@/lib/quest-data';
 import { emitXp } from '@/lib/xp-bus';
 import { useProgression } from '@/components/progression-provider';
-import { onLessonComplete } from '@/lib/progression';
+import { onLessonComplete, getLessonHistory } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
 import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
 import BookLoader from '@/components/book-loader';
@@ -227,15 +227,23 @@ function LessonContent() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Personalized "Suggested for you" topics, generated from the learner's profile.
-  // Cached per day + profile so we don't regenerate on every visit.
+  // Cached per day + profile + lessons-completed count, and keyed on the picker
+  // view, so the list refreshes after someone finishes a lesson and the
+  // generator is told which topics they've already done (keeps it fresh).
   const [suggested, setSuggested] = useState(null);
-  const suggestionsFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (initialTopic || suggestionsFetchedRef.current || !profile) return;
-    suggestionsFetchedRef.current = true;
+    if (initialTopic || !profile || view !== 'picker') return;
 
-    const sig = `${profile.department || ''}|${profile.tier || ''}|${(profile.top_tasks || []).join(',')}`;
+    let history = [];
+    try { history = getLessonHistory(resolveLearnerId(profile)) || []; } catch { history = []; }
+    const completedTopics = history.map((l) => l.topic).filter(Boolean);
+    const recentCompleted = completedTopics.slice(-12);
+    const lessonCount = history.length;
+
+    // lessonCount in the signature means finishing a lesson invalidates the
+    // cached list, so the next time they land on the picker it regenerates.
+    const sig = `${profile.department || ''}|${profile.tier || ''}|${(profile.top_tasks || []).join(',')}|n${lessonCount}`;
     const today = new Date().toISOString().slice(0, 10);
     const cacheKey = 'lesson_suggested_topics';
 
@@ -249,7 +257,11 @@ function LessonContent() {
       // ignore cache read errors
     }
 
-    fetch('/api/lesson/suggestions', { method: 'POST' })
+    fetch('/api/lesson/suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exclude: recentCompleted }),
+    })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
       .then((data) => {
         if (Array.isArray(data.suggestions) && data.suggestions.length) {
@@ -264,7 +276,7 @@ function LessonContent() {
       .catch(() => {
         // fall back to the static SUGGESTED_TOPICS already shown
       });
-  }, [profile, initialTopic]);
+  }, [profile, initialTopic, view]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function selectFormat(key) {
     setFormat(key);
