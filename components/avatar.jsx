@@ -10,12 +10,12 @@ import { normalizeAvatar, getItem } from '@/lib/avatar-catalog';
 
 const INK = '#1f2937';
 
-function star(cx, cy, r, key) {
+function star(cx, cy, r, key, fill = INK) {
   const p = [
     [cx, cy - r], [cx + r * 0.32, cy - r * 0.32], [cx + r, cy], [cx + r * 0.32, cy + r * 0.32],
     [cx, cy + r], [cx - r * 0.32, cy + r * 0.32], [cx - r, cy], [cx - r * 0.32, cy - r * 0.32],
   ].map((pt) => pt.join(',')).join(' ');
-  return <polygon key={key} points={p} fill={INK} />;
+  return <polygon key={key} points={p} fill={fill} />;
 }
 
 // Background scene — the bottom layer, fills the whole viewBox. `uid` namespaces
@@ -111,35 +111,201 @@ function renderBase(color) {
   );
 }
 
+const TORSO = 'M28 100 L28 74 Q28 56 50 56 Q72 56 72 74 L72 100 Z';
+const NECK = 'M44 57 Q50 63 56 57 L56 60 Q50 65 44 60 Z';
+
+// A plain tee in any color (with a subtle darker neckline).
+function tee(color, collar = '#00000022') {
+  return (
+    <g key="outfit">
+      <path d={TORSO} fill={color} />
+      <path d={NECK} fill={collar} />
+    </g>
+  );
+}
+
 function renderOutfit(id) {
-  const torso = 'M28 100 L28 74 Q28 56 50 56 Q72 56 72 74 L72 100 Z';
   switch (id) {
+    case 'outfit_tee_red':    return tee('#ef4444');
+    case 'outfit_tee_green':  return tee('#22c55e');
+    case 'outfit_tee_yellow': return tee('#facc15');
+
     case 'outfit_hoodie':
       return (
         <g key="outfit">
-          <path d={torso} fill="#475569" />
+          <path d={TORSO} fill="#475569" />
           <path d="M38 58 Q50 50 62 58 L62 64 Q50 58 38 64 Z" fill="#334155" />
           <line x1="46" y1="62" x2="46" y2="74" stroke="#e2e8f0" strokeWidth="1.5" />
           <line x1="54" y1="62" x2="54" y2="74" stroke="#e2e8f0" strokeWidth="1.5" />
         </g>
       );
+    case 'outfit_striped':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#e5e7eb" />
+          {[78, 86, 94].map((y) => (
+            <line key={y} x1="28" y1={y} x2="72" y2={y} stroke="#1e3a8a" strokeWidth="4" />
+          ))}
+          <path d={NECK} fill="#00000022" />
+        </g>
+      );
+    case 'outfit_polo':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#0ea5e9" />
+          <path d="M44 57 L50 63 L42 64 Z" fill="#0284c7" />
+          <path d="M56 57 L50 63 L58 64 Z" fill="#0284c7" />
+          <line x1="50" y1="63" x2="50" y2="78" stroke="#0284c7" strokeWidth="1.5" />
+          <circle cx="50" cy="68" r="1" fill="#e0f2fe" />
+          <circle cx="50" cy="74" r="1" fill="#e0f2fe" />
+        </g>
+      );
     case 'outfit_blazer':
       return (
         <g key="outfit">
-          <path d={torso} fill="#1e293b" />
+          <path d={TORSO} fill="#1e293b" />
           <path d="M50 58 L42 100 L58 100 Z" fill="#f8fafc" />
           <path d="M50 58 L40 74 L46 100 L50 70 Z" fill="#0f172a" />
           <path d="M50 58 L60 74 L54 100 L50 70 Z" fill="#0f172a" />
           <line x1="50" y1="72" x2="50" y2="96" stroke="#334155" strokeWidth="1" />
         </g>
       );
+    case 'outfit_vneck':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#8b5cf6" />
+          <path d="M43 57 L50 70 L57 57 Z" fill="#00000022" />
+        </g>
+      );
     case 'outfit_overalls':
       return (
         <g key="outfit">
-          <path d={torso} fill="#2563eb" />
+          <path d={TORSO} fill="#2563eb" />
           <rect x="40" y="58" width="5" height="16" fill="#1d4ed8" />
           <rect x="55" y="58" width="5" height="16" fill="#1d4ed8" />
           <rect x="43" y="78" width="14" height="10" rx="1.5" fill="#1d4ed8" />
+        </g>
+      );
+    case 'outfit_flannel':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#b91c1c" />
+          {[78, 90].map((y) => <line key={`h${y}`} x1="28" y1={y} x2="72" y2={y} stroke="#7f1d1d" strokeWidth="3" />)}
+          {[40, 60].map((x) => <line key={`v${x}`} x1={x} y1="74" x2={x} y2="100" stroke="#7f1d1d" strokeWidth="3" />)}
+          {[34, 50, 66].map((x) => <line key={`w${x}`} x1={x} y1="74" x2={x} y2="100" stroke="#fca5a5" strokeWidth="1" />)}
+          <path d={NECK} fill="#00000022" />
+        </g>
+      );
+    case 'outfit_turtleneck':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#0f766e" />
+          <rect x="42" y="50" width="16" height="10" rx="3" fill="#0f766e" stroke="#115e59" strokeWidth="1" />
+        </g>
+      );
+    case 'outfit_varsity':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#1e3a8a" />
+          <rect x="46" y="74" width="8" height="26" fill="#fde68a" />
+          <rect x="40" y="56" width="20" height="4" rx="2" fill="#fde68a" />
+          {star(50, 86, 4, 'v', '#fde68a')}
+        </g>
+      );
+    case 'outfit_denim':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#3b82f6" />
+          <path d="M44 57 L50 64 L43 66 Z" fill="#2563eb" />
+          <path d="M56 57 L50 64 L57 66 Z" fill="#2563eb" />
+          <line x1="50" y1="64" x2="50" y2="100" stroke="#1d4ed8" strokeWidth="1.5" />
+          <rect x="34" y="78" width="8" height="7" rx="1" fill="none" stroke="#1d4ed8" strokeWidth="1" />
+          <rect x="58" y="78" width="8" height="7" rx="1" fill="none" stroke="#1d4ed8" strokeWidth="1" />
+        </g>
+      );
+    case 'outfit_labcoat':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#f8fafc" />
+          <path d="M50 58 L42 100 L46 100 L50 66 Z" fill="#e2e8f0" />
+          <path d="M50 58 L58 100 L54 100 L50 66 Z" fill="#e2e8f0" />
+          <rect x="56" y="80" width="9" height="9" rx="1" fill="none" stroke="#94a3b8" strokeWidth="1" />
+          <line x1="62" y1="79" x2="62" y2="85" stroke="#2563eb" strokeWidth="1.5" />
+          <circle cx="50" cy="76" r="1" fill="#94a3b8" />
+          <circle cx="50" cy="84" r="1" fill="#94a3b8" />
+        </g>
+      );
+    case 'outfit_suit':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#374151" />
+          <path d="M50 58 L44 100 L56 100 Z" fill="#f8fafc" />
+          <path d="M50 58 L41 76 L47 100 L50 70 Z" fill="#1f2937" />
+          <path d="M50 58 L59 76 L53 100 L50 70 Z" fill="#1f2937" />
+          <path d="M50 62 L47 80 L50 92 L53 80 Z" fill="#dc2626" />
+        </g>
+      );
+    case 'outfit_puffer':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#f59e0b" />
+          {[76, 82, 88, 94].map((y) => <line key={y} x1="28" y1={y} x2="72" y2={y} stroke="#d97706" strokeWidth="1.5" />)}
+          <line x1="50" y1="74" x2="50" y2="100" stroke="#d97706" strokeWidth="1.5" />
+          <path d={NECK} fill="#d97706" />
+        </g>
+      );
+    case 'outfit_tuxedo':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#111827" />
+          <path d="M50 58 L44 100 L56 100 Z" fill="#f8fafc" />
+          <path d="M50 58 L41 76 L47 100 L50 70 Z" fill="#000000" />
+          <path d="M50 58 L59 76 L53 100 L50 70 Z" fill="#000000" />
+          <path d="M45 62 L50 65 L45 68 Z" fill="#111827" />
+          <path d="M55 62 L50 65 L55 68 Z" fill="#111827" />
+        </g>
+      );
+    case 'outfit_armor':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#94a3b8" />
+          <path d="M30 74 Q50 80 70 74" fill="none" stroke="#64748b" strokeWidth="1.5" />
+          <line x1="50" y1="74" x2="50" y2="100" stroke="#64748b" strokeWidth="1.5" />
+          <circle cx="34" cy="62" r="2.5" fill="#cbd5e1" stroke="#64748b" strokeWidth="1" />
+          <circle cx="66" cy="62" r="2.5" fill="#cbd5e1" stroke="#64748b" strokeWidth="1" />
+          <path d="M50 80 L46 86 L50 92 L54 86 Z" fill="#fbbf24" />
+        </g>
+      );
+    case 'outfit_spacesuit':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#f1f5f9" />
+          <ellipse cx="50" cy="58" rx="11" ry="4" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
+          <rect x="42" y="78" width="16" height="11" rx="2" fill="#cbd5e1" />
+          <circle cx="46" cy="83" r="1.6" fill="#22c55e" />
+          <circle cx="51" cy="83" r="1.6" fill="#ef4444" />
+          <circle cx="56" cy="83" r="1.6" fill="#3b82f6" />
+          <line x1="28" y1="94" x2="72" y2="94" stroke="#f97316" strokeWidth="2" />
+        </g>
+      );
+    case 'outfit_hawaii':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#14b8a6" />
+          {[['#fb7185', 36, 80], ['#fde047', 60, 78], ['#f472b6', 44, 92], ['#fdba74', 64, 92], ['#a3e635', 34, 70]].map(([c, x, y], i) => (
+            <circle key={i} cx={x} cy={y} r="2.4" fill={c} />
+          ))}
+          <path d={NECK} fill="#0d9488" />
+        </g>
+      );
+    case 'outfit_wizard':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#6d28d9" />
+          {star(40, 80, 2.6, 'w1', '#fde68a')}
+          {star(60, 86, 2.2, 'w2', '#fde68a')}
+          {star(50, 92, 2, 'w3', '#fde68a')}
+          <path d={NECK} fill="#5b21b6" />
         </g>
       );
     case 'outfit_cape':
@@ -148,18 +314,13 @@ function renderOutfit(id) {
           {/* cape behind shoulders */}
           <path d="M30 60 L20 100 L40 96 L50 60 Z" fill="#dc2626" />
           <path d="M70 60 L80 100 L60 96 L50 60 Z" fill="#dc2626" />
-          <path d={torso} fill="#e5e7eb" />
-          <path d="M44 57 Q50 63 56 57 L56 60 Q50 65 44 60 Z" fill="#cbd5e1" />
+          <path d={TORSO} fill="#e5e7eb" />
+          <path d={NECK} fill="#cbd5e1" />
         </g>
       );
     case 'outfit_tee':
     default:
-      return (
-        <g key="outfit">
-          <path d={torso} fill="#e5e7eb" />
-          <path d="M44 57 Q50 63 56 57 L56 60 Q50 65 44 60 Z" fill="#cbd5e1" />
-        </g>
-      );
+      return tee('#e5e7eb', '#cbd5e1');
   }
 }
 
