@@ -1,9 +1,22 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Check, X, Loader2, PencilLine, ListChecks, Shuffle, Lightbulb, ArrowUpDown, FolderTree } from 'lucide-react';
+import { useState, useMemo, useRef } from 'react';
+import { Check, X, Loader2, PencilLine, ListChecks, Shuffle, Lightbulb, ArrowUpDown, FolderTree, GripVertical } from 'lucide-react';
+import { FormattedContent } from '@/components/lesson-slide';
 
 const MAX_ATTEMPTS = 3;
+
+// Activity prompts can contain markdown (numbered steps, bullets, **bold**) —
+// render them through the shared formatter so they read cleanly instead of as a
+// run-on string with literal asterisks.
+function Prompt({ text, fallback }) {
+  if (!text && !fallback) return null;
+  return (
+    <div className="mb-3 text-sm font-medium text-ink dark:text-slate-200">
+      <FormattedContent text={text || fallback} />
+    </div>
+  );
+}
 
 // A required, interactive checkpoint that proves a learning objective. The
 // learner gets up to 3 tries with feedback on each miss; after the 3rd we reveal
@@ -67,7 +80,7 @@ function Mcq({ activity, onResolve, resolved, passed }) {
 
   return (
     <div>
-      <p className="font-medium text-ink dark:text-slate-200 mb-3">{activity?.question}</p>
+      <Prompt text={activity?.question} />
       <div className="space-y-2">
         {options.map((opt, i) => {
           const revealCorrect = resolved && i === correct;
@@ -125,7 +138,7 @@ function Write({ activity, onResolve, resolved, passed }) {
 
   return (
     <div>
-      <p className="font-medium text-ink dark:text-slate-200 mb-2">{activity?.instructions}</p>
+      <Prompt text={activity?.instructions} />
       <textarea value={text} onChange={(e) => setText(e.target.value)} disabled={resolved} rows={3}
         placeholder={activity?.placeholder || 'Type your response…'}
         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand" />
@@ -173,7 +186,7 @@ function Match({ activity, onResolve, resolved, passed }) {
 
   return (
     <div>
-      <p className="font-medium text-ink dark:text-slate-200 mb-3">{activity?.instructions || 'Match each item to its pair.'}</p>
+      <Prompt text={activity?.instructions} fallback="Match each item to its pair." />
       <div className="space-y-2">
         {pairs.map((p, i) => {
           const wrong = checked && !resolved && picks[i] !== p.right;
@@ -220,7 +233,7 @@ function Scenario({ activity, onResolve, resolved, passed }) {
 
   return (
     <div>
-      <p className="font-medium text-ink dark:text-slate-200 mb-3">{activity?.situation}</p>
+      <Prompt text={activity?.situation} />
       <div className="space-y-2">
         {choices.map((c, i) => {
           const reveal = picked === i || (resolved && c.correct);
@@ -248,14 +261,22 @@ function Order({ activity, onResolve, resolved, passed }) {
   const [arr, setArr] = useState(() => [...correctOrder].reverse());
   const [attempts, setAttempts] = useState(0);
   const [checked, setChecked] = useState(false);
+  const dragIndex = useRef(null);
+  const [overIndex, setOverIndex] = useState(null);
 
-  function move(i, dir) {
+  function handleDrop(target) {
     if (resolved) return;
-    const j = i + dir;
-    if (j < 0 || j >= arr.length) return;
-    const next = [...arr];
-    [next[i], next[j]] = [next[j], next[i]];
-    setArr(next); setChecked(false);
+    const from = dragIndex.current;
+    dragIndex.current = null;
+    setOverIndex(null);
+    if (from == null || from === target) return;
+    setArr((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(target, 0, moved);
+      return next;
+    });
+    setChecked(false);
   }
   function check() {
     if (resolved) return;
@@ -269,21 +290,31 @@ function Order({ activity, onResolve, resolved, passed }) {
   const display = resolved && !passed ? correctOrder : arr;
   return (
     <div>
-      <p className="font-medium text-ink dark:text-slate-200 mb-3">{activity?.instructions || 'Drag into the right order.'}</p>
+      <Prompt text={activity?.instructions} fallback="Drag the items into the right order." />
       <div className="space-y-2">
         {display.map((it, i) => (
-          <div key={i} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${resolved ? 'border-green-300 text-ink dark:text-slate-200' : 'border-slate-200 dark:border-slate-600 text-ink dark:text-slate-200 bg-white dark:bg-slate-900'}`}>
+          <div
+            key={`${it}-${i}`}
+            draggable={!resolved}
+            onDragStart={() => { if (!resolved) dragIndex.current = i; }}
+            onDragOver={(e) => { if (resolved) return; e.preventDefault(); setOverIndex(i); }}
+            onDrop={() => handleDrop(i)}
+            onDragEnd={() => { dragIndex.current = null; setOverIndex(null); }}
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all ${
+              resolved
+                ? 'border-green-300 text-ink dark:text-slate-200'
+                : overIndex === i
+                  ? 'border-brand bg-brand-50 dark:bg-slate-700 text-ink dark:text-slate-200'
+                  : 'border-slate-200 dark:border-slate-600 text-ink dark:text-slate-200 bg-white dark:bg-slate-900'
+            } ${!resolved ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          >
             <span className="w-5 text-center text-xs font-bold text-slate-400">{i + 1}</span>
+            {!resolved && <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-500 shrink-0" />}
             <span className="flex-1">{it}</span>
-            {!resolved && (
-              <span className="flex flex-col">
-                <button onClick={() => move(i, -1)} className="text-slate-400 hover:text-brand leading-none">▲</button>
-                <button onClick={() => move(i, 1)} className="text-slate-400 hover:text-brand leading-none">▼</button>
-              </span>
-            )}
           </div>
         ))}
       </div>
+      {!resolved && <p className="text-[11px] text-slate-400 mt-2">Drag the rows to reorder them.</p>}
       {checked && !resolved && <p className="text-xs text-red-600 dark:text-red-400 mt-2">Not the right order yet — keep arranging.</p>}
       {!resolved && (
         <>
@@ -317,7 +348,7 @@ function Categorize({ activity, onResolve, resolved, passed }) {
 
   return (
     <div>
-      <p className="font-medium text-ink dark:text-slate-200 mb-3">{activity?.instructions || 'Put each item in the right group.'}</p>
+      <Prompt text={activity?.instructions} fallback="Put each item in the right group." />
       <div className="space-y-2">
         {items.map((it, i) => {
           const wrong = checked && !resolved && picks[i] !== it.bucket;

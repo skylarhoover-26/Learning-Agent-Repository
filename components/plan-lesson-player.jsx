@@ -13,7 +13,7 @@ import { onLessonComplete } from '@/lib/progression';
 import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
 import {
-  Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check,
+  Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare,
 } from 'lucide-react';
 
 const SAVE_KEY = 'lp_plan_lesson';
@@ -42,8 +42,13 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [teachLoading, setTeachLoading] = useState(false);
+  const [teachError, setTeachError] = useState({}); // stepId -> true when generation failed
+  const [retryTick, setRetryTick] = useState(0);     // bump to re-run the teach fetch
   const [question, setQuestion] = useState('');
   const [asking, setAsking] = useState(false);
+  // Inline Q&A thread shown under the chat on the current step (no navigation,
+  // no inserted step). Each entry: { id, q, a, loading, error }.
+  const [qaThread, setQaThread] = useState([]);
   const [recommendation, setRecommendation] = useState(null);
   // The tool the lesson is actually built around (recommended-if-owned, else the
   // learner's starred tool). Sent first so generation centers on it.
@@ -65,6 +70,7 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
           setStepIdx(saved.stepIdx || 0);
           setTeachContent(saved.teachContent || {});
           setResolved(saved.resolved || {});
+          setQaThread(saved.qaThread || []);
           startedAt.current = saved.startedAt || startedAt.current;
           setLoading(false);
           return;
@@ -132,12 +138,22 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
         stepIdx: next.stepIdx ?? stepIdx,
         teachContent: next.teachContent || teachContent,
         resolved: next.resolved || resolved,
+        qaThread: next.qaThread || qaThread,
         startedAt: startedAt.current,
       }));
     } catch {
       // localStorage full/unavailable
     }
-  }, [topic, format, plan, steps, stepIdx, teachContent, resolved]);
+  }, [topic, format, plan, steps, stepIdx, teachContent, resolved, qaThread]);
+
+  // The actual teaching text the learner has already seen, in order — fed to the
+  // AI so each step and answer is grounded in the real lesson (it "remembers").
+  const buildPriorContent = useCallback((uptoIdx) => {
+    return steps
+      .slice(0, uptoIdx)
+      .filter((s) => (s.kind === 'teach' || s.kind === 'qa') && teachContent[s.id]?.message)
+      .map((s) => ({ title: s.title || '', message: teachContent[s.id].message }));
+  }, [steps, teachContent]);
 
   // ---- Lazily generate teach content for the current step -------------------
   useEffect(() => {
@@ -145,25 +161,28 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
     if (teachContent[step.id]) return;
     let active = true;
     setTeachLoading(true);
+    setTeachError((prev) => ({ ...prev, [step.id]: false }));
     const priorTitles = steps.slice(0, stepIdx).filter((s) => s.kind === 'teach').map((s) => s.title);
+    const priorContent = buildPriorContent(stepIdx);
     fetch('/api/lesson/teach', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, objectives, step, priorTitles, tools: lessonToolIds || toolIds }),
+      body: JSON.stringify({ topic, objectives, step, priorTitles, priorContent, tools: lessonToolIds || toolIds }),
     })
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
       .then((d) => {
-        if (!active || !d) return;
+        if (!active) return;
+        if (!d?.message) throw new Error('empty');
         setTeachContent((prev) => {
           const updated = { ...prev, [step.id]: { message: d.message, keyPoints: d.keyPoints || [] } };
           persist({ teachContent: updated });
           return updated;
         });
       })
-      .catch(() => {})
+      .catch(() => { if (active) setTeachError((prev) => ({ ...prev, [step.id]: true })); })
       .finally(() => { if (active) setTeachLoading(false); });
     return () => { active = false; };
-  }, [step, stepIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [step, stepIdx, retryTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function resolveActivity(id, passed) {
     setResolved((prev) => {
@@ -176,7 +195,8 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
 
   const isActivity = step?.kind === 'activity';
   const activitySettled = isActivity ? step.id in resolved : true;
-  const canAdvance = step?.kind === 'recap' ? false : (!isActivity || activitySettled);
+  const teachReady = step?.kind === 'teach' ? !!teachContent[step?.id] : true;
+  const canAdvance = step?.kind === 'recap' ? false : (isActivity ? activitySettled : teachReady);
 
   function goNext() {
     if (stepIdx < total - 1) {
@@ -195,30 +215,44 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
     else router.push('/');
   }
 
+  // Ask a question without leaving the step: the answer threads in below the
+  // chat. The full lesson-so-far is sent so the answer is grounded (the model
+  // is NOT stateless from the learner's point of view anymore).
   async function askQuestion() {
     const q = question.trim();
     if (!q || asking) return;
     setQuestion('');
     setAsking(true);
+    const id = `q_${stepIdx}_${q.length}_${qaThread.length}`;
+    setQaThread((prev) => {
+      const next = [...prev, { id, q, a: '', loading: true }];
+      persist({ qaThread: next });
+      return next;
+    });
     try {
+      const priorContent = buildPriorContent(stepIdx + 1);
+      const recentQa = qaThread.filter((x) => x.a && !x.error).slice(-3).map((x) => ({ q: x.q, a: x.a }));
       const res = await fetch('/api/lesson/teach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, objectives, mode: 'answer', question: q, tools: lessonToolIds || toolIds }),
+        body: JSON.stringify({
+          topic, objectives, mode: 'answer', question: q,
+          priorContent, currentStep: step?.title || '', recentQa,
+          tools: lessonToolIds || toolIds,
+        }),
       });
+      if (!res.ok) throw new Error('failed');
       const d = await res.json();
-      const qaId = `q_${Date.now()}`;
-      const qaStep = { id: qaId, kind: 'qa', title: q };
-      // Insert the answered step right after the current one and jump to it.
-      const next = [...steps.slice(0, stepIdx + 1), qaStep, ...steps.slice(stepIdx + 1)];
-      const updatedTeach = { ...teachContent, [qaId]: { message: d.message || 'Here you go.', keyPoints: [] } };
-      setSteps(next);
-      setTeachContent(updatedTeach);
-      const ni = stepIdx + 1;
-      setStepIdx(ni);
-      persist({ steps: next, teachContent: updatedTeach, stepIdx: ni });
+      const a = d.message || 'Here you go.';
+      setQaThread((prev) => {
+        const next = prev.map((x) => (x.id === id ? { ...x, a, loading: false } : x));
+        persist({ qaThread: next });
+        return next;
+      });
     } catch {
-      // best-effort
+      setQaThread((prev) => prev.map((x) => (
+        x.id === id ? { ...x, a: 'Sorry — I couldn’t answer that just now. Please try again.', loading: false, error: true } : x
+      )));
     } finally {
       setAsking(false);
     }
@@ -313,6 +347,16 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
         {(step?.kind === 'teach' || step?.kind === 'qa') && (
           teachLoading && !teach ? (
             <div className="py-6"><BookLoader message="Preparing…" size="sm" /></div>
+          ) : (!teach && teachError[step.id]) ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">This step didn’t load. Let’s try again.</p>
+              <button
+                onClick={() => { setTeachError((p) => ({ ...p, [step.id]: false })); setRetryTick((t) => t + 1); }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all"
+              >
+                <RotateCcw className="w-4 h-4" /> Retry this step
+              </button>
+            </div>
           ) : (
             <div>
               <FormattedContent text={teach?.message || ''} />
@@ -364,8 +408,10 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
             className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-40 transition-colors">
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
-          {isActivity && !activitySettled ? (
-            <span className="text-xs text-slate-400">Give the activity a try to continue</span>
+          {!canAdvance ? (
+            <span className="text-xs text-slate-400">
+              {isActivity ? 'Give the activity a try to continue' : 'Loading this step…'}
+            </span>
           ) : (
             <button onClick={goNext}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">
@@ -375,9 +421,9 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
         </div>
       )}
 
-      {/* Question box — asking inserts an extra step */}
+      {/* Question box — the answer threads in right here, you stay on your step */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-3">
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Have a question? Ask it — I'll answer and add it as a step.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Have a question? Ask it — I'll answer right here without losing your place.</p>
         <div className="flex items-center gap-2">
           <input
             value={question}
@@ -391,6 +437,31 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
             {asking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
+
+        {/* Threaded Q&A — appears below the input, on the same step */}
+        {qaThread.length > 0 && (
+          <div className="mt-3 space-y-3 border-t border-slate-100 dark:border-slate-700 pt-3">
+            {qaThread.map((item) => (
+              <div key={item.id} className="space-y-1.5">
+                <div className="flex justify-end">
+                  <div className="max-w-[85%] bg-brand text-white px-3 py-2 rounded-2xl rounded-br-md text-sm">{item.q}</div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-slate-700 text-brand shrink-0">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </span>
+                  <div className="flex-1 min-w-0 rounded-2xl rounded-bl-md bg-bg-subtle dark:bg-slate-900 px-3 py-2 text-sm">
+                    {item.loading ? (
+                      <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…</span>
+                    ) : (
+                      <FormattedContent text={item.a} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

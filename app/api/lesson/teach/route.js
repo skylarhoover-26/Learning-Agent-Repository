@@ -15,6 +15,9 @@ export async function POST(request) {
       const result = await generateLessonAnswer(topic, profileForGen, {
         objectives: objectives || [],
         question: body.question || '',
+        priorContent: body.priorContent || [],
+        currentStep: body.currentStep || '',
+        recentQa: body.recentQa || [],
       });
       return NextResponse.json(result);
     }
@@ -23,6 +26,7 @@ export async function POST(request) {
       objectives: objectives || [],
       step: body.step || {},
       priorTitles: body.priorTitles || [],
+      priorContent: body.priorContent || [],
     });
     return NextResponse.json(result);
   } catch (error) {
