@@ -63,11 +63,14 @@ function LessonContent() {
     return ['quick_tip', 'standard', 'deep_dive'].includes(f) ? f : null;
   })();
   const initialMode = searchParams.get('mode') === 'watch' ? 'watch' : 'read';
+  // `prefill` carries a topic (e.g. from an AI News item) into the picker so the
+  // learner can pick the depth, rather than auto-starting a lesson.
+  const initialPrefill = searchParams.get('prefill') || '';
   // "Surprise me" mode shows an auto-picked Quick Win (relocated from /quick-win).
   const [surpriseMode, setSurpriseMode] = useState(searchParams.get('surprise') === '1');
   const [view, setView] = useState(initialTopic ? 'lesson' : 'picker');
   const [topic, setTopic] = useState(initialTopic || '');
-  const [customTopic, setCustomTopic] = useState('');
+  const [customTopic, setCustomTopic] = useState(initialPrefill);
   const [format, setFormat] = useState(initialFormat || 'standard');
 
   // Learning mode: 'read' = interactive chat-driven lesson; 'watch' = narrated

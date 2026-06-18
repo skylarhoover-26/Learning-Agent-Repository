@@ -101,14 +101,10 @@ const NAV_SECTIONS = [
   },
 ];
 
-// Shown only to admins, pinned to the top of the nav.
+// Shown only to admins. Everything now lives behind the Admin Dashboard hub, so
+// the sidebar keeps a single entry instead of a long list.
 const ADMIN_ITEMS = [
-  { href: '/admin', icon: Settings, label: 'Admin Dashboard', desc: 'Curriculum proposals and admin tools' },
-  { href: '/admin/admins', icon: Users, label: 'Admins', desc: 'Manage who has admin access' },
-  { href: '/admin/ai-tools', icon: Wrench, label: 'AI Tools', desc: "Edit what each AI tool is good for" },
-  { href: '/curriculum-pipeline', icon: FileText, label: 'Content Updates', desc: 'Review AI-proposed curriculum updates' },
-  { href: '/admin/notifications', icon: Bell, label: 'Notifications', desc: 'Who receives Slack notifications' },
-  { href: '/admin/skill-levels', icon: SlidersHorizontal, label: 'Skill Levels', desc: "Set each skill's difficulty level" },
+  { href: '/admin', icon: Settings, label: 'Admin Dashboard', desc: 'People & XP, content, settings — all admin tools' },
 ];
 
 const SKILL_SHOP_LINKS = [
