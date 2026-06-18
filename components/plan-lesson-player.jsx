@@ -72,6 +72,10 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
           setTeachContent(saved.teachContent || {});
           setResolved(saved.resolved || {});
           setQaThread(saved.qaThread || []);
+          // Restore the lesson's tool + callout so resumed steps/answers stay on
+          // the same tool the lesson was built around.
+          if (saved.lessonToolIds) setLessonToolIds(saved.lessonToolIds);
+          if (saved.recommendation) setRecommendation(saved.recommendation);
           startedAt.current = saved.startedAt || startedAt.current;
           setLoading(false);
           return;
@@ -94,11 +98,12 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
       } catch {
         // recommendation is best-effort
       }
+      // Center the ENTIRE lesson on ONE tool — the recommended one if the
+      // learner owns it, otherwise their primary — so the teaching content names
+      // the SAME tool as the callout instead of drifting to a different one.
       const match = recTool ? owned.find((t) => (t.label || '').toLowerCase() === recTool.toLowerCase()) : null;
-      const orderedIds = match
-        ? [match.id, ...owned.filter((t) => t.id !== match.id).map((t) => t.id)]
-        : owned.map((t) => t.id);
-      const lessonTools = orderedIds.length ? orderedIds : undefined;
+      const primary = match || owned[0] || null;
+      const lessonTools = primary ? [primary.id] : undefined;
       if (active) setLessonToolIds(lessonTools);
 
       // Try up to twice on the client too — if the first request fails (the
@@ -163,12 +168,14 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
         teachContent: next.teachContent || teachContent,
         resolved: next.resolved || resolved,
         qaThread: next.qaThread || qaThread,
+        lessonToolIds,
+        recommendation,
         startedAt: startedAt.current,
       }));
     } catch {
       // localStorage full/unavailable
     }
-  }, [topic, format, plan, steps, stepIdx, teachContent, resolved, qaThread]);
+  }, [topic, format, plan, steps, stepIdx, teachContent, resolved, qaThread, lessonToolIds, recommendation]);
 
   // The actual teaching text the learner has already seen, in order — fed to the
   // AI so each step and answer is grounded in the real lesson (it "remembers").
