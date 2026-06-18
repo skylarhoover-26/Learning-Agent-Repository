@@ -1,15 +1,48 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
-import { FileText, Search, X, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Search, X, Copy, Check, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
 import { PROMPTS, CATEGORIES, DEPARTMENTS } from '@/lib/prompts-data';
+import { useProfile } from '@/components/profile-provider';
+import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
 
 export default function PromptsPage() {
+  const { profile } = useProfile();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [department, setDepartment] = useState('all');
+
+  // Daily, role-personalized prompts — cached per content-day (8 AM PT).
+  const [daily, setDaily] = useState(null);
+
+  useEffect(() => {
+    if (!profile) return;
+    const sig = `${profile.department || ''}|${profile.tier || ''}|${(profile.top_tasks || []).join(',')}`;
+    const today = contentDayKey();
+    const cacheKey = 'daily_prompts_v1';
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (cached && cached.sig === sig && cached.date === today && Array.isArray(cached.prompts) && cached.prompts.length) {
+        setDaily(cached.prompts);
+        return;
+      }
+    } catch {
+      // ignore cache read errors
+    }
+    fetch('/api/prompts/daily', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
+      .then((d) => {
+        if (Array.isArray(d.prompts) && d.prompts.length) {
+          setDaily(d.prompts);
+          try { localStorage.setItem(cacheKey, JSON.stringify({ sig, date: today, prompts: d.prompts })); } catch { /* ignore */ }
+        } else {
+          setDaily([]);
+        }
+      })
+      .catch(() => setDaily([]));
+  }, [profile]);
 
   const filtered = useMemo(() => {
     return PROMPTS.filter((p) => {
@@ -57,6 +90,28 @@ export default function PromptsPage() {
             </div>
           </div>
         </div>
+
+        {/* Today's prompts — personalized to the learner's role, fresh daily */}
+        {(daily === null || (Array.isArray(daily) && daily.length > 0)) && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-cta-600" />
+              <h2 className="font-bold text-ink dark:text-slate-200">Today&apos;s prompts for your role</h2>
+              <span className="text-xs text-slate-400 dark:text-slate-500">· {REFRESH_LABEL}</span>
+            </div>
+            {daily === null ? (
+              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 py-4">
+                <Loader2 className="w-4 h-4 animate-spin" /> Personalizing today&apos;s prompts…
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {daily.map((p, i) => (
+                  <DailyPromptCard key={`daily-${i}`} prompt={p} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-5 mb-6">
           <div className="flex flex-wrap items-end gap-4">
@@ -145,6 +200,46 @@ export default function PromptsPage() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+// A self-contained card for the AI-generated daily prompts (no department/tags).
+function DailyPromptCard({ prompt }) {
+  const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const cat = CATEGORIES[prompt.category] || { label: prompt.category || 'Prompt', color: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300' };
+
+  function handleCopy() {
+    try {
+      navigator.clipboard.writeText(prompt.prompt || '');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard unavailable */ }
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-cta-200 dark:border-slate-700 shadow-card overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${cat.color}`}>{cat.label}</span>
+        </div>
+        <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1">{prompt.title}</h3>
+        <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{prompt.description}</p>
+        {expanded && (
+          <pre className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 rounded-xl p-3 mb-3 font-sans">{prompt.prompt}</pre>
+        )}
+        <div className="flex items-center gap-2">
+          <button onClick={() => setExpanded((v) => !v)}
+            className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:text-brand-600">
+            {expanded ? <><ChevronUp className="w-4 h-4" /> Hide prompt</> : <><ChevronDown className="w-4 h-4" /> Show prompt</>}
+          </button>
+          <button onClick={handleCopy}
+            className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand">
+            {copied ? <><Check className="w-4 h-4 text-green-600" /> Copied</> : <><Copy className="w-4 h-4" /> Copy</>}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

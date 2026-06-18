@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import {
-  BookOpen, ChevronRight, Filter, Search,
+  BookOpen, ChevronRight, Filter, Search, Sparkles,
 } from 'lucide-react';
 import { getAllLessons, getLessonCategories } from '@/lib/structured-lessons-data';
+import { useProfile } from '@/components/profile-provider';
+import { dailyPick, REFRESH_LABEL } from '@/lib/content-day';
 
 const DIFFICULTY_COLORS = {
   Beginner: 'bg-green-50 text-green-700 border-green-200',
@@ -14,12 +16,32 @@ const DIFFICULTY_COLORS = {
   Advanced: 'bg-red-50 text-red-700 border-red-200',
 };
 
+// Map the learner's tier to the practice difficulty that fits them best.
+const TIER_DIFFICULTY = {
+  beginner: 'Beginner',
+  practitioner: 'Intermediate',
+  intermediate: 'Intermediate',
+  power_user: 'Advanced',
+  builder: 'Advanced',
+  developer: 'Advanced',
+};
+
 export default function StructuredLessonPicker() {
+  const { profile } = useProfile();
   const lessons = getAllLessons();
   const categories = getLessonCategories();
 
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [search, setSearch] = useState('');
+
+  // "Today's practice" — a day-stable, role-weighted pick from the catalog that
+  // rotates at 8 AM PT. Prefer lessons matching the learner's level.
+  const todaysPicks = useMemo(() => {
+    const sig = `${profile?.department || ''}|${profile?.tier || ''}`;
+    const preferred = TIER_DIFFICULTY[profile?.tier] || null;
+    const pool = preferred ? lessons.filter((l) => l.difficulty === preferred) : lessons;
+    return dailyPick(pool.length >= 2 ? pool : lessons, 2, sig);
+  }, [lessons, profile?.department, profile?.tier]);
 
   const filtered = lessons.filter(l => {
     const matchesCategory = selectedCategory === 'All' || l.category === selectedCategory;
@@ -39,6 +61,41 @@ export default function StructuredLessonPicker() {
       />
 
       <main className="max-w-5xl mx-auto px-6 py-8">
+        {/* Today's practice — personalized, fresh daily */}
+        {todaysPicks.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-cta-600" />
+              <h2 className="font-bold text-ink dark:text-slate-200">Today&apos;s practice for you</h2>
+              <span className="text-xs text-slate-400 dark:text-slate-500">· {REFRESH_LABEL}</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {todaysPicks.map((lesson) => (
+                <Link
+                  key={`pick-${lesson.id}`}
+                  href={`/structured-lesson/${lesson.id}`}
+                  className="group bg-white dark:bg-slate-800 rounded-2xl border border-cta-200 dark:border-slate-700 shadow-card hover:shadow-md hover:border-cta-300 transition-all p-6"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="text-3xl">{lesson.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-bold uppercase tracking-wide border ${DIFFICULTY_COLORS[lesson.difficulty]}`}>
+                          {lesson.difficulty}
+                        </span>
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{lesson.category}</span>
+                      </div>
+                      <h3 className="text-base font-bold text-ink dark:text-slate-200 tracking-tight group-hover:text-brand transition-colors mb-1">{lesson.title}</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{lesson.subtitle}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* How it works */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
           <h2 className="text-sm font-bold text-ink dark:text-slate-200 uppercase tracking-wide mb-3">How it works</h2>

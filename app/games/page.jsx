@@ -78,8 +78,11 @@ export default function GamesHub() {
       />
 
       <main className="max-w-4xl mx-auto px-6 py-8">
-        <p className="text-slate-600 dark:text-slate-400 mb-8 text-lg">
+        <p className="text-slate-600 dark:text-slate-400 mb-2 text-lg">
           Sharpen your AI skills with interactive challenges. Pick a game and start playing.
+        </p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mb-8">
+          🔀 Questions are fresh every play — and Hallucination Hunt mixes up its order daily at 8 AM PT.
         </p>
 
         <div data-tour="page-games" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">

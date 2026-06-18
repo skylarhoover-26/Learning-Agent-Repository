@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import {
   Search, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy, AlertCircle,
 } from 'lucide-react';
 import ROUNDS from './rounds';
+import { dailyPick } from '@/lib/content-day';
 import {
   saveGameResult, getGameStats, getInProgress, saveInProgress, clearInProgress,
 } from '@/lib/game-store';
@@ -43,7 +44,11 @@ export default function HallucinationHunt() {
   const [stats, setStats] = useState({ gamesPlayed: 0, bestScore: 0 });
   const savedRef = useRef(false);
 
-  const round = ROUNDS[roundIdx];
+  // Day-stable round order that rotates at 8 AM PT, so returning players get a
+  // fresh sequence each day instead of the same fixed order.
+  const rounds = useMemo(() => dailyPick(ROUNDS, ROUNDS.length, 'hallucination-hunt'), []);
+
+  const round = rounds[roundIdx];
   const hallucinationSet = new Set(round.hallucinations);
 
   // Load stats and check for in-progress on mount
@@ -137,7 +142,7 @@ export default function HallucinationHunt() {
   function handleNextRound() {
     const nextIdx = roundIdx + 1;
 
-    if (nextIdx >= ROUNDS.length) {
+    if (nextIdx >= rounds.length) {
       // Game complete
       setGameComplete(true);
       return;
@@ -223,7 +228,7 @@ export default function HallucinationHunt() {
             <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-2">
               {totalCaught} / {totalHallucinations} Hallucinations Found
             </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-400 mb-2">{pct}% accuracy across {ROUNDS.length} rounds</p>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-2">{pct}% accuracy across {rounds.length} rounds</p>
 
             <div className="flex items-center justify-center gap-4 mb-6 text-sm text-slate-500 dark:text-slate-400">
               <span>Best Score: <strong className="text-ink dark:text-slate-200">{stats.bestScore}/{totalHallucinations}</strong></span>
@@ -299,7 +304,7 @@ export default function HallucinationHunt() {
               <AlertCircle className="w-5 h-5 text-brand shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-ink dark:text-slate-200">
-                  You have a game in progress (Round {(savedProgress.roundIdx || 0) + 1} of {ROUNDS.length}).
+                  You have a game in progress (Round {(savedProgress.roundIdx || 0) + 1} of {rounds.length}).
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -324,7 +329,7 @@ export default function HallucinationHunt() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-brand-50 text-brand-700 ring-1 ring-brand-200">
-              Round {roundIdx + 1} of {ROUNDS.length}
+              Round {roundIdx + 1} of {rounds.length}
             </span>
           </div>
           <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-2">
@@ -430,7 +435,7 @@ export default function HallucinationHunt() {
                 onClick={handleNextRound}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
               >
-                {roundIdx + 1 >= ROUNDS.length ? 'See Final Results' : 'Next Round'}
+                {roundIdx + 1 >= rounds.length ? 'See Final Results' : 'Next Round'}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
