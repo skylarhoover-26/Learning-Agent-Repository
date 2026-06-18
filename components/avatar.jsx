@@ -261,6 +261,28 @@ function hairShape(id, fill) {
           <circle cx="72" cy="44" r="7" />
         </g>
       );
+    case 'hair_pixie':
+      return (
+        <path d="M30 36 Q29 18 50 18 Q71 18 70 34 Q66 24 56 24 Q52 30 44 28 Q38 27 34 31 Q31 33 30 36 Z" fill={fill} />
+      );
+    case 'hair_spacebuns':
+      return (
+        <g fill={fill}>
+          <circle cx="37" cy="12" r="5.5" />
+          <circle cx="63" cy="12" r="5.5" />
+          <path d="M31 34 Q31 19 50 19 Q69 19 69 34 Q62 26 50 26 Q38 26 31 34 Z" />
+        </g>
+      );
+    case 'hair_sidebraid':
+      return (
+        <g fill={fill}>
+          <path d="M30 38 Q29 18 50 18 Q71 18 70 38 Q66 25 50 25 Q34 25 30 38 Z" />
+          <path d="M68 32 Q76 40 74 52 Q72 62 70 72 Q67 64 68 54 Q66 44 64 38 Z" />
+          {[40, 48, 56, 64].map((y, i) => (
+            <line key={i} x1="66" y1={y} x2="74" y2={y - 2} stroke="#00000026" strokeWidth="1.5" />
+          ))}
+        </g>
+      );
     case 'hair_wavy':
       return <path d="M30 80 Q26 20 50 16 Q74 20 70 80 Q64 74 66 60 Q70 40 50 30 Q30 40 34 60 Q36 74 30 80 Z" fill={fill} />;
     case 'hair_undercut':
