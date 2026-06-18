@@ -23,10 +23,12 @@ export async function GET(request) {
   }
 
   try {
+    // XP/badges/lessons are stored under the client's localStorage keys
+    // (lp_<type>_<id>.json), not bare type names.
     const [xpRaw, badgesRaw, lessonsRaw, profileRaw] = await Promise.all([
-      getUserData(learnerId, 'xp'),
-      getUserData(learnerId, 'badges'),
-      getUserData(learnerId, 'lessons'),
+      getUserData(learnerId, `lp_xp_${learnerId}`),
+      getUserData(learnerId, `lp_badges_${learnerId}`),
+      getUserData(learnerId, `lp_lessons_${learnerId}`),
       getUserData(learnerId, 'profile'),
     ]);
 

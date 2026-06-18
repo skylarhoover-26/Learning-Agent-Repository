@@ -20,7 +20,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'learnerId and a non-zero amount are required' }, { status: 400 });
     }
 
-    const existing = await getUserData(learnerId, 'xp');
+    // XP is stored under the client's localStorage key so the user sees the
+    // grant on their next sync.
+    const xpKey = `lp_xp_${learnerId}`;
+    const existing = await getUserData(learnerId, xpKey);
     const events = Array.isArray(existing) ? existing : [];
     events.push({
       id: `xp_admin_${Date.now()}`,
@@ -29,7 +32,7 @@ export async function POST(request) {
       created_at: new Date().toISOString(),
       meta: { by: admin.email, reason: (reason || '').slice(0, 200) },
     });
-    await saveUserData(learnerId, 'xp', events);
+    await saveUserData(learnerId, xpKey, events);
 
     const totalXp = events.reduce((s, e) => s + (e.amount || 0), 0);
     return NextResponse.json({ ok: true, totalXp, level: getLevel(totalXp), amount: amt });
