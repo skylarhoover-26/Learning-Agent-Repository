@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateTeachStep, generateLessonAnswer } from '@/lib/ai';
 
+export const maxDuration = 60;
+
 // Generates the teaching content for one planned teach step, or answers a
 // learner's free-form question (mode: 'answer').
 export async function POST(request) {

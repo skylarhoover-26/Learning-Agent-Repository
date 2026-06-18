@@ -40,6 +40,7 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
   // 3 attempts used). Continue unlocks once settled either way.
   const [resolved, setResolved] = useState({});
   const [loading, setLoading] = useState(true);
+  const [elapsed, setElapsed] = useState(0); // seconds spent generating, for the loading bar
   const [error, setError] = useState(null);
   const [teachLoading, setTeachLoading] = useState(false);
   const [teachError, setTeachError] = useState({}); // stepId -> true when generation failed
@@ -100,30 +101,53 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
       const lessonTools = orderedIds.length ? orderedIds : undefined;
       if (active) setLessonToolIds(lessonTools);
 
-      try {
-        const res = await fetch('/api/lesson/plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, format, tools: lessonTools }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to plan lesson');
-        if (!active) return;
-        setPlan(data);
-        setSteps(data.steps);
+      // Try up to twice on the client too — if the first request fails (the
+      // server already retries internally), a fresh attempt usually succeeds
+      // before we ever show an error.
+      let planData = null;
+      let planErr = null;
+      for (let attempt = 1; attempt <= 2 && active; attempt++) {
+        try {
+          const res = await fetch('/api/lesson/plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, format, tools: lessonTools }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to plan lesson');
+          planData = data;
+          planErr = null;
+          break;
+        } catch (err) {
+          planErr = err;
+        }
+      }
+      if (!active) return;
+      if (planData) {
+        setPlan(planData);
+        setSteps(planData.steps);
         setLoading(false);
         // Hidden self-QA for admins (never shown to the learner).
         const toolLabel = match?.label || owned[0]?.label || '';
         fetch('/api/lesson/qa', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan: data, topic, format, tool: toolLabel }),
+          body: JSON.stringify({ plan: planData, topic, format, tool: toolLabel }),
         }).catch(() => {});
-      } catch (err) {
-        if (active) { setError(err.message); setLoading(false); }
+      } else {
+        setError(planErr?.message || 'Failed to design the lesson. Please try again.');
+        setLoading(false);
       }
     })();
     return () => { active = false; };
   }, [topic, format, toolKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tick an elapsed-seconds counter while the lesson is being designed, so the
+  // loading bar can advance and the message can reassure on longer runs.
+  useEffect(() => {
+    if (!loading) { setElapsed(0); return; }
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [loading]);
 
   const objectives = plan?.objectives || [];
   const step = steps[stepIdx] || null;
@@ -284,9 +308,25 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
 
   // ---- Render ----------------------------------------------------------------
   if (loading) {
+    // Asymptotic bar: climbs quickly then eases toward ~95% (we can't show true
+    // progress for a single model call, so this just signals "still working").
+    const pct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / 14))));
+    const message =
+      elapsed < 8 ? `Designing your lesson on ${topic}…`
+      : elapsed < 20 ? 'Writing the steps and activities…'
+      : elapsed < 35 ? 'Putting on the finishing touches…'
+      : 'Almost there — this one’s taking a little longer than usual…';
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
-        <BookLoader message={`Designing your lesson on ${topic}…`} size="lg" />
+        <BookLoader message={message} size="lg" />
+        <div className="mt-6 max-w-md mx-auto">
+          <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />
+          </div>
+          <p className="mt-2 text-center text-xs text-slate-400">
+            This usually takes 10–30 seconds{elapsed >= 35 ? ' — hang tight, almost done.' : '.'}
+          </p>
+        </div>
       </div>
     );
   }

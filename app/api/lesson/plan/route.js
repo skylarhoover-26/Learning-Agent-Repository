@@ -4,6 +4,10 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonPlan } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
 
+// Plan generation can run long (large model output) and now retries internally,
+// so give the function room rather than letting it be cut short mid-generation.
+export const maxDuration = 120;
+
 export async function POST(request) {
   try {
     const { topic, format, tools } = await request.json();
