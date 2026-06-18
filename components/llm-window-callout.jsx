@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ExternalLink, X, PanelsTopLeft, Check, Star } from 'lucide-react';
 import { toolKey } from '@/lib/ai-tools';
+import { openLlmWindow } from '@/lib/open-llm-window';
 import { useActiveTool } from './active-tool-provider';
 import { useToolCatalog } from './tool-catalog-provider';
 
@@ -10,7 +11,7 @@ import { useToolCatalog } from './tool-catalog-provider';
 // open in a separate window so they can follow along beside the coach. It also
 // lets them adjust their tools for this session — toggle which tools they use
 // and pick a primary — and optionally save the set as their default.
-export default function LlmWindowCallout({ storageKey = 'default', className = '' }) {
+export default function LlmWindowCallout({ storageKey = 'default', className = '', recommendation = null }) {
   const { tools, primaryTool, hasPreference, toggleTool, setPrimary } = useActiveTool();
   const { catalog } = useToolCatalog();
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid a flash before we read sessionStorage
@@ -44,8 +45,27 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
 
   const hasTools = tools.length > 0;
 
+  // Best tool for THIS lesson (may differ from the learner's favorite). Match the
+  // recommended label to the catalog for its emoji/url, and check if the learner
+  // already has it.
+  const recTool = recommendation?.tool
+    ? catalog.find((c) => c.label.toLowerCase() === recommendation.tool.toLowerCase())
+    : null;
+  const recLabel = recTool?.label || recommendation?.tool || null;
+  const recEmoji = recTool?.emoji || '🛠️';
+  const recUrl = recTool?.url || null;
+  const userHasRec = recTool ? tools.some((t) => toolKey(t) === toolKey(recTool)) : false;
+
   function openTool() {
-    if (primaryTool?.url) window.open(primaryTool.url, '_blank', 'noopener,noreferrer');
+    if (primaryTool?.url) openLlmWindow(primaryTool.url);
+  }
+
+  function openRecommended() {
+    if (recUrl) openLlmWindow(recUrl);
+  }
+
+  function addRecommended() {
+    if (recTool) toggleTool(recTool.id === 'other' ? recTool : recTool.id);
   }
 
   async function addCustom() {
@@ -85,7 +105,24 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
         </div>
 
         <div className="flex-1 min-w-0">
-          {hasTools ? (
+          {recLabel ? (
+            // Lesson-specific recommendation: best tool for THIS lesson + why.
+            <>
+              <p className="text-sm text-ink dark:text-slate-200">
+                For this lesson, <span className="font-semibold">{recEmoji} {recLabel}</span> works best
+                {userHasRec ? '' : <span className="text-slate-500 dark:text-slate-400"> — you don&rsquo;t have it set up yet</span>}.
+                {' '}Open it in another window so you can follow along here.
+              </p>
+              {recommendation.why && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Why: {recommendation.why}</p>
+              )}
+              {!userHasRec && hasTools && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  No access to {recLabel}? You can still do this lesson in {primaryTool.emoji} {primaryTool.label} — add {recLabel} if you&rsquo;d like to try it.
+                </p>
+              )}
+            </>
+          ) : hasTools ? (
             <p className="text-sm text-ink dark:text-slate-200">
               You&rsquo;ll do the hands-on AI work in your own tool. Keep{' '}
               <span className="font-semibold">
@@ -100,14 +137,47 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
             </p>
           )}
 
-          {hasTools && strengthsFor(primaryTool) && (
+          {!recLabel && hasTools && strengthsFor(primaryTool) && (
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Best for {strengthsFor(primaryTool)}.
             </p>
           )}
 
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
-            {hasTools && primaryTool.url && (
+            {/* Recommended tool the learner already has → open it. */}
+            {recLabel && userHasRec && recUrl && (
+              <button
+                onClick={openRecommended}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-pill bg-brand text-white hover:bg-brand-700 transition-colors"
+              >
+                Open {recLabel}
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {/* Recommended tool the learner lacks → add it, and offer their own. */}
+            {recLabel && !userHasRec && (
+              <>
+                {recTool && (
+                  <button
+                    onClick={addRecommended}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-pill bg-brand text-white hover:bg-brand-700 transition-colors"
+                  >
+                    Add {recLabel}
+                  </button>
+                )}
+                {hasTools && primaryTool.url && (
+                  <button
+                    onClick={openTool}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-pill border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 hover:bg-brand-100/60 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Open {primaryTool.label} instead
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </>
+            )}
+            {/* No recommendation → original behavior. */}
+            {!recLabel && hasTools && primaryTool.url && (
               <button
                 onClick={openTool}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-pill bg-brand text-white hover:bg-brand-700 transition-colors"

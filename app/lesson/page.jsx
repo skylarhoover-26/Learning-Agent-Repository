@@ -188,6 +188,8 @@ function LessonContent() {
   const [finishing, setFinishing] = useState(false);
   // Correctness (0..1) from the quiz, read when completion is recorded.
   const quizCorrectnessRef = useRef(1);
+  // Best-tool recommendation for THIS lesson ({ tool, why }).
+  const [toolRec, setToolRec] = useState(null);
   const { refresh: refreshProgression } = useProgression() || {};
   const { profile } = useProfile();
   const { tools } = useActiveTool();
@@ -344,6 +346,16 @@ function LessonContent() {
     setQuizActive(false);
     quizCorrectnessRef.current = 1;
     setFinishing(false);
+    // Ask which tool is best for this lesson (parallel, best-effort).
+    setToolRec(null);
+    fetch('/api/lesson/recommend-tool', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: t }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.tool) setToolRec(d); })
+      .catch(() => {});
 
     try {
       const res = await fetch('/api/lesson/start', {
@@ -642,7 +654,7 @@ function LessonContent() {
           <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
             {[
               { key: 'read', icon: BookOpen, label: 'Read & practice', desc: 'Interactive, chat-driven' },
-              { key: 'watch', icon: PlayCircle, label: 'Watch (narrated)', desc: 'Sit back & listen' },
+              { key: 'watch', icon: PlayCircle, label: 'Narrated lesson', desc: 'Sit back & listen' },
             ].map((m) => (
               <button
                 key={m.key}
@@ -661,7 +673,7 @@ function LessonContent() {
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
             {learnMode === 'watch'
-              ? 'Pick a topic below and we’ll generate a short narrated video you can watch.'
+              ? 'Pick a topic below and we’ll generate a short narrated lesson — slides read aloud to you (it’s not a video).'
               : 'Pick a topic below for a hands-on lesson you work through step by step.'}
           </p>
         </div>
@@ -855,7 +867,7 @@ function LessonContent() {
     <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
     <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
 
-      {!isComplete && <LlmWindowCallout storageKey="lesson" className="mb-6" />}
+      {!isComplete && <LlmWindowCallout storageKey="lesson" recommendation={toolRec} className="mb-6" />}
 
       {/* Progress bar + voice mode toggle */}
       {slides.length > 0 && (
@@ -931,7 +943,17 @@ function LessonContent() {
                   onDashboard={() => router.push('/')}
                 />
               ) : (
-                <SlideCard slide={slide} />
+                <>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-white text-xs font-bold shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      Step {idx + 1}
+                    </span>
+                  </div>
+                  <SlideCard slide={slide} />
+                </>
               )}
             </div>
           );

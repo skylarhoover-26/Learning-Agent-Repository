@@ -2,7 +2,7 @@ import Link from 'next/link';
 import {
   Sparkles, TrendingUp,
   MessageCircle, BookOpen, Library, Gamepad2,
-  ChevronRight, BarChart2, GitBranch, Compass, Rss,
+  ChevronRight, BarChart2, GitBranch, Compass, Rss, PenTool,
 } from 'lucide-react';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
@@ -164,7 +164,7 @@ export default async function Dashboard() {
           <QuickAction href="/games" icon={Gamepad2} label="Games" tour="home-qa-games" />
           <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" tour="home-qa-chat" />
           <QuickAction href="/lesson" icon={BookOpen} label="Lesson" tour="home-qa-lesson" />
-          <QuickAction href="/discover" icon={Library} label="Discovery Library" tour="home-qa-library" />
+          <QuickAction href="/structured-lesson" icon={PenTool} label="Practice" tour="home-qa-practice" />
         </div>
 
         {/* Today's Pick */}

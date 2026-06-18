@@ -6,37 +6,27 @@ import { Sparkles, X } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { useTour } from '@/components/guided-tour-provider';
 
-// FOR NOW: the welcome popup appears once per browser session on the dashboard.
-// When Supabase lands, gate this on a per-user `tour_completed` profile flag so
-// it only ever shows on someone's first visit.
-const SESSION_KEY = 'la_tour_seen_session';
-
+// The welcome tour is offered exactly ONCE — right after onboarding, the first
+// time the learner lands on the dashboard. We persist a `tour_offered` flag on
+// the profile (synced to the blob), so it never shows again across sessions or
+// devices. The Settings > Tour button is always available to replay it manually.
 export default function OnboardingTour() {
   const pathname = usePathname();
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const { startTour: startGuidedTour } = useTour();
   // 'hidden' = nothing to show, 'welcome' = prompt card, 'running' = driver active.
   const [phase, setPhase] = useState('hidden');
 
   // Show on the dashboard, once a profile exists (so it never fires
-  // mid-onboarding), once per browser session.
+  // mid-onboarding), and only if it's never been offered before.
   useEffect(() => {
     if (pathname !== '/' || !profile) return;
-    let seen = false;
-    try {
-      seen = sessionStorage.getItem(SESSION_KEY) === 'true';
-    } catch {
-      seen = false;
-    }
-    if (!seen) setPhase('welcome');
+    if (!profile.tour_offered) setPhase('welcome');
   }, [pathname, profile]);
 
   function markSeen() {
-    try {
-      sessionStorage.setItem(SESSION_KEY, 'true');
-    } catch {
-      // sessionStorage unavailable — no crash; it just may show again.
-    }
+    // Persist on the profile so the offer never returns.
+    updateProfile({ tour_offered: true }).catch(() => {});
   }
 
   function startTour() {

@@ -100,9 +100,22 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ learnerId: selected, amount: amt, reason: grantReason }),
       });
       if (!res.ok) throw new Error();
+      const result = await res.json();
       setGrantStatus('saved');
+      const reasonUsed = grantReason;
       setGrantAmount('');
       setGrantReason('');
+      // Reflect the new total immediately from the server response, then refresh
+      // from the blob in the background.
+      setDetail((d) => (d ? {
+        ...d,
+        totalXp: result.totalXp ?? d.totalXp,
+        level: result.level ?? d.level,
+        xpEvents: [
+          { id: `xp_admin_${Date.now()}`, source: 'admin_grant', amount: amt, meta: { by: 'you', reason: reasonUsed } },
+          ...(d.xpEvents || []),
+        ],
+      } : d));
       loadDetail(selected);
       loadPeople();
     } catch {
