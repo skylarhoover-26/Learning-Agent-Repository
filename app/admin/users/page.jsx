@@ -28,6 +28,7 @@ const SOURCE_LABELS = {
   chat_message: 'Chat',
   review_correct: 'Review',
   admin_grant: 'Admin grant',
+  admin_correction: 'Balance reset',
 };
 
 function sourceLabel(s) {

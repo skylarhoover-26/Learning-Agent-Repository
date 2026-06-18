@@ -25,17 +25,38 @@ export async function POST(request) {
     const xpKey = `lp_xp_${learnerId}`;
     const existing = await getUserData(learnerId, xpKey);
     const events = Array.isArray(existing) ? existing : [];
-    events.push({
-      id: `xp_admin_${Date.now()}`,
-      source: 'admin_grant',
-      amount: amt,
-      created_at: new Date().toISOString(),
-      meta: { by: admin.email, reason: (reason || '').slice(0, 200) },
-    });
+    const now = new Date().toISOString();
+
+    const rawTotal = events.reduce((s, e) => s + (e.amount || 0), 0);
+
+    // XP can never be negative. Heal any pre-existing negative balance back to 0
+    // first, then apply the grant from that 0 floor.
+    if (rawTotal < 0) {
+      events.push({
+        id: `xp_fix_${Date.now()}`,
+        source: 'admin_correction',
+        amount: -rawTotal,
+        created_at: now,
+        meta: { by: admin.email, reason: 'Reset negative balance to 0' },
+      });
+    }
+    const base = Math.max(0, rawTotal);
+    // A deduct can only go down to 0, never below.
+    const applied = amt < 0 ? Math.max(amt, -base) : amt;
+
+    if (applied !== 0) {
+      events.push({
+        id: `xp_admin_${Date.now() + 1}`,
+        source: 'admin_grant',
+        amount: applied,
+        created_at: now,
+        meta: { by: admin.email, reason: (reason || '').slice(0, 200) },
+      });
+    }
     await saveUserData(learnerId, xpKey, events);
 
-    const totalXp = events.reduce((s, e) => s + (e.amount || 0), 0);
-    return NextResponse.json({ ok: true, totalXp, level: getLevel(totalXp), amount: amt });
+    const totalXp = Math.max(0, base + applied);
+    return NextResponse.json({ ok: true, totalXp, level: getLevel(totalXp), amount: applied });
   } catch (error) {
     console.error('POST /api/admin/grant-xp error:', error);
     return NextResponse.json({ error: 'Failed to grant XP' }, { status: 500 });

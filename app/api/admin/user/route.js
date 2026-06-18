@@ -36,7 +36,7 @@ export async function GET(request) {
     const badges = Array.isArray(badgesRaw) ? badgesRaw : [];
     const lessons = Array.isArray(lessonsRaw) ? lessonsRaw : [];
     const profile = unwrapProfile(profileRaw);
-    const totalXp = xpEvents.reduce((s, e) => s + (e.amount || 0), 0);
+    const totalXp = Math.max(0, xpEvents.reduce((s, e) => s + (e.amount || 0), 0));
 
     return NextResponse.json({
       learnerId,
