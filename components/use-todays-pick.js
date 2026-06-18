@@ -6,6 +6,7 @@ import { useProfile } from '@/components/profile-provider';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
+import { contentDayKey } from '@/lib/content-day';
 
 // Don't recommend topics above the learner's level (e.g. RAG to a beginner).
 const LEVEL_RANK = { beginner: 1, intermediate: 2, advanced: 3 };
@@ -18,7 +19,7 @@ const TIER_MAX_RANK = {
 };
 
 function generateDailyPick(skills, lessonHistory) {
-  const today = new Date().toDateString();
+  const today = contentDayKey(); // new pick each day at 8 AM PT
   const seededIndex = today.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
 
   const staleSkills = skills

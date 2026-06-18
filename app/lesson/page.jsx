@@ -11,6 +11,7 @@ import { QUESTS } from '@/lib/quest-data';
 import { emitXp } from '@/lib/xp-bus';
 import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete, getLessonHistory } from '@/lib/progression';
+import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
 import { useProfile } from '@/components/profile-provider';
 import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
 import BookLoader from '@/components/book-loader';
@@ -244,7 +245,7 @@ function LessonContent() {
     // lessonCount in the signature means finishing a lesson invalidates the
     // cached list, so the next time they land on the picker it regenerates.
     const sig = `${profile.department || ''}|${profile.tier || ''}|${(profile.top_tasks || []).join(',')}|n${lessonCount}`;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = contentDayKey(); // rolls over at 8 AM PT
     const cacheKey = 'lesson_suggested_topics';
 
     try {
@@ -804,6 +805,10 @@ function LessonContent() {
             </button>
           </div>
         </div>
+
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-4">
+          ✨ Suggested topics are personalized to your role and tasks · {REFRESH_LABEL}
+        </p>
         </>)}
       </main>
       {videoTopic && (

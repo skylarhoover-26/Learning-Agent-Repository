@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Sparkles, ChevronRight } from 'lucide-react';
 import { useTodaysPick } from '@/components/use-todays-pick';
+import { REFRESH_LABEL } from '@/lib/content-day';
 
 // The home-dashboard "Today's Pick" card. The recommendation logic lives in
 // useTodaysPick so this card and the sidebar "Today's Pick" redirect agree.
@@ -29,6 +30,7 @@ export default function TodaysPick() {
           </div>
           <h3 className="font-bold text-ink dark:text-slate-200 mb-0.5">{pick.title}</h3>
           <p className="text-sm text-slate-600 dark:text-slate-400">{pick.description}</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">{REFRESH_LABEL}</p>
         </div>
         <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-1 transition-all shrink-0 mt-1" />
       </div>
