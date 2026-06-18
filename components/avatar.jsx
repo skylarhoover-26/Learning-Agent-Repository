@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { normalizeAvatar, getItem } from '@/lib/avatar-catalog';
 
 // Layered SVG avatar. Renders, back-to-front: body+head (base color), outfit,
@@ -15,6 +16,88 @@ function star(cx, cy, r, key) {
     [cx, cy + r], [cx - r * 0.32, cy + r * 0.32], [cx - r, cy], [cx - r * 0.32, cy - r * 0.32],
   ].map((pt) => pt.join(',')).join(' ');
   return <polygon key={key} points={p} fill={INK} />;
+}
+
+// Background scene — the bottom layer, fills the whole viewBox. `uid` namespaces
+// gradient ids so multiple avatars on one page don't collide.
+function renderBackground(id, uid) {
+  switch (id) {
+    case 'bg_sky':
+      return <g key="bg"><rect x="0" y="0" width="100" height="100" fill="#dbeafe" /></g>;
+    case 'bg_blush':
+      return <g key="bg"><rect x="0" y="0" width="100" height="100" fill="#fce7f3" /></g>;
+    case 'bg_forest':
+      return <g key="bg"><rect x="0" y="0" width="100" height="100" fill="#dcfce7" /></g>;
+    case 'bg_sunset':
+      return (
+        <g key="bg">
+          <defs>
+            <linearGradient id={`${uid}-sunset`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#fdba74" />
+              <stop offset="100%" stopColor="#f9a8d4" />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" fill={`url(#${uid}-sunset)`} />
+        </g>
+      );
+    case 'bg_streak':
+      return (
+        <g key="bg">
+          <defs>
+            <linearGradient id={`${uid}-streak`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#fca5a5" />
+              <stop offset="100%" stopColor="#fbbf24" />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" fill={`url(#${uid}-streak)`} />
+        </g>
+      );
+    case 'bg_gold':
+      return (
+        <g key="bg">
+          <defs>
+            <radialGradient id={`${uid}-gold`} cx="50%" cy="40%" r="70%">
+              <stop offset="0%" stopColor="#fef9c3" />
+              <stop offset="100%" stopColor="#f59e0b" />
+            </radialGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" fill={`url(#${uid}-gold)`} />
+        </g>
+      );
+    case 'bg_grid':
+      return (
+        <g key="bg">
+          <rect x="0" y="0" width="100" height="100" fill="#eef2ff" />
+          {[20, 40, 60, 80].map((v) => (
+            <g key={v}>
+              <line x1={v} y1="0" x2={v} y2="100" stroke="#c7d2fe" strokeWidth="1" />
+              <line x1="0" y1={v} x2="100" y2={v} stroke="#c7d2fe" strokeWidth="1" />
+            </g>
+          ))}
+        </g>
+      );
+    case 'bg_night':
+      return (
+        <g key="bg">
+          <rect x="0" y="0" width="100" height="100" fill="#1e293b" />
+          {[[15, 20], [78, 15], [30, 60], [85, 70], [55, 30], [10, 85]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r={i % 2 ? 1.4 : 1} fill="#fde68a" />
+          ))}
+        </g>
+      );
+    case 'bg_confetti':
+      return (
+        <g key="bg">
+          <rect x="0" y="0" width="100" height="100" fill="#fafafa" />
+          {[['#f87171', 12, 18], ['#60a5fa', 82, 22], ['#34d399', 25, 70], ['#fbbf24', 88, 64], ['#a78bfa', 50, 12], ['#f472b6', 16, 50]].map(([c, x, y], i) => (
+            <rect key={i} x={x} y={y} width="5" height="5" rx="1" fill={c} transform={`rotate(${i * 35} ${x + 2} ${y + 2})`} />
+          ))}
+        </g>
+      );
+    case 'bg_none':
+    default:
+      return null;
+  }
 }
 
 function renderBase(color) {
@@ -240,6 +323,7 @@ function renderCrown() {
 export default function Avatar({ avatar, size = 64, crown = false, className = '', title }) {
   const a = normalizeAvatar(avatar);
   const color = getItem(a.base)?.color || '#6366f1';
+  const uid = useId();
   return (
     <svg
       width={size}
@@ -249,6 +333,12 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       role="img"
       aria-label={title || 'Avatar'}
     >
+      <defs>
+        <clipPath id={`${uid}-bgclip`}>
+          <circle cx="50" cy="50" r="50" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${uid}-bgclip)`}>{renderBackground(a.background, uid)}</g>
       {renderBase(color)}
       {renderOutfit(a.outfit)}
       {renderFace(a.face)}
