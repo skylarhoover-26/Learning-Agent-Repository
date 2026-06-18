@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonPlan } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
+import { alertAdmins } from '@/lib/admin-alert';
 
 // Plan generation can run long (large model output) and now retries internally,
 // so give the function room rather than letting it be cut short mid-generation.
@@ -34,7 +35,18 @@ export async function POST(request) {
       error: error?.message || null,
     }).catch(() => {});
 
-    if (error) throw error;
+    if (error) {
+      // The retries inside generateLessonPlan are exhausted — alert admins over
+      // Slack so we know it's still happening without waiting on a report.
+      // Throttled so a systemic outage can't fan out into an alert storm.
+      const who = profile?.display_name || profile?.email || 'a learner';
+      await alertAdmins(
+        `:warning: *Lesson failed to generate* (after all retries)\n` +
+        `• Topic: ${topic}\n• Depth: ${format || 'standard'}\n• Learner: ${who}\n• Error: ${error.message}`,
+        { throttleKey: 'lesson_plan_fail', throttleMinutes: 10 }
+      ).catch(() => {});
+      throw error;
+    }
     return NextResponse.json(plan);
   } catch (error) {
     console.error('POST /api/lesson/plan error:', error);
