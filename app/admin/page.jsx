@@ -19,6 +19,7 @@ import {
   Radar,
   SlidersHorizontal,
   Users,
+  Zap,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 
@@ -390,6 +391,19 @@ export default function AdminDashboard() {
           <div>
             <p className="font-semibold text-ink dark:text-slate-200 text-sm">People &amp; XP</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">See anyone&apos;s level, badges, lessons, and XP history — and grant or deduct XP</p>
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/xp-rules"
+          className="flex items-center gap-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4 hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-lg bg-brand flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="font-semibold text-ink dark:text-slate-200 text-sm">XP &amp; Levels</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Reference: exactly what earns XP, daily caps, and the leveling curve</p>
           </div>
         </Link>
 
