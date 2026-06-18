@@ -1193,8 +1193,8 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       {renderBase(baseItem, uid)}
       {renderOutfit(a.outfit)}
       {renderBeard(a.beard)}
-      {renderHair(a.hair, hairColorItem, uid)}
       {renderMakeup(a.makeup)}
+      {renderHair(a.hair, hairColorItem, uid)}
       {renderFace(a.face)}
       {renderEarrings(a.earrings)}
       {renderAccessory(a.accessory)}

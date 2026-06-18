@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
+import HomeLeaderboard from '@/components/home-leaderboard';
 import LiveSourcesFeed from '@/components/live-sources-feed';
 import UserMenu from '@/components/user-menu';
 import { SidebarToggle } from '@/components/sidebar';
@@ -193,7 +194,7 @@ export default async function Dashboard() {
           <LiveStreakCard />
           <div data-tour="home-leaderboard" className="md:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-ink dark:text-slate-200">Department Leaderboard</h3>
+              <h3 className="font-semibold text-ink dark:text-slate-200">Top Learners</h3>
               <Link
                 href="/leaderboard"
                 className="text-sm font-medium text-brand hover:text-brand-600 transition-colors"
@@ -201,9 +202,7 @@ export default async function Dashboard() {
                 View full leaderboard &rarr;
               </Link>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-              Leaderboard data will appear as team members complete lessons and earn XP.
-            </p>
+            <HomeLeaderboard />
           </div>
         </div>
 

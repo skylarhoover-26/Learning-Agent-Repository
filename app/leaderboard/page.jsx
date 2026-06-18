@@ -47,7 +47,7 @@ export default function LeaderboardPage() {
             <Crown className="w-5 h-5 text-amber-500" />
             <h2 className="text-lg font-bold text-ink dark:text-slate-200">Top Learners</h2>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              Top of each department wears the crown 👑
+              The #1 learner wears the crown 👑 — pass them to take it
             </span>
           </div>
 
@@ -104,7 +104,7 @@ export default function LeaderboardPage() {
                     <th className="px-4 py-3 text-center">Learners</th>
                     <th className="px-4 py-3 text-right">Total XP</th>
                     <th className="px-4 py-3 text-center">Avg Level</th>
-                    <th className="px-4 py-3">Champion 👑</th>
+                    <th className="px-4 py-3">Top Performer</th>
                   </tr>
                 </thead>
                 <tbody>
