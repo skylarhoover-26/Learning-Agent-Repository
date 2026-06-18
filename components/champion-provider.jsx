@@ -2,10 +2,11 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-// Tracks which learners currently hold their department crown, so the crown can
-// be "worn" everywhere (profile header, nav). The full leaderboard computation
-// lists every user blob, so we do it at most once per browser session and cache
-// the result — the leaderboard page itself refreshes the live view on demand.
+// Tracks who currently holds the crown (the #1 learner), so it can be "worn"
+// everywhere (profile header, nav, avatar locker). We hydrate instantly from a
+// cached value to avoid a flicker, then refresh from the live leaderboard on
+// every load so champion status (and the unlocked Crown in the locker) is never
+// stale — e.g. right after you take the #1 spot.
 
 const ChampionContext = createContext({ championIds: new Set(), refresh: () => {} });
 
@@ -14,7 +15,6 @@ export function useChampions() {
 }
 
 const CACHE_KEY = 'lp_champion_ids';
-const SESSION_FLAG = 'lp_champion_fetched';
 
 export function ChampionProvider({ children }) {
   const [championIds, setChampionIds] = useState(() => new Set());
@@ -42,13 +42,8 @@ export function ChampionProvider({ children }) {
     }
   }, []);
 
+  // Refresh on every load so the crown reflects the current standings.
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem(SESSION_FLAG)) return;
-      sessionStorage.setItem(SESSION_FLAG, '1');
-    } catch {
-      // sessionStorage unavailable — fetch anyway
-    }
     refresh();
   }, [refresh]);
 
