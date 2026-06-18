@@ -714,7 +714,15 @@ function renderBeard(id) {
   const HAIR = '#3f2d23';
   switch (id) {
     case 'beard_stubble':
-      return <path key="beard" d="M32 44 A18 18 0 0 0 68 44 Q50 60 32 44 Z" fill={HAIR} opacity="0.25" />;
+      return (
+        <g key="beard" fill={HAIR} opacity="0.45">
+          {[
+            [40, 52], [44, 54], [48, 55], [52, 55], [56, 54], [60, 52],
+            [37, 48], [63, 48], [42, 50], [58, 50], [50, 53],
+            [35, 44], [65, 44],
+          ].map(([cx, cy], i) => <circle key={i} cx={cx} cy={cy} r="0.8" />)}
+        </g>
+      );
     case 'beard_mustache':
       return (
         <g key="beard">
@@ -931,12 +939,122 @@ function renderPet(id) {
     case 'pet_cat':
       return (
         <g key="pet">
+          <path d="M93 86 Q99 84 97 92" fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
+          <ellipse cx="84" cy="86" rx="9" ry="8" fill="#f59e0b" />
+          <path d="M77 80 L79 73 L83 79 Z" fill="#f59e0b" />
+          <path d="M91 80 L89 73 L85 79 Z" fill="#f59e0b" />
+          <path d="M78 81 L79.5 76 L82 80 Z" fill="#fbbf24" />
+          <path d="M90 81 L88.5 76 L86 80 Z" fill="#fbbf24" />
+          <circle cx="81" cy="85" r="1.3" fill={INK} />
+          <circle cx="87" cy="85" r="1.3" fill={INK} />
+          <path d="M83 88 L85 88 L84 89 Z" fill="#fb7185" />
+          <line x1="76" y1="87" x2="82" y2="87.5" stroke={INK} strokeWidth="0.4" />
+          <line x1="92" y1="87" x2="86" y2="87.5" stroke={INK} strokeWidth="0.4" />
+        </g>
+      );
+    case 'pet_robocat':
+      return (
+        <g key="pet">
           <ellipse cx="84" cy="86" rx="9" ry="8" fill="#94a3b8" />
           <path d="M77 80 L79 73 L83 79 Z" fill="#94a3b8" />
           <path d="M91 80 L89 73 L85 79 Z" fill="#94a3b8" />
           <path d="M93 86 Q99 84 97 92" fill="none" stroke="#94a3b8" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="81" cy="85" r="1.4" fill={INK} />
-          <circle cx="87" cy="85" r="1.4" fill={INK} />
+          <circle cx="81" cy="85" r="1.4" fill="#06b6d4" />
+          <circle cx="87" cy="85" r="1.4" fill="#06b6d4" />
+        </g>
+      );
+    case 'pet_dog':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="87" rx="9" ry="8" fill="#b07c4f" />
+          <ellipse cx="76" cy="86" rx="3" ry="5" fill="#8a5a32" />
+          <ellipse cx="92" cy="86" rx="3" ry="5" fill="#8a5a32" />
+          <ellipse cx="84" cy="90" rx="4.5" ry="3.5" fill="#e7c9a8" />
+          <circle cx="81" cy="85" r="1.3" fill={INK} />
+          <circle cx="87" cy="85" r="1.3" fill={INK} />
+          <ellipse cx="84" cy="89" rx="1.3" ry="1" fill={INK} />
+        </g>
+      );
+    case 'pet_bunny':
+      return (
+        <g key="pet">
+          <ellipse cx="80" cy="78" rx="2.6" ry="6" fill="#f8fafc" />
+          <ellipse cx="88" cy="78" rx="2.6" ry="6" fill="#f8fafc" />
+          <ellipse cx="80" cy="78" rx="1.1" ry="3.5" fill="#fbcfe8" />
+          <ellipse cx="88" cy="78" rx="1.1" ry="3.5" fill="#fbcfe8" />
+          <ellipse cx="84" cy="88" rx="8" ry="7" fill="#f8fafc" />
+          <circle cx="81.5" cy="87" r="1.2" fill={INK} />
+          <circle cx="86.5" cy="87" r="1.2" fill={INK} />
+          <path d="M84 89 L83 90.5 L85 90.5 Z" fill="#fb7185" />
+        </g>
+      );
+    case 'pet_guineapig':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="87" rx="10" ry="7" fill="#c8884f" />
+          <path d="M74 84 Q72 82 75 81 Q77 82 77 85 Z" fill="#f8fafc" />
+          <path d="M84 80 Q80 82 88 82 Q86 80 84 80 Z" fill="#f8fafc" />
+          <circle cx="79" cy="86" r="1.3" fill={INK} />
+          <circle cx="86" cy="85" r="1.3" fill={INK} />
+          <ellipse cx="82" cy="89" rx="1.4" ry="1" fill="#7c4a24" />
+        </g>
+      );
+    case 'pet_capybara':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="88" rx="11" ry="7.5" fill="#9a6b43" />
+          <rect x="74" y="82" width="6" height="9" rx="3" fill="#9a6b43" />
+          <circle cx="74" cy="80" r="1.6" fill="#7c5436" />
+          <circle cx="80" cy="80" r="1.6" fill="#7c5436" />
+          <circle cx="76" cy="85" r="1.1" fill={INK} />
+          <ellipse cx="74" cy="90" rx="2" ry="1.4" fill="#6b4a2e" />
+        </g>
+      );
+    case 'pet_gecko':
+      return (
+        <g key="pet">
+          <path d="M72 90 Q78 84 86 86 Q94 88 96 84 Q92 92 84 91 Q78 93 74 96 Z" fill="#4ade80" />
+          <circle cx="76" cy="88" r="2.4" fill="#86efac" />
+          <circle cx="76" cy="88" r="1" fill={INK} />
+          <circle cx="80" cy="92" r="1" fill="#22c55e" />
+          <circle cx="88" cy="91" r="1" fill="#22c55e" />
+        </g>
+      );
+    case 'pet_cow':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="87" rx="9" ry="8" fill="#f8fafc" />
+          <path d="M76 82 Q73 80 75 78 Q78 79 78 82 Z" fill="#f8fafc" />
+          <path d="M92 82 Q95 80 93 78 Q90 79 90 82 Z" fill="#f8fafc" />
+          <path d="M76 80 L77 77 L79 80 Z" fill="#cbd5e1" />
+          <path d="M92 80 L91 77 L89 80 Z" fill="#cbd5e1" />
+          <circle cx="80" cy="84" r="2.2" fill={INK} />
+          <ellipse cx="88" cy="90" rx="3" ry="2" fill="#1f2937" />
+          <ellipse cx="84" cy="91" rx="4" ry="2.6" fill="#fbcfe8" />
+          <circle cx="81.5" cy="86" r="1.1" fill={INK} />
+          <circle cx="87" cy="86" r="1.1" fill={INK} />
+        </g>
+      );
+    case 'pet_frog':
+      return (
+        <g key="pet">
+          <ellipse cx="84" cy="89" rx="9" ry="6.5" fill="#22c55e" />
+          <circle cx="79" cy="82" r="3.5" fill="#22c55e" />
+          <circle cx="89" cy="82" r="3.5" fill="#22c55e" />
+          <circle cx="79" cy="82" r="1.6" fill="#fff" />
+          <circle cx="89" cy="82" r="1.6" fill="#fff" />
+          <circle cx="79" cy="82" r="0.9" fill={INK} />
+          <circle cx="89" cy="82" r="0.9" fill={INK} />
+          <path d="M78 90 Q84 94 90 90" fill="none" stroke="#15803d" strokeWidth="1.5" strokeLinecap="round" />
+        </g>
+      );
+    case 'pet_horse':
+      return (
+        <g key="pet">
+          <path d="M80 94 L80 84 Q80 78 86 77 L92 75 L92 80 L86 82 L86 94 Z" fill="#a16207" />
+          <path d="M86 76 L88 72 L90 77 Z" fill="#a16207" />
+          <path d="M84 80 Q88 78 92 76 Q90 82 86 84 Z" fill="#3f2d23" />
+          <circle cx="89" cy="79" r="1.1" fill={INK} />
         </g>
       );
     case 'pet_bot':
@@ -1063,9 +1181,9 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       <g clipPath={`url(#${uid}-bgclip)`}>{renderBackground(a.background, uid)}</g>
       {renderBase(baseItem, uid)}
       {renderOutfit(a.outfit)}
+      {renderBeard(a.beard)}
       {renderHair(a.hair, hairColorItem, uid)}
       {renderMakeup(a.makeup)}
-      {renderBeard(a.beard)}
       {renderFace(a.face)}
       {renderEarrings(a.earrings)}
       {renderAccessory(a.accessory)}
