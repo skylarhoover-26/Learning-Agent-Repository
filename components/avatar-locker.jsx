@@ -12,22 +12,36 @@ import { Lock, Check, Loader2 } from 'lucide-react';
 
 // The avatar locker: pick a piece per slot. Unlocked items can be equipped (and
 // toggled off — e.g. pet/accessory have a "None"); locked items show what earns
-// them. Changes save to the profile immediately so the avatar follows you
-// everywhere.
-export default function AvatarLocker() {
+// them.
+//
+// Two modes:
+//  - Default (profile mode): reads the avatar from the profile and saves each
+//    change immediately so it follows you everywhere.
+//  - Controlled mode (pass `value` + `onChange`, e.g. in onboarding before a
+//    profile exists): the parent owns the avatar; we don't auto-save. Pass `ctx`
+//    ({ level, badgeIds }) to control what's unlocked (onboarding = level 1).
+export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
   const { profile, updateProfile } = useProfile();
   const prog = useProgression();
-  const level = prog?.levelProgress?.level || 1;
-  const badgeIds = new Set((prog?.badgesEarned || []).map((b) => b.badge_id));
+  const controlled = value !== undefined && typeof onChange === 'function';
+
+  const level = ctxProp?.level ?? (prog?.levelProgress?.level || 1);
+  const badgeIds = ctxProp?.badgeIds ?? new Set((prog?.badgesEarned || []).map((b) => b.badge_id));
   const ctx = { level, badgeIds };
 
-  const [avatar, setAvatar] = useState(() => normalizeAvatar(profile?.avatar));
+  const [internal, setInternal] = useState(() => normalizeAvatar(profile?.avatar));
   const [activeSlot, setActiveSlot] = useState('base');
   const [saving, setSaving] = useState(false);
 
+  const avatar = controlled ? normalizeAvatar(value) : internal;
+
   async function equip(slot, id) {
     const next = { ...avatar, [slot]: id };
-    setAvatar(next);
+    if (controlled) {
+      onChange(next);
+      return;
+    }
+    setInternal(next);
     setSaving(true);
     try {
       await updateProfile({ avatar: next });
@@ -49,10 +63,12 @@ export default function AvatarLocker() {
           <Avatar avatar={avatar} size={96} />
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
-          <span className="inline-flex items-center gap-1">
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 text-green-500" />}
-            {saving ? 'Saving…' : 'Saved'}
-          </span>
+          {!controlled && (
+            <span className="inline-flex items-center gap-1">
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 text-green-500" />}
+              {saving ? 'Saving…' : 'Saved'}
+            </span>
+          )}
           <div className="mt-1">{unlockedCount(ctx)} / {totalItems} unlocked</div>
         </div>
       </div>

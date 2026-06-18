@@ -6,7 +6,7 @@ import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft,
-  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Star,
+  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Star, Smile,
 } from 'lucide-react';
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
@@ -14,10 +14,15 @@ import {
 import { toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
+import AvatarLocker from '@/components/avatar-locker';
+import { DEFAULT_AVATAR } from '@/lib/avatar-catalog';
 
 const SUB_TEAMS = SUBTEAMS;
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
+
+// During onboarding everyone is level 1, so only level-1 items are unlockable.
+const ONBOARDING_AVATAR_CTX = { level: 1, badgeIds: new Set() };
 
 // No cap — users can add as many tasks as they want (minimum 1).
 const MAX_TASKS = Infinity;
@@ -41,6 +46,7 @@ export default function OnboardingPage() {
   const [aiTools, setAiTools] = useState([]);
   const [customTool, setCustomTool] = useState('');
   const [addingTool, setAddingTool] = useState(false);
+  const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -54,6 +60,7 @@ export default function OnboardingPage() {
     if (step === 3) return tier.length > 0;
     if (step === 4) return goals.length > 0;
     if (step === 5) return aiTools.length > 0;
+    if (step === 6) return true; // avatar always valid (starts on defaults)
     return false;
   }, [step, department, subTeam, topTasks, tier, goals, aiTools]);
 
@@ -176,6 +183,7 @@ export default function OnboardingPage() {
       // prompts and other read sites that expect `profile.goal` keep working.
       goal: chosenGoals.join('; '),
       preferred_tools: serializeTools(aiTools),
+      avatar,
       onboarded_at: new Date().toISOString(),
     };
     try {
@@ -320,8 +328,15 @@ export default function OnboardingPage() {
               onCustomToolChange={setCustomTool}
               onAddCustom={addCustomAiTool}
               adding={addingTool}
-              onFinish={() => handleFinish(goals)}
+              onNext={goNext}
               canAdvance={canAdvance()}
+            />
+          )}
+          {step === 6 && (
+            <StepAvatar
+              avatar={avatar}
+              onChange={setAvatar}
+              onFinish={() => handleFinish(goals)}
             />
           )}
         </div>
@@ -617,7 +632,7 @@ function StepGoal({ selected, onToggle, onNext, canAdvance }) {
   );
 }
 
-function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolChange, onAddCustom, adding, onFinish, canAdvance }) {
+function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolChange, onAddCustom, adding, onNext, canAdvance }) {
   const { catalog } = useToolCatalog();
   const selectedKeys = new Set(selected.map((s) => toolKey(normalizeTool(s))));
   const primaryKey = selected.length ? toolKey(normalizeTool(selected[0])) : null;
@@ -696,9 +711,39 @@ function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolCh
       </div>
       <div className="text-center">
         <button
-          onClick={onFinish}
+          onClick={onNext}
           disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-green-600 text-white font-semibold shadow-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          Continue
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StepAvatar({ avatar, onChange, onFinish }) {
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-cta-50 mb-4">
+          <Smile className="w-7 h-7 text-cta-700" />
+        </div>
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
+          Make your avatar
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
+          Pick a look to start with. You&apos;ll unlock loads more — outfits, hats, hairstyles, sidekicks — as you level up. Tweak it anytime in your profile.
+        </p>
+      </div>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-6">
+        <AvatarLocker value={avatar} onChange={onChange} ctx={ONBOARDING_AVATAR_CTX} />
+      </div>
+      <div className="text-center">
+        <button
+          onClick={onFinish}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-green-600 text-white font-semibold shadow-sm hover:bg-green-700 transition-all"
         >
           <Sparkles className="w-4 h-4" />
           Start Learning
