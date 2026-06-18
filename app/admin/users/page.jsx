@@ -127,10 +127,31 @@ export default function AdminUsersPage() {
           ? { ...p, totalXp: result.totalXp ?? p.totalXp, level: result.level ?? p.level }
           : p))
         .sort((a, b) => b.totalXp - a.totalXp || (a.name || '').localeCompare(b.name || '')));
-      // NOTE: we intentionally do NOT re-read from the blob after a grant. The
-      // store is eventually-consistent and briefly serves a stale snapshot,
-      // which would replace the correct optimistic numbers with old events. The
-      // server response is authoritative; storage catches up on its own.
+      // The store is eventually-consistent, so a read right after a write can be
+      // stale. Poll the detail until storage actually reflects this grant's
+      // total, THEN swap in the authoritative state (a clean event list that
+      // sums to the total). Until it converges, the optimistic numbers stand.
+      const targetTotal = result.totalXp;
+      const reconcileId = selected;
+      (async () => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        for (let i = 0; i < 8; i += 1) {
+          await sleep(900);
+          try {
+            const r = await fetch(`/api/admin/user?learnerId=${encodeURIComponent(reconcileId)}`);
+            if (r.ok) {
+              const fresh = await r.json();
+              if (fresh.totalXp === targetTotal) {
+                setDetail((cur) => (cur && cur.learnerId === reconcileId ? fresh : cur));
+                loadPeople();
+                return;
+              }
+            }
+          } catch {
+            // keep polling
+          }
+        }
+      })();
     } catch {
       setGrantStatus('error');
     } finally {
