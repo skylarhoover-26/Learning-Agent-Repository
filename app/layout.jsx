@@ -13,7 +13,6 @@ import { TourProvider } from '@/components/guided-tour-provider';
 import HelpWidget from '@/components/help-widget';
 import IdentityGate from '@/components/identity-gate';
 import OnboardingTour from '@/components/onboarding-tour';
-import PausedLessonBanner from '@/components/paused-lesson-banner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,9 +50,6 @@ export default function RootLayout({ children }) {
                 <TourProvider>
                   <SideNav />
                   <SidebarShell>
-                    <div className="max-w-5xl mx-auto px-6 pt-4 empty:hidden">
-                      <PausedLessonBanner />
-                    </div>
                     {children}
                   </SidebarShell>
                   <OnboardingTour />

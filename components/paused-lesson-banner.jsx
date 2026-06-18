@@ -2,21 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Pause, Play, X } from 'lucide-react';
 
 // The plan-driven lesson player saves an in-progress lesson here when paused.
 const SAVE_KEY = 'lp_plan_lesson';
 const FORMAT_LABEL = { standard: 'Quick Lesson', deep_dive: 'Deep Dive', project_quest: 'Project Quest' };
 
-// A slim, app-wide banner that surfaces a paused lesson so someone working
-// through many lessons can jump back into the one they left. It reads the
-// player's save on every navigation (localStorage), and hides itself while the
-// learner is actually in a lesson. Dismiss only hides it for the session — the
-// saved lesson itself is untouched, so it reappears on the next visit until the
-// lesson is finished (the player clears the save on completion).
+// Surfaces a paused plan-driven lesson on the Lesson picker so someone working
+// through many lessons can jump back into the one they left. Reads the player's
+// save from localStorage. Dismiss only hides it for the session — the saved
+// lesson itself is untouched, so it reappears next visit until the lesson is
+// finished (the player clears the save on completion).
 export default function PausedLessonBanner() {
-  const pathname = usePathname();
   const [paused, setPaused] = useState(null);
   const [dismissed, setDismissed] = useState(false);
 
@@ -26,15 +23,12 @@ export default function PausedLessonBanner() {
       // Only treat it as resumable if it has a topic and isn't already finished.
       const isLive = saved && saved.topic && (saved.steps?.length || saved.plan);
       setPaused(isLive ? saved : null);
-      if (isLive) setDismissed(false); // a freshly paused lesson should show again
     } catch {
       setPaused(null);
     }
-  }, [pathname]);
+  }, []);
 
   if (!paused || dismissed) return null;
-  // Don't nag while they're inside a lesson — the player has its own controls.
-  if (pathname?.startsWith('/lesson')) return null;
 
   const fmt = FORMAT_LABEL[paused.format] || 'Lesson';
   const stepNum = (paused.stepIdx || 0) + 1;
@@ -47,11 +41,10 @@ export default function PausedLessonBanner() {
         <Pause className="w-4 h-4" />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-ink dark:text-slate-200">
-          <span className="font-semibold">Lesson paused:</span>{' '}
-          <span className="truncate">{paused.topic}</span>
+        <p className="text-sm text-ink dark:text-slate-200 truncate">
+          <span className="font-semibold">Lesson paused:</span> {paused.topic}
         </p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
           {fmt}{stepTotal ? ` · Step ${stepNum} of ${stepTotal}` : ''} — pick up where you left off
         </p>
       </div>
