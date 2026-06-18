@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
 import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
-import { Users, Search, Zap, Loader2, Crown, Award, BookOpen, Check } from 'lucide-react';
+import { Users, Search, Zap, Loader2, Crown, Award, BookOpen, Check, RotateCcw } from 'lucide-react';
 
 const BADGE_META = {
   first_lesson: { name: 'First Steps', emoji: '🎓' },
@@ -13,9 +13,16 @@ const BADGE_META = {
   three_day_streak: { name: 'On Fire', emoji: '🔥' },
   seven_day_streak: { name: 'Unstoppable', emoji: '⚡' },
   level_5: { name: 'Power Learner', emoji: '🚀' },
+  level_10: { name: 'Double Digits', emoji: '🔟' },
+  level_25: { name: 'Quarter Way', emoji: '🌟' },
+  level_50: { name: 'Halfway Hero', emoji: '🏔️' },
   first_game: { name: 'Game On', emoji: '🎮' },
-  five_games: { name: 'Game Master', emoji: '🕹️' },
+  five_games: { name: 'High Scorer', emoji: '🕹️' },
   first_quest: { name: 'Quest Champion', emoji: '🏆' },
+  first_project: { name: 'Goal Getter', emoji: '🎯' },
+  first_goal: { name: 'Aim High', emoji: '⭐' },
+  first_quiz: { name: 'Pop Quiz', emoji: '✏️' },
+  quiz_master: { name: 'Quiz Master', emoji: '💯' },
 };
 
 const SOURCE_LABELS = {
@@ -54,6 +61,7 @@ export default function AdminUsersPage() {
   const [granting, setGranting] = useState(false);
   const [grantStatus, setGrantStatus] = useState(null);
   const [grantedTotal, setGrantedTotal] = useState(null);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     fetch('/api/admin-check').then((r) => r.json()).then((d) => setAllowed(!!d.isAdmin)).catch(() => setAllowed(false));
@@ -159,6 +167,24 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function resetAllXp() {
+    if (!window.confirm('Reset XP to 0 for EVERYONE? This clears all points and admin grants. This cannot be undone.')) return;
+    setResetting(true);
+    try {
+      const res = await fetch('/api/admin/reset-xp', { method: 'POST' });
+      if (!res.ok) throw new Error();
+      // Clear the views immediately.
+      setDetail(null);
+      setSelected(null);
+      setPeople((prev) => prev.map((p) => ({ ...p, totalXp: 0, level: 1 })));
+      setTimeout(loadPeople, 1500);
+    } catch {
+      window.alert('Could not reset XP. Try again.');
+    } finally {
+      setResetting(false);
+    }
+  }
+
   if (allowed === null) {
     return <Shell><p className="text-center text-slate-500 py-10">Checking…</p></Shell>;
   }
@@ -177,6 +203,16 @@ export default function AdminUsersPage() {
   return (
     <Shell>
       <main className="max-w-6xl mx-auto px-6 py-6">
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={resetAllXp}
+            disabled={resetting}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
+          >
+            {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+            {resetting ? 'Resetting…' : 'Reset all XP'}
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-[320px,1fr] gap-6">
           {/* People list */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 overflow-hidden">

@@ -188,6 +188,7 @@ function LessonContent() {
   const [finishing, setFinishing] = useState(false);
   // Correctness (0..1) from the quiz, read when completion is recorded.
   const quizCorrectnessRef = useRef(1);
+  const quizCorrectRef = useRef(0);
   // Best-tool recommendation for THIS lesson ({ tool, why }).
   const [toolRec, setToolRec] = useState(null);
   const { refresh: refreshProgression } = useProgression() || {};
@@ -345,6 +346,7 @@ function LessonContent() {
     setQuizQuestions(null);
     setQuizActive(false);
     quizCorrectnessRef.current = 1;
+    quizCorrectRef.current = 0;
     setFinishing(false);
     // Ask which tool is best for this lesson (parallel, best-effort).
     setToolRec(null);
@@ -429,6 +431,7 @@ function LessonContent() {
     // Quick tips are completion-only — no quiz, full XP.
     if (format === 'quick_tip') {
       quizCorrectnessRef.current = 1;
+      quizCorrectRef.current = 0;
       wrapUpLesson();
       return;
     }
@@ -460,8 +463,9 @@ function LessonContent() {
   }
 
   // Called when the learner finishes the checkpoint quiz. correctness is 0..1.
-  function handleQuizFinish(correctness) {
+  function handleQuizFinish(correctness, stats) {
     quizCorrectnessRef.current = correctness;
+    quizCorrectRef.current = stats?.correctCount || 0;
     setFinishing(true);
     setQuizActive(false);
     wrapUpLesson();
@@ -505,6 +509,7 @@ function LessonContent() {
         const result = onLessonComplete(resolveLearnerId(profile), topic, lessonStartedAt.current, {
           format,
           correctness: quizCorrectnessRef.current,
+          quizCorrect: quizCorrectRef.current,
         });
         emitXp(result);
         refreshProgression?.();

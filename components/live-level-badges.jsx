@@ -17,7 +17,12 @@ const BADGE_META = {
   first_quest: { id: 'first_quest', name: 'Quest Champion', emoji: '🏆' },
   first_project: { id: 'first_project', name: 'Goal Getter', emoji: '🎯' },
   first_goal: { id: 'first_goal', name: 'Aim High', emoji: '⭐' },
+  first_game: { id: 'first_game', name: 'Game On', emoji: '🎮' },
+  five_games: { id: 'five_games', name: 'High Scorer', emoji: '🕹️' },
   level_5: { id: 'level_5', name: 'Power Learner', emoji: '🚀' },
+  level_10: { id: 'level_10', name: 'Double Digits', emoji: '🔟' },
+  level_25: { id: 'level_25', name: 'Quarter Way', emoji: '🌟' },
+  level_50: { id: 'level_50', name: 'Halfway Hero', emoji: '🏔️' },
 };
 
 export default function LiveLevelBadges() {

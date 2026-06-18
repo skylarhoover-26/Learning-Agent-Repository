@@ -14,6 +14,7 @@ import {
 import { toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
+import { addBadgeEarned } from '@/lib/learner-store';
 import AvatarLocker from '@/components/avatar-locker';
 import { DEFAULT_AVATAR } from '@/lib/avatar-catalog';
 
@@ -193,6 +194,8 @@ export default function OnboardingPage() {
         body: JSON.stringify({ type: 'profile', data: profile }),
       });
       await refreshProfile();
+      // First learning goal set → award the "Aim High" badge.
+      if (profile.id && chosenGoals.length > 0) addBadgeEarned(profile.id, 'first_goal');
       trackOnboardingComplete(profile);
     } catch (error) {
       console.error('Failed to save profile:', error);

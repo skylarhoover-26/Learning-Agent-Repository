@@ -19,6 +19,9 @@ const XP_SOURCE_LABELS = {
   quest_complete: 'Quest completed',
   chat: 'Chatted with the coach',
   chat_message: 'Chatted with the coach',
+  review_correct: 'Review answered',
+  admin_grant: 'Granted by an admin',
+  admin_correction: 'Balance adjusted',
 };
 
 function xpSourceLabel(source) {
@@ -38,7 +41,12 @@ const ALL_BADGES = [
   { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest', href: '/quests' },
   { id: 'first_project', name: 'Goal Getter', emoji: '🎯', description: 'Add your first work project', href: '/projects' },
   { id: 'first_goal', name: 'Aim High', emoji: '⭐', description: 'Set your first learning goal', href: '/goals' },
+  { id: 'first_game', name: 'Game On', emoji: '🎮', description: 'Play your first learning game', href: '/games' },
+  { id: 'five_games', name: 'High Scorer', emoji: '🕹️', description: 'Play 5 learning games', href: '/games' },
   { id: 'level_5', name: 'Power Learner', emoji: '🚀', description: 'Reach Level 5', href: '/library' },
+  { id: 'level_10', name: 'Double Digits', emoji: '🔟', description: 'Reach Level 10', href: '/library' },
+  { id: 'level_25', name: 'Quarter Way', emoji: '🌟', description: 'Reach Level 25', href: '/library' },
+  { id: 'level_50', name: 'Halfway Hero', emoji: '🏔️', description: 'Reach Level 50', href: '/library' },
 ];
 
 export default function AchievementsLive() {
@@ -163,19 +171,30 @@ export default function AchievementsLive() {
               <h3 className="text-lg font-bold text-ink dark:text-slate-200">Recent XP</h3>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card divide-y divide-slate-100 dark:divide-slate-700">
-              {recentXp.map((e, i) => (
-                <div key={e.id || i} className="flex items-center justify-between gap-4 px-5 py-3">
-                  <div>
-                    <p className="text-sm text-ink dark:text-slate-200">{xpSourceLabel(e.source)}</p>
-                    {e.created_at && (
-                      <p className="text-xs text-slate-400">{new Date(e.created_at).toLocaleDateString()}</p>
-                    )}
+              {recentXp.map((e, i) => {
+                const isAdmin = e.source === 'admin_grant' || e.source === 'admin_correction';
+                const reason = e.meta?.reason;
+                const by = e.meta?.by;
+                const negative = (e.amount || 0) < 0;
+                return (
+                  <div key={e.id || i} className="flex items-center justify-between gap-4 px-5 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-ink dark:text-slate-200">{xpSourceLabel(e.source)}</p>
+                      {isAdmin && reason && (
+                        <p className="text-xs text-slate-600 dark:text-slate-300">“{reason}”</p>
+                      )}
+                      <p className="text-xs text-slate-400">
+                        {isAdmin && by ? `by ${by}` : ''}
+                        {isAdmin && by && e.created_at ? ' · ' : ''}
+                        {e.created_at ? new Date(e.created_at).toLocaleDateString() : ''}
+                      </p>
+                    </div>
+                    <span className={`text-sm font-semibold shrink-0 ${negative ? 'text-red-500' : 'text-cta-600 dark:text-cta-300'}`}>
+                      {negative ? '' : '+'}{e.amount} XP
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-cta-600 dark:text-cta-300 shrink-0">
-                    +{e.amount} XP
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
