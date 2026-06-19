@@ -232,23 +232,48 @@ export default function PlanLessonPlayer({ topic, format = 'standard', onExit })
     setTeachError((prev) => ({ ...prev, [step.id]: false }));
     const priorTitles = steps.slice(0, stepIdx).filter((s) => s.kind === 'teach').map((s) => s.title);
     const priorContent = buildPriorContent(stepIdx);
-    fetch('/api/lesson/teach', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, objectives, step, priorTitles, priorContent, tools: lessonToolIds || toolIds }),
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
-      .then((d) => {
-        if (!active) return;
-        if (!d?.message) throw new Error('empty');
-        setTeachContent((prev) => {
-          const updated = { ...prev, [step.id]: { message: d.message, keyPoints: d.keyPoints || [] } };
-          persist({ teachContent: updated });
-          return updated;
-        });
-      })
-      .catch(() => { if (active) setTeachError((prev) => ({ ...prev, [step.id]: true })); })
-      .finally(() => { if (active) setTeachLoading(false); });
+
+    // Teach generation is an LLM call that can transiently fail or be slow on a
+    // cold function. Auto-retry a few times with a per-attempt timeout (the plan
+    // fetch above already does the same) so a step loads on its own instead of
+    // stranding the learner on "Preparing…" until they hit Retry.
+    (async () => {
+      const MAX_ATTEMPTS = 3;
+      const TIMEOUT_MS = 30000;
+      for (let attempt = 1; active && attempt <= MAX_ATTEMPTS; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        try {
+          const res = await fetch('/api/lesson/teach', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, objectives, step, priorTitles, priorContent, tools: lessonToolIds || toolIds }),
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          if (!res.ok) throw new Error('failed');
+          const d = await res.json();
+          if (!d?.message) throw new Error('empty');
+          if (!active) return;
+          setTeachContent((prev) => {
+            const updated = { ...prev, [step.id]: { message: d.message, keyPoints: d.keyPoints || [] } };
+            persist({ teachContent: updated });
+            return updated;
+          });
+          if (active) setTeachLoading(false);
+          return; // success — stop retrying
+        } catch {
+          clearTimeout(timer);
+          if (!active) return;
+          if (attempt < MAX_ATTEMPTS) {
+            await new Promise((r) => setTimeout(r, 1200 * attempt)); // backoff, keep showing "Preparing…"
+            continue;
+          }
+          setTeachError((prev) => ({ ...prev, [step.id]: true }));
+          setTeachLoading(false);
+        }
+      }
+    })();
     return () => { active = false; };
   }, [step, stepIdx, retryTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
