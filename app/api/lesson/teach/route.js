@@ -29,6 +29,7 @@ export async function POST(request) {
       step: body.step || {},
       priorTitles: body.priorTitles || [],
       priorContent: body.priorContent || [],
+      upcoming: body.upcoming || null,
     });
     return NextResponse.json(result);
   } catch (error) {

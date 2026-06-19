@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
 import LessonQuiz from '@/components/lesson-quiz';
 import PlanLessonPlayer from '@/components/plan-lesson-player';
-import { QUESTS } from '@/lib/quest-data';
 import { emitXp } from '@/lib/xp-bus';
 import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete, getLessonHistory } from '@/lib/progression';
@@ -72,7 +70,7 @@ function LessonContent() {
   const initialTopic = searchParams.get('topic');
   const initialFormat = (() => {
     const f = searchParams.get('format');
-    return ['quick_tip', 'standard', 'deep_dive'].includes(f) ? f : null;
+    return ['quick_tip', 'standard', 'deep_dive', 'project_quest'].includes(f) ? f : null;
   })();
   const initialMode = searchParams.get('mode') === 'watch' ? 'watch' : 'read';
   // `prefill` carries a topic (e.g. from an AI News item) into the picker so the
@@ -84,6 +82,12 @@ function LessonContent() {
   const [topic, setTopic] = useState(initialTopic || '');
   const [customTopic, setCustomTopic] = useState(initialPrefill);
   const [format, setFormat] = useState(initialFormat || 'standard');
+  // Vague-topic clarify step: when a typed topic is too broad, hold the AI's
+  // clarifying question + pickable directions here and show a card instead of
+  // starting the lesson straight away. `clarifying` is the in-flight check.
+  const [clarify, setClarify] = useState(null);
+  const [clarifying, setClarifying] = useState(false);
+  const [clarifyRefine, setClarifyRefine] = useState('');
 
   // Learning mode: 'read' = interactive chat-driven lesson; 'watch' = narrated
   // video. In watch mode, selecting a topic opens the VideoLessonPlayer instead.
@@ -428,6 +432,67 @@ function LessonContent() {
     }
   }
 
+  // Typed topics get a quick vagueness check first: if the topic is too broad,
+  // show a clarify card so the learner can pick a sharper direction (which makes
+  // the lesson far more useful). Specific topics start immediately. Suggested
+  // topic chips skip this — they're already specific.
+  //
+  // A picked angle ("Connecting APIs and apps") is often still broad, so each
+  // selection gets re-checked and can prompt one more round — capped so it never
+  // turns into an interrogation.
+  const MAX_CLARIFY_ROUNDS = 3;
+
+  // `context` is the broader topic this input refines — sent so the check keeps
+  // the original domain/tool (e.g. "n8n") instead of judging the bare refinement.
+  // `rootContext` is the very first typed topic, kept stable across rounds so the
+  // anchor never drifts to a later bare phrase.
+  async function clarifyOrStart(trimmed, roundToShow, context, rootContext) {
+    setClarifying(true);
+    try {
+      const res = await fetch('/api/lesson/clarify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: trimmed, context }),
+      });
+      const data = res.ok ? await res.json() : { vague: false };
+      if (roundToShow <= MAX_CLARIFY_ROUNDS && data?.vague && Array.isArray(data.angles) && data.angles.length) {
+        setClarify({ original: trimmed, round: roundToShow, rootContext: rootContext || trimmed, ...data });
+        setClarifyRefine('');
+      } else {
+        chooseClarified(trimmed);
+      }
+    } catch {
+      chooseClarified(trimmed);
+    } finally {
+      setClarifying(false);
+    }
+  }
+
+  function submitCustomTopic(t) {
+    const trimmed = (t || '').trim();
+    if (!trimmed || clarifying) return;
+    clarifyOrStart(trimmed, 1, undefined, trimmed);
+  }
+
+  // The learner picked an angle or typed a sharper topic — re-check it (it may
+  // still be broad) and prompt one more round, up to the cap. Anchor the re-check
+  // to the original topic so a typed refinement keeps its domain/tool.
+  function refineClarify(t) {
+    const trimmed = (t || '').trim();
+    if (!trimmed || clarifying) return;
+    const root = clarify?.rootContext || clarify?.original;
+    clarifyOrStart(trimmed, (clarify?.round || 1) + 1, root, root);
+  }
+
+  // Start immediately on this topic, no further re-check (used by "Just the
+  // basics" and the "just teach me X" escape).
+  function chooseClarified(t) {
+    const trimmed = (t || '').trim();
+    if (!trimmed) return;
+    setClarify(null);
+    chooseTopic(trimmed);
+  }
+
   async function continueLesson(input, displayLabel) {
     setUserInputs((prev) => [...prev, displayLabel || input]);
     setIsLoading(true);
@@ -515,6 +580,7 @@ function LessonContent() {
   function resetToPickerView() {
     clearSavedLesson();
     setView('picker');
+    setClarify(null);
     setTopic('');
     setSlides([]);
     setMessages([]);
@@ -717,62 +783,14 @@ function LessonContent() {
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
             {format === 'project_quest'
               ? (learnMode === 'watch'
-                  ? 'Pick a project below and we’ll generate a short narrated walkthrough — read aloud to you (it’s not a video).'
-                  : 'Pick a project below to build it for real, guided step by step.')
+                  ? 'Pick or type a project and we’ll generate a narrated walkthrough — read aloud to you (it’s not a video).'
+                  : 'Pick or type a project and we’ll build it with you for real, guided step by step.')
               : (learnMode === 'watch'
                   ? 'Pick a topic below and we’ll generate a short narrated lesson — slides read aloud to you (it’s not a video).'
                   : 'Pick a topic below for a hands-on lesson you work through step by step.')}
           </p>
         </div>
 
-        {/* Project Quest: show the curated quests right here (no page jump).
-            "Read & build" links to the interactive quest; "Narrated lesson" opens
-            the narrated player sourced from the quest's steps. */}
-        {format === 'project_quest' && (
-          <div className="mb-8">
-            <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-              <StepNum n={3} /> Pick a project
-            </h3>
-            <div className="space-y-3">
-              {QUESTS.map((q) => {
-                const cardClass = 'group flex items-start gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card transition-all text-left w-full';
-                const inner = (
-                  <>
-                    <span className="text-2xl mt-0.5 shrink-0">
-                      {learnMode === 'watch' ? <PlayCircle className="w-7 h-7 text-cta-600" /> : (q.icon || '🏆')}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-ink dark:text-slate-200">{q.title}</div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{q.description}</p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
-                        {q.difficulty && <span>{q.difficulty}</span>}
-                        {q.duration && <span>· {q.duration}</span>}
-                        {q.steps?.length && <span>· {q.steps.length} steps</span>}
-                        {learnMode === 'watch' ? <span>· narrated</span> : (q.xpReward && <span>· {q.xpReward} XP</span>)}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-1 transition-all" />
-                  </>
-                );
-                return learnMode === 'watch' ? (
-                  <button
-                    key={q.id}
-                    onClick={() => { setVideoQuestId(q.id); setVideoTopic(q.title); }}
-                    className={cardClass}
-                  >
-                    {inner}
-                  </button>
-                ) : (
-                  <Link key={q.id} href={`/quests/${q.id}`} className={cardClass}>
-                    {inner}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {format !== 'project_quest' && (<>
         <div data-tour="lesson-topics" className="mb-8">
           <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             <StepNum n={3} /> Pick a topic
@@ -814,25 +832,86 @@ function LessonContent() {
               type="text"
               value={customTopic}
               onChange={(e) => setCustomTopic(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && customTopic.trim()) chooseTopic(customTopic.trim()); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && customTopic.trim()) submitCustomTopic(customTopic.trim()); }}
               placeholder="e.g., 'how to use AI for budget forecasting'"
               className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
             />
             <button
               data-tour="lesson-start"
-              onClick={() => customTopic.trim() && chooseTopic(customTopic.trim())}
-              disabled={!customTopic.trim()}
+              onClick={() => customTopic.trim() && submitCustomTopic(customTopic.trim())}
+              disabled={!customTopic.trim() || clarifying}
               className="px-5 py-3 rounded-xl bg-brand text-white font-medium hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all inline-flex items-center gap-1.5"
             >
-              {learnMode === 'watch' ? <><PlayCircle className="w-4 h-4" /> Watch</> : 'Start'}
+              {clarifying ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Checking…</>
+              ) : learnMode === 'watch' ? (
+                <><PlayCircle className="w-4 h-4" /> Watch</>
+              ) : 'Start'}
             </button>
           </div>
+
+          {/* Vague topic → clarify card: pick a sharper direction or type one. */}
+          {clarify && (
+            <div className="mt-4 rounded-xl border border-brand-200 dark:border-slate-600 bg-brand-50/60 dark:bg-slate-900/60 p-4">
+              <p className="flex items-start gap-2 text-sm font-semibold text-ink dark:text-slate-200">
+                <Sparkles className="w-4 h-4 text-brand mt-0.5 shrink-0" />
+                {clarify.question}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-6">
+                A more specific topic makes for a much more useful lesson.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                {clarify.angles.map((a, i) => (
+                  <button
+                    key={i}
+                    onClick={() => refineClarify(a.topic)}
+                    disabled={clarifying}
+                    title={a.topic}
+                    className="px-3.5 py-2 rounded-pill bg-brand text-white text-sm font-medium hover:bg-brand-600 disabled:opacity-50 transition-all text-left"
+                  >
+                    {a.label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => chooseClarified(clarify.basics.topic)}
+                  disabled={clarifying}
+                  className="px-3.5 py-2 rounded-pill border border-brand-300 dark:border-slate-600 text-brand dark:text-brand-200 text-sm font-medium hover:bg-brand-100/60 dark:hover:bg-slate-700 disabled:opacity-50 transition-all"
+                >
+                  {clarify.basics.label}
+                </button>
+                {clarifying && <Loader2 className="w-4 h-4 animate-spin text-brand" />}
+              </div>
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="text"
+                  value={clarifyRefine}
+                  onChange={(e) => setClarifyRefine(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && clarifyRefine.trim()) refineClarify(clarifyRefine.trim()); }}
+                  placeholder="…or type something more specific"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none"
+                />
+                <button
+                  onClick={() => clarifyRefine.trim() && refineClarify(clarifyRefine.trim())}
+                  disabled={!clarifyRefine.trim() || clarifying}
+                  className="px-4 py-2.5 rounded-xl bg-brand text-white font-medium text-sm hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  {learnMode === 'watch' ? 'Watch' : 'Start'}
+                </button>
+              </div>
+              <button
+                onClick={() => chooseClarified(clarify.original)}
+                disabled={clarifying}
+                className="mt-2 text-xs text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-50 transition-colors"
+              >
+                Just teach me “{clarify.original}” →
+              </button>
+            </div>
+          )}
         </div>
 
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-4">
           ✨ Suggested topics are personalized to your role and tasks · {REFRESH_LABEL}
         </p>
-        </>)}
       </main>
       {videoTopic && (
         <VideoLessonPlayer
@@ -963,9 +1042,10 @@ function LessonContent() {
     </div>
   );
 
-  // Quick Lessons & Deep Dives (read mode) use the plan-driven player: Bloom
-  // objectives, required interactive activities, Step X of N, pause/resume.
-  if (view === 'lesson' && learnMode === 'read' && (format === 'standard' || format === 'deep_dive')) {
+  // Quick Lessons, Deep Dives & Project Quests (read mode) use the plan-driven
+  // player: Bloom objectives, required interactive activities, Step X of N,
+  // pause/resume.
+  if (view === 'lesson' && learnMode === 'read' && (format === 'standard' || format === 'deep_dive' || format === 'project_quest')) {
     return (
       <>
         <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
