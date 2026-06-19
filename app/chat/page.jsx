@@ -8,7 +8,7 @@ import { onChatMessage } from '@/lib/progression';
 import { emitXp } from '@/lib/xp-bus';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
-import { MessageCircle, Send, Loader2, Trash2, ExternalLink } from 'lucide-react';
+import { MessageCircle, MessageSquare, Send, Loader2, Trash2, ExternalLink } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import ChatLessonOffer from '@/components/chat-lesson-offer';
 import LlmWindowCallout from '@/components/llm-window-callout';
@@ -186,42 +186,104 @@ function ChatPageInner() {
     <div className="min-h-screen flex flex-col">
       <PageHeader icon={MessageCircle} title="Just Chat" subtitle="Ask me anything about AI" />
 
-      {/* Input pinned at the top — type here, replies appear directly below. */}
-      <div data-tour="page-chat" className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 py-4">
-          <div className="flex items-end gap-3">
-            <textarea
-              data-tour="chat-input"
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything about AI..."
-              rows={1}
-              className="flex-1 resize-none px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 focus:outline-none transition-all max-h-32"
-              disabled={isLoading}
-            />
-            <button
-              data-tour="chat-send"
-              onClick={sendMessage}
-              disabled={!input.trim() || isLoading}
-              className="p-3 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              aria-label="Send message"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-            {messages.length > 0 && (
+      <main ref={mainRef} className="flex-1 overflow-y-auto">
+        <div data-tour="chat-thread" className="max-w-3xl mx-auto px-6 py-6 space-y-4">
+          <LlmWindowCallout storageKey="chat" />
+
+          {/* Ask box — the answer threads in right below it (lesson Q&A style). */}
+          <div data-tour="page-chat" className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-3">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Ask anything about AI — I&apos;ll answer right here and teach by example.</p>
+              {messages.length > 0 && (
+                <button
+                  onClick={() => { clearChatHistory(); setMessages([]); }}
+                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 transition-colors"
+                  aria-label="Clear chat"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Clear
+                </button>
+              )}
+            </div>
+            <div className="flex items-end gap-2">
+              <textarea
+                data-tour="chat-input"
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask anything about AI..."
+                rows={1}
+                className="flex-1 resize-none px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand max-h-32"
+                disabled={isLoading}
+              />
               <button
-                onClick={() => { clearChatHistory(); setMessages([]); }}
-                className="p-3 rounded-xl bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all"
-                aria-label="Clear chat"
+                data-tour="chat-send"
+                onClick={sendMessage}
+                disabled={!input.trim() || isLoading}
+                className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all shrink-0"
+                aria-label="Send message"
               >
-                <Trash2 className="w-5 h-5" />
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
+            </div>
+
+            {/* Suggestions live in the box while the conversation is empty. */}
+            {messages.length === 0 && !isLoading && (
+              <div data-tour="chat-suggestions" className="flex flex-wrap gap-2 mt-3">
+                {buildSuggestions(profile).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setInput(s); inputRef.current?.focus(); }}
+                    className="px-3 py-1.5 text-sm bg-bg-subtle dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-pill text-ink dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:border-brand-200 hover:text-brand transition-all"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Threaded conversation — newest exchange first, right under the input. */}
+            {orderedTurns.length > 0 && (
+              <div className="mt-3 space-y-3 border-t border-slate-100 dark:border-slate-700 pt-3">
+                {orderedTurns.map((turn, ti) => (
+                  <div key={turn[0].i} className="space-y-1.5">
+                    {turn.map(({ msg, i }) => (
+                      msg.role === 'user' ? (
+                        <div key={i} className="flex justify-end">
+                          <div className="max-w-[85%] bg-brand text-white px-3 py-2 rounded-2xl rounded-br-md text-sm whitespace-pre-wrap">{msg.content}</div>
+                        </div>
+                      ) : (
+                        <div key={i} className="flex items-start gap-2">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-slate-700 text-brand shrink-0">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div data-tour="chat-reply" className="rounded-2xl rounded-bl-md bg-bg-subtle dark:bg-slate-900 px-3 py-2 text-sm">
+                              <FormattedContent text={msg.content} />
+                            </div>
+                            {msg.lessonTopic && <div className="mt-1.5"><ChatLessonOffer topic={msg.lessonTopic} /></div>}
+                          </div>
+                        </div>
+                      )
+                    ))}
+                    {ti === 0 && isLoading && (
+                      <div className="flex items-start gap-2">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-slate-700 text-brand shrink-0">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </span>
+                        <div className="rounded-2xl rounded-bl-md bg-bg-subtle dark:bg-slate-900 px-3 py-2 text-sm">
+                          <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">Press Enter to send · Shift+Enter for new line · Need a human?</span>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">Press Enter to send · Shift+Enter for new line · Need a human?</span>
             {SLACK_CHANNELS.map(c => (
               <a
                 key={c.href}
@@ -235,75 +297,7 @@ function ChatPageInner() {
               </a>
             ))}
           </div>
-        </div>
-      </div>
-
-      <main ref={mainRef} className="flex-1 overflow-y-auto">
-        <div data-tour="chat-thread" className="max-w-3xl mx-auto px-6 py-6 space-y-4">
-          <LlmWindowCallout storageKey="chat" />
-
-          {isLoading && (
-            <div className="flex flex-col items-start gap-1">
-              <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Thinking...</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {orderedTurns.map((turn) => (
-            <div key={turn[0].i} className="space-y-4">
-              {turn.map(({ msg, i }) => (
-                <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
-                  <div
-                    data-tour={msg.role === 'assistant' ? 'chat-reply' : undefined}
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                      msg.role === 'user'
-                        ? 'bg-brand text-white'
-                        : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm'
-                    }`}
-                  >
-                    {msg.role === 'assistant'
-                      ? <FormattedContent text={msg.content} />
-                      : <p className="whitespace-pre-wrap">{msg.content}</p>
-                    }
-                  </div>
-                  {msg.role === 'assistant' && msg.lessonTopic && (
-                    <ChatLessonOffer topic={msg.lessonTopic} />
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
-
-          {messages.length === 0 && !isLoading && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 ring-1 ring-brand-100 dark:ring-slate-600 mx-auto mb-4 flex items-center justify-center">
-                <MessageCircle className="w-8 h-8 text-brand" strokeWidth={1.5} />
-              </div>
-              <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
-                What do you want to know about AI?
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
-                I'll adapt to your level and teach by example. Try asking about prompting, agents, or anything you're curious about.
-              </p>
-              <div data-tour="chat-suggestions" className="flex flex-wrap gap-2 justify-center">
-                {buildSuggestions(profile).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                    className="px-4 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-pill text-ink dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:border-brand-200 hover:text-brand transition-all"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 text-center">
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center">
             Chats are saved to your account and may be reviewed by admins to improve training.
           </p>
         </div>
