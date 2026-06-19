@@ -122,13 +122,33 @@ function ChatPageInner() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, tools }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Something went wrong');
+      // The reply is an LLM call that can transiently fail or be slow on a cold
+      // function. Auto-retry a few times with a per-attempt timeout before
+      // surfacing the error, so a one-off blip doesn't drop the message.
+      let data = null;
+      let lastErr = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 30000);
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: newMessages, tools }),
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          const json = await response.json();
+          if (!response.ok) throw new Error(json.error || 'Something went wrong');
+          data = json;
+          break;
+        } catch (err) {
+          clearTimeout(timer);
+          lastErr = err;
+          if (attempt < 3) await new Promise((r) => setTimeout(r, 1200 * attempt));
+        }
+      }
+      if (!data) throw lastErr || new Error('Something went wrong');
       // lessonTopic is detected server-side (see /api/chat) when the learner
       // asks a what/how/explain question, so chat can offer a lesson.
       const updatedMessages = [...newMessages, { role: 'assistant', content: data.reply, lessonTopic: data.lessonTopic }];
@@ -204,19 +224,19 @@ function ChatPageInner() {
               >
                 {msg.role === 'assistant' ? (
                   <>
+                    <FormattedContent text={msg.content} />
                     {(() => {
                       const tryTool = detectTryTool(msg.content);
                       return tryTool?.url ? (
                         <button
                           onClick={() => openLlmWindow(tryTool.url)}
-                          className="mb-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-brand text-white text-xs font-semibold hover:bg-brand-700 transition-colors"
+                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-brand text-white text-xs font-semibold hover:bg-brand-700 transition-colors"
                         >
                           Open {tryTool.emoji} {tryTool.label}
                           <ExternalLink className="w-3.5 h-3.5" />
                         </button>
                       ) : null;
                     })()}
-                    <FormattedContent text={msg.content} />
                   </>
                 ) : (
                   <p className="whitespace-pre-wrap">{msg.content}</p>

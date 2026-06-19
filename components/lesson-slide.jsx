@@ -23,15 +23,18 @@ function CodeBlock({ code }) {
   }
 
   return (
-    <div className="relative my-3">
-      <button
-        onClick={copy}
-        aria-label={copied ? 'Copied' : 'Copy code'}
-        className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-700/80 text-slate-100 hover:bg-slate-600 opacity-70 hover:opacity-100 transition-all"
-      >
-        {copied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
-      </button>
-      <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 pr-20 text-sm overflow-x-auto font-mono">
+    <div className="my-3 rounded-xl overflow-hidden bg-slate-900">
+      {/* Copy lives in a header bar so it never overlaps long code lines. */}
+      <div className="flex justify-end px-2 py-1.5 border-b border-slate-700/60">
+        <button
+          onClick={copy}
+          aria-label={copied ? 'Copied' : 'Copy code'}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
+        >
+          {copied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+        </button>
+      </div>
+      <pre className="text-slate-100 px-4 py-3 text-sm overflow-x-auto font-mono">
         <code>{code}</code>
       </pre>
     </div>
