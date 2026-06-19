@@ -89,6 +89,9 @@ function LessonContent() {
   // video. In watch mode, selecting a topic opens the VideoLessonPlayer instead.
   const [learnMode, setLearnMode] = useState(initialMode);
   const [videoTopic, setVideoTopic] = useState(null);
+  // When the narrated player is showing a Project Quest, this holds the quest id so
+  // the script is sourced from the quest's curated steps.
+  const [videoQuestId, setVideoQuestId] = useState(null);
 
   // Lesson state
   const [slides, setSlides] = useState([]);
@@ -685,14 +688,15 @@ function LessonContent() {
           </div>
         </div>
 
-        {format !== 'project_quest' && (
         <div data-tour="lesson-mode" className="mb-8">
           <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             <StepNum n={2} /> How do you want to learn?
           </h3>
           <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
             {[
-              { key: 'read', icon: BookOpen, label: 'Read & practice', desc: 'Interactive, chat-driven' },
+              format === 'project_quest'
+                ? { key: 'read', icon: BookOpen, label: 'Read & build', desc: 'Interactive, step by step' }
+                : { key: 'read', icon: BookOpen, label: 'Read & practice', desc: 'Interactive, chat-driven' },
               { key: 'watch', icon: PlayCircle, label: 'Narrated lesson', desc: 'Sit back & listen' },
             ].map((m) => (
               <button
@@ -711,40 +715,59 @@ function LessonContent() {
             ))}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-            {learnMode === 'watch'
-              ? 'Pick a topic below and we’ll generate a short narrated lesson — slides read aloud to you (it’s not a video).'
-              : 'Pick a topic below for a hands-on lesson you work through step by step.'}
+            {format === 'project_quest'
+              ? (learnMode === 'watch'
+                  ? 'Pick a project below and we’ll generate a short narrated walkthrough — read aloud to you (it’s not a video).'
+                  : 'Pick a project below to build it for real, guided step by step.')
+              : (learnMode === 'watch'
+                  ? 'Pick a topic below and we’ll generate a short narrated lesson — slides read aloud to you (it’s not a video).'
+                  : 'Pick a topic below for a hands-on lesson you work through step by step.')}
           </p>
         </div>
-        )}
 
-        {/* Project Quest: show the curated quests right here (no page jump). */}
+        {/* Project Quest: show the curated quests right here (no page jump).
+            "Read & build" links to the interactive quest; "Narrated lesson" opens
+            the narrated player sourced from the quest's steps. */}
         {format === 'project_quest' && (
           <div className="mb-8">
             <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-              <StepNum n={2} /> Pick a project
+              <StepNum n={3} /> Pick a project
             </h3>
             <div className="space-y-3">
-              {QUESTS.map((q) => (
-                <Link
-                  key={q.id}
-                  href={`/quests/${q.id}`}
-                  className="group flex items-start gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card transition-all"
-                >
-                  <span className="text-2xl mt-0.5 shrink-0">{q.icon || '🏆'}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-ink dark:text-slate-200">{q.title}</div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{q.description}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
-                      {q.difficulty && <span>{q.difficulty}</span>}
-                      {q.duration && <span>· {q.duration}</span>}
-                      {q.steps?.length && <span>· {q.steps.length} steps</span>}
-                      {q.xpReward && <span>· {q.xpReward} XP</span>}
+              {QUESTS.map((q) => {
+                const cardClass = 'group flex items-start gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card transition-all text-left w-full';
+                const inner = (
+                  <>
+                    <span className="text-2xl mt-0.5 shrink-0">
+                      {learnMode === 'watch' ? <PlayCircle className="w-7 h-7 text-cta-600" /> : (q.icon || '🏆')}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-ink dark:text-slate-200">{q.title}</div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{q.description}</p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                        {q.difficulty && <span>{q.difficulty}</span>}
+                        {q.duration && <span>· {q.duration}</span>}
+                        {q.steps?.length && <span>· {q.steps.length} steps</span>}
+                        {learnMode === 'watch' ? <span>· narrated</span> : (q.xpReward && <span>· {q.xpReward} XP</span>)}
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-1 transition-all" />
-                </Link>
-              ))}
+                    <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-1 transition-all" />
+                  </>
+                );
+                return learnMode === 'watch' ? (
+                  <button
+                    key={q.id}
+                    onClick={() => { setVideoQuestId(q.id); setVideoTopic(q.title); }}
+                    className={cardClass}
+                  >
+                    {inner}
+                  </button>
+                ) : (
+                  <Link key={q.id} href={`/quests/${q.id}`} className={cardClass}>
+                    {inner}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
@@ -816,7 +839,8 @@ function LessonContent() {
           topic={videoTopic}
           format={format}
           tools={tools}
-          onClose={() => setVideoTopic(null)}
+          questId={videoQuestId}
+          onClose={() => { setVideoTopic(null); setVideoQuestId(null); }}
         />
       )}
       </>

@@ -14,7 +14,7 @@ import BookLoader from '@/components/book-loader';
  * narrated slideshow: each scene is read aloud (OpenAI TTS) and advances when the
  * narration finishes. Play/pause, previous/next, and replay controls are provided.
  */
-export default function VideoLessonPlayer({ topic, format = 'standard', tools, onClose }) {
+export default function VideoLessonPlayer({ topic, format = 'standard', tools, questId, onClose }) {
   const [script, setScript] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [sceneIdx, setSceneIdx] = useState(0);
@@ -45,7 +45,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, o
     fetch('/api/lesson/video', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, format, tools }),
+      body: JSON.stringify({ topic, format, tools, questId }),
     })
       .then((r) => (r.ok ? r.json() : r.json().then((d) => Promise.reject(new Error(d.error || 'Failed')))))
       .then((data) => {
