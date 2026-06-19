@@ -1,8 +1,42 @@
 'use client';
 
-import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2, Copy, Check } from 'lucide-react';
 import { useTts } from '@/lib/use-tts';
 import MermaidDiagram from '@/components/mermaid-diagram';
+
+/**
+ * A fenced code block with a copy-to-clipboard button. Used for prompts and
+ * snippets in chat and lessons so people can grab the text in one tap.
+ */
+function CodeBlock({ code }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard may be blocked; nothing else to do */
+    }
+  }
+
+  return (
+    <div className="relative my-3">
+      <button
+        onClick={copy}
+        aria-label={copied ? 'Copied' : 'Copy code'}
+        className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-700/80 text-slate-100 hover:bg-slate-600 opacity-70 hover:opacity-100 transition-all"
+      >
+        {copied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+      </button>
+      <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 pr-20 text-sm overflow-x-auto font-mono">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
 
 /**
  * Renders a markdown-ish string into React elements.
@@ -34,12 +68,7 @@ export function FormattedContent({ text }) {
         );
       } else {
         elements.push(
-          <pre
-            key={`code-${elements.length}`}
-            className="bg-slate-900 text-slate-100 rounded-xl p-4 text-sm overflow-x-auto my-3 font-mono"
-          >
-            <code>{codeLines.join('\n')}</code>
-          </pre>
+          <CodeBlock key={`code-${elements.length}`} code={codeLines.join('\n')} />
         );
       }
       continue;

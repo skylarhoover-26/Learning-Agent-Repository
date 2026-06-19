@@ -29,7 +29,37 @@ export default function UserMenu() {
   const displayName = displayNameFromProfile(profile);
   const isChampion = profile ? championIds.has(resolveLearnerId(profile)) : false;
 
+  // Okta drives identity once it's configured; until then the "session" is the
+  // IdentityGate soft-login cookie, which NextAuth's signOut doesn't touch.
+  const oktaConfigured = !!process.env.NEXT_PUBLIC_OKTA_CONFIGURED;
+
   const [open, setOpen] = useState(false);
+
+  async function handleLogout() {
+    setOpen(false);
+    if (oktaConfigured) {
+      // Real SSO session — let NextAuth end it and bounce to the sign-in page.
+      signOut({ callbackUrl: '/auth/signin' });
+      return;
+    }
+    // Pre-Okta soft login: clear the identity cookie and wipe this browser's
+    // cached learner data so the next tester starts clean, then hard-reload so
+    // the IdentityGate reappears.
+    try {
+      await fetch('/api/identity', { method: 'DELETE' });
+    } catch {
+      /* never block logout on a failed clear */
+    }
+    try {
+      const prefixes = ['lp_', 'learner_', 'ai_impact_', 'calibration_', 'tutorial_completed'];
+      Object.keys(localStorage)
+        .filter((k) => prefixes.some((p) => k === p || k.startsWith(p)))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {
+      /* localStorage may be unavailable; identity cookie is already cleared */
+    }
+    window.location.href = '/';
+  }
   // When the guided tour drives the dropdown, we keep it open and ignore the
   // outside-click handler (the tour's Next/Close buttons live outside it).
   const [tourControlled, setTourControlled] = useState(false);
@@ -111,7 +141,7 @@ export default function UserMenu() {
             ))}
             <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
               <button
-                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                onClick={handleLogout}
                 role="menuitem"
                 className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >

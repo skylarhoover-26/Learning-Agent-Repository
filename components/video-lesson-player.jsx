@@ -54,7 +54,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
         setScript(data);
       })
       .catch((err) => {
-        if (!cancelled) setLoadError(err.message || 'Failed to generate the video.');
+        if (!cancelled) setLoadError(err.message || 'Failed to generate the narrated lesson.');
       });
     return () => { cancelled = true; };
   }, [topic, format]);
@@ -166,7 +166,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
         <button
           onClick={handleClose}
           className="absolute -top-2 right-0 -translate-y-full sm:translate-y-0 sm:-top-12 text-slate-300 hover:text-white flex items-center gap-1.5 text-sm font-medium"
-          aria-label="Close video"
+          aria-label="Close narrated lesson"
         >
           <X className="w-5 h-5" /> Close
         </button>
@@ -174,8 +174,8 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
         {/* Loading */}
         {!script && !loadError && (
           <div className="bg-slate-900 rounded-2xl p-12 border border-slate-800">
-            <BookLoader message={`Creating your video on ${topic}...`} size="lg" />
-            <p className="text-center text-slate-500 text-xs mt-4">Writing the script and preparing narration.</p>
+            <BookLoader message={`Preparing your narrated lesson on ${topic}...`} size="lg" />
+            <p className="text-center text-slate-500 text-xs mt-4">Writing the script and preparing the narration.</p>
           </div>
         )}
 
@@ -207,8 +207,8 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
 
               {finished ? (
                 <div className="text-center">
-                  <div className="text-5xl mb-4">🎬</div>
-                  <h2 className="text-2xl font-bold text-white mb-2">That&apos;s a wrap!</h2>
+                  <div className="text-5xl mb-4">🎧</div>
+                  <h2 className="text-2xl font-bold text-white mb-2">All done!</h2>
                   <p className="text-slate-400 mb-6">{script.title}</p>
                   <div className="flex items-center justify-center gap-3">
                     <button
