@@ -11,7 +11,7 @@ import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete, getLessonHistory } from '@/lib/progression';
 import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
 import { useProfile } from '@/components/profile-provider';
-import { getSavedLesson, saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
+import { saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
 import BookLoader from '@/components/book-loader';
 import {
   BookOpen, ChevronRight, Zap, BookMarked, Trophy,
@@ -22,7 +22,7 @@ import { useTts } from '@/lib/use-tts';
 import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
-import PausedLessonBanner from '@/components/paused-lesson-banner';
+import PausedLessonsBox from '@/components/paused-lessons-box';
 import LlmWindowCallout from '@/components/llm-window-callout';
 import { useActiveTool } from '@/components/active-tool-provider';
 import SurpriseWin from '@/components/surprise-win';
@@ -195,8 +195,6 @@ function LessonContent() {
     }
   }
 
-  // Saved lesson state (for resume banner)
-  const [savedLesson, setSavedLesson] = useState(null);
   const debounceSaveRef = useRef(null);
 
   // Progression state
@@ -218,10 +216,6 @@ function LessonContent() {
   const { tools } = useActiveTool();
 
   useEffect(() => {
-    const saved = getSavedLesson();
-    if (saved) {
-      setSavedLesson(saved);
-    }
     if (initialTopic) {
       // Deep link / Today's Pick: default to the 3-5 min Quick Lesson unless the
       // URL explicitly asks for another depth. Do not inherit the saved picker choice.
@@ -578,7 +572,7 @@ function LessonContent() {
   }
 
   function resetToPickerView() {
-    clearSavedLesson();
+    clearSavedLesson(topic, format);
     setView('picker');
     setClarify(null);
     setTopic('');
@@ -601,7 +595,7 @@ function LessonContent() {
   const handleLessonComplete = useCallback(() => {
     if (hasRecordedCompletion.current) return;
     hasRecordedCompletion.current = true;
-    clearSavedLesson();
+    clearSavedLesson(topic, format);
     try {
       if (profile && topic) {
         const durationMs = lessonStartedAt.current ? Date.now() - lessonStartedAt.current : 0;
@@ -648,52 +642,32 @@ function LessonContent() {
       );
     }
 
-    function resumeSavedLesson() {
-      if (!savedLesson) return;
-      setTopic(savedLesson.topic);
-      setFormat(savedLesson.format || 'standard');
-      setSlides(savedLesson.slides || []);
-      setCurrentSlideIdx(savedLesson.currentSlideIdx || 0);
-      setMessages(savedLesson.messages || []);
-      setUserInputs(savedLesson.userInputs || []);
-      lessonStartedAt.current = savedLesson.lessonStartedAt || new Date().toISOString();
-      hasRecordedCompletion.current = false;
-      practicePrefilledRef.current = true; // don't auto-prefill mid-lesson on resume
+    // Resume a paused lesson from the Paused lessons box — in-page (no URL
+    // navigation), so it works even though we're already on /lesson. Plan
+    // lessons (standard/deep_dive/project_quest) restore inside the plan player
+    // from the store; quick tips restore their conversational state here.
+    function handleResumeEntry(entry) {
+      const s = entry.state || {};
+      setTopic(entry.topic);
+      setFormat(entry.format || 'standard');
+      setLearnMode('read');
+      if (entry.format === 'quick_tip') {
+        setSlides(s.slides || []);
+        setCurrentSlideIdx(s.currentSlideIdx || 0);
+        setMessages(s.messages || []);
+        setUserInputs(s.userInputs || []);
+        lessonStartedAt.current = s.lessonStartedAt || new Date().toISOString();
+        hasRecordedCompletion.current = false;
+        practicePrefilledRef.current = true; // don't auto-prefill mid-lesson on resume
+      }
       setView('lesson');
-      setSavedLesson(null);
-    }
-
-    function dismissSavedLesson() {
-      clearSavedLesson();
-      setSavedLesson(null);
     }
 
     return (
       <>
       <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
       <main data-tour="lesson-main" className="max-w-4xl mx-auto px-6 py-10">
-        <PausedLessonBanner />
-        {savedLesson && (
-          <div className="mb-8 bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800 rounded-xl p-4 flex items-center justify-between gap-4">
-            <p className="text-sm text-slate-700 dark:text-slate-300">
-              You have a lesson in progress: <strong className="text-ink dark:text-slate-200">{savedLesson.topic}</strong>
-            </p>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={resumeSavedLesson}
-                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-600 transition-all"
-              >
-                Resume
-              </button>
-              <button
-                onClick={dismissSavedLesson}
-                className="px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-              >
-                Start Fresh
-              </button>
-            </div>
-          </div>
-        )}
+        <PausedLessonsBox onResume={handleResumeEntry} />
 
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">📚</div>

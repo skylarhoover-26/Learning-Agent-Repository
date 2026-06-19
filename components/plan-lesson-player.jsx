@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { FormattedContent } from '@/components/lesson-slide';
 import LessonInteractive from '@/components/lesson-interactive';
 import LessonActivity from '@/components/lesson-activity';
+import ConfettiBurst from '@/components/confetti-burst';
+import { getPausedLesson, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import LlmWindowCallout from '@/components/llm-window-callout';
 import BookLoader from '@/components/book-loader';
 import { useProfile } from '@/components/profile-provider';
@@ -15,10 +17,9 @@ import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
 import {
   Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare, RefreshCw,
-  Hammer, Copy, Download, Sparkles,
+  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink,
 } from 'lucide-react';
 
-const SAVE_KEY = 'lp_plan_lesson';
 const FORMAT_LABEL = { standard: 'Quick Lesson', deep_dive: 'Deep Dive', project_quest: 'Project Quest' };
 
 // The concrete terms/items an activity will quiz, so the preceding teach step
@@ -104,6 +105,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const [buildReview, setBuildReview] = useState({});    // stepId -> { feedback, suggestions, looksGood }
   const [buildReviewing, setBuildReviewing] = useState(null); // stepId currently being reviewed
   const [copied, setCopied] = useState(false);
+  // Celebratory confetti when the learner reaches the recap — fire once.
+  const [showConfetti, setShowConfetti] = useState(false);
+  const celebratedRef = useRef(false);
+
+  // End-of-lesson: claim XP first, THEN run the "did this help?" checkpoint.
+  const [claimed, setClaimed] = useState(false);      // XP recorded, lesson done
+  const [helpful, setHelpful] = useState(null);       // null | 'yes' | 'no'
+  const [stillUnclear, setStillUnclear] = useState('');
+  const [nextSteps, setNextSteps] = useState(null);   // { intro, steps, prompt }
+  const [nextLoading, setNextLoading] = useState(false);
+  const [nextCopied, setNextCopied] = useState(false);
 
   // When a sharper topic is ready, the confirm lives in a banner at the top
   // (easy to miss at the bottom of a long lesson) — scroll it into view.
@@ -119,8 +131,8 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     (async () => {
       // Resume an in-progress session for this exact lesson if one exists.
       try {
-        const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-        if (saved && saved.topic === topic && saved.format === format && saved.plan) {
+        const saved = getPausedLesson(format, topic)?.state || null;
+        if (saved && saved.plan) {
           if (!active) return;
           setPlan(saved.plan);
           setSteps(saved.steps || saved.plan.steps);
@@ -215,6 +227,14 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const step = steps[stepIdx] || null;
   const total = steps.length;
 
+  // Celebrate the moment they reach the recap — confetti, once per lesson.
+  useEffect(() => {
+    if (step?.kind === 'recap' && !celebratedRef.current) {
+      celebratedRef.current = true;
+      setShowConfetti(true);
+    }
+  }, [step]);
+
   // ---- Detect a mid-lesson tool switch --------------------------------------
   // Recompute the tool this lesson WOULD resolve to from the learner's current
   // tools (recommended-if-owned, else primary) and compare to the tool it was
@@ -233,7 +253,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // scratch on the next render. Shared by the tool-switch rebuild and the
   // "not what I was looking for" topic refinement.
   function resetForRebuild() {
-    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    // `topic` here is still the lesson being left (regenerateWithTopic sets the
+    // new topic just before this, but the closure keeps the old value), so this
+    // clears the OLD paused entry; the new topic gets its own on next persist.
+    removePausedLesson(format, topic);
     recorded.current = false;
     startedAt.current = new Date().toISOString();
     setPlan(null);
@@ -249,6 +272,13 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     setError(null);
     setConfirmingRebuild(false);
     setDismissedForToolId(null);
+    // Reset the end-of-lesson checkpoint so the regenerated lesson earns its own
+    // XP and gets a fresh "did this help?" prompt.
+    setClaimed(false);
+    setHelpful(null);
+    setStillUnclear('');
+    setNextSteps(null);
+    celebratedRef.current = false;
     setLoading(true);
     setRebuildNonce((n) => n + 1);
   }
@@ -310,11 +340,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
   // ---- Persist progress (pause/resume) --------------------------------------
   const persist = useCallback((next = {}) => {
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify({
+    const sIdx = next.stepIdx ?? stepIdx;
+    const sArr = next.steps || steps;
+    upsertPausedLesson({
+      format,
+      topic,
+      startedAt: startedAt.current,
+      stepLabel: sArr.length ? `Step ${sIdx + 1} of ${sArr.length}` : '',
+      state: {
         topic, format, plan,
-        steps: next.steps || steps,
-        stepIdx: next.stepIdx ?? stepIdx,
+        steps: sArr,
+        stepIdx: sIdx,
         teachContent: next.teachContent || teachContent,
         resolved: next.resolved || resolved,
         artifact: next.artifact || artifact,
@@ -322,10 +358,8 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         lessonToolIds,
         recommendation,
         startedAt: startedAt.current,
-      }));
-    } catch {
-      // localStorage full/unavailable
-    }
+      },
+    });
   }, [topic, format, plan, steps, stepIdx, teachContent, resolved, artifact, qaThread, lessonToolIds, recommendation]);
 
   // The actual teaching text the learner has already seen, in order — fed to the
@@ -570,11 +604,60 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     }
   }
 
-  function finishLesson() {
-    if (recorded.current) return;
+  // ---- End-of-lesson checkpoint ---------------------------------------------
+  async function getNextSteps() {
+    if (nextLoading) return;
+    setNextLoading(true);
+    try {
+      const res = await fetch('/api/lesson/next-steps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, format, objectives, stillUnclear }),
+      });
+      const d = res.ok ? await res.json() : null;
+      if (d) setNextSteps(d);
+    } catch {
+      // best-effort; leave nextSteps null and let them try again
+    } finally {
+      setNextLoading(false);
+    }
+  }
+
+  // Reuse the refine→regenerate flow for "take a more focused lesson", seeding it
+  // with what they said is still unclear so it gets to a sharper topic faster.
+  function startBetterLesson() {
+    const seed = stillUnclear.trim();
+    setRefineOpen(true);
+    setRefineReady(null);
+    if (seed && refineMessages.length === 0) {
+      const msgs = [{ role: 'user', content: seed }];
+      setRefineMessages(msgs);
+      runRefineStep(msgs);
+    } else if (refineMessages.length === 0) {
+      runRefineStep([]);
+    }
+    // The refine chat lives at the bottom of the player — bring it into view.
+    setTimeout(() => {
+      try { document.querySelector('[data-refine-box]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* ignore */ }
+    }, 50);
+  }
+
+  async function copyNextPrompt() {
+    if (!nextSteps?.prompt) return;
+    try {
+      await navigator.clipboard.writeText(nextSteps.prompt);
+      setNextCopied(true);
+      setTimeout(() => setNextCopied(false), 2000);
+    } catch { /* clipboard unavailable */ }
+  }
+
+  // Claim XP and complete the lesson, but DON'T leave — we then show the
+  // "did this help?" checkpoint so they can grab resources after earning XP.
+  function claimXp() {
+    if (recorded.current) { setClaimed(true); return; }
     recorded.current = true;
     try {
-      localStorage.removeItem(SAVE_KEY);
+      removePausedLesson(format, topic);
       if (profile) {
         const durationMs = Date.now() - new Date(startedAt.current).getTime();
         const activityCount = steps.filter((s) => s.kind === 'activity').length;
@@ -590,6 +673,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     } catch {
       // best-effort
     }
+    setClaimed(true);
+  }
+
+  // Leave the lesson once they're done with the checkpoint.
+  function exitLesson() {
     if (onExit) onExit();
     else router.push('/');
   }
@@ -629,8 +717,98 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
   const teach = step && (step.kind === 'teach' || step.kind === 'qa') ? teachContent[step.id] : null;
 
+  // Shown AFTER they claim XP: did the lesson answer what they came for? "Yes,
+  // I'm all set" just exits; "Not quite" surfaces tailored resources or a more
+  // focused lesson. Their XP is already banked, so nothing here gates it.
+  const checkpointBlock = (
+    <div className="mt-5 border-t border-slate-100 dark:border-slate-700 pt-5">
+      {helpful !== 'no' ? (
+        <>
+          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400 mb-3">
+            <Trophy className="w-4 h-4" /> XP earned — nice work!
+          </p>
+          <p className="text-center text-sm font-semibold text-ink dark:text-slate-200 mb-1">
+            One more thing — did this help with what you came to learn?
+          </p>
+          <p className="text-center text-xs text-slate-500 dark:text-slate-400 mb-3 truncate">{topic}</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button onClick={exitLesson} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-all">
+              <Check className="w-4 h-4" /> Yes, I&rsquo;m all set
+            </button>
+            <button onClick={() => setHelpful('no')} className="px-5 py-2.5 rounded-pill border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+              Not quite
+            </button>
+          </div>
+        </>
+      ) : (
+        <div>
+          <p className="text-sm font-semibold text-ink dark:text-slate-200 mb-1">No problem — let&rsquo;s get you unstuck.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">What were you still hoping to figure out? (optional — makes the help more specific)</p>
+          <input
+            value={stillUnclear}
+            onChange={(e) => setStillUnclear(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') getNextSteps(); }}
+            placeholder="e.g., I still don't know how to connect the Slack node"
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand mb-3"
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={getNextSteps} disabled={nextLoading} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-brand text-white text-sm font-semibold hover:bg-brand-600 disabled:opacity-50 transition-all">
+              {nextLoading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding resources…</> : <><LifeBuoy className="w-3.5 h-3.5" /> Get troubleshooting resources</>}
+            </button>
+            <button onClick={startBetterLesson} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 text-sm font-medium hover:bg-brand-100/60 dark:hover:bg-slate-700 transition-all">
+              <RotateCcw className="w-3.5 h-3.5" /> Take a more focused lesson
+            </button>
+          </div>
+
+          {nextSteps && (
+            <div className="mt-4 rounded-xl bg-bg-subtle dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
+              {nextSteps.intro && <p className="text-sm text-ink dark:text-slate-200 mb-2">{nextSteps.intro}</p>}
+              <ul className="space-y-2">
+                {nextSteps.steps?.map((s, i) => (
+                  <li key={i} className="text-sm">
+                    <span className="font-semibold text-ink dark:text-slate-200">{s.title}</span>
+                    {s.detail ? <span className="text-slate-600 dark:text-slate-400"> — {s.detail}</span> : null}
+                    {s.url ? <> <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline inline-flex items-center gap-0.5">open <ExternalLink className="w-3 h-3" /></a></> : null}
+                  </li>
+                ))}
+              </ul>
+              {nextSteps.prompt && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Paste this into your AI tool</p>
+                    <button onClick={copyNextPrompt} className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-600">
+                      {nextCopied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+                    </button>
+                  </div>
+                  <div className="rounded-lg bg-ink/90 dark:bg-slate-950 text-slate-100 text-xs p-3 whitespace-pre-wrap">{nextSteps.prompt}</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-4 text-center">
+            <button onClick={exitLesson} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+              Back to lessons
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Recap footer: claim XP first; once claimed, the checkpoint takes its place.
+  const recapFooter = !claimed ? (
+    <div className="mt-5 text-center">
+      <button onClick={claimXp} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-all">
+        <Trophy className="w-4 h-4" /> Finish &amp; earn XP
+      </button>
+    </div>
+  ) : checkpointBlock;
+
   return (
     <div className="space-y-5">
+      {showConfetti && <ConfettiBurst onDone={() => setShowConfetti(false)} />}
+
       {/* Refinement ready — prominent confirm at the top so it isn't missed at
           the bottom of a long lesson. */}
       {refineOpen && refineReady && (
@@ -879,19 +1057,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                 <button onClick={downloadDeliverable} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 text-sm font-medium hover:bg-brand-100/60 dark:hover:bg-slate-700 transition-all">
                   <Download className="w-4 h-4" /> Download .md
                 </button>
-                <button onClick={finishLesson} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-all">
-                  <Trophy className="w-4 h-4" /> Finish &amp; earn XP
-                </button>
               </div>
+              {recapFooter}
             </div>
           ) : (
-            <div className="text-center py-4">
-              <Trophy className="w-10 h-10 text-cta-500 mx-auto mb-2" />
-              <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">You did it!</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{isQuest ? 'You worked through every step of your project.' : 'You completed every activity and proved each objective.'}</p>
-              <button onClick={finishLesson} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-all">
-                <Trophy className="w-4 h-4" /> Finish &amp; earn XP
-              </button>
+            <div className="py-4">
+              <div className="text-center">
+                <Trophy className="w-10 h-10 text-cta-500 mx-auto mb-2" />
+                <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">You did it!</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{isQuest ? 'You worked through every step of your project.' : 'You completed every activity and proved each objective.'}</p>
+              </div>
+              {recapFooter}
             </div>
           )
         )}
@@ -976,7 +1152,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           </button>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-brand-200 dark:border-slate-600 shadow-card p-4">
+        <div data-refine-box className="bg-white dark:bg-slate-800 rounded-2xl border border-brand-200 dark:border-slate-600 shadow-card p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-ink dark:text-slate-200">
               <MessageSquare className="w-4 h-4 text-brand" /> Let&rsquo;s find a better fit
