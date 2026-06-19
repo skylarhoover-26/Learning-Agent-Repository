@@ -42,21 +42,16 @@ export default function UserMenu() {
       signOut({ callbackUrl: '/auth/signin' });
       return;
     }
-    // Pre-Okta soft login: clear the identity cookie and wipe this browser's
-    // cached learner data so the next tester starts clean, then hard-reload so
-    // the IdentityGate reappears.
+    // Pre-Okta soft login: clear ONLY the identity cookie, then hard-reload so
+    // the IdentityGate reappears. We must NOT touch the lp_*/learner_* progress
+    // keys — they're namespaced per learner id, so a different tester is already
+    // isolated, and wiping them destroys the local XP log. That made the
+    // idempotent first-login bonus re-fire (+25 XP) and desynced the learner's
+    // total from the server-backed leaderboard.
     try {
       await fetch('/api/identity', { method: 'DELETE' });
     } catch {
       /* never block logout on a failed clear */
-    }
-    try {
-      const prefixes = ['lp_', 'learner_', 'ai_impact_', 'calibration_', 'tutorial_completed'];
-      Object.keys(localStorage)
-        .filter((k) => prefixes.some((p) => k === p || k.startsWith(p)))
-        .forEach((k) => localStorage.removeItem(k));
-    } catch {
-      /* localStorage may be unavailable; identity cookie is already cleared */
     }
     window.location.href = '/';
   }
