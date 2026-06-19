@@ -13,21 +13,6 @@ import { FormattedContent } from '@/components/lesson-slide';
 import ChatLessonOffer from '@/components/chat-lesson-offer';
 import LlmWindowCallout from '@/components/llm-window-callout';
 import { useActiveTool } from '@/components/active-tool-provider';
-import { AI_TOOLS } from '@/lib/ai-tools';
-import { openLlmWindow } from '@/lib/open-llm-window';
-
-// When a reply invites the learner to try a prompt in a specific AI tool
-// ("try this in Claude", "paste it into ChatGPT"), surface a one-click
-// "Open <tool>" link at the top of that reply — same idea as the lesson callout.
-// Requires both an action verb and a named tool so plain mentions don't trigger.
-function detectTryTool(text) {
-  if (!text) return null;
-  const lower = text.toLowerCase();
-  if (!/\b(try|paste|drop|run|open|use)\b/.test(lower)) return null;
-  // Longest label first so "GitHub Copilot" wins over a bare "Copilot".
-  const byLength = [...AI_TOOLS].sort((a, b) => b.label.length - a.label.length);
-  return byLength.find((t) => lower.includes(t.label.toLowerCase())) || null;
-}
 
 // Same support channels surfaced by the floating help widget, pinned in the
 // chat footer so learners can reach the team without leaving the conversation.
@@ -222,25 +207,10 @@ function ChatPageInner() {
                     : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm'
                 }`}
               >
-                {msg.role === 'assistant' ? (
-                  <>
-                    <FormattedContent text={msg.content} />
-                    {(() => {
-                      const tryTool = detectTryTool(msg.content);
-                      return tryTool?.url ? (
-                        <button
-                          onClick={() => openLlmWindow(tryTool.url)}
-                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-brand text-white text-xs font-semibold hover:bg-brand-700 transition-colors"
-                        >
-                          Open {tryTool.emoji} {tryTool.label}
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
-                      ) : null;
-                    })()}
-                  </>
-                ) : (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                )}
+                {msg.role === 'assistant'
+                  ? <FormattedContent text={msg.content} />
+                  : <p className="whitespace-pre-wrap">{msg.content}</p>
+                }
               </div>
               {msg.role === 'assistant' && msg.lessonTopic && (
                 <ChatLessonOffer topic={msg.lessonTopic} />
