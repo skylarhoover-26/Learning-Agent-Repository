@@ -5,6 +5,7 @@ import { getAllData } from '@/lib/learner-store';
 import { getTotalXp, getLevel, getLevelProgress, calculateStreak, awardFirstLoginXp } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
+import { onXp } from '@/lib/xp-bus';
 
 const ProgressionContext = createContext(null);
 
@@ -63,6 +64,12 @@ export function ProgressionProvider({ children }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Re-read progress whenever XP is awarded anywhere in the app (chat, game,
+  // lesson, welcome bonus, admin grant). Without this, the hero/stats/Recent-XP
+  // stay stale until a full reload while the (separately-fetched) leaderboard
+  // already reflects the new total — which looks like XP went missing.
+  useEffect(() => onXp(() => load()), [load]);
 
   // Award the one-time first-login bonus the first time a learner's profile is
   // available. Guarded per learner here, and idempotent in awardFirstLoginXp,
