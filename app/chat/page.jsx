@@ -46,6 +46,18 @@ function buildSuggestions(profile) {
   return [...new Set(out)].slice(0, 4);
 }
 
+// Group the flat message list into turns (a user message + the assistant
+// reply(s) that follow), preserving each message's original index for keys.
+// Lets us show newest-turn-first while keeping each turn readable top-to-bottom.
+function groupTurns(msgs) {
+  const turns = [];
+  msgs.forEach((msg, i) => {
+    if (msg.role === 'user' || turns.length === 0) turns.push([{ msg, i }]);
+    else turns[turns.length - 1].push({ msg, i });
+  });
+  return turns;
+}
+
 export default function ChatPage() {
   return (
     <Suspense fallback={
@@ -67,7 +79,7 @@ function ChatPageInner() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+  const mainRef = useRef(null);
   const inputRef = useRef(null);
   const searchParams = useSearchParams();
   // During the guided tour we show a clean, empty chat (so the suggestion chips
@@ -75,8 +87,10 @@ function ChatPageInner() {
   // learner's real saved history is left untouched.
   const [tourMode, setTourMode] = useState(false);
 
+  // Newest turn renders at the top (just below the pinned input), so scroll the
+  // thread back to the top whenever a message is sent or a reply arrives.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [messages, isLoading]);
 
   useEffect(() => {
@@ -165,91 +179,16 @@ function ChatPageInner() {
     }
   }
 
+  // Newest turn first, so the latest exchange sits directly under the input.
+  const orderedTurns = [...groupTurns(messages)].reverse();
+
   return (
     <div className="min-h-screen flex flex-col">
       <PageHeader icon={MessageCircle} title="Just Chat" subtitle="Ask me anything about AI" />
 
-      <main className="flex-1 overflow-y-auto">
-        <div data-tour="chat-thread" className="max-w-3xl mx-auto px-6 py-6 space-y-4">
-          <LlmWindowCallout storageKey="chat" />
-          {messages.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 ring-1 ring-brand-100 dark:ring-slate-600 mx-auto mb-4 flex items-center justify-center">
-                <MessageCircle className="w-8 h-8 text-brand" strokeWidth={1.5} />
-              </div>
-              <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
-                What do you want to know about AI?
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
-                I'll adapt to your level and teach by example. Try asking about prompting, agents, or anything you're curious about.
-              </p>
-              <div data-tour="chat-suggestions" className="flex flex-wrap gap-2 justify-center">
-                {buildSuggestions(profile).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                    className="px-4 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-pill text-ink dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:border-brand-200 hover:text-brand transition-all"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
-              <div
-                data-tour={msg.role === 'assistant' ? 'chat-reply' : undefined}
-                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-brand text-white'
-                    : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm'
-                }`}
-              >
-                {msg.role === 'assistant'
-                  ? <FormattedContent text={msg.content} />
-                  : <p className="whitespace-pre-wrap">{msg.content}</p>
-                }
-              </div>
-              {msg.role === 'assistant' && msg.lessonTopic && (
-                <ChatLessonOffer topic={msg.lessonTopic} />
-              )}
-            </div>
-          ))}
-
-          {isLoading && (
-            <div className="flex flex-col items-start gap-1">
-              <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Thinking...</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
-
-      <footer data-tour="page-chat" className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 sticky bottom-0">
+      {/* Input pinned at the top — type here, replies appear directly below. */}
+      <div data-tour="page-chat" className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">Need a human? Reach the team in Slack:</span>
-            {SLACK_CHANNELS.map(c => (
-              <a
-                key={c.href}
-                href={c.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium text-brand dark:text-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-all"
-              >
-                {c.label}
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            ))}
-          </div>
           <div className="flex items-end gap-3">
             <textarea
               data-tour="chat-input"
@@ -281,14 +220,94 @@ function ChatPageInner() {
               </button>
             )}
           </div>
-          <p className="text-xs text-slate-400 mt-2 text-center">
-            Press Enter to send · Shift+Enter for new line
-          </p>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Press Enter to send · Shift+Enter for new line · Need a human?</span>
+            {SLACK_CHANNELS.map(c => (
+              <a
+                key={c.href}
+                href={c.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium text-brand dark:text-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-all"
+              >
+                {c.label}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <main ref={mainRef} className="flex-1 overflow-y-auto">
+        <div data-tour="chat-thread" className="max-w-3xl mx-auto px-6 py-6 space-y-4">
+          <LlmWindowCallout storageKey="chat" />
+
+          {isLoading && (
+            <div className="flex flex-col items-start gap-1">
+              <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {orderedTurns.map((turn) => (
+            <div key={turn[0].i} className="space-y-4">
+              {turn.map(({ msg, i }) => (
+                <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
+                  <div
+                    data-tour={msg.role === 'assistant' ? 'chat-reply' : undefined}
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                      msg.role === 'user'
+                        ? 'bg-brand text-white'
+                        : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm'
+                    }`}
+                  >
+                    {msg.role === 'assistant'
+                      ? <FormattedContent text={msg.content} />
+                      : <p className="whitespace-pre-wrap">{msg.content}</p>
+                    }
+                  </div>
+                  {msg.role === 'assistant' && msg.lessonTopic && (
+                    <ChatLessonOffer topic={msg.lessonTopic} />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {messages.length === 0 && !isLoading && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 ring-1 ring-brand-100 dark:ring-slate-600 mx-auto mb-4 flex items-center justify-center">
+                <MessageCircle className="w-8 h-8 text-brand" strokeWidth={1.5} />
+              </div>
+              <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2 tracking-tight">
+                What do you want to know about AI?
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+                I'll adapt to your level and teach by example. Try asking about prompting, agents, or anything you're curious about.
+              </p>
+              <div data-tour="chat-suggestions" className="flex flex-wrap gap-2 justify-center">
+                {buildSuggestions(profile).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setInput(s); inputRef.current?.focus(); }}
+                    className="px-4 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-pill text-ink dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:border-brand-200 hover:text-brand transition-all"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 text-center">
             Chats are saved to your account and may be reviewed by admins to improve training.
           </p>
         </div>
-      </footer>
+      </main>
     </div>
   );
 }
