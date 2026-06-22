@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FormattedContent } from '@/components/lesson-slide';
 import LessonInteractive from '@/components/lesson-interactive';
 import LessonActivity from '@/components/lesson-activity';
-import ActivityToolBar from '@/components/activity-tool-bar';
+import OpenToolLink, { mentionsOpenTool } from '@/components/open-tool-link';
 import ConfettiBurst from '@/components/confetti-burst';
 import { getPausedLesson, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import LlmWindowCallout from '@/components/llm-window-callout';
@@ -48,7 +48,7 @@ function activityCovers(step) {
 export default function PlanLessonPlayer({ topic: topicProp, format = 'standard', onExit }) {
   const router = useRouter();
   const { profile } = useProfile();
-  const { tools } = useActiveTool();
+  const { tools, primaryTool } = useActiveTool();
   // The lesson's working topic. Starts from the prop, but the "this isn't what I
   // was looking for" flow can replace it with a sharper one and rebuild around
   // it. Kept in sync if the parent navigates to a genuinely new topic.
@@ -961,6 +961,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           ) : (
             <div>
               <FormattedContent text={teach?.message || ''} />
+              {mentionsOpenTool(teach?.message, primaryTool?.label) && (
+                <div className="mt-3"><OpenToolLink /></div>
+              )}
               <LessonInteractive
                 blocks={teach?.blocks}
                 onEngagementChange={(done) => { if (done) markTeachEngaged(step.id); }}
@@ -985,7 +988,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
         {step?.kind === 'activity' && (
           <>
-            {!(step.id in resolved) && <ActivityToolBar />}
+            {!(step.id in resolved) && mentionsOpenTool(step.activity?.instructions || step.activity?.situation, primaryTool?.label) && (
+              <div className="mb-3"><OpenToolLink /></div>
+            )}
           <LessonActivity
             activityType={step.activityType}
             activity={step.activity}
