@@ -998,6 +998,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             resolved={step.id in resolved}
             passed={resolved[step.id] === true}
             onResolve={(p) => resolveActivity(step.id, p)}
+            toolLabel={primaryTool?.label}
           />
           </>
         )}

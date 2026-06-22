@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
-import { Check, X, Loader2, PencilLine, ListChecks, Shuffle, Lightbulb, ArrowUpDown, FolderTree, GripVertical } from 'lucide-react';
+import { Check, X, Loader2, PencilLine, ListChecks, Shuffle, Lightbulb, ArrowUpDown, FolderTree, GripVertical, MessageSquare, Send, RotateCcw } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
+import { mentionsOpenTool } from '@/components/open-tool-link';
 
 const MAX_ATTEMPTS = 3;
 
@@ -22,7 +23,7 @@ function Prompt({ text, fallback }) {
 // learner gets up to 3 tries with feedback on each miss; after the 3rd we reveal
 // the answer + why and unlock continuing. It calls onResolve(passed) once it's
 // settled (either passed, or attempts exhausted).
-export default function LessonActivity({ activityType, activity, objective, onResolve, resolved, passed }) {
+export default function LessonActivity({ activityType, activity, objective, onResolve, resolved, passed, toolLabel }) {
   const type = activityType || 'mcq';
   const TYPE_META = {
     mcq: { icon: ListChecks, label: 'Quick check' },
@@ -34,6 +35,7 @@ export default function LessonActivity({ activityType, activity, objective, onRe
   };
   const meta = TYPE_META[type] || TYPE_META.mcq;
   const common = { activity, onResolve, resolved, passed };
+  const writeProps = { ...common, toolLabel };
 
   return (
     <div className={`rounded-2xl border-2 p-5 transition-all ${resolved ? (passed ? 'border-green-300 bg-green-50/50 dark:bg-green-900/10' : 'border-slate-300 bg-slate-50 dark:bg-slate-800') : 'border-brand-300 bg-brand-50/40 dark:bg-slate-800'}`}>
@@ -47,7 +49,7 @@ export default function LessonActivity({ activityType, activity, objective, onRe
       {objective && <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Proves: {objective}</p>}
 
       {type === 'mcq' && <Mcq {...common} />}
-      {type === 'write' && <Write {...common} />}
+      {type === 'write' && <Write {...writeProps} />}
       {type === 'match' && <Match {...common} />}
       {type === 'scenario' && <Scenario {...common} />}
       {type === 'order' && <Order {...common} />}
@@ -109,15 +111,28 @@ function Mcq({ activity, onResolve, resolved, passed }) {
   );
 }
 
-function Write({ activity, onResolve, resolved, passed }) {
+function Write({ activity, onResolve, resolved, passed, toolLabel }) {
   const [text, setText] = useState('');
   const [grading, setGrading] = useState(false);
   const [grade, setGrade] = useState(null);
   const [attempts, setAttempts] = useState(0);
   const passScore = activity?.passScore ?? 70;
+  const score = grade?.score || 0;
+  const isPass = score >= passScore;
+  // Activities whose instructions tell the learner to do the work in their AI
+  // tool: the box holds the prompt they used there, so label it that way.
+  const inTool = mentionsOpenTool(activity?.instructions, toolLabel);
+  const placeholder = activity?.placeholder
+    || (inTool ? `Paste the prompt you used in ${toolLabel || 'your AI tool'}…` : 'Type your response…');
+
+  // Discuss-your-score chat (revise & resubmit). { role, content }
+  const [discussOpen, setDiscussOpen] = useState(false);
+  const [chat, setChat] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
 
   async function submit() {
-    if (!text.trim() || grading || resolved) return;
+    if (!text.trim() || grading) return;
     setGrading(true);
     try {
       const res = await fetch('/api/lesson/grade', {
@@ -126,9 +141,14 @@ function Write({ activity, onResolve, resolved, passed }) {
       });
       const data = await res.json();
       setGrade(data);
+      // Credit is one-way: passing locks it in, and a later revision can only
+      // upgrade — never strip a passed activity.
       if ((data.score || 0) >= passScore) { onResolve(true); return; }
-      const n = attempts + 1; setAttempts(n);
-      if (n >= MAX_ATTEMPTS) onResolve(false);
+      // Only count toward the 3-attempt auto-settle while still unresolved.
+      if (!resolved) {
+        const n = attempts + 1; setAttempts(n);
+        if (n >= MAX_ATTEMPTS) onResolve(false);
+      }
     } catch {
       setGrade({ score: 0, improvement: 'Something went wrong — try again.' });
     } finally {
@@ -136,31 +156,101 @@ function Write({ activity, onResolve, resolved, passed }) {
     }
   }
 
+  async function sendDiscuss() {
+    const q = chatInput.trim();
+    if (!q || chatLoading) return;
+    const next = [...chat, { role: 'user', content: q }];
+    setChat(next);
+    setChatInput('');
+    setChatLoading(true);
+    try {
+      const res = await fetch('/api/lesson/grade-chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: activity?.instructions,
+          criteria: activity?.gradingCriteria,
+          learnerResponse: text,
+          score: grade?.score,
+          strength: grade?.strength,
+          improvement: grade?.improvement,
+          messages: next,
+        }),
+      });
+      const data = await res.json();
+      setChat((c) => [...c, { role: 'assistant', content: data.reply || "Try tweaking your response and resubmitting to see a fresh score." }]);
+    } catch {
+      setChat((c) => [...c, { role: 'assistant', content: 'Something went wrong — try again in a moment.' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  const showAttempts = !resolved && !grade;
+
   return (
     <div>
       <Prompt text={activity?.instructions} />
-      <textarea value={text} onChange={(e) => setText(e.target.value)} disabled={resolved} rows={3}
-        placeholder={activity?.placeholder || 'Type your response…'}
+      <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3}
+        placeholder={placeholder}
         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand" />
+
       {grade && (
-        <div className={`mt-2 text-sm rounded-lg p-3 ${(grade.score || 0) >= passScore ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300'}`}>
-          <p className="font-semibold">Score: {grade.score ?? 0}/100 {(grade.score || 0) >= passScore ? '— nice!' : `(need ${passScore})`}</p>
+        <div className={`mt-2 text-sm rounded-lg p-3 ${isPass ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300'}`}>
+          <p className="font-semibold">Score: {grade.score ?? 0}/100 {isPass ? (score >= 100 ? '— perfect!' : '— nice!') : `(need ${passScore})`}</p>
           {grade.strength && <p className="mt-0.5">{grade.strength}</p>}
-          {grade.improvement && (grade.score || 0) < passScore && <p className="mt-0.5">{grade.improvement}</p>}
+          {/* Always show how to improve when short of 100 — even on a pass. */}
+          {grade.improvement && score < 100 && (
+            <p className="mt-0.5">{isPass ? 'To push it to 100: ' : ''}{grade.improvement}</p>
+          )}
         </div>
       )}
-      {resolved && !passed && (
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">That's okay — keep this in mind: {activity?.gradingCriteria}</p>
-      )}
-      {!resolved && (
-        <>
-          <button onClick={submit} disabled={grading || !text.trim()}
-            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-brand text-white text-sm font-semibold hover:bg-brand-600 disabled:opacity-50 transition-all">
-            {grading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            {grading ? 'Checking…' : 'Submit'}
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <button onClick={submit} disabled={grading || !text.trim()}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-brand text-white text-sm font-semibold hover:bg-brand-600 disabled:opacity-50 transition-all">
+          {grading ? <Loader2 className="w-4 h-4 animate-spin" /> : grade ? <RotateCcw className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+          {grading ? 'Checking…' : grade ? 'Revise & resubmit' : 'Submit'}
+        </button>
+        {grade && (
+          <button onClick={() => setDiscussOpen((o) => !o)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-brand-600 transition-colors">
+            <MessageSquare className="w-4 h-4" /> {discussOpen ? 'Hide discussion' : 'Why this score? How can I improve?'}
           </button>
-          <AttemptHint attempts={attempts} />
-        </>
+        )}
+      </div>
+      {showAttempts && <AttemptHint attempts={attempts} />}
+
+      {discussOpen && grade && (
+        <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-bg-subtle dark:bg-slate-900 p-3">
+          {chat.length === 0 && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Ask why you got this score or how to make it stronger — then revise above and resubmit.</p>
+          )}
+          {chat.length > 0 && (
+            <div className="space-y-2.5 mb-2">
+              {chat.map((m, i) => (
+                <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex items-start gap-2'}>
+                  {m.role === 'user'
+                    ? <div className="max-w-[85%] bg-brand text-white px-3 py-2 rounded-2xl rounded-br-md text-sm">{m.content}</div>
+                    : <div className="flex-1 rounded-2xl rounded-bl-md bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2 text-sm text-ink dark:text-slate-200"><FormattedContent text={m.content} /></div>}
+                </div>
+              ))}
+              {chatLoading && <p className="text-xs text-slate-400 inline-flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…</p>}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendDiscuss()}
+              placeholder="e.g. What would take this to 100?"
+              className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand" />
+            <button onClick={sendDiscuss} disabled={chatLoading || !chatInput.trim()}
+              className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all">
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {resolved && !passed && (
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">You can keep refining above to raise your score — keep this in mind: {activity?.gradingCriteria}</p>
       )}
     </div>
   );
