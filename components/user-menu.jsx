@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft } from 'lucide-react';
+import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
 import { useChampions } from '@/components/champion-provider';
+import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { displayNameFromProfile } from '@/lib/display-name';
 
@@ -26,6 +27,7 @@ const PROFILE_LINKS = [
 export default function UserMenu() {
   const { profile } = useProfile();
   const { championIds } = useChampions();
+  const { isAdmin, previewAsUser, setPreviewAsUser } = useMenuVisibility();
   const displayName = displayNameFromProfile(profile);
   const isChampion = profile ? championIds.has(resolveLearnerId(profile)) : false;
 
@@ -134,6 +136,27 @@ export default function UserMenu() {
                 {link.label}
               </Link>
             ))}
+            {isAdmin && (
+              <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
+                <button
+                  onClick={() => { setPreviewAsUser(!previewAsUser); setOpen(false); }}
+                  role="menuitem"
+                  className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  {previewAsUser ? (
+                    <>
+                      <Shield className="w-4 h-4 text-brand shrink-0" />
+                      Back to admin view
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                      Preview as user
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
             <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
               <button
                 onClick={handleLogout}
