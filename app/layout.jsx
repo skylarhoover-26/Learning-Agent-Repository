@@ -9,6 +9,9 @@ import { ChampionProvider } from '@/components/champion-provider';
 import PageTracker from '@/components/page-tracker';
 import GlobalXpPopup from '@/components/global-xp-popup';
 import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
+import { MenuVisibilityProvider } from '@/components/menu-visibility-provider';
+import FeatureGuard from '@/components/feature-guard';
+import PreviewModeBanner from '@/components/preview-mode-banner';
 import { TourProvider } from '@/components/guided-tour-provider';
 import HelpWidget from '@/components/help-widget';
 import IdentityGate from '@/components/identity-gate';
@@ -48,10 +51,15 @@ export default function RootLayout({ children }) {
               <ChampionProvider>
               <SidebarProvider>
                 <TourProvider>
-                  <SideNav />
-                  <SidebarShell>
-                    {children}
-                  </SidebarShell>
+                  <MenuVisibilityProvider>
+                    <SideNav />
+                    <SidebarShell>
+                      <FeatureGuard>
+                        {children}
+                      </FeatureGuard>
+                    </SidebarShell>
+                    <PreviewModeBanner />
+                  </MenuVisibilityProvider>
                   <OnboardingTour />
                   <GlobalXpPopup />
                 </TourProvider>

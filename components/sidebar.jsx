@@ -14,6 +14,7 @@ import {
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
 import { useTour } from '@/components/guided-tour-provider';
+import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
 // Stable tour anchor for a nav item, derived from its href so the sidebar and
 // the guided-tour step list stay in sync (e.g. '/my-tasks' -> 'nav-my-tasks').
@@ -209,14 +210,10 @@ export function SideNav() {
   const { open, setOpen } = useSidebar();
   const { startTour } = useTour();
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin, isSectionDisabled, isItemDisabled } = useMenuVisibility();
   // Which sections the user has collapsed (keyed by title). Persisted so the
   // preference sticks across sessions.
   const [collapsed, setCollapsed] = useState({});
-
-  useEffect(() => {
-    fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(!!d.isAdmin)).catch(() => {});
-  }, []);
 
   useEffect(() => {
     try {
@@ -261,7 +258,39 @@ export function SideNav() {
     return href === activeHref;
   }
 
+  // A single greyed "Coming soon" line, used when a whole section is turned off
+  // for non-admins. The section header stays; this replaces its items.
+  function renderSectionComingSoon(title) {
+    return (
+      <div
+        key={`${title}-coming-soon`}
+        className="flex items-center gap-3 px-4 py-2 border-l-2 border-transparent text-slate-400 dark:text-slate-500 italic text-sm"
+      >
+        Coming soon
+      </div>
+    );
+  }
+
+  // A disabled item: shows the label but greyed and non-clickable, with a
+  // "Coming soon" subtitle instead of its description.
+  function renderDisabledItem(item) {
+    return (
+      <div
+        key={item.href || item.label}
+        aria-disabled="true"
+        className="flex items-start gap-3 px-4 py-2 border-l-2 border-transparent text-slate-400 dark:text-slate-500 cursor-not-allowed select-none"
+      >
+        {item.icon && <item.icon className="w-4 h-4 mt-0.5 shrink-0 text-slate-300 dark:text-slate-600" />}
+        <span>
+          <span className="block text-sm font-semibold">{item.label}</span>
+          <span className="block text-xs leading-snug italic">Coming soon</span>
+        </span>
+      </div>
+    );
+  }
+
   function renderNavItem(item) {
+    if (isItemDisabled(item.href)) return renderDisabledItem(item);
     const active = isActive(item.href);
     return (
       <Link
@@ -307,7 +336,9 @@ export function SideNav() {
         <Fragment key={section.title}>
           <div className="py-1">
             <SectionHeader icon={section.icon} title={section.title} tour={section.tour} collapsed={collapsed[section.title]} onToggle={() => toggleSection(section.title)} />
-            {!collapsed[section.title] && section.items.map(item => (
+            {!collapsed[section.title] && isSectionDisabled(section.title)
+              ? renderSectionComingSoon(section.title)
+              : !collapsed[section.title] && section.items.map(item => (
               item.themeToggle ? (
                 <div key="theme" data-tour="dark-mode">
                   <MenuThemeToggle />
@@ -338,11 +369,15 @@ export function SideNav() {
           {section.title === 'Learn' && (
             <div className="py-1">
               <SectionHeader icon={Store} title="HCP Skill Shop" tour="section-skillshop" collapsed={collapsed['HCP Skill Shop']} onToggle={() => toggleSection('HCP Skill Shop')} />
-              {!collapsed['HCP Skill Shop'] && (<>
+              {!collapsed['HCP Skill Shop'] && isSectionDisabled('HCP Skill Shop') && renderSectionComingSoon('HCP Skill Shop')}
+              {!collapsed['HCP Skill Shop'] && !isSectionDisabled('HCP Skill Shop') && (<>
               <p className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
                 Want to learn more about AI? Explore the self-guided journey:
               </p>
               {SKILL_SHOP_LINKS.map(link => (
+                isItemDisabled(link.href) ? (
+                  renderDisabledItem({ href: link.href, label: link.label, icon: ExternalLink })
+                ) : (
                 <a
                   key={link.href}
                   href={link.href}
@@ -356,6 +391,7 @@ export function SideNav() {
                     <span className="block text-xs text-slate-500 dark:text-slate-400">{link.desc}</span>
                   </span>
                 </a>
+                )
               ))}
               </>)}
             </div>
