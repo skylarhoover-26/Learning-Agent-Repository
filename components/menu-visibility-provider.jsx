@@ -45,6 +45,18 @@ export function MenuVisibilityProvider({ children }) {
     return () => { cancelled = true; };
   }, []);
 
+  // Re-pull the saved config so the live menu/route gating reflects a just-saved
+  // change without a full page reload. Called by the admin page after a save.
+  async function refresh() {
+    try {
+      const vis = await fetch('/api/menu-visibility', { cache: 'no-store' }).then(r => r.json());
+      setDisabledSections(Array.isArray(vis?.sections) ? vis.sections : []);
+      setDisabledItems(Array.isArray(vis?.items) ? vis.items : []);
+    } catch {
+      // keep the current config if the refresh fails
+    }
+  }
+
   function setPreviewAsUser(on) {
     setPreviewAsUserState(on);
     try {
@@ -88,7 +100,7 @@ export function MenuVisibilityProvider({ children }) {
   return (
     <MenuVisibilityContext.Provider
       value={{
-        isAdmin, loaded, previewAsUser, setPreviewAsUser,
+        isAdmin, loaded, previewAsUser, setPreviewAsUser, refresh,
         isSectionDisabled, isItemDisabled, isRouteDisabled,
       }}
     >
@@ -103,6 +115,7 @@ export function useMenuVisibility() {
     loaded: false,
     previewAsUser: false,
     setPreviewAsUser: () => {},
+    refresh: () => {},
     isSectionDisabled: () => false,
     isItemDisabled: () => false,
     isRouteDisabled: () => false,

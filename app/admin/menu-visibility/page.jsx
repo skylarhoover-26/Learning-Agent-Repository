@@ -35,7 +35,7 @@ function Toggle({ on, onChange, disabled, labelOn = 'Visible', labelOff = 'Comin
 }
 
 export default function MenuVisibilityAdminPage() {
-  const { previewAsUser, setPreviewAsUser } = useMenuVisibility();
+  const { previewAsUser, setPreviewAsUser, refresh } = useMenuVisibility();
   const [allowed, setAllowed] = useState(null); // null = checking
   const [catalog, setCatalog] = useState([]);
   // enabled = true means visible. We store the inverse of the API's disabled lists.
@@ -89,6 +89,7 @@ export default function MenuVisibilityAdminPage() {
         body: JSON.stringify({ sections, items }),
       });
       if (!res.ok) throw new Error('save failed');
+      await refresh(); // sync the live menu/route gating with what we just saved
       setStatus('saved');
     } catch {
       setStatus('error');
