@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateTopicRefinement } from '@/lib/ai';
 
+// LLM call — give it room so it isn't killed at Vercel's short default timeout
+// (which would surface as the repeating "tell me more" fallback).
+export const maxDuration = 60;
+
 // Drives the "this isn't what I was looking for" chat: given the original topic
 // and the conversation so far, either asks one more question or returns a
 // sharpened newTopic to rebuild the lesson around. { done, message, newTopic }.

@@ -232,7 +232,20 @@ function LessonContent() {
   // Cached per day + profile + lessons-completed count, and keyed on the picker
   // view, so the list refreshes after someone finishes a lesson and the
   // generator is told which topics they've already done (keeps it fresh).
-  const [suggested, setSuggested] = useState(null);
+  // Seed from the last cached personalized list synchronously so a refresh
+  // paints the real topics immediately instead of flashing the static fallback
+  // first. The effect below still revalidates (sig/date) and refreshes if stale.
+  // Safe to read localStorage here: this component is client-only (under
+  // Suspense via useSearchParams), so there's no SSR/hydration mismatch.
+  const [suggested, setSuggested] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('lesson_suggested_topics') || 'null');
+      if (cached && Array.isArray(cached.topics) && cached.topics.length) return cached.topics;
+    } catch {
+      // ignore unreadable cache
+    }
+    return null;
+  });
 
   useEffect(() => {
     if (initialTopic || !profile || view !== 'picker') return;

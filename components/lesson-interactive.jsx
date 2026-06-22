@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { FormattedContent } from '@/components/lesson-slide';
 import { RotateCw, ChevronDown, Eye, MousePointerClick } from 'lucide-react';
 
@@ -8,15 +8,51 @@ import { RotateCw, ChevronDown, Eye, MousePointerClick } from 'lucide-react';
 // prose: flip flashcards, reveal-an-example expanders, compare tabs, and
 // clickable diagram steps. Each block is self-contained and degrades to nothing
 // if malformed (the server already sanitizes shape + sizes).
-export default function LessonInteractive({ blocks }) {
+//
+// When `onEngagementChange` is provided, we track every engageable unit (each
+// flashcard, each reveal, each tab, each diagram step) and call back with `true`
+// once the learner has touched them all — the player uses this to keep Continue
+// disabled until the learner has actually explored the step.
+export default function LessonInteractive({ blocks, onEngagementChange }) {
   if (!Array.isArray(blocks) || blocks.length === 0) return null;
+  return <InteractiveBlocks blocks={blocks} onEngagementChange={onEngagementChange} />;
+}
+
+// The default-visible item (tab 0, diagram step 0) counts as already seen; the
+// learner must click into the rest. Flashcards and reveals start unseen.
+function unitPlan(blocks) {
+  const required = [];
+  const preSeen = [];
+  blocks.forEach((b, i) => {
+    if (b.type === 'flashcards' && Array.isArray(b.cards)) b.cards.forEach((_, j) => required.push(`${i}:c${j}`));
+    else if (b.type === 'reveal') required.push(`${i}:open`);
+    else if (b.type === 'tabs' && Array.isArray(b.tabs)) b.tabs.forEach((_, j) => { const k = `${i}:t${j}`; required.push(k); if (j === 0) preSeen.push(k); });
+    else if (b.type === 'diagram' && Array.isArray(b.steps)) b.steps.forEach((_, j) => { const k = `${i}:s${j}`; required.push(k); if (j === 0) preSeen.push(k); });
+  });
+  return { required, preSeen };
+}
+
+function InteractiveBlocks({ blocks, onEngagementChange }) {
+  const { required, preSeen } = useMemo(() => unitPlan(blocks), [blocks]);
+  const [seen, setSeen] = useState(() => new Set(preSeen));
+  const mark = useCallback((key) => {
+    setSeen((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+  }, []);
+
+  const allSeen = required.every((k) => seen.has(k));
+  // Keep the callback in a ref so an inline parent handler doesn't re-fire the
+  // effect every render — we only care when `allSeen` actually flips.
+  const cbRef = useRef(onEngagementChange);
+  cbRef.current = onEngagementChange;
+  useEffect(() => { cbRef.current?.(allSeen); }, [allSeen]);
+
   return (
     <div className="mt-4 space-y-4">
       {blocks.map((b, i) => {
-        if (b.type === 'flashcards') return <Flashcards key={i} title={b.title} cards={b.cards} />;
-        if (b.type === 'reveal') return <RevealExample key={i} title={b.title} prompt={b.prompt} content={b.content} />;
-        if (b.type === 'tabs') return <CompareTabs key={i} title={b.title} tabs={b.tabs} />;
-        if (b.type === 'diagram') return <ClickableDiagram key={i} title={b.title} steps={b.steps} />;
+        if (b.type === 'flashcards') return <Flashcards key={i} title={b.title} cards={b.cards} onEngage={(j) => mark(`${i}:c${j}`)} />;
+        if (b.type === 'reveal') return <RevealExample key={i} title={b.title} prompt={b.prompt} content={b.content} onEngage={() => mark(`${i}:open`)} />;
+        if (b.type === 'tabs') return <CompareTabs key={i} title={b.title} tabs={b.tabs} onEngage={(j) => mark(`${i}:t${j}`)} />;
+        if (b.type === 'diagram') return <ClickableDiagram key={i} title={b.title} steps={b.steps} onEngage={(j) => mark(`${i}:s${j}`)} />;
         return null;
       })}
     </div>
@@ -33,7 +69,7 @@ function BlockTitle({ icon: Icon, children }) {
 }
 
 // --- Flip flashcards --------------------------------------------------------
-function Flashcards({ title, cards }) {
+function Flashcards({ title, cards, onEngage }) {
   const [flipped, setFlipped] = useState({});
   return (
     <div>
@@ -45,7 +81,7 @@ function Flashcards({ title, cards }) {
             <button
               key={i}
               type="button"
-              onClick={() => setFlipped((p) => ({ ...p, [i]: !p[i] }))}
+              onClick={() => { setFlipped((p) => ({ ...p, [i]: !p[i] })); onEngage?.(i); }}
               aria-pressed={isFlipped}
               className={`group relative text-left rounded-xl border p-4 min-h-[104px] transition-all ${
                 isFlipped
@@ -77,13 +113,13 @@ function Flashcards({ title, cards }) {
 }
 
 // --- Reveal-an-example expander --------------------------------------------
-function RevealExample({ title, prompt, content }) {
+function RevealExample({ title, prompt, content, onEngage }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 overflow-hidden">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { setOpen((o) => !o); onEngage?.(); }}
         aria-expanded={open}
         className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-bg-subtle dark:hover:bg-slate-800 transition-colors"
       >
@@ -102,7 +138,7 @@ function RevealExample({ title, prompt, content }) {
 }
 
 // --- Compare tabs -----------------------------------------------------------
-function CompareTabs({ title, tabs }) {
+function CompareTabs({ title, tabs, onEngage }) {
   const [active, setActive] = useState(0);
   const current = tabs[active] || tabs[0];
   return (
@@ -113,7 +149,7 @@ function CompareTabs({ title, tabs }) {
           <button
             key={i}
             type="button"
-            onClick={() => setActive(i)}
+            onClick={() => { setActive(i); onEngage?.(i); }}
             aria-pressed={i === active}
             className={`px-3 py-1.5 rounded-pill text-sm font-medium transition-colors ${
               i === active
@@ -133,7 +169,7 @@ function CompareTabs({ title, tabs }) {
 }
 
 // --- Clickable diagram steps ------------------------------------------------
-function ClickableDiagram({ title, steps }) {
+function ClickableDiagram({ title, steps, onEngage }) {
   const [active, setActive] = useState(0);
   const current = steps[active] || steps[0];
   return (
@@ -144,7 +180,7 @@ function ClickableDiagram({ title, steps }) {
           <span key={i} className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setActive(i)}
+              onClick={() => { setActive(i); onEngage?.(i); }}
               aria-pressed={i === active}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
                 i === active

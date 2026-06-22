@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateTopicClarification } from '@/lib/ai';
 
+// LLM call — avoid the short default function timeout killing it mid-generation.
+export const maxDuration = 60;
+
 // For a learner-typed topic, decide if it's too vague to teach well. If so,
 // returns a clarifying question plus pickable directions (basics + 1-2 specific
 // angles); otherwise { vague: false } so the lesson starts immediately.

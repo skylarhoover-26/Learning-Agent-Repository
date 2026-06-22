@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FormattedContent } from '@/components/lesson-slide';
 import LessonInteractive from '@/components/lesson-interactive';
 import LessonActivity from '@/components/lesson-activity';
+import ActivityToolBar from '@/components/activity-tool-bar';
 import ConfettiBurst from '@/components/confetti-burst';
 import { getPausedLesson, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import LlmWindowCallout from '@/components/llm-window-callout';
@@ -65,6 +66,13 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // stepId -> passed(bool). Presence means the activity is settled (passed, or
   // 3 attempts used). Continue unlocks once settled either way.
   const [resolved, setResolved] = useState({});
+  // stepId -> true once the learner has explored every interactive element on a
+  // teach step (all tabs/cards/reveals). Gates Continue so they don't skip past
+  // the interactive teaching without engaging it.
+  const [teachEngaged, setTeachEngaged] = useState({});
+  const markTeachEngaged = useCallback((id) => {
+    setTeachEngaged((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
+  }, []);
   const [loading, setLoading] = useState(true);
   const [elapsed, setElapsed] = useState(0); // seconds spent generating, for the loading bar
   const [error, setError] = useState(null);
@@ -540,7 +548,15 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const isActivity = step?.kind === 'activity';
   const isBuild = step?.kind === 'build';
   const stepSettled = (isActivity || isBuild) ? step.id in resolved : true;
-  const teachReady = step?.kind === 'teach' ? !!teachContent[step?.id] : true;
+  // A teach step is "ready" once its content has loaded AND — if it carries
+  // interactive blocks — the learner has explored them all.
+  const teachData = step?.kind === 'teach' ? teachContent[step?.id] : null;
+  const teachBlocks = Array.isArray(teachData?.blocks) ? teachData.blocks : [];
+  const teachInteractive = teachBlocks.some((b) => ['flashcards', 'reveal', 'tabs', 'diagram'].includes(b?.type));
+  const teachReady = step?.kind === 'teach'
+    ? (!!teachData && (!teachInteractive || !!teachEngaged[step.id]))
+    : true;
+  const teachNeedsInteraction = step?.kind === 'teach' && !!teachData && teachInteractive && !teachEngaged[step.id];
   const canAdvance = step?.kind === 'recap' ? false : ((isActivity || isBuild) ? stepSettled : teachReady);
   const builtCount = steps.filter((s) => s.kind === 'build' && artifact[s.id]?.content).length;
 
@@ -945,7 +961,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           ) : (
             <div>
               <FormattedContent text={teach?.message || ''} />
-              <LessonInteractive blocks={teach?.blocks} />
+              <LessonInteractive
+                blocks={teach?.blocks}
+                onEngagementChange={(done) => { if (done) markTeachEngaged(step.id); }}
+              />
               {teach?.keyPoints?.length > 0 && (
                 <div className="mt-4 rounded-xl bg-brand-50 dark:bg-slate-700/50 p-4">
                   <p className="flex items-center gap-1.5 text-sm font-semibold text-brand-700 dark:text-brand-300 mb-1">
@@ -965,6 +984,8 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         )}
 
         {step?.kind === 'activity' && (
+          <>
+            {!(step.id in resolved) && <ActivityToolBar />}
           <LessonActivity
             activityType={step.activityType}
             activity={step.activity}
@@ -973,6 +994,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             passed={resolved[step.id] === true}
             onResolve={(p) => resolveActivity(step.id, p)}
           />
+          </>
         )}
 
         {step?.kind === 'build' && (
@@ -1086,7 +1108,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             )}
             {!canAdvance ? (
               <span className="text-xs text-slate-400">
-                {isActivity ? 'Give the activity a try to continue' : isBuild ? 'Add or skip your piece to continue' : 'Loading this step…'}
+                {isActivity ? 'Give the activity a try to continue' : isBuild ? 'Add or skip your piece to continue' : teachNeedsInteraction ? 'Explore everything above to continue' : 'Loading this step…'}
               </span>
             ) : (
               <button onClick={goNext}
