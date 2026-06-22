@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import {
-  Sparkles, TrendingUp,
-  MessageCircle, BookOpen, Library, Gamepad2,
-  ChevronRight, BarChart2, GitBranch, Compass, Rss, PenTool,
+  Sparkles, TrendingUp, BookOpen,
+  ChevronRight, BarChart2, GitBranch, Compass, Rss,
 } from 'lucide-react';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
@@ -14,6 +13,8 @@ import WelcomeGreeting from '@/components/welcome-greeting';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
 import ImpactAssessmentModal from '@/components/impact-assessment-modal';
+import HomeQuickActions from '@/components/home-quick-action';
+import GatedHomeSection from '@/components/gated-home-section';
 import {
   getCurrentLearner, getAggregatedSkills,
 } from '@/lib/data';
@@ -160,15 +161,12 @@ export default async function Dashboard() {
         </div>
 
         {/* Primary nav — alphabetized */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <QuickAction href="/games" icon={Gamepad2} label="Games" tour="home-qa-games" />
-          <QuickAction href="/chat" icon={MessageCircle} label="Just Chat" tour="home-qa-chat" />
-          <QuickAction href="/lesson" icon={BookOpen} label="Lesson" tour="home-qa-lesson" />
-          <QuickAction href="/structured-lesson" icon={PenTool} label="Practice" tour="home-qa-practice" />
-        </div>
+        <HomeQuickActions />
 
         {/* Today's Pick */}
-        <TodaysPick />
+        <GatedHomeSection href="/daily">
+          <TodaysPick />
+        </GatedHomeSection>
 
         {/* ═══════════════════════════════════════════ */}
         {/* DIVIDER                                    */}
@@ -195,12 +193,14 @@ export default async function Dashboard() {
           <div data-tour="home-leaderboard" className="md:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-ink dark:text-slate-200">Top Learners</h3>
-              <Link
-                href="/leaderboard"
-                className="text-sm font-medium text-brand hover:text-brand-600 transition-colors"
-              >
-                View full leaderboard &rarr;
-              </Link>
+              <GatedHomeSection href="/leaderboard">
+                <Link
+                  href="/leaderboard"
+                  className="text-sm font-medium text-brand hover:text-brand-600 transition-colors"
+                >
+                  View full leaderboard &rarr;
+                </Link>
+              </GatedHomeSection>
             </div>
             <HomeLeaderboard />
           </div>
@@ -213,14 +213,16 @@ export default async function Dashboard() {
               <TrendingUp className="w-5 h-5 text-brand" />
               <h3 className="font-semibold text-ink dark:text-slate-200">Your Skills</h3>
             </div>
-            <Link
-              href="/skill-graph"
-              className="group inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-brand-600 transition-all"
-            >
-              <GitBranch className="w-4 h-4" />
-              View Skill Graph
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            <GatedHomeSection href="/skill-graph">
+              <Link
+                href="/skill-graph"
+                className="group inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-brand-600 transition-all"
+              >
+                <GitBranch className="w-4 h-4" />
+                View Skill Graph
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </GatedHomeSection>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <SkillColumn label="Strong" dotColor="bg-green-500" items={skills.strong} bgClass="bg-green-50 border-green-100" emptyText="Keep learning to build strong skills" />
@@ -271,17 +273,3 @@ function SkillColumn({ label, dotColor, items, bgClass, emptyText }) {
   );
 }
 
-function QuickAction({ href, icon: Icon, label, tour }) {
-  return (
-    <Link
-      href={href}
-      data-tour={tour}
-      className="group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:shadow-card transition-all"
-    >
-      <div className="w-10 h-10 rounded-lg bg-brand-50 dark:bg-slate-700 text-brand-600 dark:text-brand-400 group-hover:bg-brand group-hover:text-white flex items-center justify-center transition-all">
-        <Icon className="w-5 h-5" />
-      </div>
-      <span className="text-xs font-medium text-ink dark:text-slate-200">{label}</span>
-    </Link>
-  );
-}
