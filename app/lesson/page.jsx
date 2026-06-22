@@ -1048,7 +1048,7 @@ function LessonContent() {
     <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
     <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
 
-      {!isComplete && <LlmWindowCallout storageKey="lesson" recommendation={toolRec} className="mb-6" />}
+      {!isComplete && <LlmWindowCallout storageKey="lesson" recommendation={toolRec} className="mb-6" showOpen={false} />}
 
       {/* Progress bar + voice mode toggle */}
       {slides.length > 0 && (

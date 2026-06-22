@@ -11,7 +11,7 @@ import { useToolCatalog } from './tool-catalog-provider';
 // open in a separate window so they can follow along beside the coach. It also
 // lets them adjust their tools for this session — toggle which tools they use
 // and pick a primary — and optionally save the set as their default.
-export default function LlmWindowCallout({ storageKey = 'default', className = '', recommendation = null }) {
+export default function LlmWindowCallout({ storageKey = 'default', className = '', recommendation = null, showOpen = true }) {
   const { tools, primaryTool, hasPreference, toggleTool, setPrimary } = useActiveTool();
   const { catalog } = useToolCatalog();
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid a flash before we read sessionStorage
@@ -111,7 +111,9 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
               <p className="text-sm text-ink dark:text-slate-200">
                 For this lesson, <span className="font-semibold">{recEmoji} {recLabel}</span> works best
                 {userHasRec ? '' : <span className="text-slate-500 dark:text-slate-400"> — you don&rsquo;t have it set up yet</span>}.
-                {' '}Open it in another window so you can follow along here.
+                {showOpen
+                  ? <>{' '}Open it in another window so you can follow along here.</>
+                  : <>{' '}You&rsquo;ll open it when an activity asks you to.</>}
               </p>
               {recommendation.why && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Why: {recommendation.why}</p>
@@ -124,12 +126,14 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
             </>
           ) : hasTools ? (
             <p className="text-sm text-ink dark:text-slate-200">
-              You&rsquo;ll do the hands-on AI work in your own tool. Keep{' '}
+              You&rsquo;ll do the hands-on AI work in{' '}
               <span className="font-semibold">
                 {primaryTool.emoji} {primaryTool.label}
-              </span>{' '}
-              open in another window so you can follow along here
-              {extras > 0 && <span className="text-slate-500 dark:text-slate-400"> (+{extras} more {extras === 1 ? 'tool' : 'tools'})</span>}.
+              </span>
+              {extras > 0 && <span className="text-slate-500 dark:text-slate-400"> (+{extras} more {extras === 1 ? 'tool' : 'tools'})</span>}
+              {showOpen
+                ? <> — keep it open in another window so you can follow along here.</>
+                : <>. You&rsquo;ll open it when an activity asks you to.</>}
             </p>
           ) : (
             <p className="text-sm text-ink dark:text-slate-200">
@@ -145,7 +149,7 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
 
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {/* Recommended tool the learner already has → open it. */}
-            {recLabel && userHasRec && recUrl && (
+            {showOpen && recLabel && userHasRec && recUrl && (
               <button
                 onClick={openRecommended}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-pill bg-brand text-white hover:bg-brand-700 transition-colors"
@@ -165,7 +169,7 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
                     Add {recLabel}
                   </button>
                 )}
-                {hasTools && primaryTool.url && (
+                {showOpen && hasTools && primaryTool.url && (
                   <button
                     onClick={openTool}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-pill border border-brand-200 dark:border-slate-600 text-brand dark:text-brand-200 hover:bg-brand-100/60 dark:hover:bg-slate-700 transition-colors"
@@ -177,7 +181,7 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
               </>
             )}
             {/* No recommendation → original behavior. */}
-            {!recLabel && hasTools && primaryTool.url && (
+            {showOpen && !recLabel && hasTools && primaryTool.url && (
               <button
                 onClick={openTool}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-pill bg-brand text-white hover:bg-brand-700 transition-colors"

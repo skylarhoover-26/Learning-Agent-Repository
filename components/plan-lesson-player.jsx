@@ -932,7 +932,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       {/* Tool callout — shown on the first step, then drops away as the learner
           continues (they've already opened their tool by then). */}
       {stepIdx === 0 && (
-        <LlmWindowCallout storageKey="planlesson" recommendation={recommendation} />
+        <LlmWindowCallout storageKey="planlesson" recommendation={recommendation} showOpen={false} />
       )}
 
       {/* Step body */}
@@ -988,7 +988,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
         {step?.kind === 'activity' && (
           <>
-            {!(step.id in resolved) && mentionsOpenTool(step.activity?.instructions || step.activity?.situation, primaryTool?.label) && (
+            {/* A prompt-writing activity always means using the tool, so the open
+                button belongs here — right where they'll do it. */}
+            {!(step.id in resolved) && step.activityType === 'write' && (
               <div className="mb-3"><OpenToolLink /></div>
             )}
           <LessonActivity
