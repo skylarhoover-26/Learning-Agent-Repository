@@ -7,9 +7,16 @@ import {
   Eye, Check, X, ChevronRight, Trophy, Bot, User, RotateCcw,
 } from 'lucide-react';
 import { saveGameResult, getGameStats } from '@/lib/game-store';
+import GameInstructions from '@/components/game-instructions';
 import ALL_CONTENT from './content';
 
 const ITEMS_PER_GAME = 10;
+
+const HOW_TO_PLAY = [
+  'You will see 10 short passages — customer emails, product descriptions, meeting notes, and more.',
+  'For each one, decide whether it was written by AI or by a human.',
+  'You will get instant feedback and a short explanation after every choice.',
+];
 
 function shuffleAndPick(arr, count) {
   const shuffled = [...arr].sort(() => Math.random() - 0.5);
@@ -21,6 +28,7 @@ export default function AiOrHuman() {
     shuffleAndPick(ALL_CONTENT, ITEMS_PER_GAME)
   );
   const [contentIdx, setContentIdx] = useState(0);
+  const [started, setStarted] = useState(false);
   const [selected, setSelected] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [results, setResults] = useState([]);
@@ -80,6 +88,7 @@ export default function AiOrHuman() {
     setShowAnswer(false);
     setResults([]);
     setGameOver(false);
+    setStarted(true);
   }
 
   // Save result on game over
@@ -210,18 +219,16 @@ export default function AiOrHuman() {
 
       <main className="max-w-2xl mx-auto px-6 py-8">
         {/* Start screen */}
-        {contentIdx === 0 && selected === null && results.length === 0 ? (
+        {!started ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
             <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
               <Eye className="w-8 h-8 text-brand-600 dark:text-brand-400" />
             </div>
-            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-4">
               AI or Human?
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-4 max-w-md mx-auto">
-              You will see 10 text passages -- customer emails, product descriptions, meeting notes, and more.
-              Your job: figure out if each one was written by AI or a human.
-            </p>
+
+            <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
 
             {stats && stats.gamesPlayed > 0 && (
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
@@ -230,11 +237,7 @@ export default function AiOrHuman() {
             )}
 
             <button
-              onClick={() => {
-                // Trigger the game by showing the first item
-                // (content is already set, just need to move past start screen)
-                setResults([]);
-              }}
+              onClick={() => setStarted(true)}
               className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
             >
               Start Game
@@ -243,6 +246,8 @@ export default function AiOrHuman() {
           </div>
         ) : (
           <>
+            <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
             {/* Progress bar */}
             <div className="flex items-center gap-1 mb-6">
               {content.map((_, i) => (

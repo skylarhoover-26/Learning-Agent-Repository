@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import {
-  Gamepad2, Swords, Search, Timer, Eye, ChevronRight, Clock, BarChart3, Trophy,
+  Gamepad2, Swords, Search, Timer, Eye, ChevronRight, Clock, BarChart3, Trophy, Zap,
 } from 'lucide-react';
 import { getGameStats } from '@/lib/game-store';
+import { maxGameXp } from '@/lib/progression';
+import { sortByDifficulty } from '@/lib/difficulty';
 
 const GAMES = [
   {
@@ -51,6 +53,9 @@ const GAMES = [
   },
 ];
 
+// Show games easy → hard so the difficulty signal reads consistently.
+const ORDERED_GAMES = sortByDifficulty(GAMES);
+
 export default function GamesHub() {
   const [allStats, setAllStats] = useState({});
 
@@ -86,7 +91,7 @@ export default function GamesHub() {
         </p>
 
         <div data-tour="page-games" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {GAMES.map((game, i) => {
+          {ORDERED_GAMES.map((game, i) => {
             const gameStats = allStats[game.slug];
             return (
               <Link
@@ -109,7 +114,7 @@ export default function GamesHub() {
                   </p>
                 )}
 
-                <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${game.difficultyColor}`}
                   >
@@ -120,6 +125,11 @@ export default function GamesHub() {
                     <Clock className="w-3 h-3" />
                     {game.time}
                   </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 mb-4 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                  <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                  Chance to win up to {maxGameXp(game.slug)} XP
                 </div>
 
                 <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm group-hover:bg-cta-600 transition-all self-start">

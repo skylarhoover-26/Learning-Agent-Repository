@@ -4,12 +4,19 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import {
-  Swords, ChevronRight, RotateCcw, Loader2, Lightbulb, Trophy, AlertCircle,
+  Swords, ChevronRight, RotateCcw, Loader2, Lightbulb, Trophy,
 } from 'lucide-react';
 import {
   saveGameResult, getGameStats, getInProgress, saveInProgress, clearInProgress,
 } from '@/lib/game-store';
+import GameInstructions from '@/components/game-instructions';
 import SCENARIOS from './scenarios';
+
+const HOW_TO_PLAY = [
+  `Work through ${SCENARIOS.length} real-world scenarios, one at a time.`,
+  'For each, write the best prompt you would give an AI to get the job done.',
+  'AI scores your prompt on clarity, specificity, and effectiveness, with tips to improve.',
+];
 
 function ScoreBar({ label, score, feedback, animate }) {
   const pct = (score / 5) * 100;
@@ -34,6 +41,7 @@ function ScoreBar({ label, score, feedback, animate }) {
 }
 
 export default function PromptBattle() {
+  const [started, setStarted] = useState(false);
   const [scenarioIdx, setScenarioIdx] = useState(0);
   const [prompt, setPrompt] = useState('');
   const [scores, setScores] = useState(null);
@@ -72,6 +80,7 @@ export default function PromptBattle() {
       // localStorage unavailable
     }
     setShowResume(false);
+    setStarted(true);
   }
 
   function handleStartFresh() {
@@ -83,6 +92,7 @@ export default function PromptBattle() {
     setShowResume(false);
     setScenarioIdx(0);
     setCompletedScenarios([]);
+    setStarted(true);
   }
 
   async function handleSubmit() {
@@ -160,9 +170,11 @@ export default function PromptBattle() {
       // All scenarios completed
       setGameOver(true);
       const totalScore = completedScenarios.reduce((sum, s) => sum + s.score, 0);
+      const maxScore = completedScenarios.reduce((sum, s) => sum + (s.maxScore || 0), 0);
       try {
         saveGameResult('prompt-battle', {
           score: totalScore,
+          total: maxScore,
           perScenario: completedScenarios,
         });
         clearInProgress('prompt-battle');
@@ -268,31 +280,47 @@ export default function PromptBattle() {
       />
 
       <main className="max-w-3xl mx-auto px-6 py-8">
-        {/* Resume banner */}
-        {showResume && (
-          <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-brand shrink-0" />
-              <p className="text-sm text-ink dark:text-slate-200">
-                You have an unfinished game. Pick up where you left off?
-              </p>
+        {!started ? (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+              <Swords className="w-8 h-8 text-brand-600 dark:text-brand-400" />
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={handleResume}
-                className="px-4 py-1.5 bg-brand text-white rounded-pill text-sm font-semibold hover:bg-brand-600 transition-all"
-              >
-                Resume
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-4">Prompt Battle</h2>
+
+            <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
+
+            {stats && stats.gamesPlayed > 0 && (
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Best: {stats.bestScore} &middot; Played: {stats.gamesPlayed}
+              </p>
+            )}
+
+            {showResume ? (
+              <div className="flex items-center justify-center gap-3">
+                <button onClick={handleResume} className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all">
+                  Resume game
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button onClick={handleStartFresh} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:hover:bg-slate-700 transition-all">
+                  Start fresh
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setStarted(true)} className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all">
+                Start Game
+                <ChevronRight className="w-4 h-4" />
               </button>
-              <button
-                onClick={handleStartFresh}
-                className="px-4 py-1.5 border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 rounded-pill text-sm font-semibold hover:bg-bg-subtle transition-all"
-              >
-                Start Fresh
-              </button>
+            )}
+
+            <div className="mt-6">
+              <Link href="/games" className="text-sm text-brand font-medium hover:underline">
+                Back to all games
+              </Link>
             </div>
           </div>
-        )}
+        ) : (
+        <>
+        <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
         {/* Progress indicator */}
         <div className="flex items-center gap-1 mb-6">
@@ -434,6 +462,8 @@ export default function PromptBattle() {
             Back to all games
           </Link>
         </div>
+        </>
+        )}
       </main>
     </div>
   );

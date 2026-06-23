@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { useActiveTool } from '@/components/active-tool-provider';
-import UseCaseLibrary from '@/components/use-case-library';
+import { sortByDifficulty } from '@/lib/difficulty';
 import {
   Search, Sparkles, ChevronRight, Clock, Lightbulb,
   RefreshCw, Loader2, Library,
@@ -80,7 +80,7 @@ function DiscoverContent() {
         data = await prefetchRef.current.promise;
       }
       if (!data) data = await fetchOpportunities(text);
-      setOpportunities(data.opportunities || []);
+      setOpportunities(sortByDifficulty(data.opportunities || []));
       setHasSearched(true);
     } catch (error) {
       console.error('Discover error:', error);
@@ -98,7 +98,7 @@ function DiscoverContent() {
 
   return (
     <div className="min-h-screen">
-      <PageHeader icon={Search} title="Discovery Library" subtitle="Find AI for your work, then browse the use case library" />
+      <PageHeader icon={Search} title="Discovery" subtitle="Find AI opportunities for your actual work" />
 
       <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 py-10">
         {!hasSearched && (
@@ -238,19 +238,20 @@ function DiscoverContent() {
           </div>
         )}
 
-        {/* Use Case Library — browse concrete, ready-to-use AI use cases. */}
-        <div className="relative py-2 mt-10 mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+        {/* Pointer to the full Use Case Library, now its own screen. */}
+        <Link
+          href="/library"
+          className="mt-10 flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 hover:border-brand-300 hover:shadow-md transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-brand-50 ring-1 ring-brand-100 flex items-center justify-center text-brand shrink-0">
+            <Library className="w-5 h-5" />
           </div>
-          <div className="relative flex justify-start">
-            <span className="bg-bg-warm dark:bg-slate-900 pr-4 flex items-center gap-2">
-              <Library className="w-4 h-4 text-brand" />
-              <span className="text-sm font-semibold text-ink dark:text-slate-200">Or browse the use case library</span>
-            </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-ink dark:text-slate-200">Browse the use case library</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">30+ ready-to-use AI use cases with copy-paste prompts.</p>
           </div>
-        </div>
-        <UseCaseLibrary />
+          <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+        </Link>
       </main>
     </div>
   );

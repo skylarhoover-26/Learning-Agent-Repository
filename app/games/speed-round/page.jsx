@@ -8,9 +8,16 @@ import {
 } from 'lucide-react';
 import ALL_QUESTIONS from './questions';
 import { saveGameResult, getGameStats } from '@/lib/game-store';
+import GameInstructions from '@/components/game-instructions';
 
 const TIMER_SECONDS = 15;
 const QUESTIONS_PER_GAME = 10;
+
+const HOW_TO_PLAY = [
+  `Answer ${QUESTIONS_PER_GAME} rapid-fire multiple-choice questions about AI concepts.`,
+  `You have ${TIMER_SECONDS} seconds per question — the timer starts as soon as the question appears.`,
+  'Pick the best answer; running out of time counts as a miss. The faster and more accurate you are, the better.',
+];
 
 function shuffleAndPick(arr, count) {
   const shuffled = [...arr].sort(() => Math.random() - 0.5);
@@ -57,6 +64,7 @@ export default function SpeedRound() {
   const [questions, setQuestions] = useState(() =>
     shuffleAndPick(ALL_QUESTIONS, QUESTIONS_PER_GAME)
   );
+  const [started, setStarted] = useState(false);
   const [qIdx, setQIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(TIMER_SECONDS);
@@ -112,9 +120,9 @@ export default function SpeedRound() {
     setSecondsLeft(TIMER_SECONDS);
   }, [qIdx, questions.length]);
 
-  // countdown timer
+  // countdown timer — only runs once the player has hit Start
   useEffect(() => {
-    if (gameOver || selected !== null) return;
+    if (!started || gameOver || selected !== null) return;
 
     timerRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
@@ -130,7 +138,7 @@ export default function SpeedRound() {
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [qIdx, gameOver, selected]);
+  }, [started, qIdx, gameOver, selected]);
 
   // auto-advance after answer or timeout
   useEffect(() => {
@@ -158,6 +166,7 @@ export default function SpeedRound() {
     setSecondsLeft(TIMER_SECONDS);
     setResults([]);
     setGameOver(false);
+    setStarted(true);
     savedRef.current = false;
   }
 
@@ -270,6 +279,39 @@ export default function SpeedRound() {
       />
 
       <main className="max-w-2xl mx-auto px-6 py-8">
+        {!started ? (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+              <Timer className="w-8 h-8 text-brand-600 dark:text-brand-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-4">Speed Round</h2>
+
+            <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
+
+            {stats && stats.gamesPlayed > 0 && (
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Best: {stats.bestScore}/{QUESTIONS_PER_GAME} &middot; Played: {stats.gamesPlayed}
+              </p>
+            )}
+
+            <button
+              onClick={() => { setSecondsLeft(TIMER_SECONDS); setStarted(true); }}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
+            >
+              Start Game
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            <div className="mt-6">
+              <Link href="/games" className="text-sm text-brand font-medium hover:underline">
+                Back to all games
+              </Link>
+            </div>
+          </div>
+        ) : (
+        <>
+        <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
         {/* Progress bar */}
         <div className="flex items-center gap-1 mb-6">
           {questions.map((_, i) => (
@@ -352,6 +394,8 @@ export default function SpeedRound() {
             Back to all games
           </Link>
         </div>
+        </>
+        )}
       </main>
     </div>
   );

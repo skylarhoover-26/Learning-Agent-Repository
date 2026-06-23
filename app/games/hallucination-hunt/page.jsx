@@ -4,10 +4,17 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import {
-  Search, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy, AlertCircle,
+  Search, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy,
 } from 'lucide-react';
 import ROUNDS from './rounds';
+import GameInstructions from '@/components/game-instructions';
 import { dailyPick } from '@/lib/content-day';
+
+const HOW_TO_PLAY = [
+  `Read each AI-generated response across ${ROUNDS.length} rounds.`,
+  'Click every sentence you think is a hallucination — a made-up or factually wrong claim.',
+  'Hit "Check my answers" to see what you caught, missed, or wrongly flagged, with explanations.',
+];
 import {
   saveGameResult, getGameStats, getInProgress, saveInProgress, clearInProgress,
 } from '@/lib/game-store';
@@ -42,6 +49,7 @@ export default function HallucinationHunt() {
   const [resumeAvailable, setResumeAvailable] = useState(false);
   const [savedProgress, setSavedProgress] = useState(null);
   const [stats, setStats] = useState({ gamesPlayed: 0, bestScore: 0 });
+  const [started, setStarted] = useState(false);
   const savedRef = useRef(false);
 
   // Day-stable round order that rotates at 8 AM PT, so returning players get a
@@ -73,6 +81,7 @@ export default function HallucinationHunt() {
     setRevealed(false);
     setResumeAvailable(false);
     setSavedProgress(null);
+    setStarted(true);
   }
 
   function handleStartFresh() {
@@ -89,6 +98,7 @@ export default function HallucinationHunt() {
     setResumeAvailable(false);
     setSavedProgress(null);
     savedRef.current = false;
+    setStarted(true);
   }
 
   const toggleFlag = useCallback(
@@ -297,33 +307,47 @@ export default function HallucinationHunt() {
       />
 
       <main className="max-w-3xl mx-auto px-6 py-8">
-        {/* Resume banner */}
-        {resumeAvailable && savedProgress && (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-brand-200 dark:border-brand-700 p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-brand shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-ink dark:text-slate-200">
-                  You have a game in progress (Round {(savedProgress.roundIdx || 0) + 1} of {rounds.length}).
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleResume}
-                  className="px-4 py-1.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
-                >
-                  Resume
+        {!started ? (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-brand-600 dark:text-brand-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-4">Hallucination Hunt</h2>
+
+            <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
+
+            {stats && stats.gamesPlayed > 0 && (
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Best: {stats.bestScore} &middot; Played: {stats.gamesPlayed}
+              </p>
+            )}
+
+            {resumeAvailable && savedProgress ? (
+              <div className="flex items-center justify-center gap-3">
+                <button onClick={handleResume} className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all">
+                  Resume (Round {(savedProgress.roundIdx || 0) + 1} of {rounds.length})
+                  <ChevronRight className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={handleStartFresh}
-                  className="px-4 py-1.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle transition-all"
-                >
-                  Start Fresh
+                <button onClick={handleStartFresh} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:hover:bg-slate-700 transition-all">
+                  Start fresh
                 </button>
               </div>
+            ) : (
+              <button onClick={() => setStarted(true)} className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all">
+                Start Game
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+
+            <div className="mt-6">
+              <Link href="/games" className="text-sm text-brand font-medium hover:underline">
+                Back to all games
+              </Link>
             </div>
           </div>
-        )}
+        ) : (
+        <>
+        <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
         {/* Round info */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
@@ -450,6 +474,8 @@ export default function HallucinationHunt() {
             Back to all games
           </Link>
         </div>
+        </>
+        )}
       </main>
     </div>
   );

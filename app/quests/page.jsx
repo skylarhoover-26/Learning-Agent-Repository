@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { Trophy, Clock, ChevronRight, CheckCircle2, Sparkles } from 'lucide-react';
 import { QUESTS } from '@/lib/quest-data';
+import { sortByDifficulty } from '@/lib/difficulty';
 import { useProgression } from '@/components/progression-provider';
 import { getLessonHistory } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
@@ -92,7 +93,7 @@ export default function QuestsPage() {
 
         <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">Featured projects</h3>
         <div data-tour="page-quests" className="space-y-4">
-          {QUESTS.map((quest) => (
+          {sortByDifficulty(QUESTS).map((quest) => (
             <QuestCard key={quest.id} quest={quest} completed={completedTopics.has(norm(quest.title))} />
           ))}
         </div>

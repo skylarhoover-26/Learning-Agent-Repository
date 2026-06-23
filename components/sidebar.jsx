@@ -7,7 +7,7 @@ import {
   Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
   CalendarDays, Play, GraduationCap, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
-  Compass, Trophy, BookOpen, Terminal,
+  Compass, Trophy, BookOpen, Terminal, Home, Library,
   Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
   Shield, Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles, ChevronDown,
 } from 'lucide-react';
@@ -56,7 +56,8 @@ const NAV_SECTIONS = [
     icon: BookOpen,
     tour: 'section-learn',
     items: [
-      { href: '/discover', icon: Compass, label: 'Library/Discovery', desc: 'Find AI for your work + browse the use case library', tour: 'nav-discover' },
+      { href: '/discover', icon: Compass, label: 'Discovery', desc: 'Find AI for your work', tour: 'nav-discover' },
+      { href: '/library', icon: Library, label: 'Library', desc: 'Browse ready-to-use AI use cases', tour: 'nav-library' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
@@ -335,6 +336,24 @@ export function SideNav() {
         >
           <X className="w-4 h-4" />
         </button>
+      </div>
+
+      {/* Home — pinned at the very top so it's always one click away, in
+          addition to the persistent Home link in the page header. */}
+      <div className="py-1">
+        <Link
+          href="/"
+          data-tour="nav-home"
+          aria-current={pathname === '/' ? 'page' : undefined}
+          className={`flex items-center gap-3 px-4 py-2.5 border-l-2 transition-colors ${
+            pathname === '/'
+              ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
+              : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+          }`}
+        >
+          <Home className={`w-4 h-4 shrink-0 ${pathname === '/' ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
+          <span className="text-sm font-semibold">Home</span>
+        </Link>
       </div>
 
       {NAV_SECTIONS.map(section => (

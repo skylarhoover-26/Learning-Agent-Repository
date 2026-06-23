@@ -9,6 +9,7 @@ import {
 import { getAllLessons, getLessonCategories } from '@/lib/structured-lessons-data';
 import { useProfile } from '@/components/profile-provider';
 import { dailyPick, REFRESH_LABEL } from '@/lib/content-day';
+import { sortByDifficulty } from '@/lib/difficulty';
 
 const DIFFICULTY_COLORS = {
   Beginner: 'bg-green-50 text-green-700 border-green-200',
@@ -43,14 +44,14 @@ export default function StructuredLessonPicker() {
     return dailyPick(pool.length >= 2 ? pool : lessons, 2, sig);
   }, [lessons, profile?.department, profile?.tier]);
 
-  const filtered = lessons.filter(l => {
+  const filtered = sortByDifficulty(lessons.filter(l => {
     const matchesCategory = selectedCategory === 'All' || l.category === selectedCategory;
     const matchesSearch = !search ||
       l.title.toLowerCase().includes(search.toLowerCase()) ||
       l.subtitle.toLowerCase().includes(search.toLowerCase()) ||
       l.persona.toLowerCase().includes(search.toLowerCase());
     return matchesCategory && matchesSearch;
-  });
+  }));
 
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
