@@ -210,7 +210,11 @@ export function SideNav() {
   const { open, setOpen } = useSidebar();
   const { startTour } = useTour();
   const pathname = usePathname();
-  const { isAdmin, isSectionDisabled, isItemDisabled } = useMenuVisibility();
+  const {
+    isAdmin,
+    isSectionHidden, isSectionComingSoon,
+    isItemHidden, isItemComingSoon,
+  } = useMenuVisibility();
   // Which sections the user has collapsed (keyed by title). Persisted so the
   // preference sticks across sessions.
   const [collapsed, setCollapsed] = useState({});
@@ -290,7 +294,8 @@ export function SideNav() {
   }
 
   function renderNavItem(item) {
-    if (isItemDisabled(item.href)) return renderDisabledItem(item);
+    if (isItemHidden(item.href)) return null;
+    if (isItemComingSoon(item.href)) return renderDisabledItem(item);
     const active = isActive(item.href);
     return (
       <Link
@@ -334,9 +339,10 @@ export function SideNav() {
 
       {NAV_SECTIONS.map(section => (
         <Fragment key={section.title}>
+          {!isSectionHidden(section.title) && (
           <div className="py-1">
             <SectionHeader icon={section.icon} title={section.title} tour={section.tour} collapsed={collapsed[section.title]} onToggle={() => toggleSection(section.title)} />
-            {!collapsed[section.title] && isSectionDisabled(section.title)
+            {!collapsed[section.title] && isSectionComingSoon(section.title)
               ? renderSectionComingSoon(section.title)
               : !collapsed[section.title] && section.items.map(item => (
               item.themeToggle ? (
@@ -365,17 +371,18 @@ export function SideNav() {
               )
             ))}
           </div>
+          )}
           {/* HCP Skill Shop sits right under Learn — it's external learning content. */}
-          {section.title === 'Learn' && (
+          {section.title === 'Learn' && !isSectionHidden('HCP Skill Shop') && (
             <div className="py-1">
               <SectionHeader icon={Store} title="HCP Skill Shop" tour="section-skillshop" collapsed={collapsed['HCP Skill Shop']} onToggle={() => toggleSection('HCP Skill Shop')} />
-              {!collapsed['HCP Skill Shop'] && isSectionDisabled('HCP Skill Shop') && renderSectionComingSoon('HCP Skill Shop')}
-              {!collapsed['HCP Skill Shop'] && !isSectionDisabled('HCP Skill Shop') && (<>
+              {!collapsed['HCP Skill Shop'] && isSectionComingSoon('HCP Skill Shop') && renderSectionComingSoon('HCP Skill Shop')}
+              {!collapsed['HCP Skill Shop'] && !isSectionComingSoon('HCP Skill Shop') && (<>
               <p className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
                 Want to learn more about AI? Explore the self-guided journey:
               </p>
               {SKILL_SHOP_LINKS.map(link => (
-                isItemDisabled(link.href) ? (
+                isItemHidden(link.href) ? null : isItemComingSoon(link.href) ? (
                   renderDisabledItem({ href: link.href, label: link.label, icon: ExternalLink })
                 ) : (
                 <a

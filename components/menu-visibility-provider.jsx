@@ -13,8 +13,10 @@ const PREVIEW_KEY = 'mv_preview_as_user';
 
 export function MenuVisibilityProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [disabledSections, setDisabledSections] = useState([]);
-  const [disabledItems, setDisabledItems] = useState([]);
+  const [disabledSections, setDisabledSections] = useState([]); // "coming soon"
+  const [disabledItems, setDisabledItems] = useState([]); // "coming soon"
+  const [hiddenSections, setHiddenSections] = useState([]); // removed entirely
+  const [hiddenItems, setHiddenItems] = useState([]); // removed entirely
   const [loaded, setLoaded] = useState(false);
   // Admin-only "view as a regular user" preview. Persisted so it survives
   // navigation while the admin clicks around testing. Never changes the real
@@ -38,20 +40,25 @@ export function MenuVisibilityProvider({ children }) {
     ]).then(([admin, vis]) => {
       if (cancelled) return;
       setIsAdmin(!!admin?.isAdmin);
-      setDisabledSections(Array.isArray(vis?.sections) ? vis.sections : []);
-      setDisabledItems(Array.isArray(vis?.items) ? vis.items : []);
+      applyVisibility(vis);
       setLoaded(true);
     });
     return () => { cancelled = true; };
   }, []);
+
+  function applyVisibility(vis) {
+    setDisabledSections(Array.isArray(vis?.sections) ? vis.sections : []);
+    setDisabledItems(Array.isArray(vis?.items) ? vis.items : []);
+    setHiddenSections(Array.isArray(vis?.hiddenSections) ? vis.hiddenSections : []);
+    setHiddenItems(Array.isArray(vis?.hiddenItems) ? vis.hiddenItems : []);
+  }
 
   // Re-pull the saved config so the live menu/route gating reflects a just-saved
   // change without a full page reload. Called by the admin page after a save.
   async function refresh() {
     try {
       const vis = await fetch('/api/menu-visibility', { cache: 'no-store' }).then(r => r.json());
-      setDisabledSections(Array.isArray(vis?.sections) ? vis.sections : []);
-      setDisabledItems(Array.isArray(vis?.items) ? vis.items : []);
+      applyVisibility(vis);
     } catch {
       // keep the current config if the refresh fails
     }
@@ -67,40 +74,59 @@ export function MenuVisibilityProvider({ children }) {
     }
   }
 
-  const disabledSectionSet = new Set(disabledSections);
-  const disabledItemSet = new Set(disabledItems);
+  const comingSectionSet = new Set(disabledSections);
+  const comingItemSet = new Set(disabledItems);
+  const hiddenSectionSet = new Set(hiddenSections);
+  const hiddenItemSet = new Set(hiddenItems);
   // Whether the menu/route gating should treat this person as an admin. Real
   // admins previewing as a user are gated like everyone else, but only for the
   // content toggles — their actual admin access is untouched.
   const actingAsAdmin = isAdmin && !previewAsUser;
 
-  // An item is hidden if it's individually disabled OR its whole section is
-  // disabled. Nothing is ever disabled for someone acting as an admin.
-  function isSectionDisabled(title) {
-    return !actingAsAdmin && disabledSectionSet.has(title);
+  // The effective state of a section/item for THIS viewer: 'visible',
+  // 'coming_soon' (greyed teaser, page gated), or 'hidden' (gone entirely).
+  // An item inherits its section's non-visible state. "hidden" wins over
+  // "coming soon". Admins always see everything.
+  function sectionState(title) {
+    if (actingAsAdmin) return 'visible';
+    if (hiddenSectionSet.has(title)) return 'hidden';
+    if (comingSectionSet.has(title)) return 'coming_soon';
+    return 'visible';
   }
-  function isItemDisabled(href) {
-    if (actingAsAdmin) return false;
-    if (disabledItemSet.has(href)) return true;
+  function itemState(href) {
+    if (actingAsAdmin) return 'visible';
     const section = ITEM_SECTION_BY_HREF[href];
-    return section ? disabledSectionSet.has(section) : false;
+    if (hiddenItemSet.has(href) || (section && hiddenSectionSet.has(section))) return 'hidden';
+    if (comingItemSet.has(href) || (section && comingSectionSet.has(section))) return 'coming_soon';
+    return 'visible';
   }
 
-  // Is the current pathname an internal route that's hidden from this user?
-  // Matches the longest catalog href that prefixes the path (so /lesson/123
-  // resolves to the /lesson toggle).
-  function isRouteDisabled(pathname) {
-    if (actingAsAdmin || !pathname) return false;
+  const isSectionHidden = (title) => sectionState(title) === 'hidden';
+  const isSectionComingSoon = (title) => sectionState(title) === 'coming_soon';
+  const isItemHidden = (href) => itemState(href) === 'hidden';
+  const isItemComingSoon = (href) => itemState(href) === 'coming_soon';
+  // "Disabled" = not fully visible (either teased or hidden) — used to drop
+  // home-page cards/links and gate routes.
+  const isSectionDisabled = (title) => sectionState(title) !== 'visible';
+  const isItemDisabled = (href) => itemState(href) !== 'visible';
+
+  // The state of the current pathname's internal route. Matches the longest
+  // catalog href that prefixes the path (so /lesson/123 resolves to /lesson).
+  function routeState(pathname) {
+    if (actingAsAdmin || !pathname) return 'visible';
     const match = INTERNAL_ITEM_HREFS
       .filter(href => pathname === href || pathname.startsWith(href + '/'))
       .sort((a, b) => b.length - a.length)[0];
-    return match ? isItemDisabled(match) : false;
+    return match ? itemState(match) : 'visible';
   }
+  const isRouteDisabled = (pathname) => routeState(pathname) !== 'visible';
 
   return (
     <MenuVisibilityContext.Provider
       value={{
         isAdmin, loaded, previewAsUser, setPreviewAsUser, refresh,
+        sectionState, itemState, routeState,
+        isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon,
         isSectionDisabled, isItemDisabled, isRouteDisabled,
       }}
     >
@@ -116,6 +142,13 @@ export function useMenuVisibility() {
     previewAsUser: false,
     setPreviewAsUser: () => {},
     refresh: () => {},
+    sectionState: () => 'visible',
+    itemState: () => 'visible',
+    routeState: () => 'visible',
+    isSectionHidden: () => false,
+    isSectionComingSoon: () => false,
+    isItemHidden: () => false,
+    isItemComingSoon: () => false,
     isSectionDisabled: () => false,
     isItemDisabled: () => false,
     isRouteDisabled: () => false,

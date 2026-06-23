@@ -12,24 +12,33 @@ import { useMenuVisibility } from '@/components/menu-visibility-provider';
 // only way to land here pre-load is a direct URL.
 export default function FeatureGuard({ children }) {
   const pathname = usePathname();
-  const { loaded, isRouteDisabled } = useMenuVisibility();
+  const { loaded, routeState } = useMenuVisibility();
 
-  if (loaded && isRouteDisabled(pathname)) {
-    return <ComingSoon />;
+  if (loaded) {
+    const state = routeState(pathname);
+    // "coming soon" gets the teaser; "hidden" gets a neutral not-available page
+    // so we don't tease something that's meant to be invisible.
+    if (state === 'coming_soon') return <Blocked variant="coming_soon" />;
+    if (state === 'hidden') return <Blocked variant="hidden" />;
   }
   return children;
 }
 
-function ComingSoon() {
+function Blocked({ variant }) {
+  const comingSoon = variant === 'coming_soon';
   return (
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center">
         <div className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center mx-auto mb-5">
           <Clock className="w-7 h-7 text-brand" />
         </div>
-        <h1 className="text-xl font-semibold text-ink dark:text-slate-100">Coming soon</h1>
+        <h1 className="text-xl font-semibold text-ink dark:text-slate-100">
+          {comingSoon ? 'Coming soon' : 'Page not available'}
+        </h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          This part of the app isn&apos;t available yet. Check back soon — we&apos;re still building it out.
+          {comingSoon
+            ? "This part of the app isn't available yet. Check back soon — we're still building it out."
+            : "This page isn't available."}
         </p>
         <Link
           href="/"

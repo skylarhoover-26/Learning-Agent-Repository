@@ -151,7 +151,9 @@ export default function StructuredLessonPlayer({ params }) {
       </div>
 
       <main className="max-w-3xl mx-auto px-6 py-10">
-        <LlmWindowCallout storageKey="structured-lesson" className="mb-6" />
+        {/* Only nudge the learner to open their AI tool on the hands-on "Try"
+            step — not as a persistent header on every step. */}
+        {step === 'Try' && <LlmWindowCallout storageKey="structured-lesson" className="mb-6" />}
         <div key={stepIdx} className="animate-fade-in">
           {step === 'Read' && <ReadStep lesson={lesson} onNext={goNext} />}
           {step === 'Try' && (

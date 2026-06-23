@@ -7,9 +7,9 @@ import { generateToolRecommendation } from '@/lib/ai';
 export async function POST(request) {
   try {
     await getAuthenticatedProfile();
-    const { topic } = await request.json();
+    const { topic, preferredTool } = await request.json();
     if (!topic) return NextResponse.json({});
-    const rec = await generateToolRecommendation(topic);
+    const rec = await generateToolRecommendation(topic, { preferredTool });
     return NextResponse.json(rec || {});
   } catch (error) {
     console.error('POST /api/lesson/recommend-tool error:', error);

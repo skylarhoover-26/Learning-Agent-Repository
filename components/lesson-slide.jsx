@@ -4,6 +4,25 @@ import { useState } from 'react';
 import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2, Copy, Check } from 'lucide-react';
 import { useTts } from '@/lib/use-tts';
 import MermaidDiagram from '@/components/mermaid-diagram';
+import { openLlmWindow } from '@/lib/open-llm-window';
+import { AI_TOOLS } from '@/lib/ai-tools';
+
+// Hostnames of known AI tools, so a tool link in lesson prose opens (and reuses)
+// the tool window via openLlmWindow instead of spawning a fresh tab each time.
+const TOOL_HOSTS = new Set(
+  AI_TOOLS.map((t) => {
+    try { return new URL(t.url).hostname; } catch { return null; }
+  }).filter(Boolean),
+);
+
+function isToolUrl(url) {
+  try {
+    const host = new URL(url).hostname;
+    return [...TOOL_HOSTS].some((h) => host === h || host.endsWith(`.${h}`) || h.endsWith(host));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * A fenced code block with a copy-to-clipboard button. Used for prompts and
@@ -222,8 +241,8 @@ function renderInline(text) {
   if (!text) return text;
 
   const parts = [];
-  // Match **bold**, *italic* (but not **), and `code`
-  const regex = /(\*\*(.+?)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
+  // Match [text](url) links, **bold**, *italic* (but not **), and `code`
+  const regex = /(\[([^\]]+)\]\(([^)\s]+)\)|\*\*(.+?)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
   let lastIndex = 0;
   let match;
 
@@ -231,28 +250,52 @@ function renderInline(text) {
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
-    if (match[2]) {
+    if (match[3]) {
+      // [text](url) — a markdown link
+      const label = match[2];
+      const url = match[3];
+      const linkClass = 'text-brand font-medium underline underline-offset-2 hover:text-brand-700 transition-colors';
+      if (isToolUrl(url)) {
+        // A known AI tool: open (and reuse) its window instead of a fresh tab.
+        parts.push(
+          <button
+            key={`lnk-${match.index}`}
+            type="button"
+            onClick={() => openLlmWindow(url)}
+            className={`${linkClass} cursor-pointer`}
+          >
+            {label}
+          </button>
+        );
+      } else {
+        parts.push(
+          <a key={`lnk-${match.index}`} href={url} target="_blank" rel="noopener noreferrer" className={linkClass}>
+            {label}
+          </a>
+        );
+      }
+    } else if (match[4]) {
       // **bold**
       parts.push(
         <strong key={`b-${match.index}`} className="font-semibold text-ink dark:text-slate-200">
-          {match[2]}
+          {match[4]}
         </strong>
       );
-    } else if (match[3]) {
+    } else if (match[5]) {
       // *italic*
       parts.push(
         <em key={`i-${match.index}`} className="italic text-slate-700 dark:text-slate-300">
-          {match[3]}
+          {match[5]}
         </em>
       );
-    } else if (match[4]) {
+    } else if (match[6]) {
       // `code`
       parts.push(
         <code
           key={`c-${match.index}`}
           className="bg-slate-100 dark:bg-slate-700 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 rounded text-sm font-mono"
         >
-          {match[4]}
+          {match[6]}
         </code>
       );
     }

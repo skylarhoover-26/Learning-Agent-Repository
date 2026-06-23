@@ -8,17 +8,17 @@ import LessonActivity from '@/components/lesson-activity';
 import OpenToolLink, { mentionsOpenTool } from '@/components/open-tool-link';
 import ConfettiBurst from '@/components/confetti-burst';
 import { getPausedLesson, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
-import LlmWindowCallout from '@/components/llm-window-callout';
 import BookLoader from '@/components/book-loader';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
-import { onLessonComplete } from '@/lib/progression';
+import { onLessonComplete, normalizeTopic } from '@/lib/progression';
+import { useProgression } from '@/components/progression-provider';
 import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
 import {
   Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare, RefreshCw,
-  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink,
+  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowDown, MousePointerClick,
 } from 'lucide-react';
 
 const FORMAT_LABEL = { standard: 'Quick Lesson', deep_dive: 'Deep Dive', project_quest: 'Project Quest' };
@@ -49,6 +49,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const router = useRouter();
   const { profile } = useProfile();
   const { tools, primaryTool } = useActiveTool();
+  const { lessonHistory } = useProgression();
   // The lesson's working topic. Starts from the prop, but the "this isn't what I
   // was looking for" flow can replace it with a sharper one and rebuild around
   // it. Kept in sync if the parent navigates to a genuinely new topic.
@@ -70,6 +71,14 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // teach step (all tabs/cards/reveals). Gates Continue so they don't skip past
   // the interactive teaching without engaging it.
   const [teachEngaged, setTeachEngaged] = useState({});
+  // We only nudge the learner to open their AI tool ONCE per lesson — after they
+  // open it (the window is reused/refocused on later steps), we stop showing the
+  // Open button so it isn't asked again and again.
+  const [toolOpened, setToolOpened] = useState(false);
+  // Which section of a teach step is showing (Concept → Vocabulary → Key points),
+  // so we present one section at a time instead of a wall of content. Reset on
+  // every step change.
+  const [panelIdx, setPanelIdx] = useState(0);
   const markTeachEngaged = useCallback((id) => {
     setTeachEngaged((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
   }, []);
@@ -103,6 +112,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const [refineLoading, setRefineLoading] = useState(false);
   const [refineReady, setRefineReady] = useState(null); // { message, newTopic } once we have enough
   const refineBannerRef = useRef(null);
+  // A tool the learner explicitly asked for during the refine chat. Applied to
+  // the NEXT rebuild's tool recommendation so the lesson switches tools without
+  // changing the topic, then consumed once.
+  const refinePreferredToolRef = useRef(null);
 
   // Project Quest build engine: each build step captures a real piece the
   // learner makes; pieces accumulate into `artifact` (stepId -> {name, content})
@@ -165,10 +178,14 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // lesson should be built around: the recommended one IF the learner owns
       // it, otherwise their starred/primary tool.
       const owned = tools || [];
+      // Consume any tool the learner asked for in the refine chat — applies to
+      // this one rebuild so the recommendation matches what they said.
+      const preferredTool = refinePreferredToolRef.current;
+      refinePreferredToolRef.current = null;
       let recTool = null;
       try {
         const rr = await fetch('/api/lesson/recommend-tool', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic, preferredTool }),
         });
         const rd = rr.ok ? await rr.json() : null;
         if (rd?.tool) { recTool = rd.tool; if (active) setRecommendation(rd); }
@@ -280,6 +297,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     setError(null);
     setConfirmingRebuild(false);
     setDismissedForToolId(null);
+    setToolOpened(false);
     // Reset the end-of-lesson checkpoint so the regenerated lesson earns its own
     // XP and gets a fresh "did this help?" prompt.
     setClaimed(false);
@@ -321,6 +339,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       const d = res.ok ? await res.json() : null;
       const message = d?.message || 'Can you tell me a bit more about what you were hoping to learn?';
       setRefineMessages((prev) => [...prev, { role: 'assistant', content: message }]);
+      // A tool the learner named applies to the rebuild — it changes the tool,
+      // never the topic.
+      if (d?.tool) refinePreferredToolRef.current = d.tool;
       if (d?.done && d.newTopic) setRefineReady({ message, newTopic: d.newTopic });
     } catch {
       setRefineMessages((prev) => [...prev, { role: 'assistant', content: 'Sorry — something went wrong. Mind trying that again?' }]);
@@ -550,25 +571,62 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const stepSettled = (isActivity || isBuild) ? step.id in resolved : true;
   // A teach step is "ready" once its content has loaded AND — if it carries
   // interactive blocks — the learner has explored them all.
-  const teachData = step?.kind === 'teach' ? teachContent[step?.id] : null;
+  const isTeachStep = step?.kind === 'teach';
+  const teachData = isTeachStep ? teachContent[step?.id] : null;
   const teachBlocks = Array.isArray(teachData?.blocks) ? teachData.blocks : [];
-  const teachInteractive = teachBlocks.some((b) => ['flashcards', 'reveal', 'tabs', 'diagram'].includes(b?.type));
-  const teachReady = step?.kind === 'teach'
-    ? (!!teachData && (!teachInteractive || !!teachEngaged[step.id]))
+  // Interactive cards the learner must engage to continue: flip cards, compare
+  // tabs, clickable diagrams. Examples ("reveal") are OPTIONAL and never gate.
+  const teachInteractive = teachBlocks.some((b) => ['flashcards', 'tabs', 'diagram'].includes(b?.type));
+  // Ordered sections of a teach step, shown ONE AT A TIME so the learner isn't
+  // hit with everything at once: Concept → Vocabulary (cards) → Key points.
+  const teachPanels = (() => {
+    if (!isTeachStep || !teachData) return [];
+    const p = [];
+    if (teachData.message) p.push('concept');
+    if (teachBlocks.length) p.push('cards');
+    if (Array.isArray(teachData.keyPoints) && teachData.keyPoints.length) p.push('keypoints');
+    return p.length ? p : ['concept'];
+  })();
+  const safePanelIdx = Math.min(panelIdx, Math.max(0, teachPanels.length - 1));
+  const currentPanel = teachPanels[safePanelIdx] || null;
+  const onLastPanel = !isTeachStep || teachPanels.length <= 1 || safePanelIdx >= teachPanels.length - 1;
+  // The vocabulary section blocks advancing until every required card is engaged.
+  const cardsGate = isTeachStep && currentPanel === 'cards' && teachInteractive && !teachEngaged[step.id];
+  // Can the bottom button advance (to the next section or, on the last one, the
+  // next step)? Activities/builds gate on being settled; teach gates on the
+  // current section being ready; recap never auto-advances.
+  const canAdvance = step?.kind === 'recap' ? false
+    : (isActivity || isBuild) ? stepSettled
+    : isTeachStep ? (!!teachData && !cardsGate)
     : true;
-  const teachNeedsInteraction = step?.kind === 'teach' && !!teachData && teachInteractive && !teachEngaged[step.id];
-  const canAdvance = step?.kind === 'recap' ? false : ((isActivity || isBuild) ? stepSettled : teachReady);
   const builtCount = steps.filter((s) => s.kind === 'build' && artifact[s.id]?.content).length;
+  // Did this learner already complete this exact topic before? If so, finishing
+  // again earns no new XP — we tell them rather than show a fresh XP award.
+  const alreadyEarned = (lessonHistory || []).some(
+    (l) => normalizeTopic(l.topic) === normalizeTopic(topic),
+  );
 
   function goNext() {
     if (stepIdx < total - 1) {
       const ni = stepIdx + 1;
       setStepIdx(ni);
+      setPanelIdx(0);
       persist({ stepIdx: ni });
     }
   }
   function goBack() {
-    if (stepIdx > 0) { const ni = stepIdx - 1; setStepIdx(ni); persist({ stepIdx: ni }); }
+    if (stepIdx > 0) { const ni = stepIdx - 1; setStepIdx(ni); setPanelIdx(0); persist({ stepIdx: ni }); }
+  }
+  // The bottom button: advance to the next SECTION within a teach step, or — on
+  // the last section (or any non-teach step) — advance to the next STEP.
+  function advance() {
+    if (onLastPanel) goNext();
+    else setPanelIdx((p) => p + 1);
+  }
+  // Back steps within sections first, then to the previous step.
+  function back() {
+    if (isTeachStep && safePanelIdx > 0) setPanelIdx((p) => Math.max(0, p - 1));
+    else goBack();
   }
 
   function pauseAndExit() {
@@ -741,7 +799,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       {helpful !== 'no' ? (
         <>
           <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400 mb-3">
-            <Trophy className="w-4 h-4" /> XP earned — nice work!
+            <Trophy className="w-4 h-4" /> {alreadyEarned ? 'Already earned — nice refresher!' : 'XP earned — nice work!'}
           </p>
           <p className="text-center text-sm font-semibold text-ink dark:text-slate-200 mb-1">
             One more thing — did this help with what you came to learn?
@@ -816,8 +874,13 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const recapFooter = !claimed ? (
     <div className="mt-5 text-center">
       <button onClick={claimXp} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-all">
-        <Trophy className="w-4 h-4" /> Finish &amp; earn XP
+        <Trophy className="w-4 h-4" /> {alreadyEarned ? 'Finish lesson' : 'Finish & earn XP'}
       </button>
+      {alreadyEarned && (
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          You already earned XP for this lesson — no new XP, but great to review!
+        </p>
+      )}
     </div>
   ) : checkpointBlock;
 
@@ -929,12 +992,6 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         )}
       </div>
 
-      {/* Tool callout — shown on the first step, then drops away as the learner
-          continues (they've already opened their tool by then). */}
-      {stepIdx === 0 && (
-        <LlmWindowCallout storageKey="planlesson" recommendation={recommendation} showOpen={false} />
-      )}
-
       {/* Step body */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
         <div className="flex items-center gap-2 mb-3">
@@ -960,16 +1017,53 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             </div>
           ) : (
             <div>
-              <FormattedContent text={teach?.message || ''} />
-              {mentionsOpenTool(teach?.message, primaryTool?.label) && (
-                <div className="mt-3"><OpenToolLink /></div>
+              {/* Section progress for multi-section teach steps. */}
+              {isTeachStep && teachPanels.length > 1 && (
+                <div className="flex items-center gap-1.5 mb-3">
+                  {teachPanels.map((p, i) => (
+                    <span
+                      key={p}
+                      className={`h-1.5 rounded-full transition-all ${
+                        i === safePanelIdx ? 'w-6 bg-brand' : i < safePanelIdx ? 'w-3 bg-brand/40' : 'w-3 bg-slate-200 dark:bg-slate-700'
+                      }`}
+                    />
+                  ))}
+                  <span className="ml-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                    {currentPanel === 'concept' ? 'Concept' : currentPanel === 'cards' ? 'Vocabulary' : 'Key points'}
+                  </span>
+                </div>
               )}
-              <LessonInteractive
-                blocks={teach?.blocks}
-                onEngagementChange={(done) => { if (done) markTeachEngaged(step.id); }}
-              />
-              {teach?.keyPoints?.length > 0 && (
-                <div className="mt-4 rounded-xl bg-brand-50 dark:bg-slate-700/50 p-4">
+
+              {/* qa answers render whole; teach steps render one section at a time. */}
+              {(!isTeachStep || currentPanel === 'concept') && (
+                <FormattedContent text={teach?.message || ''} />
+              )}
+
+              {(!isTeachStep || currentPanel === 'cards') && teachBlocks.length > 0 && (
+                <>
+                  {(() => {
+                    const hasCards = teachBlocks.some((b) => ['flashcards', 'tabs', 'diagram'].includes(b?.type));
+                    const hasExample = teachBlocks.some((b) => b?.type === 'reveal');
+                    return (
+                      <p className="mb-3 flex items-start gap-1.5 text-xs font-medium text-brand-700 dark:text-brand-300">
+                        <MousePointerClick className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        <span>
+                          {hasCards && 'Tap each card to reveal its meaning. '}
+                          {hasExample && 'Open “Show me an example” for an optional walkthrough — it’s not required to continue. '}
+                          {hasCards && 'Flip them all to unlock the next section.'}
+                        </span>
+                      </p>
+                    );
+                  })()}
+                  <LessonInteractive
+                    blocks={teach?.blocks}
+                    onEngagementChange={(done) => { if (done) markTeachEngaged(step.id); }}
+                  />
+                </>
+              )}
+
+              {(!isTeachStep || currentPanel === 'keypoints') && teach?.keyPoints?.length > 0 && (
+                <div className="rounded-xl bg-brand-50 dark:bg-slate-700/50 p-4">
                   <p className="flex items-center gap-1.5 text-sm font-semibold text-brand-700 dark:text-brand-300 mb-1">
                     <Lightbulb className="w-4 h-4" /> Key points
                   </p>
@@ -988,10 +1082,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
         {step?.kind === 'activity' && (
           <>
-            {/* A prompt-writing activity always means using the tool, so the open
-                button belongs here — right where they'll do it. */}
-            {!(step.id in resolved) && step.activityType === 'write' && (
-              <div className="mb-3"><OpenToolLink /></div>
+            {/* The ONE place we nudge the learner to open their AI tool: a
+                prompt-writing activity needs it. Shown once per lesson (the
+                window is reused on later steps), with a short line naming the
+                tool so they know exactly where to do the work. */}
+            {!toolOpened && !(step.id in resolved) && step.activityType === 'write' && primaryTool?.url && (
+              <div className="mb-3 rounded-xl border border-brand-200 dark:border-slate-600 bg-brand-50/70 dark:bg-slate-800 p-3">
+                <p className="text-sm text-ink dark:text-slate-200 mb-2">
+                  This part is hands-on in <span className="font-semibold">{primaryTool.emoji} {primaryTool.label}</span>. Open it in a separate window and do the work there — then come back here.
+                </p>
+                <OpenToolLink onOpened={() => setToolOpened(true)} />
+              </div>
             )}
           <LessonActivity
             activityType={step.activityType}
@@ -1103,10 +1204,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         )}
       </div>
 
-      {/* Nav: activities must be passed before advancing; no finishing early */}
+      {/* Nav: sections within a teach step advance with Next; activities/builds
+          must be settled; teach cards must be flipped. No finishing early. */}
       {step?.kind !== 'recap' && (
         <div className="flex items-center justify-between gap-3">
-          <button onClick={goBack} disabled={stepIdx === 0}
+          <button onClick={back} disabled={stepIdx === 0 && (!isTeachStep || safePanelIdx === 0)}
             className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-40 transition-colors">
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
@@ -1115,13 +1217,22 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
               <span className="text-xs font-medium text-brand">{builtCount} {builtCount === 1 ? 'piece' : 'pieces'} in your project</span>
             )}
             {!canAdvance ? (
-              <span className="text-xs text-slate-400">
-                {isActivity ? 'Give the activity a try to continue' : isBuild ? 'Add or skip your piece to continue' : teachNeedsInteraction ? 'Explore everything above to continue' : 'Loading this step…'}
-              </span>
+              (isActivity || isBuild || cardsGate) ? (
+                // An actionable gate — make it bold and prominent so it's clear
+                // what to finish before they can move on.
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                  <ArrowDown className="w-4 h-4" />
+                  {isActivity ? 'Complete the activity above to continue'
+                    : isBuild ? 'Add or skip your piece above to continue'
+                    : 'Flip every card above to continue'}
+                </span>
+              ) : (
+                <span className="text-xs text-slate-400">Loading this step…</span>
+              )
             ) : (
-              <button onClick={goNext}
+              <button onClick={advance}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">
-                Continue <ChevronRight className="w-4 h-4" />
+                {onLastPanel ? 'Continue' : 'Next'} <ChevronRight className="w-4 h-4" />
               </button>
             )}
           </div>

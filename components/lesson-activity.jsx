@@ -185,7 +185,10 @@ function Write({ activity, onResolve, resolved, passed, toolLabel }) {
     }
   }
 
-  const showAttempts = !resolved && !grade;
+  // Keep the "tries left" counter visible after each failed submit (not just
+  // before the first one) so attempts visibly count down. Hide it only once the
+  // activity is settled or the latest score passes.
+  const showAttempts = !resolved && !isPass;
 
   return (
     <div>

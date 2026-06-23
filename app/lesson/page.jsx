@@ -23,7 +23,6 @@ import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import PausedLessonsBox from '@/components/paused-lessons-box';
-import LlmWindowCallout from '@/components/llm-window-callout';
 import { useActiveTool } from '@/components/active-tool-provider';
 import SurpriseWin from '@/components/surprise-win';
 
@@ -209,8 +208,6 @@ function LessonContent() {
   // Correctness (0..1) from the quiz, read when completion is recorded.
   const quizCorrectnessRef = useRef(1);
   const quizCorrectRef = useRef(0);
-  // Best-tool recommendation for THIS lesson ({ tool, why }).
-  const [toolRec, setToolRec] = useState(null);
   const { refresh: refreshProgression } = useProgression() || {};
   const { profile } = useProfile();
   const { tools } = useActiveTool();
@@ -390,16 +387,6 @@ function LessonContent() {
     quizCorrectnessRef.current = 1;
     quizCorrectRef.current = 0;
     setFinishing(false);
-    // Ask which tool is best for this lesson (parallel, best-effort).
-    setToolRec(null);
-    fetch('/api/lesson/recommend-tool', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: t }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.tool) setToolRec(d); })
-      .catch(() => {});
 
     try {
       const res = await fetch('/api/lesson/start', {
@@ -1047,8 +1034,6 @@ function LessonContent() {
     <>
     <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
     <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
-
-      {!isComplete && <LlmWindowCallout storageKey="lesson" recommendation={toolRec} className="mb-6" showOpen={false} />}
 
       {/* Progress bar + voice mode toggle */}
       {slides.length > 0 && (

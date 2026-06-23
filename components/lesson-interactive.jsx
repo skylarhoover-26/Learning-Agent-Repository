@@ -19,15 +19,17 @@ export default function LessonInteractive({ blocks, onEngagementChange }) {
 }
 
 // The default-visible item (tab 0, diagram step 0) counts as already seen; the
-// learner must click into the rest. Flashcards and reveals start unseen.
+// learner must click into the rest. Flashcards, tabs and diagrams are REQUIRED
+// (they gate Continue). Reveal/example blocks are intentionally NOT required —
+// examples are optional, so the learner can move on without opening them.
 function unitPlan(blocks) {
   const required = [];
   const preSeen = [];
   blocks.forEach((b, i) => {
     if (b.type === 'flashcards' && Array.isArray(b.cards)) b.cards.forEach((_, j) => required.push(`${i}:c${j}`));
-    else if (b.type === 'reveal') required.push(`${i}:open`);
     else if (b.type === 'tabs' && Array.isArray(b.tabs)) b.tabs.forEach((_, j) => { const k = `${i}:t${j}`; required.push(k); if (j === 0) preSeen.push(k); });
     else if (b.type === 'diagram' && Array.isArray(b.steps)) b.steps.forEach((_, j) => { const k = `${i}:s${j}`; required.push(k); if (j === 0) preSeen.push(k); });
+    // 'reveal' (examples) are optional — not tracked as required.
   });
   return { required, preSeen };
 }
@@ -126,7 +128,14 @@ function RevealExample({ title, prompt, content, onEngage }) {
         <span className="flex items-center gap-2 text-sm font-semibold text-ink dark:text-slate-200">
           <Eye className="w-4 h-4 text-brand" /> {open ? (title || 'Example') : prompt}
         </span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="flex items-center gap-2 shrink-0">
+          {!open && (
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 border border-slate-200 dark:border-slate-600 rounded-full px-1.5 py-0.5">
+              Optional
+            </span>
+          )}
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </span>
       </button>
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-700">

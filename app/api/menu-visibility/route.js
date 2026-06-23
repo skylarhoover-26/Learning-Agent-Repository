@@ -18,8 +18,8 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   try {
-    const { sections, items } = await request.json();
-    const saved = await setMenuVisibility({ sections, items });
+    const { sections, items, hiddenSections, hiddenItems } = await request.json();
+    const saved = await setMenuVisibility({ sections, items, hiddenSections, hiddenItems });
     return NextResponse.json(saved);
   } catch (error) {
     console.error('POST /api/menu-visibility error:', error);

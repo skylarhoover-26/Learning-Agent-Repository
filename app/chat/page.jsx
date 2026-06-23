@@ -11,7 +11,6 @@ import { useProfile } from '@/components/profile-provider';
 import { MessageCircle, MessageSquare, Send, Loader2, Trash2, ExternalLink } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import ChatLessonOffer from '@/components/chat-lesson-offer';
-import LlmWindowCallout from '@/components/llm-window-callout';
 import { useActiveTool } from '@/components/active-tool-provider';
 
 // Same support channels surfaced by the floating help widget, pinned in the
@@ -188,8 +187,6 @@ function ChatPageInner() {
 
       <main ref={mainRef} className="flex-1 overflow-y-auto">
         <div data-tour="chat-thread" className="max-w-3xl mx-auto px-6 py-6 space-y-4">
-          <LlmWindowCallout storageKey="chat" />
-
           {/* Ask box — the answer threads in right below it (lesson Q&A style). */}
           <div data-tour="page-chat" className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-3">
             <div className="flex items-center justify-between mb-2 px-1">

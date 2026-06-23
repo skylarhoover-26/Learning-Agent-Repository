@@ -39,27 +39,25 @@ const USE_CASES = [
 ];
 
 const CATEGORIES = {
-  writing: { emoji: '✏️', label: 'Writing' },
-  analysis: { emoji: '🔬', label: 'Analysis' },
-  meetings: { emoji: '🤝', label: 'Meetings' },
-  decisions: { emoji: '🎯', label: 'Decisions' },
+  writing: { label: 'Writing' },
+  analysis: { label: 'Analysis' },
+  meetings: { label: 'Meetings' },
+  decisions: { label: 'Decisions' },
 };
 
 const ROLES = {
-  cs: { emoji: '🎧', label: 'Customer Success' },
-  sales: { emoji: '💰', label: 'Sales' },
-  product: { emoji: '🛠️', label: 'Product' },
-  marketing: { emoji: '📣', label: 'Marketing' },
-  enablement: { emoji: '📚', label: 'Enablement' },
-  hr: { emoji: '👥', label: 'HR / People' },
-  leadership: { emoji: '👔', label: 'Leadership' },
+  cs: { label: 'Customer Success' },
+  sales: { label: 'Sales' },
+  product: { label: 'Product' },
+  marketing: { label: 'Marketing' },
+  enablement: { label: 'Enablement' },
+  hr: { label: 'HR / People' },
+  leadership: { label: 'Leadership' },
 };
 
-const DIFFICULTY_STYLES = {
-  easy: { label: 'Easy', color: 'bg-green-100 text-green-700' },
-  medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
-  advanced: { label: 'Advanced', color: 'bg-red-100 text-red-700' },
-};
+// Minimal, neutral difficulty labels — no bright color blocks.
+const DIFFICULTY_LABELS = { easy: 'Easy', medium: 'Medium', advanced: 'Advanced' };
+const difficultyPill = 'text-xs font-medium text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600 rounded px-1.5 py-0.5';
 
 // The Use Case Library, extracted so it can render as a section under Discover.
 export default function UseCaseLibrary() {
@@ -128,7 +126,7 @@ export default function UseCaseLibrary() {
             <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm bg-white dark:bg-slate-800">
               <option value="all">All roles</option>
               {Object.entries(ROLES).map(([key, r]) => (
-                <option key={key} value={key}>{r.emoji} {r.label}</option>
+                <option key={key} value={key}>{r.label}</option>
               ))}
             </select>
           </div>
@@ -137,7 +135,7 @@ export default function UseCaseLibrary() {
             <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-brand focus:ring-2 focus:ring-brand-100 focus:outline-none text-sm bg-white dark:bg-slate-800">
               <option value="all">All categories</option>
               {Object.entries(CATEGORIES).map(([key, c]) => (
-                <option key={key} value={key}>{c.emoji} {c.label}</option>
+                <option key={key} value={key}>{c.label}</option>
               ))}
             </select>
           </div>
@@ -170,7 +168,6 @@ export default function UseCaseLibrary() {
 function UseCaseCard({ uc, isPopular, isRecent }) {
   const [copied, setCopied] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
-  const difficulty = DIFFICULTY_STYLES[uc.difficulty] || DIFFICULTY_STYLES.medium;
   const cat = CATEGORIES[uc.category] || {};
 
   function copyPrompt(e) {
@@ -193,24 +190,21 @@ function UseCaseCard({ uc, isPopular, isRecent }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover shadow-card transition-all overflow-hidden">
       <div className="p-5">
-        <div className="flex items-start gap-3 mb-3">
-          <span className="text-3xl shrink-0">{uc.icon}</span>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1">{uc.title}</h3>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-xs font-medium px-2 py-0.5 rounded ${difficulty.color}`}>{difficulty.label}</span>
-              {cat.emoji && <span className="text-xs text-slate-500 dark:text-slate-400">{cat.emoji} {cat.label}</span>}
-              {isPopular && (
-                <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded inline-flex items-center gap-0.5">
-                  <TrendingUp className="w-3 h-3" /> Popular
-                </span>
-              )}
-              {isRecent && !isPopular && (
-                <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded inline-flex items-center gap-0.5">
-                  <History className="w-3 h-3" /> Recent
-                </span>
-              )}
-            </div>
+        <div className="mb-3">
+          <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1.5">{uc.title}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={difficultyPill}>{DIFFICULTY_LABELS[uc.difficulty] || 'Medium'}</span>
+            {cat.label && <span className="text-xs text-slate-500 dark:text-slate-400">{cat.label}</span>}
+            {isPopular && (
+              <span className="text-xs text-amber-700 dark:text-amber-400 inline-flex items-center gap-0.5">
+                <TrendingUp className="w-3 h-3" /> Popular
+              </span>
+            )}
+            {isRecent && !isPopular && (
+              <span className="text-xs text-blue-600 dark:text-blue-400 inline-flex items-center gap-0.5">
+                <History className="w-3 h-3" /> Recent
+              </span>
+            )}
           </div>
         </div>
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{uc.description}</p>

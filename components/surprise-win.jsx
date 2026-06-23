@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
-import LlmWindowCallout from '@/components/llm-window-callout';
 import BookLoader from '@/components/book-loader';
 import { Zap, Copy, Check, Clock, ArrowRight, RefreshCw } from 'lucide-react';
 
@@ -58,8 +57,6 @@ export default function SurpriseWin({ onStartLesson }) {
 
   return (
     <div className="space-y-6">
-      <LlmWindowCallout storageKey="surprise-win" />
-
       {isLoading && (
         <div className="text-center">
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 max-w-xl mx-auto">
