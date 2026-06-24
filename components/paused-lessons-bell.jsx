@@ -52,6 +52,11 @@ export default function PausedLessonsBell() {
 
   function resume(entry) {
     setOpen(false);
+    // Fire an event so resuming works even when we're ALREADY on /lesson —
+    // pushing the same ?resume= URL wouldn't change searchParams, so the
+    // deep-link effect on the lesson page would never re-run. The push below
+    // still handles resuming from any other screen (cold mount).
+    window.dispatchEvent(new CustomEvent('lesson:resume', { detail: { key: entry.key } }));
     router.push(`/lesson?resume=${encodeURIComponent(entry.key)}`);
   }
 

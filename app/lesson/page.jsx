@@ -682,6 +682,24 @@ function LessonContent() {
     }
   }, [resumeParam, resumeEntry]);
 
+  // Companion to the deep link above: the bell also fires a `lesson:resume`
+  // event so clicking resume while ALREADY on /lesson works (the URL/key may
+  // be unchanged, so the effect above won't re-fire). Keep resumedKeyRef in
+  // sync so the deep-link effect doesn't then resume the same entry twice.
+  useEffect(() => {
+    function onResume(e) {
+      const key = e.detail?.key;
+      if (!key) return;
+      const entry = listPausedLessons().find((x) => x.key === key);
+      if (entry) {
+        resumedKeyRef.current = key;
+        resumeEntry(entry);
+      }
+    }
+    window.addEventListener('lesson:resume', onResume);
+    return () => window.removeEventListener('lesson:resume', onResume);
+  }, [resumeEntry]);
+
   // "View all in lessons" from the bell: /lesson?paused=1 shows the picker (where
   // the full paused-lessons box lives) and scrolls to it — even if we were mid-
   // lesson. We only switch the view; we never clear the current lesson's progress.
@@ -1109,7 +1127,7 @@ function LessonContent() {
       <>
         <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
         <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
-          <PlanLessonPlayer topic={topic} format={format} onExit={resetToPickerView} />
+          <PlanLessonPlayer key={`${format}__${topic}`} topic={topic} format={format} onExit={resetToPickerView} />
         </main>
       </>
     );
