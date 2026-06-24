@@ -8,7 +8,7 @@ import { ProgressionProvider } from '@/components/progression-provider';
 import { ChampionProvider } from '@/components/champion-provider';
 import PageTracker from '@/components/page-tracker';
 import GlobalXpPopup from '@/components/global-xp-popup';
-import { SidebarProvider, SideNav, SidebarShell } from '@/components/sidebar';
+import { SidebarProvider, SideNav, SidebarShell, MenuStrip } from '@/components/sidebar';
 import { MenuVisibilityProvider } from '@/components/menu-visibility-provider';
 import FeatureGuard from '@/components/feature-guard';
 import PreviewModeBanner from '@/components/preview-mode-banner';
@@ -53,6 +53,7 @@ export default function RootLayout({ children }) {
                 <TourProvider>
                   <MenuVisibilityProvider>
                     <SideNav />
+                    <MenuStrip />
                     <SidebarShell>
                       <FeatureGuard>
                         {children}

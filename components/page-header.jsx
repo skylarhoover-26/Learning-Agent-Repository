@@ -1,4 +1,3 @@
-import { SidebarToggle } from '@/components/sidebar';
 import BackButton from '@/components/back-button';
 import UserMenu from '@/components/user-menu';
 
@@ -8,9 +7,8 @@ import UserMenu from '@/components/user-menu';
 // user menu (e.g. a "Clear chat" button).
 export default function PageHeader({ icon: Icon, title, subtitle, iconButton, actions }) {
   return (
-    <header className="bg-ink sticky top-0 z-10 text-white">
+    <header className="js-topbar bg-ink sticky top-0 z-50 text-white">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
-        <SidebarToggle />
         <BackButton />
         <div className="flex items-center gap-3">
           {iconButton ? iconButton : (

@@ -83,7 +83,7 @@ export default function AchievementsLive() {
 
   return (
     <div data-tour="page-achievements" className="min-h-screen">
-      <header className="bg-ink sticky top-0 z-10 text-white">
+      <header className="js-topbar bg-ink sticky top-0 z-50 text-white">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
           <Link href="/" className="p-2 rounded-lg hover:bg-white/10" aria-label="Back to home">
             <ArrowLeft className="w-5 h-5 text-white" />

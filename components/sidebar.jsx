@@ -139,6 +139,15 @@ export function SidebarProvider({ children }) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
+  // Mark the document while the menu is open so the top bar can hold its
+  // full width while the body shifts, and the hamburger strip can hide
+  // (see `.js-topbar` / `.js-menu-strip` in globals.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('menu-open', open);
+    return () => root.classList.remove('menu-open');
+  }, [open]);
+
   return (
     <SidebarContext.Provider value={{ open, setOpen, toggle: () => setOpen(p => !p) }}>
       {children}
@@ -150,22 +159,24 @@ export function useSidebar() {
   return useContext(SidebarContext);
 }
 
-// Hamburger button — lives in the page header and opens the overlay menu.
-// While the menu is open it overlays the page and has its own ✕ to close, so we
-// hide the hamburger — but keep its w-9 h-9 footprint as an invisible spacer so
-// the header title doesn't jump when the icon disappears.
-export function SidebarToggle() {
+// A thin white toolbar strip just below the dark top bar that holds the
+// hamburger. It spans the page (so it never sits on top of content) and hides
+// while the menu is open — the open panel and its ✕ take over from there.
+export function MenuStrip() {
   const { open, toggle } = useSidebar();
-  if (open) return <span className="w-9 h-9 shrink-0" aria-hidden="true" />;
+  const pathname = usePathname();
+  if (isChromeHiddenRoute(pathname)) return null;
   return (
-    <button
-      onClick={toggle}
-      className="flex items-center justify-center w-9 h-9 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-100"
-      aria-label="Navigation menu"
-      aria-expanded={open}
-    >
-      <Menu className="w-5 h-5" />
-    </button>
+    <div className="js-menu-strip fixed top-16 left-0 right-0 z-30 h-11 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center px-4">
+      <button
+        onClick={toggle}
+        aria-label="Open navigation menu"
+        aria-expanded={open}
+        className="flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+    </div>
   );
 }
 
@@ -184,7 +195,7 @@ export function SidebarShell({ children }) {
       {/* Small screens only: dim + tap-to-close (the panel overlays content). */}
       {showNav && (
         <div
-          className="fixed inset-0 bg-black/40 z-[55] lg:hidden"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={() => setOpen(false)}
           aria-hidden="true"
         />
@@ -284,7 +295,7 @@ export function SideNav() {
   return (
     <nav
       data-tour="sidebar"
-      className={`fixed top-0 left-0 h-screen w-96 max-w-[88vw] z-[56] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
+      className={`fixed top-16 left-0 h-[calc(100dvh-4rem)] w-96 max-w-[88vw] z-[45] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-hidden={!open}
