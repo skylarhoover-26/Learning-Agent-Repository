@@ -3,16 +3,16 @@
 import { useState } from 'react';
 import { HelpCircle, X, BookOpen, Trophy, MessageCircle, Flame, Gamepad2, RefreshCw } from 'lucide-react';
 
-// Listed by label. Amounts match lib/progression.js (XP_AMOUNTS + DAILY_CAPS).
-// Lessons scale with how many checkpoint questions you get right, so they show a
-// range rather than a fixed number.
+// Listed by label. Amounts match lib/progression.js (XP_AMOUNTS, DAILY_CAPS,
+// GAME_XP_BY_DIFFICULTY). Lessons and games scale with how well you do, so they
+// show a range; quick tips pay a flat amount on completion.
 const XP_SOURCES = [
-  { icon: RefreshCw, label: 'Answer a review card', amount: 'up to +5 XP' },
+  { icon: BookOpen, label: 'Finish a tip, lesson, or deep dive', amount: 'up to +15–100 XP' },
+  { icon: Trophy, label: 'Complete a project quest', amount: 'up to +200 XP' },
+  { icon: Gamepad2, label: 'Play a learning game', amount: '+20–50 XP each' },
+  { icon: RefreshCw, label: 'Answer a review card', amount: '+5 XP (20/day)' },
   { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+2 XP (5/day)' },
-  { icon: BookOpen, label: 'Finish a quick lesson or deep dive', amount: 'up to +40–100 XP' },
-  { icon: Trophy, label: 'Complete a project quest', amount: '+200 XP' },
   { icon: Flame, label: 'Keep your streak going', amount: '+10 XP/day' },
-  { icon: Gamepad2, label: 'Play a learning game', amount: '+25 XP (3/day)' },
 ];
 
 export default function XpExplainer() {
