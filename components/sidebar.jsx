@@ -139,6 +139,14 @@ export function SidebarProvider({ children }) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
+  // Mark the document while the overlay menu is open so headers can slide their
+  // title out from behind the panel (see `.js-app-header` in globals.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('menu-open', open);
+    return () => root.classList.remove('menu-open');
+  }, [open]);
+
   return (
     <SidebarContext.Provider value={{ open, setOpen, toggle: () => setOpen(p => !p) }}>
       {children}

@@ -53,7 +53,7 @@ export default async function Dashboard() {
     return (
       <div className="min-h-screen">
         <header className="bg-ink sticky top-0 z-50 text-white">
-          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="js-app-header max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-md bg-brand flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
@@ -96,7 +96,7 @@ export default async function Dashboard() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="bg-ink sticky top-0 z-50 text-white">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="js-app-header max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <SidebarToggle />
             <div className="w-9 h-9 rounded-md bg-brand flex items-center justify-center">
