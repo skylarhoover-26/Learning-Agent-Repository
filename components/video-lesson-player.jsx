@@ -32,6 +32,13 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const [isPlaying, setIsPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
   const [speed, setSpeed] = useState(1);
+  // All scene audio is generated up front so playback never pauses to load
+  // between scenes. The start screen waits until this is done.
+  const [prepared, setPrepared] = useState(false);
+  const [prepProgress, setPrepProgress] = useState({ done: 0, total: 0 });
+  // Whether the current scene's narration has finished. We DON'T auto-advance —
+  // the learner reads/acts, then taps the next arrow when ready.
+  const [narrationDone, setNarrationDone] = useState(false);
 
   // Completion / XP flow. After narration ends: quick tips award immediately;
   // other formats fetch a short quiz, and XP is awarded when it's finished.
@@ -40,7 +47,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const [quizQuestions, setQuizQuestions] = useState(null);
   const awardedRef = useRef(false);
 
-  const { isSpeaking, isLoading: ttsLoading, speak, stop, setRate } = useTts();
+  const { isSpeaking, isLoading: ttsLoading, speak, stop, setRate, prime } = useTts();
 
   // Tracks whether the CURRENT scene has actually started speaking, so we only
   // auto-advance on a real narration-end (not before audio has begun).
@@ -74,6 +81,19 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     return () => { cancelled = true; };
   }, [topic, format]);
 
+  // --- Pre-generate ALL scene audio before the lesson can start ---
+  useEffect(() => {
+    if (!script) return;
+    let cancelled = false;
+    setPrepared(false);
+    setPrepProgress({ done: 0, total: script.scenes.length });
+    prime(
+      script.scenes.map((s) => s.narration),
+      (done, total) => { if (!cancelled) setPrepProgress({ done, total }); }
+    ).finally(() => { if (!cancelled) setPrepared(true); });
+    return () => { cancelled = true; };
+  }, [script, prime]);
+
   // --- Keep the TTS speed in sync with the chosen playback rate ---
   useEffect(() => { setRate(speed); }, [speed, setRate]);
 
@@ -81,6 +101,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   useEffect(() => {
     if (!scene || finished || !hasStarted) return;
     startedSpeakingRef.current = false;
+    setNarrationDone(false);
     if (playingRef.current) {
       speak(scene.narration);
     }
@@ -96,22 +117,15 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     if (isSpeaking) startedSpeakingRef.current = true;
   }, [isSpeaking]);
 
-  // --- Auto-advance when narration finishes ---
+  // --- Narration finished for this scene: stop and WAIT for the learner ---
+  // We deliberately do NOT auto-advance — so a "try this in your AI tool" step
+  // stays on screen until they tap the next arrow.
   useEffect(() => {
     if (!isPlaying || ttsLoading || isSpeaking) return;
     if (!startedSpeakingRef.current) return; // hasn't spoken yet this scene
-    // Narration just ended. Advance after a brief beat.
-    const timer = setTimeout(() => {
-      if (!playingRef.current) return;
-      if (sceneIdx < total - 1) {
-        setSceneIdx((i) => i + 1);
-      } else {
-        setFinished(true);
-        setIsPlaying(false);
-      }
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [isSpeaking, ttsLoading, isPlaying, sceneIdx, total]);
+    setIsPlaying(false);
+    setNarrationDone(true);
+  }, [isSpeaking, ttsLoading, isPlaying]);
 
   // --- Completion: award XP the same way the read version does ---
   const award = useCallback((correctness, quizCorrect) => {
@@ -170,6 +184,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const handleStart = useCallback(() => {
     setHasStarted(true);
     setIsPlaying(true);
+    setNarrationDone(false);
     startedSpeakingRef.current = false;
     if (scene) speak(scene.narration);
   }, [scene, speak]);
@@ -181,6 +196,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
       if (!next) {
         stop();
       } else {
+        setNarrationDone(false);
         startedSpeakingRef.current = false;
         if (scene) speak(scene.narration);
       }
@@ -269,16 +285,34 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
           </div>
         )}
 
-        {/* Start screen — playback waits for the learner to press play */}
-        {script && !hasStarted && (
+        {/* Generating audio — all scenes are primed before the lesson starts */}
+        {script && !prepared && !hasStarted && (
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
             <div className="aspect-video flex flex-col items-center justify-center text-center px-8 py-10">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-300 bg-brand-900/40 px-2.5 py-1 rounded-full mb-5">
                 <Volume2 className="w-3.5 h-3.5" /> Narrated lesson
               </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">{script.title}</h2>
+              <Loader2 className="w-6 h-6 animate-spin text-brand-300 mb-3" />
+              <p className="text-slate-300 text-sm">Generating the narration…</p>
+              <p className="text-slate-500 text-xs mt-1">
+                Preparing all {prepProgress.total || total} scenes up front so playback never stops to load
+                {prepProgress.total ? ` · ${prepProgress.done}/${prepProgress.total}` : ''}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Start screen — playback waits for the learner to press play */}
+        {script && prepared && !hasStarted && (
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
+            <div className="aspect-video flex flex-col items-center justify-center text-center px-8 py-10">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-300 bg-brand-900/40 px-2.5 py-1 rounded-full mb-5">
+                <Volume2 className="w-3.5 h-3.5" /> Narrated lesson · audio ready
+              </span>
               <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 leading-tight">{script.title}</h2>
               <p className="text-slate-400 mb-8 text-sm">
-                {total} {total === 1 ? 'scene' : 'scenes'} · read aloud · press play to start
+                {total} {total === 1 ? 'scene' : 'scenes'} · read aloud · you advance each scene yourself
               </p>
               <button
                 onClick={handleStart}
@@ -406,8 +440,12 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                 </button>
                 <button
                   onClick={goNext}
-                  className="p-2.5 rounded-full text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
-                  aria-label="Next scene"
+                  className={`p-2.5 rounded-full transition-all ${
+                    narrationDone
+                      ? 'bg-brand text-white hover:bg-brand-600 shadow-lg ring-2 ring-brand-300/60 animate-pulse'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                  }`}
+                  aria-label={sceneIdx < total - 1 ? 'Next scene' : 'Finish lesson'}
                 >
                   <SkipForward className="w-5 h-5" />
                 </button>
@@ -421,6 +459,17 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                   <Gauge className="w-4 h-4" /> {speed}×
                 </button>
               </div>
+            )}
+
+            {/* Manual-advance hint: stays put until the learner is ready */}
+            {!showDone && (
+              <p className="px-8 sm:px-14 pb-4 -mt-1 text-center text-xs text-slate-400">
+                {narrationDone
+                  ? (sceneIdx < total - 1
+                      ? 'Take your time — tap the → arrow when you\'re ready for the next scene.'
+                      : 'That\'s the last scene — tap the → arrow to wrap up.')
+                  : 'Scenes don\'t auto-advance — you control when to move on.'}
+              </p>
             )}
           </div>
         )}

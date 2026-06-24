@@ -24,6 +24,7 @@ import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import PausedLessonsBox from '@/components/paused-lessons-box';
 import { listPausedLessons } from '@/lib/paused-lessons';
+import { QUESTS } from '@/lib/quest-data';
 import { useActiveTool } from '@/components/active-tool-provider';
 import SurpriseWin from '@/components/surprise-win';
 
@@ -632,12 +633,19 @@ function LessonContent() {
   }, [isComplete, handleLessonComplete]);
 
   // Open a narrated ("watch") lesson, stamping a fresh start time so its XP/
-  // duration are recorded just like a read lesson.
+  // duration are recorded just like a read lesson. For a Project Quest, if the
+  // topic matches a curated quest we pass its id so the narration walks the
+  // quest's REAL steps (matching the read version); custom topics stay generic.
   const launchVideo = useCallback((t) => {
     videoStartedAt.current = new Date().toISOString();
     videoCompletedRef.current = false;
+    const norm = (s) => (s || '').trim().toLowerCase();
+    const quest = format === 'project_quest'
+      ? QUESTS.find((q) => norm(q.title) === norm(t))
+      : null;
+    setVideoQuestId(quest ? quest.id : null);
     setVideoTopic(t);
-  }, []);
+  }, [format]);
 
   // Resume a paused lesson in-place: quick tips restore their conversational
   // state here; plan-driven formats (Quick Lesson / Deep Dive / Project Quest)
