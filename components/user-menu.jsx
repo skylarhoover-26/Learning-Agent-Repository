@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, Bell, PlayCircle } from 'lucide-react';
+import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
-import { listPausedLessons, relativeAccessTime, absoluteAccessDate } from '@/lib/paused-lessons';
+import PausedLessonsBell from '@/components/paused-lessons-bell';
 import Avatar from '@/components/avatar';
 import { useChampions } from '@/components/champion-provider';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
@@ -37,29 +37,6 @@ export default function UserMenu() {
   const oktaConfigured = !!process.env.NEXT_PUBLIC_OKTA_CONFIGURED;
 
   const [open, setOpen] = useState(false);
-
-  // Count of unfinished ("paused") lessons, surfaced as a bell badge + a menu
-  // shortcut. Reads localStorage, and refreshes whenever a lesson is paused or
-  // resumed (custom event) or the tab regains focus.
-  const [pausedCount, setPausedCount] = useState(0);
-  const [pausedLatest, setPausedLatest] = useState(null);
-  useEffect(() => {
-    const refresh = () => {
-      try {
-        const list = listPausedLessons();
-        setPausedCount(list.length);
-        // listPausedLessons() is sorted most-recently-opened first.
-        setPausedLatest(list[0]?.lastAccessedAt || null);
-      } catch { setPausedCount(0); setPausedLatest(null); }
-    };
-    refresh();
-    window.addEventListener('paused-lessons:changed', refresh);
-    window.addEventListener('focus', refresh);
-    return () => {
-      window.removeEventListener('paused-lessons:changed', refresh);
-      window.removeEventListener('focus', refresh);
-    };
-  }, []);
 
   async function handleLogout() {
     setOpen(false);
@@ -124,19 +101,7 @@ export default function UserMenu() {
         <span className="hidden sm:inline">Home</span>
       </Link>
 
-      {pausedCount > 0 && (
-        <Link
-          href="/lesson#paused-lessons"
-          aria-label={`${pausedCount} unfinished ${pausedCount === 1 ? 'lesson' : 'lessons'} — resume`}
-          title={`${pausedCount} unfinished ${pausedCount === 1 ? 'lesson' : 'lessons'}`}
-          className="relative flex items-center justify-center w-9 h-9 rounded-pill text-white/90 hover:text-white hover:bg-white/10 transition-all"
-        >
-          <Bell className="w-[18px] h-[18px]" />
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-slate-900 text-[11px] font-bold flex items-center justify-center">
-            {pausedCount}
-          </span>
-        </Link>
-      )}
+      <PausedLessonsBell />
 
       <div className="relative" ref={wrapRef}>
         <button
@@ -161,29 +126,6 @@ export default function UserMenu() {
             <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
               <p className="text-sm font-semibold text-ink dark:text-slate-200 truncate">{displayName}</p>
             </div>
-            {pausedCount > 0 && (
-              <Link
-                href="/lesson#paused-lessons"
-                onClick={() => setOpen(false)}
-                role="menuitem"
-                className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700"
-              >
-                <span className="flex items-center gap-3 min-w-0">
-                  <PlayCircle className="w-4 h-4 shrink-0 text-brand" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-brand">Resume lessons</span>
-                    {pausedLatest && (
-                      <span className="block text-xs text-slate-400 dark:text-slate-500 truncate">
-                        Last opened {relativeAccessTime(pausedLatest)} · {absoluteAccessDate(pausedLatest)}
-                      </span>
-                    )}
-                  </span>
-                </span>
-                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-amber-400 text-slate-900 text-xs font-bold flex items-center justify-center shrink-0">
-                  {pausedCount}
-                </span>
-              </Link>
-            )}
             {PROFILE_LINKS.map(link => (
               <Link
                 key={link.href}

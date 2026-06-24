@@ -23,6 +23,7 @@ import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import PausedLessonsBox from '@/components/paused-lessons-box';
+import { listPausedLessons } from '@/lib/paused-lessons';
 import { useActiveTool } from '@/components/active-tool-provider';
 import SurpriseWin from '@/components/surprise-win';
 
@@ -306,6 +307,11 @@ function LessonContent() {
   // Debounce-save lesson state when in lesson view
   useEffect(() => {
     if (view !== 'lesson' || slides.length === 0) return;
+    // A finished lesson must leave the paused list — never (re)persist it. Without
+    // this, the debounced save that the final "complete" slide triggers fires
+    // ~500ms after handleLessonComplete clears the entry and silently re-adds it,
+    // so a completed Quick Tip keeps showing as paused.
+    if (slides.some((s) => s?.phase === 'complete')) return;
     if (debounceSaveRef.current) {
       clearTimeout(debounceSaveRef.current);
     }
@@ -633,6 +639,41 @@ function LessonContent() {
     setVideoTopic(t);
   }, []);
 
+  // Resume a paused lesson in-place: quick tips restore their conversational
+  // state here; plan-driven formats (Quick Lesson / Deep Dive / Project Quest)
+  // rehydrate from their own saved state when the player mounts. Shared by the
+  // picker box and the header bell (via the ?resume=<key> deep link below).
+  const resumeEntry = useCallback((entry) => {
+    if (!entry) return;
+    const s = entry.state || {};
+    setTopic(entry.topic);
+    setFormat(entry.format || 'standard');
+    setLearnMode('read');
+    if (entry.format === 'quick_tip') {
+      setSlides(s.slides || []);
+      setCurrentSlideIdx(s.currentSlideIdx || 0);
+      setMessages(s.messages || []);
+      setUserInputs(s.userInputs || []);
+      lessonStartedAt.current = s.lessonStartedAt || new Date().toISOString();
+      hasRecordedCompletion.current = false;
+      practicePrefilledRef.current = true; // don't auto-prefill mid-lesson on resume
+    }
+    setView('lesson');
+  }, []);
+
+  // Deep link from the header bell: /lesson?resume=<entryKey> resumes that exact
+  // paused lesson. Runs once per distinct key so navigating here jumps straight in.
+  const resumedKeyRef = useRef(null);
+  const resumeParam = searchParams.get('resume');
+  useEffect(() => {
+    if (!resumeParam || resumedKeyRef.current === resumeParam) return;
+    const entry = listPausedLessons().find((e) => e.key === resumeParam);
+    if (entry) {
+      resumedKeyRef.current = resumeParam;
+      resumeEntry(entry);
+    }
+  }, [resumeParam, resumeEntry]);
+
   // Record a narrated-lesson completion. correctness comes from the end quiz
   // (1 for quick tips, which are completion-only) — same award path as reading.
   const handleVideoComplete = useCallback(({ correctness = 1, quizCorrect = 0 } = {}) => {
@@ -681,23 +722,6 @@ function LessonContent() {
     // navigation), so it works even though we're already on /lesson. Plan
     // lessons (standard/deep_dive/project_quest) restore inside the plan player
     // from the store; quick tips restore their conversational state here.
-    function handleResumeEntry(entry) {
-      const s = entry.state || {};
-      setTopic(entry.topic);
-      setFormat(entry.format || 'standard');
-      setLearnMode('read');
-      if (entry.format === 'quick_tip') {
-        setSlides(s.slides || []);
-        setCurrentSlideIdx(s.currentSlideIdx || 0);
-        setMessages(s.messages || []);
-        setUserInputs(s.userInputs || []);
-        lessonStartedAt.current = s.lessonStartedAt || new Date().toISOString();
-        hasRecordedCompletion.current = false;
-        practicePrefilledRef.current = true; // don't auto-prefill mid-lesson on resume
-      }
-      setView('lesson');
-    }
-
     return (
       <>
       <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
@@ -923,7 +947,7 @@ function LessonContent() {
         {/* Unfinished lessons live at the bottom so the picker leads with new topics.
             The header bell / menu link to #paused-lessons, which scrolls here. */}
         <div id="paused-lessons" className="mt-10 scroll-mt-24">
-          <PausedLessonsBox onResume={handleResumeEntry} />
+          <PausedLessonsBox onResume={resumeEntry} />
         </div>
       </main>
       {videoTopic && (
