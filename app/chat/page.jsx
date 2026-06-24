@@ -192,21 +192,6 @@ function ChatPageInner() {
         icon={MessageCircle}
         title="Just Chat"
         subtitle="Your AI coach — ask anything"
-        actions={hasMessages ? (
-          <button
-            onClick={() => {
-              if (window.confirm('Delete this chat? This clears the whole conversation.')) {
-                clearChatHistory();
-                setMessages([]);
-                setInput('');
-              }
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-sm font-medium text-white/90 border border-white/25 hover:text-white hover:bg-white/10 transition-all"
-            aria-label="Clear chat"
-          >
-            <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Clear chat</span>
-          </button>
-        ) : null}
       />
 
       {/* Scrollable conversation */}
@@ -318,6 +303,23 @@ function ChatPageInner() {
               className="flex-1 resize-none px-3 py-2 rounded-xl bg-transparent text-sm text-ink dark:text-slate-200 outline-none max-h-32"
               disabled={isLoading}
             />
+            {hasMessages && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Delete this chat? This clears the whole conversation.')) {
+                    clearChatHistory();
+                    setMessages([]);
+                    setInput('');
+                    inputRef.current?.focus();
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 transition-all shrink-0"
+                aria-label="Clear chat"
+                title="Delete this chat"
+              >
+                <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Clear</span>
+              </button>
+            )}
             <button
               data-tour="chat-send"
               onClick={sendMessage}

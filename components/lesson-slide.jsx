@@ -53,7 +53,9 @@ function CodeBlock({ code }) {
           {copied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
         </button>
       </div>
-      <pre className="text-slate-100 px-4 py-3 text-sm overflow-x-auto font-mono">
+      {/* Wrap long lines so copy-paste prompts (mostly prose) are fully readable
+          inside narrow chat bubbles, instead of being clipped off the right edge. */}
+      <pre className="text-slate-100 px-4 py-3 text-sm font-mono whitespace-pre-wrap break-words">
         <code>{code}</code>
       </pre>
     </div>
