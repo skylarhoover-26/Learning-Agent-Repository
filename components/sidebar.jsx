@@ -158,7 +158,7 @@ export function SidebarToggle() {
   return (
     <button
       onClick={toggle}
-      className="flex items-center justify-center w-9 h-9 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all"
+      className="flex items-center justify-center w-9 h-9 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-100"
       aria-label="Navigation menu"
       aria-expanded={open}
       data-tour="menu-toggle"
