@@ -681,8 +681,8 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // Ask a question without leaving the step: the answer threads in below the
   // chat. The full lesson-so-far is sent so the answer is grounded (the model
   // is NOT stateless from the learner's point of view anymore).
-  async function askQuestion() {
-    const q = question.trim();
+  async function askQuestion(qOverride) {
+    const q = (typeof qOverride === 'string' ? qOverride : question).trim();
     if (!q || asking) return;
     setQuestion('');
     setAsking(true);
@@ -764,6 +764,18 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   function submitChat() {
     if (refineOpen) sendRefine();
     else askQuestion();
+  }
+
+  // Every in-lesson "ask about this" action (e.g. "Why this score?") funnels
+  // into the SAME coach thread instead of its own box. The caller passes a
+  // fully-formed question with any context baked in, so there's one chat bucket.
+  function askCoach(text) {
+    if (!text) return;
+    setRefineOpen(false);
+    askQuestion(text);
+    setTimeout(() => {
+      try { document.getElementById('lesson-coach')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* ignore */ }
+    }, 50);
   }
 
   async function copyNextPrompt() {
@@ -1183,6 +1195,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             passed={resolved[step.id] === true}
             onResolve={(p) => resolveActivity(step.id, p)}
             toolLabel={primaryTool?.label}
+            onAskCoach={askCoach}
           />
           </>
         )}
