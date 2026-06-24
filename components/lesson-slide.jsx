@@ -481,7 +481,7 @@ export function RecapCard({ recap, format, onPickAnother, onDashboard }) {
             onClick={onDashboard}
             className="px-5 py-3 rounded-pill bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-medium transition-all"
           >
-            Back to dashboard
+            Back to home
           </button>
         </div>
       </div>

@@ -103,7 +103,7 @@ export default function ReviewPage() {
               </div>
             )}
             <Link href="/" className="px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm">
-              Back to dashboard
+              Back to home
             </Link>
           </div>
         </main>
@@ -145,7 +145,7 @@ export default function ReviewPage() {
                 <RotateCcw className="w-4 h-4" /> Review more
               </button>
               <Link href="/" className="px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm">
-                Back to dashboard
+                Back to home
               </Link>
             </div>
           </div>

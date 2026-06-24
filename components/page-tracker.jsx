@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { trackPageVisit } from '@/lib/track';
 
 const PAGE_NAMES = {
-  '/': 'Dashboard',
+  '/': 'Home',
   '/lesson': 'Lesson',
   '/modules': 'Modules',
   '/review': 'Review',

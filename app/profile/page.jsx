@@ -513,7 +513,7 @@ export default function ProfilePage() {
           {/* Reset progress only — keeps the profile, no re-onboarding. */}
           <div className="mb-5">
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-              <span className="font-medium text-ink dark:text-slate-200">Reset progress only</span> — clears your XP, badges, lessons, quests, and assessments but keeps your role and tasks. You stay on the dashboard.
+              <span className="font-medium text-ink dark:text-slate-200">Reset progress only</span> — clears your XP, badges, lessons, quests, and assessments but keeps your role and tasks. You stay on the home screen.
             </p>
             {!showProgressConfirm ? (
               <button

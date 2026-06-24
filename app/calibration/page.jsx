@@ -92,7 +92,7 @@ export default function CalibrationPage() {
               onClick={() => router.push('/')}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all"
             >
-              Back to Dashboard
+              Back to home
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

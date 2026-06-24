@@ -14,9 +14,9 @@ import {
 const TUTORIAL_STEPS = [
   {
     icon: Sparkles,
-    title: 'Your Dashboard',
+    title: 'Your Home',
     description: 'This is your home base. It shows your level, streak, recent lessons, goals, and skills at a glance. Everything updates in real time as you learn.',
-    tip: 'Check your dashboard daily to see what to work on next.',
+    tip: 'Check your home screen daily to see what to work on next.',
     color: 'bg-brand',
   },
   {
@@ -222,7 +222,7 @@ export default function GettingStartedPage() {
               onClick={goNext}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 transition-all"
             >
-              {isLast ? 'Go to Dashboard' : 'Next'}
+              {isLast ? 'Go to home' : 'Next'}
               {isLast ? <ArrowRight className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </button>
           </div>

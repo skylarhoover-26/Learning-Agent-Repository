@@ -85,7 +85,7 @@ function buildStreakBlocks() {
       type: 'actions',
       elements: [{
         type: 'button',
-        text: { type: 'plain_text', text: 'Open Dashboard' },
+        text: { type: 'plain_text', text: 'Open Home' },
         url: APP_URL,
         action_id: 'open_dashboard',
       }],
@@ -227,7 +227,7 @@ function handleSlashCommand(command, text, responseUrl) {
       };
     }
     case '/streak':
-      return { immediate: { response_type: 'ephemeral', text: '🔥 *Your Learning Streak*\n\n*Current streak:* 3 days\n*Total lessons:* 4 completed\n*Level:* 3 (250 XP)\n\n<' + APP_URL + '|Open Dashboard>' }, deferred: null };
+      return { immediate: { response_type: 'ephemeral', text: '🔥 *Your Learning Streak*\n\n*Current streak:* 3 days\n*Total lessons:* 4 completed\n*Level:* 3 (250 XP)\n\n<' + APP_URL + '|Open Home>' }, deferred: null };
     case '/heatmap':
       return { immediate: { blocks: buildHeatmapBlocks(), response_type: 'ephemeral' }, deferred: null };
     case '/skills':

@@ -574,9 +574,22 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const isTeachStep = step?.kind === 'teach';
   const teachData = isTeachStep ? teachContent[step?.id] : null;
   const teachBlocks = Array.isArray(teachData?.blocks) ? teachData.blocks : [];
-  // Interactive cards the learner must engage to continue: flip cards, compare
+  // Interactive blocks the learner must engage to continue: flip cards, compare
   // tabs, clickable diagrams. Examples ("reveal") are OPTIONAL and never gate.
-  const teachInteractive = teachBlocks.some((b) => ['flashcards', 'tabs', 'diagram'].includes(b?.type));
+  const INTERACTIVE_TYPES = ['flashcards', 'tabs', 'diagram'];
+  const teachInteractiveTypes = teachBlocks.filter((b) => INTERACTIVE_TYPES.includes(b?.type)).map((b) => b.type);
+  const teachInteractive = teachInteractiveTypes.length > 0;
+  // The gate prompt must match what's actually on screen — only say "card" when
+  // there are real flip cards; tabs/diagrams get their own wording.
+  const exploreGateMsg = (() => {
+    const kinds = new Set(teachInteractiveTypes);
+    if (kinds.size === 1) {
+      if (kinds.has('flashcards')) return 'Flip every card above to continue';
+      if (kinds.has('tabs')) return 'Open every tab above to continue';
+      if (kinds.has('diagram')) return 'Explore the diagram above to continue';
+    }
+    return 'Explore everything above to continue';
+  })();
   // Ordered sections of a teach step, shown ONE AT A TIME so the learner isn't
   // hit with everything at once: Concept → Vocabulary (cards) → Key points.
   const teachPanels = (() => {
@@ -1224,7 +1237,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                   <ArrowDown className="w-4 h-4" />
                   {isActivity ? 'Complete the activity above to continue'
                     : isBuild ? 'Add or skip your piece above to continue'
-                    : 'Flip every card above to continue'}
+                    : exploreGateMsg}
                 </span>
               ) : (
                 <span className="text-xs text-slate-400">Loading this step…</span>
