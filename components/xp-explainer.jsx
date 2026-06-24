@@ -2,21 +2,32 @@
 
 import { useState } from 'react';
 import { HelpCircle, X, BookOpen, Trophy, MessageCircle, Flame, Gamepad2, RefreshCw } from 'lucide-react';
+import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
-// Listed by label. Amounts match lib/progression.js (XP_AMOUNTS, DAILY_CAPS,
-// GAME_XP_BY_DIFFICULTY). Lessons and games scale with how well you do, so they
-// show a range; quick tips pay a flat amount on completion.
+// Listed alphabetically by label. Amounts match lib/progression.js (XP_AMOUNTS,
+// DAILY_CAPS, GAME_XP_BY_DIFFICULTY). Lessons and games scale with how well you
+// do, so they show a range; quick tips pay a flat amount on completion.
+// `href` ties a source to the feature that earns it: if that feature is hidden
+// (or coming soon) for the viewer, the line is dropped so we never advertise XP
+// they can't currently earn. Streak XP has no page, so it always shows.
 const XP_SOURCES = [
-  { icon: BookOpen, label: 'Finish a tip, lesson, or deep dive', amount: 'up to +15–100 XP' },
-  { icon: Trophy, label: 'Complete a project quest', amount: 'up to +200 XP' },
-  { icon: Gamepad2, label: 'Play a learning game', amount: '+20–50 XP each' },
-  { icon: RefreshCw, label: 'Answer a review card', amount: '+5 XP (20/day)' },
-  { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+2 XP (5/day)' },
-  { icon: Flame, label: 'Keep your streak going', amount: '+10 XP/day' },
-];
+  { icon: RefreshCw, label: 'Answer a review card', amount: '+5 XP (20/day)', href: '/review' },
+  { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+2 XP (5/day)', href: '/chat' },
+  { icon: Trophy, label: 'Complete a project quest', amount: 'up to +200 XP', href: '/quests' },
+  { icon: BookOpen, label: 'Finish a tip, lesson, or deep dive', amount: 'up to +15–100 XP', href: '/lesson' },
+  { icon: Flame, label: 'Keep your streak going', amount: '+10 XP/day', href: null },
+  { icon: Gamepad2, label: 'Play a learning game', amount: '+20–50 XP each', href: '/games' },
+].slice().sort((a, b) => a.label.localeCompare(b.label));
 
 export default function XpExplainer() {
   const [open, setOpen] = useState(false);
+  const { loaded, isItemHidden, isItemComingSoon } = useMenuVisibility();
+
+  // Drop any source whose feature the viewer can't reach (hidden or coming soon).
+  // Admins see everything (the provider reports nothing hidden for them).
+  const sources = XP_SOURCES.filter(
+    (s) => !(s.href && loaded && (isItemHidden(s.href) || isItemComingSoon(s.href)))
+  );
 
   return (
     <div className="relative inline-block">
@@ -39,7 +50,7 @@ export default function XpExplainer() {
               </button>
             </div>
             <div className="space-y-2.5">
-              {XP_SOURCES.map(source => (
+              {sources.map(source => (
                 <div key={source.label} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
                     <source.icon className="w-4 h-4 text-brand" />
