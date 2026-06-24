@@ -181,7 +181,7 @@ export function SidebarShell({ children }) {
       {/* Dimmed backdrop across the whole screen (all sizes) — click to close. */}
       {showNav && (
         <div
-          className="fixed inset-0 bg-black/40 z-40"
+          className="fixed inset-0 bg-black/40 z-[55]"
           onClick={() => setOpen(false)}
           aria-hidden="true"
         />
@@ -279,7 +279,7 @@ export function SideNav() {
   return (
     <nav
       data-tour="sidebar"
-      className={`fixed top-0 left-0 h-screen w-96 max-w-[88vw] z-50 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
+      className={`fixed top-0 left-0 h-screen w-96 max-w-[88vw] z-[56] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-hidden={!open}
