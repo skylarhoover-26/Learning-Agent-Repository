@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Check, X, Loader2, PencilLine, ListChecks, Shuffle, Lightbulb, ArrowUpDown, FolderTree, GripVertical, MessageSquare, Send, RotateCcw } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import { mentionsOpenTool } from '@/components/open-tool-link';
@@ -131,8 +131,15 @@ function Write({ activity, onResolve, resolved, passed, toolLabel }) {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
 
+  // The opening question the discussion answers automatically. Sent to the
+  // coach but hidden from the transcript (the learner didn't type it).
+  const EXPLAIN_PROMPT = 'Why did I get this score, and what specifically should I change to score higher?';
+
   async function submit() {
     if (!text.trim() || grading) return;
+    // A fresh grade gets a fresh explanation — clear any prior discussion so
+    // reopening it explains THIS score.
+    setChat([]);
     setGrading(true);
     try {
       const res = await fetch('/api/lesson/grade', {
@@ -156,12 +163,12 @@ function Write({ activity, onResolve, resolved, passed, toolLabel }) {
     }
   }
 
-  async function sendDiscuss() {
-    const q = chatInput.trim();
-    if (!q || chatLoading) return;
-    const next = [...chat, { role: 'user', content: q }];
+  // Shared coach call. `hidden` user turns (e.g. the auto-explain prompt) are
+  // sent for context but not shown in the transcript.
+  const askCoach = useCallback(async (question, { hidden = false } = {}) => {
+    if (chatLoading) return;
+    const next = [...chat, { role: 'user', content: question, hidden }];
     setChat(next);
-    setChatInput('');
     setChatLoading(true);
     try {
       const res = await fetch('/api/lesson/grade-chat', {
@@ -183,7 +190,22 @@ function Write({ activity, onResolve, resolved, passed, toolLabel }) {
     } finally {
       setChatLoading(false);
     }
+  }, [chat, chatLoading, activity, text, grade]);
+
+  function sendDiscuss() {
+    const q = chatInput.trim();
+    if (!q || chatLoading) return;
+    setChatInput('');
+    askCoach(q);
   }
+
+  // When the learner opens "Why this score? How can I improve?", answer it
+  // immediately — no need to type anything. Runs once per fresh discussion.
+  useEffect(() => {
+    if (discussOpen && grade && chat.length === 0 && !chatLoading) {
+      askCoach(EXPLAIN_PROMPT, { hidden: true });
+    }
+  }, [discussOpen, grade, chat.length, chatLoading, askCoach]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep the "tries left" counter visible after each failed submit (not just
   // before the first one) so attempts visibly count down. Hide it only once the
@@ -225,24 +247,32 @@ function Write({ activity, onResolve, resolved, passed, toolLabel }) {
 
       {discussOpen && grade && (
         <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-bg-subtle dark:bg-slate-900 p-3">
-          {chat.length === 0 && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Ask why you got this score or how to make it stronger — then revise above and resubmit.</p>
-          )}
-          {chat.length > 0 && (
-            <div className="space-y-2.5 mb-2">
-              {chat.map((m, i) => (
-                <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex items-start gap-2'}>
-                  {m.role === 'user'
-                    ? <div className="max-w-[85%] bg-brand text-white px-3 py-2 rounded-2xl rounded-br-md text-sm">{m.content}</div>
-                    : <div className="flex-1 rounded-2xl rounded-bl-md bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2 text-sm text-ink dark:text-slate-200"><FormattedContent text={m.content} /></div>}
-                </div>
-              ))}
-              {chatLoading && <p className="text-xs text-slate-400 inline-flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…</p>}
-            </div>
-          )}
+          {(() => {
+            const visible = chat.filter((m) => !m.hidden);
+            return (
+              <>
+                {visible.length > 0 && (
+                  <div className="space-y-2.5 mb-2">
+                    {visible.map((m, i) => (
+                      <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex items-start gap-2'}>
+                        {m.role === 'user'
+                          ? <div className="max-w-[85%] bg-brand text-white px-3 py-2 rounded-2xl rounded-br-md text-sm">{m.content}</div>
+                          : <div className="flex-1 rounded-2xl rounded-bl-md bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2 text-sm text-ink dark:text-slate-200"><FormattedContent text={m.content} /></div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {chatLoading && (
+                  <p className="text-xs text-slate-400 inline-flex items-center gap-1.5 mb-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> {visible.length === 0 ? 'Looking at your score…' : 'Thinking…'}
+                  </p>
+                )}
+              </>
+            );
+          })()}
           <div className="flex items-center gap-2">
             <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendDiscuss()}
-              placeholder="e.g. What would take this to 100?"
+              placeholder="Ask a follow-up — e.g. What would take this to 100?"
               className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand" />
             <button onClick={sendDiscuss} disabled={chatLoading || !chatInput.trim()}
               className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all">

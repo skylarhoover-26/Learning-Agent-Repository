@@ -1254,13 +1254,13 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
       {/* Question box — the answer threads in right here, you stay on your step */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-3">
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Have a question? Ask it — I'll answer right here without losing your place.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Need a hand? Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — I&apos;ll help right here without losing your place.</p>
         <div className="flex items-center gap-2">
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && askQuestion()}
-            placeholder="Type a question about this lesson…"
+            placeholder="Ask a question or tell me what you're stuck on…"
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand"
           />
           <button onClick={askQuestion} disabled={asking || !question.trim()}

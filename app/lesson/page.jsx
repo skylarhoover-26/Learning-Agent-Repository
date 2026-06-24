@@ -995,8 +995,8 @@ function LessonContent() {
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
         <MessageSquare className="w-4 h-4 text-brand shrink-0" />
         {userInput === SCENARIO_PROMPT
-          ? 'Press enter or tap the arrow → to try a scenario based on your work — or type your own.'
-          : 'Tap a suggestion to keep going, or type your own question or response.'}
+          ? 'Press enter or tap the arrow → to try a scenario based on your work — or ask a question / tell me what you\'re stuck on.'
+          : 'Tap a suggestion, ask a question, or tell me what you\'re stuck on — I can help with the lesson or using your AI tool.'}
       </p>
       {/* Suggested next-step chips from the current slide + a Show me how helper */}
       <div className="mb-2 flex flex-wrap gap-2">
