@@ -186,6 +186,55 @@ function ChatPageInner() {
   const firstName = (displayNameFromProfile(profile) || '').split(' ')[0];
   const hasMessages = messages.length > 0;
 
+  // One composer, rendered in two places: inline under the suggestions on the
+  // welcome screen, and as the sticky footer once a conversation is going.
+  const composerBox = (
+    <>
+      <div className="flex items-end gap-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-2">
+        <textarea
+          data-tour="chat-input"
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask anything about AI…"
+          rows={1}
+          className="flex-1 resize-none px-3 py-2 rounded-xl bg-transparent text-sm text-ink dark:text-slate-200 outline-none max-h-32 text-left"
+          disabled={isLoading}
+        />
+        {hasMessages && (
+          <button
+            onClick={() => {
+              if (window.confirm('Delete this chat? This clears the whole conversation.')) {
+                clearChatHistory();
+                setMessages([]);
+                setInput('');
+                inputRef.current?.focus();
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 transition-all shrink-0"
+            aria-label="Clear chat"
+            title="Delete this chat"
+          >
+            <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Clear</span>
+          </button>
+        )}
+        <button
+          data-tour="chat-send"
+          onClick={sendMessage}
+          disabled={!input.trim() || isLoading}
+          className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all shrink-0"
+          aria-label="Send message"
+        >
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </button>
+      </div>
+      <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-1.5">
+        Press Enter to send · Shift+Enter for a new line · Chats may be reviewed by admins to improve training.
+      </p>
+    </>
+  );
+
   return (
     <div className="h-screen flex flex-col">
       <PageHeader
@@ -221,6 +270,12 @@ function ChatPageInner() {
                     <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-brand shrink-0 transition-colors" />
                   </button>
                 ))}
+              </div>
+
+              {/* Composer sits right under the suggestions on the welcome
+                  screen, above the "Need a human?" links. */}
+              <div data-tour="page-chat" className="w-full max-w-xl mt-7 text-left">
+                {composerBox}
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
@@ -288,53 +343,15 @@ function ChatPageInner() {
         </div>
       </main>
 
-      {/* Sticky composer */}
-      <div className="sticky bottom-0 border-t border-slate-200 dark:border-slate-700 bg-bg dark:bg-slate-900/95 backdrop-blur">
-        <div data-tour="page-chat" className="max-w-3xl mx-auto px-4 sm:px-6 py-3">
-          <div className="flex items-end gap-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-2">
-            <textarea
-              data-tour="chat-input"
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything about AI…"
-              rows={1}
-              className="flex-1 resize-none px-3 py-2 rounded-xl bg-transparent text-sm text-ink dark:text-slate-200 outline-none max-h-32"
-              disabled={isLoading}
-            />
-            {hasMessages && (
-              <button
-                onClick={() => {
-                  if (window.confirm('Delete this chat? This clears the whole conversation.')) {
-                    clearChatHistory();
-                    setMessages([]);
-                    setInput('');
-                    inputRef.current?.focus();
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 px-3 h-10 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 transition-all shrink-0"
-                aria-label="Clear chat"
-                title="Delete this chat"
-              >
-                <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Clear</span>
-              </button>
-            )}
-            <button
-              data-tour="chat-send"
-              onClick={sendMessage}
-              disabled={!input.trim() || isLoading}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all shrink-0"
-              aria-label="Send message"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
+      {/* Sticky composer — only once a conversation is going. On the welcome
+          screen the composer is rendered inline under the suggestions instead. */}
+      {hasMessages && (
+        <div className="sticky bottom-0 border-t border-slate-200 dark:border-slate-700 bg-bg dark:bg-slate-900/95 backdrop-blur">
+          <div data-tour="page-chat" className="max-w-3xl mx-auto px-4 sm:px-6 py-3">
+            {composerBox}
           </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-1.5">
-            Press Enter to send · Shift+Enter for a new line · Chats may be reviewed by admins to improve training.
-          </p>
         </div>
-      </div>
+      )}
     </div>
   );
 }
