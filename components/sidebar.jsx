@@ -8,8 +8,8 @@ import {
   CalendarDays, Play, GraduationCap, ClipboardCheck,
   Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
   Compass, Trophy, BookOpen, Terminal, Home, Library,
-  Rocket, RefreshCw, ExternalLink, Store, TrendingUp,
-  Shield, Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles, ChevronDown,
+  Rocket, RefreshCw, ExternalLink, TrendingUp,
+  Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
@@ -22,31 +22,16 @@ function navItemTour(href) {
   return 'nav' + href.replace(/\//g, '-');
 }
 
-// Section header styled like the dashboard's "Find something to learn":
-// an icon, a bold label, and a thin divider line.
-// Section header doubles as a collapse toggle when `onToggle` is provided.
-function SectionHeader({ icon: Icon, title, tour, collapsed, onToggle }) {
+// A quiet, uppercase group label — no divider line, no icon, no chevron — so
+// the eye scans the items, not the headers (matches the reference design).
+function SectionHeader({ title, tour }) {
   return (
-    <div className="relative px-4 py-2 mt-1" data-tour={tour}>
-      <div className="absolute inset-0 px-4 flex items-center" aria-hidden="true">
-        <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-      </div>
-      <div className="relative flex justify-start">
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={!collapsed}
-          aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${title}`}
-          className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 pl-1.5 pr-3 py-0.5 -ml-1.5 flex items-center gap-2 rounded-md transition-colors"
-        >
-          <Icon className="w-4 h-4 text-brand" />
-          <span className="text-sm font-semibold text-ink dark:text-slate-200">{title}</span>
-          <ChevronDown
-            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
-          />
-        </button>
-      </div>
-    </div>
+    <p
+      data-tour={tour}
+      className="px-4 pt-5 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500"
+    >
+      {title}
+    </p>
   );
 }
 
@@ -216,30 +201,6 @@ export function SideNav() {
     isSectionHidden, isSectionComingSoon,
     isItemHidden, isItemComingSoon,
   } = useMenuVisibility();
-  // Which sections the user has collapsed (keyed by title). Persisted so the
-  // preference sticks across sessions.
-  const [collapsed, setCollapsed] = useState({});
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('sidebar_collapsed') || '{}');
-      if (saved && typeof saved === 'object') setCollapsed(saved);
-    } catch {
-      // ignore unreadable/old value
-    }
-  }, []);
-
-  function toggleSection(title) {
-    setCollapsed(prev => {
-      const next = { ...prev, [title]: !prev[title] };
-      try {
-        localStorage.setItem('sidebar_collapsed', JSON.stringify(next));
-      } catch {
-        // localStorage unavailable — collapse still works for this session
-      }
-      return next;
-    });
-  }
 
   // The app nav shouldn't appear during onboarding or auth — those are
   // full-screen flows with no menu until the user is set up.
@@ -283,13 +244,11 @@ export function SideNav() {
       <div
         key={item.href || item.label}
         aria-disabled="true"
-        className="flex items-start gap-3 px-4 py-2 border-l-2 border-transparent text-slate-400 dark:text-slate-500 cursor-not-allowed select-none"
+        title="Coming soon"
+        className="flex items-center gap-3 px-4 py-2 border-l-2 border-transparent text-slate-400 dark:text-slate-500 cursor-not-allowed select-none"
       >
-        {item.icon && <item.icon className="w-4 h-4 mt-0.5 shrink-0 text-slate-300 dark:text-slate-600" />}
-        <span>
-          <span className="block text-sm font-semibold">{item.label}</span>
-          <span className="block text-xs leading-snug italic">Coming soon</span>
-        </span>
+        {item.icon && <item.icon className="w-4 h-4 shrink-0 text-slate-300 dark:text-slate-600" />}
+        <span className="text-sm font-medium italic">{item.label}</span>
       </div>
     );
   }
@@ -302,19 +261,17 @@ export function SideNav() {
       <Link
         key={item.href}
         href={item.href}
+        title={item.desc}
         data-tour={navItemTour(item.href)}
         aria-current={active ? 'page' : undefined}
-        className={`flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
+        className={`flex items-center gap-3 px-4 py-2 border-l-2 transition-colors ${
           active
             ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
             : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
         }`}
       >
-        <item.icon className={`w-4 h-4 mt-0.5 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
-        <span>
-          <span className="block text-sm font-semibold">{item.label}</span>
-          <span className={`block text-xs leading-snug ${active ? 'text-brand/70' : 'text-slate-500 dark:text-slate-400'}`}>{item.desc}</span>
-        </span>
+        <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
+        <span className="text-sm font-medium">{item.label}</span>
       </Link>
     );
   }
@@ -340,30 +297,30 @@ export function SideNav() {
 
       {/* Home — pinned at the very top so it's always one click away, in
           addition to the persistent Home link in the page header. */}
-      <div className="py-1">
+      <div className="pt-2 pb-1">
         <Link
           href="/"
           data-tour="nav-home"
           aria-current={pathname === '/' ? 'page' : undefined}
-          className={`flex items-center gap-3 px-4 py-2.5 border-l-2 transition-colors ${
+          className={`flex items-center gap-3 px-4 py-2 border-l-2 transition-colors ${
             pathname === '/'
               ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
               : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
           }`}
         >
           <Home className={`w-4 h-4 shrink-0 ${pathname === '/' ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
-          <span className="text-sm font-semibold">Home</span>
+          <span className="text-sm font-medium">Home</span>
         </Link>
       </div>
 
       {NAV_SECTIONS.map(section => (
         <Fragment key={section.title}>
           {!isSectionHidden(section.title) && (
-          <div className="py-1">
-            <SectionHeader icon={section.icon} title={section.title} tour={section.tour} collapsed={collapsed[section.title]} onToggle={() => toggleSection(section.title)} />
-            {!collapsed[section.title] && isSectionComingSoon(section.title)
+          <div className="pb-1">
+            <SectionHeader title={section.title} tour={section.tour} />
+            {isSectionComingSoon(section.title)
               ? renderSectionComingSoon(section.title)
-              : !collapsed[section.title] && section.items.map(item => (
+              : section.items.map(item => (
               item.themeToggle ? (
                 <div key="theme" data-tour="dark-mode">
                   <MenuThemeToggle />
@@ -376,14 +333,12 @@ export function SideNav() {
                 <button
                   key="tour"
                   onClick={startTour}
+                  title={item.desc}
                   data-tour="nav-tour"
-                  className="w-full flex items-start gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <item.icon className="w-4 h-4 mt-0.5 shrink-0 text-slate-500 dark:text-slate-400" />
-                  <span>
-                    <span className="block text-sm font-semibold">{item.label}</span>
-                    <span className="block text-xs leading-snug text-slate-500 dark:text-slate-400">{item.desc}</span>
-                  </span>
+                  <item.icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
+                  <span className="text-sm font-medium">{item.label}</span>
                 </button>
               ) : (
                 renderNavItem(item)
@@ -393,14 +348,11 @@ export function SideNav() {
           )}
           {/* HCP Skill Shop sits right under Learn — it's external learning content. */}
           {section.title === 'Learn' && !isSectionHidden('HCP Skill Shop') && (
-            <div className="py-1">
-              <SectionHeader icon={Store} title="HCP Skill Shop" tour="section-skillshop" collapsed={collapsed['HCP Skill Shop']} onToggle={() => toggleSection('HCP Skill Shop')} />
-              {!collapsed['HCP Skill Shop'] && isSectionComingSoon('HCP Skill Shop') && renderSectionComingSoon('HCP Skill Shop')}
-              {!collapsed['HCP Skill Shop'] && !isSectionComingSoon('HCP Skill Shop') && (<>
-              <p className="px-4 pb-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
-                Want to learn more about AI? Explore the self-guided journey:
-              </p>
-              {SKILL_SHOP_LINKS.map(link => (
+            <div className="pb-1">
+              <SectionHeader title="HCP Skill Shop" tour="section-skillshop" />
+              {isSectionComingSoon('HCP Skill Shop')
+                ? renderSectionComingSoon('HCP Skill Shop')
+                : SKILL_SHOP_LINKS.map(link => (
                 isItemHidden(link.href) ? null : isItemComingSoon(link.href) ? (
                   renderDisabledItem({ href: link.href, label: link.label, icon: ExternalLink })
                 ) : (
@@ -409,17 +361,14 @@ export function SideNav() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-3 px-4 py-2 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  title={link.desc}
+                  className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <ExternalLink className="w-4 h-4 mt-0.5 text-slate-400 dark:text-slate-500 shrink-0" />
-                  <span>
-                    <span className="block font-medium">{link.label}</span>
-                    <span className="block text-xs text-slate-500 dark:text-slate-400">{link.desc}</span>
-                  </span>
+                  <ExternalLink className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <span>{link.label}</span>
                 </a>
                 )
               ))}
-              </>)}
             </div>
           )}
         </Fragment>
@@ -427,9 +376,9 @@ export function SideNav() {
 
       {/* Admin lives at the bottom — it's not a daily-use section. */}
       {isAdmin && (
-        <div className="py-1">
-          <SectionHeader icon={Shield} title="Admin" tour="section-admin" collapsed={collapsed['Admin']} onToggle={() => toggleSection('Admin')} />
-          {!collapsed['Admin'] && ADMIN_ITEMS.map(renderNavItem)}
+        <div className="pb-1">
+          <SectionHeader title="Admin" tour="section-admin" />
+          {ADMIN_ITEMS.map(renderNavItem)}
         </div>
       )}
 
