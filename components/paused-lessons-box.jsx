@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Pause, Play, Trash2 } from 'lucide-react';
-import { listPausedLessons, removePausedLessonByKey } from '@/lib/paused-lessons';
+import { listPausedLessons, removePausedLessonByKey, relativeAccessTime, absoluteAccessDate } from '@/lib/paused-lessons';
 
 const FORMAT_LABEL = {
   quick_tip: 'Quick Tip',
@@ -10,19 +10,6 @@ const FORMAT_LABEL = {
   deep_dive: 'Deep Dive',
   project_quest: 'Project Quest',
 };
-
-function relativeTime(iso) {
-  if (!iso) return '';
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-  const mins = Math.round((Date.now() - then) / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  return days === 1 ? 'yesterday' : `${days}d ago`;
-}
 
 // Lists every paused lesson (all formats), most-recently-accessed first and
 // numbered, so people juggling several can jump back into any of them — and
@@ -65,7 +52,8 @@ export default function PausedLessonsBox({ onResume }) {
                 <span className="font-semibold">{FORMAT_LABEL[it.format] || 'Lesson'}:</span> {it.topic}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                {it.stepLabel ? `${it.stepLabel} · ` : ''}last opened {relativeTime(it.lastAccessedAt)}
+                {it.stepLabel ? `${it.stepLabel} · ` : ''}last opened {relativeAccessTime(it.lastAccessedAt)}
+                {absoluteAccessDate(it.lastAccessedAt) ? ` · ${absoluteAccessDate(it.lastAccessedAt)}` : ''}
               </p>
             </div>
             <button

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, Bell, PlayCircle } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
-import { listPausedLessons } from '@/lib/paused-lessons';
+import { listPausedLessons, relativeAccessTime, absoluteAccessDate } from '@/lib/paused-lessons';
 import Avatar from '@/components/avatar';
 import { useChampions } from '@/components/champion-provider';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
@@ -42,9 +42,15 @@ export default function UserMenu() {
   // shortcut. Reads localStorage, and refreshes whenever a lesson is paused or
   // resumed (custom event) or the tab regains focus.
   const [pausedCount, setPausedCount] = useState(0);
+  const [pausedLatest, setPausedLatest] = useState(null);
   useEffect(() => {
     const refresh = () => {
-      try { setPausedCount(listPausedLessons().length); } catch { setPausedCount(0); }
+      try {
+        const list = listPausedLessons();
+        setPausedCount(list.length);
+        // listPausedLessons() is sorted most-recently-opened first.
+        setPausedLatest(list[0]?.lastAccessedAt || null);
+      } catch { setPausedCount(0); setPausedLatest(null); }
     };
     refresh();
     window.addEventListener('paused-lessons:changed', refresh);
@@ -160,13 +166,20 @@ export default function UserMenu() {
                 href="/lesson#paused-lessons"
                 onClick={() => setOpen(false)}
                 role="menuitem"
-                className="flex items-center justify-between gap-3 px-4 py-2 text-sm font-medium text-brand hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700"
+                className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700"
               >
-                <span className="flex items-center gap-3">
-                  <PlayCircle className="w-4 h-4 shrink-0" />
-                  Resume lessons
+                <span className="flex items-center gap-3 min-w-0">
+                  <PlayCircle className="w-4 h-4 shrink-0 text-brand" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-brand">Resume lessons</span>
+                    {pausedLatest && (
+                      <span className="block text-xs text-slate-400 dark:text-slate-500 truncate">
+                        Last opened {relativeAccessTime(pausedLatest)} · {absoluteAccessDate(pausedLatest)}
+                      </span>
+                    )}
+                  </span>
                 </span>
-                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-amber-400 text-slate-900 text-xs font-bold flex items-center justify-center">
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-amber-400 text-slate-900 text-xs font-bold flex items-center justify-center shrink-0">
                   {pausedCount}
                 </span>
               </Link>
