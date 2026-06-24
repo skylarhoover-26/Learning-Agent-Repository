@@ -1233,14 +1233,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             </div>
           )
         )}
-      </div>
 
-      {/* Nav: sections within a teach step advance with Next; activities/builds
-          must be settled; teach cards must be flipped. No finishing early. */}
-      {/* Question box — sits directly under the lesson content and ABOVE the
-          Back/Continue nav, so the in-lesson coach is part of the flow (not
-          orphaned below the buttons). The answer threads in right here. */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-3">
+        {/* In-lesson coach — kept in the SAME card as the content, separated by a
+            divider so it reads as one unit instead of a detached box. It sits
+            above the Back/Continue nav. The answer threads in right here. */}
+        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-700">
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Need a hand? Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — I&apos;ll help right here without losing your place.</p>
         <div className="flex items-center gap-2">
           <input
@@ -1280,6 +1277,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {step?.kind !== 'recap' && (
