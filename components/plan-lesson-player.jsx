@@ -106,9 +106,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // "This isn't what I was looking for" refinement chat. We ask follow-up
   // questions until we can name a sharper topic, then offer to regenerate the
   // whole lesson around it (with an overwrite warning).
+  // refineOpen also acts as the chat MODE: when true, the single in-lesson chat
+  // box switches from "ask the coach" to "find a better fit" (shared input).
   const [refineOpen, setRefineOpen] = useState(false);
   const [refineMessages, setRefineMessages] = useState([]); // {role, content}
-  const [refineInput, setRefineInput] = useState('');
   const [refineLoading, setRefineLoading] = useState(false);
   const [refineReady, setRefineReady] = useState(null); // { message, newTopic } once we have enough
   const refineBannerRef = useRef(null);
@@ -322,7 +323,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     setRefineOpen(false);
     setRefineMessages([]);
     setRefineReady(null);
-    setRefineInput('');
+    setQuestion('');
     setTopic(nextTopic);
     resetForRebuild();
   }
@@ -354,14 +355,19 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   function openRefine() {
     setRefineOpen(true);
     setRefineReady(null);
-    setRefineInput('');
+    setQuestion('');
     if (refineMessages.length === 0) runRefineStep([]);
+    setTimeout(() => {
+      try { document.getElementById('lesson-coach')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* ignore */ }
+    }, 50);
   }
 
+  // Send a turn in the unified chat's "find a better fit" mode, reading the same
+  // input the coach uses so there's only ever one box.
   function sendRefine() {
-    const text = refineInput.trim();
+    const text = question.trim();
     if (!text || refineLoading) return;
-    setRefineInput('');
+    setQuestion('');
     setRefineReady(null);
     const next = [...refineMessages, { role: 'user', content: text }];
     setRefineMessages(next);
@@ -747,10 +753,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     } else if (refineMessages.length === 0) {
       runRefineStep([]);
     }
-    // The refine chat lives at the bottom of the player — bring it into view.
+    // The chat now lives inside the lesson card — bring it into view.
     setTimeout(() => {
-      try { document.querySelector('[data-refine-box]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* ignore */ }
+      try { document.getElementById('lesson-coach')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* ignore */ }
     }, 50);
+  }
+
+  // The single in-lesson chat box routes to the right backend by mode: "find a
+  // better fit" while refining, otherwise the lesson coach.
+  function submitChat() {
+    if (refineOpen) sendRefine();
+    else askQuestion();
   }
 
   async function copyNextPrompt() {
@@ -1271,27 +1284,40 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           )
         )}
 
-        {/* In-lesson coach — kept in the SAME card as the content, separated by a
-            divider so it reads as one unit instead of a detached box. It sits
-            above the Back/Continue nav. The answer threads in right here. */}
-        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-700">
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Need a hand? Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — I&apos;ll help right here without losing your place.</p>
+        {/* In-lesson chat — ONE box for everything: ask the coach, or switch to
+            "find a better fit" to retarget the lesson. Kept in the SAME card as
+            the content so it reads as one unit, not a detached window. */}
+        <div id="lesson-coach" className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-700">
+        {refineOpen ? (
+          <div className="flex items-start justify-between gap-2 mb-2 px-1">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-ink dark:text-slate-200">
+              <RotateCcw className="w-3.5 h-3.5 text-brand shrink-0" /> Let&rsquo;s find a better fit — tell me what you were hoping to learn.
+            </p>
+            <button onClick={() => setRefineOpen(false)} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0">Back to lesson help</button>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Need a hand? Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — I&apos;ll help right here without losing your place.</p>
+        )}
+
+        {/* Input — hidden only once a better-fit topic is ready to confirm. */}
+        {!(refineOpen && refineReady) && (
         <div className="flex items-center gap-2">
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && askQuestion()}
-            placeholder="Ask a question or tell me what you're stuck on…"
+            onKeyDown={(e) => e.key === 'Enter' && submitChat()}
+            placeholder={refineOpen ? 'Tell me what you were hoping to learn…' : "Ask a question or tell me what you're stuck on…"}
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand"
           />
-          <button onClick={askQuestion} disabled={asking || !question.trim()}
+          <button onClick={submitChat} disabled={(refineOpen ? refineLoading : asking) || !question.trim()}
             className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all">
-            {asking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {(refineOpen ? refineLoading : asking) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
+        )}
 
-        {/* Threaded Q&A — appears below the input, on the same step */}
-        {qaThread.length > 0 && (
+        {/* One thread: coach Q&A first, then the find-a-better-fit turns. */}
+        {(qaThread.length > 0 || refineMessages.length > 0) && (
           <div className="mt-3 space-y-3 border-t border-slate-100 dark:border-slate-700 pt-3">
             {qaThread.map((item) => (
               <div key={item.id} className="space-y-1.5">
@@ -1312,6 +1338,40 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                 </div>
               </div>
             ))}
+
+            {refineMessages.map((m, i) => (
+              m.role === 'assistant' ? (
+                <div key={`r${i}`} className="flex items-start gap-2">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-slate-700 text-brand shrink-0">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </span>
+                  <div className="flex-1 min-w-0 rounded-2xl rounded-bl-md bg-bg-subtle dark:bg-slate-900 px-3 py-2 text-sm text-ink dark:text-slate-200">
+                    <FormattedContent text={m.content} />
+                  </div>
+                </div>
+              ) : (
+                <div key={`r${i}`} className="flex justify-end">
+                  <div className="max-w-[85%] bg-brand text-white px-3 py-2 rounded-2xl rounded-br-md text-sm">{m.content}</div>
+                </div>
+              )
+            ))}
+            {refineOpen && refineLoading && (
+              <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-sm pl-8">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…
+              </div>
+            )}
+
+            {refineOpen && refineReady && (
+              <div className="rounded-xl border border-brand-300 dark:border-brand-700 bg-brand-50 dark:bg-brand-900/20 p-3">
+                <p className="text-sm text-ink dark:text-slate-200 mb-2">
+                  Ready: a new lesson on <span className="font-semibold text-brand">{refineReady.newTopic}</span>. This replaces the current one.
+                </p>
+                <button onClick={() => regenerateWithTopic(refineReady.newTopic)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">
+                  <RotateCcw className="w-4 h-4" /> Start the better-fit lesson
+                </button>
+              </div>
+            )}
           </div>
         )}
         </div>
@@ -1350,8 +1410,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         </div>
       )}
 
-      {/* "This isn't what I was looking for" — gather more, then regenerate. */}
-      {!refineOpen ? (
+      {/* "This isn't what I was looking for" flips the single chat box above
+          into find-a-better-fit mode (no separate window). */}
+      {!refineOpen && (
         <div className="text-center">
           <button
             onClick={openRefine}
@@ -1359,65 +1420,6 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           >
             <RotateCcw className="w-3.5 h-3.5" /> This isn&rsquo;t what I was looking for
           </button>
-        </div>
-      ) : (
-        <div data-refine-box className="bg-white dark:bg-slate-800 rounded-2xl border border-brand-200 dark:border-slate-600 shadow-card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-ink dark:text-slate-200">
-              <MessageSquare className="w-4 h-4 text-brand" /> Let&rsquo;s find a better fit
-            </p>
-            <button onClick={() => setRefineOpen(false)} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">Close</button>
-          </div>
-
-          {/* Refine conversation */}
-          <div className="space-y-3">
-            {refineMessages.map((m, i) => (
-              m.role === 'assistant' ? (
-                <div key={i} className="flex items-start gap-2">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-slate-700 text-brand shrink-0">
-                    <MessageSquare className="w-3.5 h-3.5" />
-                  </span>
-                  <div className="flex-1 min-w-0 rounded-2xl rounded-bl-md bg-bg-subtle dark:bg-slate-900 px-3 py-2 text-sm text-ink dark:text-slate-200">
-                    <FormattedContent text={m.content} />
-                  </div>
-                </div>
-              ) : (
-                <div key={i} className="flex justify-end">
-                  <div className="max-w-[85%] bg-brand text-white px-3 py-2 rounded-2xl rounded-br-md text-sm">{m.content}</div>
-                </div>
-              )
-            ))}
-            {refineLoading && (
-              <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-sm pl-8">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…
-              </div>
-            )}
-          </div>
-
-          {/* Once we have a sharper topic, the confirm + overwrite warning lives
-              in the banner at the top — point the learner up to it. */}
-          {refineReady ? (
-            <button
-              onClick={() => refineBannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-              className="mt-3 w-full text-left text-xs font-medium text-brand hover:text-brand-600 transition-colors"
-            >
-              ↑ Your new lesson is ready — confirm it at the top of the page.
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 mt-3">
-              <input
-                value={refineInput}
-                onChange={(e) => setRefineInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendRefine()}
-                placeholder="Tell me what you were hoping to learn…"
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand"
-              />
-              <button onClick={sendRefine} disabled={refineLoading || !refineInput.trim()}
-                className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all">
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          )}
         </div>
       )}
     </div>
