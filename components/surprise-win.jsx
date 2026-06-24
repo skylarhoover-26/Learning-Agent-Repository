@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
+import { onSurpriseTip } from '@/lib/progression';
+import { emitXp } from '@/lib/xp-bus';
+import { resolveLearnerId } from '@/lib/learner-id';
 import BookLoader from '@/components/book-loader';
 import { Zap, Copy, Check, Clock, ArrowRight, RefreshCw } from 'lucide-react';
 
@@ -17,6 +20,9 @@ export default function SurpriseWin({ onStartLesson }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  // Track which tip we've already credited so re-renders don't re-fire it; the
+  // once-per-day cap in onSurpriseTip is the real guard against farming.
+  const awardedTitleRef = useRef(null);
 
   const fetchQuickWin = useCallback(async () => {
     setIsLoading(true);
@@ -43,6 +49,19 @@ export default function SurpriseWin({ onStartLesson }) {
   useEffect(() => {
     fetchQuickWin();
   }, [fetchQuickWin]);
+
+  // Credit a surprise tip as a completed Quick Tip (XP once/day + history),
+  // once both the tip and the profile are loaded. Not added to the resume list.
+  useEffect(() => {
+    if (!quickWin || !profile) return;
+    if (awardedTitleRef.current === quickWin.title) return;
+    awardedTitleRef.current = quickWin.title;
+    try {
+      emitXp(onSurpriseTip(resolveLearnerId(profile), quickWin.title));
+    } catch {
+      // progression is best-effort
+    }
+  }, [quickWin, profile]);
 
   async function handleCopy() {
     if (!quickWin?.prompt) return;
