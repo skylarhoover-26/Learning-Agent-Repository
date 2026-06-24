@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, MessageCircle, BookOpen, PenTool } from 'lucide-react';
+import { Gamepad2, MessageCircle, BookOpen, PenTool, RefreshCw } from 'lucide-react';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
 // The home-page "Other ways to learn" tiles. Kept as a self-contained client
@@ -14,13 +14,14 @@ const TILES = [
   { href: '/chat', icon: MessageCircle, label: 'Just Chat', tour: 'home-qa-chat' },
   { href: '/lesson', icon: BookOpen, label: 'Lesson', tour: 'home-qa-lesson' },
   { href: '/structured-lesson', icon: PenTool, label: 'Practice', tour: 'home-qa-practice' },
+  { href: '/review', icon: RefreshCw, label: 'Review', tour: 'home-qa-review' },
 ];
 
 export default function HomeQuickActions() {
   const { loaded, isItemHidden, isItemComingSoon } = useMenuVisibility();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
       {TILES.map(({ href, icon: Icon, label, tour }) => {
         // Hidden tiles disappear entirely; "coming soon" tiles grey out.
         if (loaded && isItemHidden(href)) return null;
