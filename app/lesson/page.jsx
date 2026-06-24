@@ -722,7 +722,7 @@ function LessonContent() {
     if (surpriseMode) {
       return (
         <>
-          <PageHeader icon={Zap} title="Quick Win" subtitle="One thing you can do with AI right now" />
+          <PageHeader icon={Zap} title="Quick Tip" subtitle="One thing you can do with AI right now" />
           <main className="max-w-3xl mx-auto px-6 py-10">
             <button
               onClick={() => setSurpriseMode(false)}
