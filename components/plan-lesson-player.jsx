@@ -12,7 +12,7 @@ import BookLoader from '@/components/book-loader';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
-import { onLessonComplete, normalizeTopic } from '@/lib/progression';
+import { onLessonComplete, normalizeTopic, PASS_THRESHOLD } from '@/lib/progression';
 import { useProgression } from '@/components/progression-provider';
 import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
@@ -132,6 +132,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
   // End-of-lesson: claim XP first, THEN run the "did this help?" checkpoint.
   const [claimed, setClaimed] = useState(false);      // XP recorded, lesson done
+  const [award, setAward] = useState(null);           // result of onLessonComplete
   const [helpful, setHelpful] = useState(null);       // null | 'yes' | 'no'
   const [stillUnclear, setStillUnclear] = useState('');
   const [nextSteps, setNextSteps] = useState(null);   // { intro, steps, prompt }
@@ -633,10 +634,13 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     : isTeachStep ? (!!teachData && !cardsGate)
     : true;
   const builtCount = steps.filter((s) => s.kind === 'build' && artifact[s.id]?.content).length;
-  // Did this learner already complete this exact topic before? If so, finishing
-  // again earns no new XP — we tell them rather than show a fresh XP award.
+  // Did this learner already PASS this exact lesson before? If so, finishing
+  // again earns no new XP. (Merely finishing without passing still leaves the
+  // full amount on the table, so that doesn't count as "already earned".)
   const alreadyEarned = (lessonHistory || []).some(
-    (l) => normalizeTopic(l.topic) === normalizeTopic(topic),
+    (l) => normalizeTopic(l.topic) === normalizeTopic(topic)
+      && (l.format || 'quick_lesson') === format
+      && (l.correctness ?? 0) >= PASS_THRESHOLD,
   );
 
   function goNext() {
@@ -775,12 +779,26 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           quizCorrect: passedCount,
         });
         emitXp(result);
+        setAward(result);
         trackLessonComplete(topic, format, durationMs);
       }
     } catch {
       // best-effort
     }
     setClaimed(true);
+  }
+
+  // Retake: redo this same lesson from the top so a passing attempt can top the
+  // XP up to the full amount. Keeps the generated content; only resets progress.
+  function retakeLesson() {
+    recorded.current = false;
+    startedAt.current = new Date().toISOString();
+    setStepIdx(0);
+    setResolved({});
+    setClaimed(false);
+    setHelpful(null);
+    setAward(null);
+    persist({ stepIdx: 0, resolved: {} });
   }
 
   // Leave the lesson once they're done with the checkpoint.
@@ -915,7 +933,26 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         </p>
       )}
     </div>
-  ) : checkpointBlock;
+  ) : (
+    <>
+      {/* Finished but didn't pass: they got the floor; nudge a retake for full XP. */}
+      {award && award.passed === false && !alreadyEarned && (
+        <div className="mt-5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-center">
+          <p className="text-sm text-ink dark:text-slate-200">
+            You earned <span className="font-bold">{award.xpAwarded} XP</span> for finishing. Score{' '}
+            {Math.round(PASS_THRESHOLD * 100)}%+ to earn the full <span className="font-bold">{award.maxXp} XP</span>.
+          </p>
+          <button
+            onClick={retakeLesson}
+            className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all"
+          >
+            <RefreshCw className="w-4 h-4" /> Retake to earn full XP
+          </button>
+        </div>
+      )}
+      {checkpointBlock}
+    </>
+  );
 
   return (
     <div className="space-y-5">
