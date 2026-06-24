@@ -9,7 +9,7 @@ import UserMenu from '@/components/user-menu';
 export default function PageHeader({ icon: Icon, title, subtitle, iconButton, actions }) {
   return (
     <header className="bg-ink sticky top-0 z-10 text-white">
-      <div className="js-app-header max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
+      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
         <SidebarToggle />
         <BackButton />
         <div className="flex items-center gap-3">

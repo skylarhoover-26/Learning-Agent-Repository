@@ -48,15 +48,3 @@ body {
 .animate-heatmap-pulse {
   animation: heatmap-pulse 1.5s ease-in-out infinite;
 }
-
-/* Overlay menu: when open, slide the header's title row out from behind the
-   panel on large screens (the panel is w-96 / 24rem). The right-side cluster
-   stays put because it's pinned to the row's right edge. */
-.js-app-header {
-  transition: padding-left 0.2s ease;
-}
-@media (min-width: 1024px) {
-  html.menu-open .js-app-header {
-    padding-left: 24rem;
-  }
-}

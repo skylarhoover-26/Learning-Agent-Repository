@@ -139,14 +139,6 @@ export function SidebarProvider({ children }) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  // Mark the document while the overlay menu is open so headers can slide their
-  // title out from behind the panel (see `.js-app-header` in globals.css).
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('menu-open', open);
-    return () => root.classList.remove('menu-open');
-  }, [open]);
-
   return (
     <SidebarContext.Provider value={{ open, setOpen, toggle: () => setOpen(p => !p) }}>
       {children}
@@ -177,24 +169,29 @@ export function SidebarToggle() {
   );
 }
 
-// Wraps page content. The menu is an overlay, so content never shifts — it
-// stays centered in place and the panel slides over it on top of a backdrop.
+// Wraps page content. On large screens the menu is docked: content shifts right
+// to sit beside the panel (no dimming) and stays fully visible/clickable, and
+// the menu stays open until the user closes it. On small screens the panel is
+// too wide to push content, so it overlays with a dim backdrop you can tap to
+// close.
 export function SidebarShell({ children }) {
   const { open, setOpen } = useSidebar();
   const pathname = usePathname();
-  // No nav on onboarding/auth — don't show the backdrop there.
+  // No nav on onboarding/auth — don't shift content or show the backdrop there.
   const showNav = open && !isChromeHiddenRoute(pathname);
   return (
     <>
-      {/* Dimmed backdrop across the whole screen (all sizes) — click to close. */}
+      {/* Small screens only: dim + tap-to-close (the panel overlays content). */}
       {showNav && (
         <div
-          className="fixed inset-0 bg-black/40 z-[55]"
+          className="fixed inset-0 bg-black/40 z-[55] lg:hidden"
           onClick={() => setOpen(false)}
           aria-hidden="true"
         />
       )}
-      {children}
+      <div className={`transition-[padding] duration-200 ${showNav ? 'lg:pl-96' : ''}`}>
+        {children}
+      </div>
     </>
   );
 }
