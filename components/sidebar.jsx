@@ -126,10 +126,10 @@ function isChromeHiddenRoute(pathname) {
 const SidebarContext = createContext(null);
 
 export function SidebarProvider({ children }) {
-  // Always open by default on load. It stays open as you navigate within a
-  // session and you can close it anytime, but a fresh load/login starts open
-  // (we intentionally do NOT persist a closed state across sessions).
-  const [open, setOpen] = useState(true);
+  // Closed by default: the menu is an overlay (Amazon-style) that slides over
+  // the page on top of a dimmed backdrop, so it starts closed and opens on the
+  // hamburger — leaving it open by default would dim every page on load.
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     function handleEscape(e) {
@@ -150,43 +150,43 @@ export function useSidebar() {
   return useContext(SidebarContext);
 }
 
-// Hamburger button — lives in the page header and toggles the sidebar.
-// Always shows the menu icon; the sidebar's own X handles closing, so we avoid
-// a confusing double-X when the sidebar is open.
+// Hamburger button — lives in the page header and opens the overlay menu.
+// While the menu is open it overlays the page and has its own ✕ to close, so we
+// hide the hamburger — but keep its w-9 h-9 footprint as an invisible spacer so
+// the header title doesn't jump when the icon disappears.
 export function SidebarToggle() {
   const { open, toggle } = useSidebar();
+  if (open) return <span className="w-9 h-9 shrink-0" aria-hidden="true" />;
   return (
     <button
       onClick={toggle}
       className="flex items-center justify-center w-9 h-9 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-100"
       aria-label="Navigation menu"
       aria-expanded={open}
-      data-tour="menu-toggle"
     >
       <Menu className="w-5 h-5" />
     </button>
   );
 }
 
-// Wraps page content; shifts it right of the rail on large screens when open.
+// Wraps page content. The menu is an overlay, so content never shifts — it
+// stays centered in place and the panel slides over it on top of a backdrop.
 export function SidebarShell({ children }) {
   const { open, setOpen } = useSidebar();
   const pathname = usePathname();
-  // No nav on onboarding/auth — don't show the backdrop or shift content.
+  // No nav on onboarding/auth — don't show the backdrop there.
   const showNav = open && !isChromeHiddenRoute(pathname);
   return (
     <>
-      {/* Backdrop on small screens only — desktop keeps the rail persistent. */}
+      {/* Dimmed backdrop across the whole screen (all sizes) — click to close. */}
       {showNav && (
         <div
-          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 z-40"
           onClick={() => setOpen(false)}
           aria-hidden="true"
         />
       )}
-      <div className={`transition-[padding] duration-200 ${showNav ? 'lg:pl-72' : ''}`}>
-        {children}
-      </div>
+      {children}
     </>
   );
 }
@@ -279,7 +279,7 @@ export function SideNav() {
   return (
     <nav
       data-tour="sidebar"
-      className={`fixed top-0 left-0 h-screen w-72 z-50 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 overflow-y-auto transition-transform duration-200 ${
+      className={`fixed top-0 left-0 h-screen w-96 max-w-[88vw] z-50 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-hidden={!open}
@@ -288,6 +288,7 @@ export function SideNav() {
         <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Menu</p>
         <button
           onClick={() => setOpen(false)}
+          data-tour="menu-toggle"
           className="p-1 -mr-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           aria-label="Close menu"
         >
