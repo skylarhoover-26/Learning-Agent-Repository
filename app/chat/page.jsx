@@ -194,11 +194,17 @@ function ChatPageInner() {
         subtitle="Your AI coach — ask anything"
         actions={hasMessages ? (
           <button
-            onClick={() => { clearChatHistory(); setMessages([]); }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-sm font-medium text-white/90 hover:text-white hover:bg-white/10 transition-all"
+            onClick={() => {
+              if (window.confirm('Delete this chat? This clears the whole conversation.')) {
+                clearChatHistory();
+                setMessages([]);
+                setInput('');
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-sm font-medium text-white/90 border border-white/25 hover:text-white hover:bg-white/10 transition-all"
             aria-label="Clear chat"
           >
-            <Trash2 className="w-4 h-4" /> Clear
+            <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Clear chat</span>
           </button>
         ) : null}
       />
