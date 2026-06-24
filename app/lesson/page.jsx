@@ -674,6 +674,19 @@ function LessonContent() {
     }
   }, [resumeParam, resumeEntry]);
 
+  // "View all in lessons" from the bell: /lesson?paused=1 shows the picker (where
+  // the full paused-lessons box lives) and scrolls to it — even if we were mid-
+  // lesson. We only switch the view; we never clear the current lesson's progress.
+  const pausedViewParam = searchParams.get('paused');
+  useEffect(() => {
+    if (pausedViewParam !== '1') return;
+    setView('picker');
+    const t = setTimeout(() => {
+      document.getElementById('paused-lessons')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+    return () => clearTimeout(t);
+  }, [pausedViewParam]);
+
   // Record a narrated-lesson completion. correctness comes from the end quiz
   // (1 for quick tips, which are completion-only) — same award path as reading.
   const handleVideoComplete = useCallback(({ correctness = 1, quizCorrect = 0 } = {}) => {

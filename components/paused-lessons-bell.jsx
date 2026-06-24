@@ -107,7 +107,7 @@ export default function PausedLessonsBell() {
           </ul>
 
           <button
-            onClick={() => { setOpen(false); router.push('/lesson#paused-lessons'); }}
+            onClick={() => { setOpen(false); router.push('/lesson?paused=1'); }}
             className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-brand border-t border-slate-100 dark:border-slate-700 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors"
           >
             View all in lessons <ArrowRight className="w-3.5 h-3.5" />
