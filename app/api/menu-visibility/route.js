@@ -4,6 +4,12 @@ import { isAdmin } from '@/lib/admin';
 import { MENU_CATALOG } from '@/lib/menu-catalog';
 import { getMenuVisibility, setMenuVisibility } from '@/lib/menu-visibility';
 
+// This reads MUTABLE per-org config from the blob, so the route must never be
+// statically cached — otherwise admin visibility changes only take effect on the
+// next deploy (a hidden item keeps showing until a rebuild). Force dynamic.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET is public to signed-in users: every menu render needs the disabled lists.
 // We also return the catalog so the admin page has the structure to render.
 export async function GET() {

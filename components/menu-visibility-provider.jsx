@@ -35,8 +35,8 @@ export function MenuVisibilityProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      fetch('/api/admin-check').then(r => r.json()).catch(() => ({ isAdmin: false })),
-      fetch('/api/menu-visibility').then(r => r.json()).catch(() => ({ sections: [], items: [] })),
+      fetch('/api/admin-check', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ isAdmin: false })),
+      fetch('/api/menu-visibility', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ sections: [], items: [] })),
     ]).then(([admin, vis]) => {
       if (cancelled) return;
       setIsAdmin(!!admin?.isAdmin);

@@ -62,7 +62,7 @@ export default function MenuVisibilityAdminPage() {
 
   useEffect(() => {
     if (!allowed) return;
-    fetch('/api/menu-visibility')
+    fetch('/api/menu-visibility', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : { catalog: [], sections: [], items: [], hiddenSections: [], hiddenItems: [] }))
       .then((d) => {
         const cat = Array.isArray(d.catalog) ? d.catalog : [];
