@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Play, Pause, SkipBack, SkipForward, RotateCcw,
-  Loader2, Volume2, CheckCircle, Gauge, Sparkles,
+  Loader2, Volume2, CheckCircle, Gauge, Sparkles, MessageSquare, Send,
 } from 'lucide-react';
 import { useTts } from '@/lib/use-tts';
 import BookLoader from '@/components/book-loader';
 import LessonQuiz from '@/components/lesson-quiz';
+import { FormattedContent } from '@/components/lesson-slide';
 
 // Playback speeds the learner can cycle through. Kept tight and useful — slow
 // for dense topics, fast for review.
@@ -46,6 +47,14 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const [phase, setPhase] = useState('narrating');
   const [quizQuestions, setQuizQuestions] = useState(null);
   const awardedRef = useRef(false);
+
+  // In-player coach: a learner watching can still ask for help (about the lesson,
+  // using their AI tool, or being stuck) without leaving. Opening it pauses the
+  // narration so the answer doesn't get talked over.
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [asking, setAsking] = useState(false);
+  const [qaThread, setQaThread] = useState([]);
 
   const { isSpeaking, isLoading: ttsLoading, speak, stop, setRate, prime } = useTts();
 
@@ -242,6 +251,49 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     stop();
     onClose?.();
   }, [stop, onClose]);
+
+  // Open the coach — pause the narration so it doesn't talk over the answer.
+  const openCoach = useCallback(() => {
+    setCoachOpen(true);
+    setIsPlaying(false);
+    stop();
+  }, [stop]);
+
+  // Ask the in-lesson coach. Grounded in the narrated script so answers tie back
+  // to what the learner is watching. Reuses the read-lesson answer endpoint.
+  const askQuestion = useCallback(async () => {
+    const q = question.trim();
+    if (!q || asking) return;
+    setQuestion('');
+    setAsking(true);
+    const id = `vq_${sceneIdx}_${qaThread.length}`;
+    setQaThread((prev) => [...prev, { id, q, a: '', loading: true }]);
+    try {
+      const priorContent = (script?.scenes || []).slice(0, sceneIdx + 1).map((s) => ({
+        title: s.title || '',
+        message: [s.narration, (s.keyPoints || []).join('; ')].filter(Boolean).join('\n'),
+      }));
+      const recentQa = qaThread.filter((x) => x.a && !x.error).slice(-3).map((x) => ({ q: x.q, a: x.a }));
+      const res = await fetch('/api/lesson/teach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic, mode: 'answer', question: q,
+          priorContent, currentStep: scene?.title || script?.title || '', recentQa, tools,
+        }),
+      });
+      if (!res.ok) throw new Error('failed');
+      const d = await res.json();
+      const a = d.message || 'Here you go.';
+      setQaThread((prev) => prev.map((x) => (x.id === id ? { ...x, a, loading: false } : x)));
+    } catch {
+      setQaThread((prev) => prev.map((x) => (
+        x.id === id ? { ...x, a: 'Sorry — I couldn’t answer that just now. Please try again.', loading: false, error: true } : x
+      )));
+    } finally {
+      setAsking(false);
+    }
+  }, [question, asking, sceneIdx, qaThread, script, scene, topic, tools]);
 
   // Close on Escape
   useEffect(() => {
@@ -470,6 +522,67 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                       : 'That\'s the last scene — tap the → arrow to wrap up.')
                   : 'Scenes don\'t auto-advance — you control when to move on.'}
               </p>
+            )}
+          </div>
+        )}
+
+        {/* In-lesson coach — available while watching so a learner can ask for
+            help (lesson, AI-tool navigation, or being stuck) without leaving. */}
+        {script && hasStarted && phase !== 'quiz' && (
+          <div className="mt-3">
+            {!coachOpen ? (
+              <button
+                onClick={openCoach}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-sm font-medium border border-slate-700 transition-all"
+              >
+                <MessageSquare className="w-4 h-4" /> Need a hand? Ask a question
+              </button>
+            ) : (
+              <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl p-3">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 px-1">Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — narration is paused while we chat.</p>
+                  <button onClick={() => setCoachOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0" aria-label="Close help">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && askQuestion()}
+                    placeholder="Ask a question or tell me what you're stuck on…"
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand"
+                    autoFocus
+                  />
+                  <button onClick={askQuestion} disabled={asking || !question.trim()}
+                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all">
+                    {asking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
+                {qaThread.length > 0 && (
+                  <div className="mt-3 space-y-3 border-t border-slate-100 dark:border-slate-700 pt-3 max-h-72 overflow-y-auto">
+                    {qaThread.map((item) => (
+                      <div key={item.id} className="space-y-1.5">
+                        <div className="flex justify-end">
+                          <div className="max-w-[85%] bg-brand text-white px-3 py-2 rounded-2xl rounded-br-md text-sm">{item.q}</div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-slate-700 text-brand shrink-0">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </span>
+                          <div className="flex-1 min-w-0 rounded-2xl rounded-bl-md bg-bg-subtle dark:bg-slate-900 px-3 py-2 text-sm">
+                            {item.loading ? (
+                              <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…</span>
+                            ) : (
+                              <FormattedContent text={item.a} />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
