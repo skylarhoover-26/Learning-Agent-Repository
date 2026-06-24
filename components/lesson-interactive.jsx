@@ -79,13 +79,19 @@ function Flashcards({ title, cards, onEngage }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {cards.map((c, i) => {
           const isFlipped = !!flipped[i];
+          const toggle = () => { setFlipped((p) => ({ ...p, [i]: !p[i] })); onEngage?.(i); };
           return (
-            <button
+            // A div (not <button>) so the flipped side can render rich markdown
+            // (bold, bullets, line breaks) — block elements aren't valid inside a
+            // button. Kept keyboard-accessible with role/tabIndex/Enter+Space.
+            <div
               key={i}
-              type="button"
-              onClick={() => { setFlipped((p) => ({ ...p, [i]: !p[i] })); onEngage?.(i); }}
+              role="button"
+              tabIndex={0}
+              onClick={toggle}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
               aria-pressed={isFlipped}
-              className={`group relative text-left rounded-xl border p-4 min-h-[104px] transition-all ${
+              className={`group relative text-left rounded-xl border p-4 min-h-[104px] cursor-pointer transition-all ${
                 isFlipped
                   ? 'border-brand-300 dark:border-brand-700 bg-brand-50 dark:bg-slate-700/60'
                   : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 hover:border-brand-300 hover:shadow-card'
@@ -102,11 +108,13 @@ function Flashcards({ title, cards, onEngage }) {
                 </>
               ) : (
                 <>
-                  <span className="block text-[10px] font-semibold uppercase tracking-wide text-brand">Definition</span>
-                  <span className="block mt-1 text-sm text-ink dark:text-slate-200">{c.back}</span>
+                  <span className="block text-[10px] font-semibold uppercase tracking-wide text-brand mb-1">Definition</span>
+                  <div className="text-sm text-ink dark:text-slate-200 [&_p]:text-ink dark:[&_p]:text-slate-200">
+                    <FormattedContent text={c.back} />
+                  </div>
                 </>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
