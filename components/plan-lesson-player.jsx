@@ -590,6 +590,26 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     }
     return 'Explore everything above to continue';
   })();
+  // The panel label + intro must also match the real blocks — "Vocabulary" /
+  // "Tap each card" only fit flashcards; tabs and diagrams get their own wording.
+  const interactiveKindLabel = (() => {
+    const kinds = new Set(teachInteractiveTypes);
+    if (kinds.size === 1) {
+      if (kinds.has('flashcards')) return 'Key terms';
+      if (kinds.has('tabs')) return 'Compare';
+      if (kinds.has('diagram')) return 'How it works';
+    }
+    return 'Explore';
+  })();
+  const interactiveIntro = (() => {
+    const kinds = new Set(teachInteractiveTypes);
+    if (kinds.size === 1) {
+      if (kinds.has('flashcards')) return 'Tap each card to reveal its meaning. Flip them all to unlock the next section.';
+      if (kinds.has('tabs')) return 'Tap each tab to compare them — open them all to unlock the next section.';
+      if (kinds.has('diagram')) return 'Tap through the diagram to explore it, then continue.';
+    }
+    return 'Tap each item below to explore it — open them all to unlock the next section.';
+  })();
   // Ordered sections of a teach step, shown ONE AT A TIME so the learner isn't
   // hit with everything at once: Concept → Vocabulary (cards) → Key points.
   const teachPanels = (() => {
@@ -1042,7 +1062,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                     />
                   ))}
                   <span className="ml-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                    {currentPanel === 'concept' ? 'Concept' : currentPanel === 'cards' ? 'Vocabulary' : 'Key points'}
+                    {currentPanel === 'concept' ? 'Concept' : currentPanel === 'cards' ? interactiveKindLabel : 'Key points'}
                   </span>
                 </div>
               )}
@@ -1055,15 +1075,13 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
               {(!isTeachStep || currentPanel === 'cards') && teachBlocks.length > 0 && (
                 <>
                   {(() => {
-                    const hasCards = teachBlocks.some((b) => ['flashcards', 'tabs', 'diagram'].includes(b?.type));
                     const hasExample = teachBlocks.some((b) => b?.type === 'reveal');
                     return (
                       <p className="mb-3 flex items-start gap-1.5 text-xs font-medium text-brand-700 dark:text-brand-300">
                         <MousePointerClick className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                         <span>
-                          {hasCards && 'Tap each card to reveal its meaning. '}
-                          {hasExample && 'Open “Show me an example” for an optional walkthrough — it’s not required to continue. '}
-                          {hasCards && 'Flip them all to unlock the next section.'}
+                          {teachInteractive && `${interactiveIntro} `}
+                          {hasExample && 'Open “Show me an example” for an optional walkthrough — it’s not required to continue.'}
                         </span>
                       </p>
                     );
@@ -1219,40 +1237,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
       {/* Nav: sections within a teach step advance with Next; activities/builds
           must be settled; teach cards must be flipped. No finishing early. */}
-      {step?.kind !== 'recap' && (
-        <div className="flex items-center justify-between gap-3">
-          <button onClick={back} disabled={stepIdx === 0 && (!isTeachStep || safePanelIdx === 0)}
-            className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-40 transition-colors">
-            <ChevronLeft className="w-4 h-4" /> Back
-          </button>
-          <div className="flex items-center gap-3">
-            {isQuest && builtCount > 0 && (
-              <span className="text-xs font-medium text-brand">{builtCount} {builtCount === 1 ? 'piece' : 'pieces'} in your project</span>
-            )}
-            {!canAdvance ? (
-              (isActivity || isBuild || cardsGate) ? (
-                // An actionable gate — make it bold and prominent so it's clear
-                // what to finish before they can move on.
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
-                  <ArrowDown className="w-4 h-4" />
-                  {isActivity ? 'Complete the activity above to continue'
-                    : isBuild ? 'Add or skip your piece above to continue'
-                    : exploreGateMsg}
-                </span>
-              ) : (
-                <span className="text-xs text-slate-400">Loading this step…</span>
-              )
-            ) : (
-              <button onClick={advance}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">
-                {onLastPanel ? 'Continue' : 'Next'} <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Question box — the answer threads in right here, you stay on your step */}
+      {/* Question box — sits directly under the lesson content and ABOVE the
+          Back/Continue nav, so the in-lesson coach is part of the flow (not
+          orphaned below the buttons). The answer threads in right here. */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-3">
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Need a hand? Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — I&apos;ll help right here without losing your place.</p>
         <div className="flex items-center gap-2">
@@ -1294,6 +1281,39 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           </div>
         )}
       </div>
+
+      {step?.kind !== 'recap' && (
+        <div className="flex items-center justify-between gap-3">
+          <button onClick={back} disabled={stepIdx === 0 && (!isTeachStep || safePanelIdx === 0)}
+            className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand disabled:opacity-40 transition-colors">
+            <ChevronLeft className="w-4 h-4" /> Back
+          </button>
+          <div className="flex items-center gap-3">
+            {isQuest && builtCount > 0 && (
+              <span className="text-xs font-medium text-brand">{builtCount} {builtCount === 1 ? 'piece' : 'pieces'} in your project</span>
+            )}
+            {!canAdvance ? (
+              (isActivity || isBuild || cardsGate) ? (
+                // An actionable gate — make it bold and prominent so it's clear
+                // what to finish before they can move on.
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                  <ArrowDown className="w-4 h-4" />
+                  {isActivity ? 'Complete the activity above to continue'
+                    : isBuild ? 'Add or skip your piece above to continue'
+                    : exploreGateMsg}
+                </span>
+              ) : (
+                <span className="text-xs text-slate-400">Loading this step…</span>
+              )
+            ) : (
+              <button onClick={advance}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">
+                {onLastPanel ? 'Continue' : 'Next'} <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* "This isn't what I was looking for" — gather more, then regenerate. */}
       {!refineOpen ? (
