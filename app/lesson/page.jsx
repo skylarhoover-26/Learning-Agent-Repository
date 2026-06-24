@@ -199,6 +199,10 @@ function LessonContent() {
   // Progression state
   const lessonStartedAt = useRef(null);
   const hasRecordedCompletion = useRef(false);
+  // Narrated ("watch") lessons award XP just like the read version; guard against
+  // double-awarding within a single viewing.
+  const videoStartedAt = useRef(null);
+  const videoCompletedRef = useRef(false);
 
   // End-of-lesson quiz (gates XP for standard/deep_dive; quick tips skip it).
   const [quizQuestions, setQuizQuestions] = useState(null);
@@ -339,7 +343,7 @@ function LessonContent() {
       // Launched in watch mode → open the narrated video; otherwise start the
       // interactive read lesson.
       if (initialMode === 'watch') {
-        setVideoTopic(initialTopic);
+        launchVideo(initialTopic);
       } else if ((initialFormat || 'standard') === 'quick_tip') {
         fetchStartLesson(initialTopic, 'quick_tip');
       }
@@ -420,7 +424,7 @@ function LessonContent() {
   // Entry point from the picker: watch a narrated video or start a read lesson.
   function chooseTopic(t) {
     if (learnMode === 'watch') {
-      setVideoTopic(t);
+      launchVideo(t);
     } else {
       startLesson(t);
     }
@@ -621,6 +625,37 @@ function LessonContent() {
     }
   }, [isComplete, handleLessonComplete]);
 
+  // Open a narrated ("watch") lesson, stamping a fresh start time so its XP/
+  // duration are recorded just like a read lesson.
+  const launchVideo = useCallback((t) => {
+    videoStartedAt.current = new Date().toISOString();
+    videoCompletedRef.current = false;
+    setVideoTopic(t);
+  }, []);
+
+  // Record a narrated-lesson completion. correctness comes from the end quiz
+  // (1 for quick tips, which are completion-only) — same award path as reading.
+  const handleVideoComplete = useCallback(({ correctness = 1, quizCorrect = 0 } = {}) => {
+    if (videoCompletedRef.current) return;
+    videoCompletedRef.current = true;
+    try {
+      if (profile && videoTopic) {
+        const startedAt = videoStartedAt.current;
+        const durationMs = startedAt ? Date.now() - new Date(startedAt).getTime() : 0;
+        const result = onLessonComplete(resolveLearnerId(profile), videoTopic, startedAt, {
+          format,
+          correctness,
+          quizCorrect,
+        });
+        emitXp(result);
+        refreshProgression?.();
+        trackLessonComplete(videoTopic, format, durationMs);
+      }
+    } catch {
+      // progression is best-effort
+    }
+  }, [profile, videoTopic, format, refreshProgression]);
+
   if (view === 'picker') {
     if (surpriseMode) {
       return (
@@ -667,8 +702,6 @@ function LessonContent() {
       <>
       <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
       <main data-tour="lesson-main" className="max-w-4xl mx-auto px-6 py-10">
-        <PausedLessonsBox onResume={handleResumeEntry} />
-
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">📚</div>
           <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">What do you want to learn?</h2>
@@ -886,6 +919,12 @@ function LessonContent() {
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-4">
           ✨ Suggested topics are personalized to your role and tasks · {REFRESH_LABEL}
         </p>
+
+        {/* Unfinished lessons live at the bottom so the picker leads with new topics.
+            The header bell / menu link to #paused-lessons, which scrolls here. */}
+        <div id="paused-lessons" className="mt-10 scroll-mt-24">
+          <PausedLessonsBox onResume={handleResumeEntry} />
+        </div>
       </main>
       {videoTopic && (
         <VideoLessonPlayer
@@ -893,6 +932,7 @@ function LessonContent() {
           format={format}
           tools={tools}
           questId={videoQuestId}
+          onComplete={handleVideoComplete}
           onClose={() => { setVideoTopic(null); setVideoQuestId(null); }}
         />
       )}

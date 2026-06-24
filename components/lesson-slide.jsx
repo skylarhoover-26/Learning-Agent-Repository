@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2, Copy, Check } from 'lucide-react';
+import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2, Copy, Check, Rocket } from 'lucide-react';
 import { useTts } from '@/lib/use-tts';
 import MermaidDiagram from '@/components/mermaid-diagram';
 import { openLlmWindow } from '@/lib/open-llm-window';
@@ -458,25 +458,30 @@ export function RecapCard({ recap, format, onPickAnother, onDashboard }) {
       )}
 
       {recap.applyTip && (
-        <div className="mx-6 mb-4 bg-white/70 dark:bg-slate-800/70 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-1">Try this next</h3>
+        <div className="mx-6 mb-4 bg-white dark:bg-slate-800 rounded-xl p-4 border-2 border-emerald-300 dark:border-emerald-700">
+          <h3 className="flex items-center gap-1.5 text-sm font-bold text-emerald-700 dark:text-emerald-300 mb-1">
+            <Rocket className="w-4 h-4" /> Your next step
+          </h3>
           <p className="text-sm text-slate-700 dark:text-slate-300">{renderInline(normaliseToMarkdown(recap.applyTip))}</p>
         </div>
       )}
 
-      <div className="px-6 pb-6 flex gap-3 justify-center">
-        <button
-          onClick={onPickAnother}
-          className="px-5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-medium transition-all"
-        >
-          Pick another topic
-        </button>
-        <button
-          onClick={onDashboard}
-          className="px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm"
-        >
-          Back to dashboard
-        </button>
+      <div className="px-6 pb-6">
+        <p className="text-center text-xs font-medium text-emerald-700 dark:text-emerald-300 mb-3">What do you want to do next?</p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={onPickAnother}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm"
+          >
+            Learn another topic →
+          </button>
+          <button
+            onClick={onDashboard}
+            className="px-5 py-3 rounded-pill bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-medium transition-all"
+          >
+            Back to dashboard
+          </button>
+        </div>
       </div>
     </div>
   );

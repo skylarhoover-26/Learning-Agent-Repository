@@ -4,7 +4,9 @@ import UserMenu from '@/components/user-menu';
 
 // `iconButton` lets a page swap the static icon for an interactive client
 // button (e.g. the Tour's play button). When omitted, the icon is decorative.
-export default function PageHeader({ icon: Icon, title, subtitle, iconButton }) {
+// `actions` renders optional controls in the right cluster, just before the
+// user menu (e.g. a "Clear chat" button).
+export default function PageHeader({ icon: Icon, title, subtitle, iconButton, actions }) {
   return (
     <header className="bg-ink sticky top-0 z-10 text-white">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
@@ -21,7 +23,8 @@ export default function PageHeader({ icon: Icon, title, subtitle, iconButton }) 
             {subtitle && <p className="text-xs text-white/60">{subtitle}</p>}
           </div>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1.5">
+          {actions}
           <UserMenu />
         </div>
       </div>
