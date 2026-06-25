@@ -7,7 +7,30 @@
    only affects pages that opt in — other pages keep the current styling while
    the reskin rolls out screen by screen.
    ──────────────────────────────────────────────────────────────────────── */
+/* Light cinematic theme (default) — follows the app's existing dark-mode
+   toggle: light palette here, dark palette under `.dark .cine` below. */
 .cine {
+  --accent: #0055FF;
+  --accent2: #3B94FF;
+  --gold: #FFB706;
+  --good: #1AA06A;
+  --ink: #0A2443;
+  --ink-dim: rgba(10, 36, 67, .60);
+  --line: rgba(10, 36, 67, .10);
+  --glass: rgba(255, 255, 255, .72);
+  --card: rgba(255, 255, 255, .70);
+  --navbg: rgba(255, 255, 255, .82);
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1200px 620px at 82% -12%, rgba(0, 85, 255, .10), transparent 60%),
+    radial-gradient(900px 520px at -5% 8%, rgba(255, 183, 6, .10), transparent 55%),
+    linear-gradient(180deg, #EAF0FB 0%, #F4F8FF 100%);
+  background-attachment: fixed;
+}
+.dark .cine {
   --accent: #3B94FF;
   --accent2: #6AABFF;
   --gold: #FFB706;
@@ -18,15 +41,10 @@
   --glass: rgba(255, 255, 255, .06);
   --card: rgba(255, 255, 255, .045);
   --navbg: rgba(10, 36, 67, .55);
-  min-height: 100vh;
-  color: var(--ink);
-  font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
   background:
     radial-gradient(1200px 620px at 82% -12%, rgba(59, 148, 255, .20), transparent 60%),
     radial-gradient(900px 520px at -5% 8%, rgba(255, 183, 6, .10), transparent 55%),
     linear-gradient(180deg, #06142E 0%, #0A2443 100%);
-  background-attachment: fixed;
 }
 .cine h1, .cine h2, .cine h3, .cine h4, .cine .font-display {
   font-family: 'Plus Jakarta Sans', 'Open Sans', sans-serif;
@@ -54,7 +72,7 @@
   box-shadow: 0 18px 44px -20px var(--gold);
 }
 .cine-grad-text {
-  background: linear-gradient(90deg, #fff 0%, var(--accent2) 45%, var(--gold) 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 45%, var(--gold) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
