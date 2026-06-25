@@ -36,15 +36,15 @@
   --gold: #FFB706;
   --good: #2BB37A;
   --ink: #EAF2FF;
-  --ink-dim: rgba(234, 242, 255, .62);
-  --line: rgba(255, 255, 255, .12);
-  --glass: rgba(255, 255, 255, .06);
-  --card: rgba(255, 255, 255, .045);
+  --ink-dim: rgba(234, 242, 255, .64);
+  --line: rgba(255, 255, 255, .14);
+  --glass: rgba(255, 255, 255, .08);
+  --card: rgba(255, 255, 255, .065);
   --navbg: rgba(10, 36, 67, .55);
   background:
-    radial-gradient(1200px 620px at 82% -12%, rgba(59, 148, 255, .20), transparent 60%),
-    radial-gradient(900px 520px at -5% 8%, rgba(255, 183, 6, .10), transparent 55%),
-    linear-gradient(180deg, #06142E 0%, #0A2443 100%);
+    radial-gradient(1100px 600px at 85% -10%, rgba(59, 148, 255, .26), transparent 60%),
+    radial-gradient(820px 480px at -8% 6%, rgba(255, 183, 6, .12), transparent 55%),
+    linear-gradient(180deg, #050F24 0%, #0A2347 60%, #0C1A38 100%);
 }
 .cine h1, .cine h2, .cine h3, .cine h4, .cine .font-display, .font-display {
   font-family: 'Plus Jakarta Sans', 'Open Sans', sans-serif;
@@ -66,8 +66,8 @@
 }
 .dark .cine-vars {
   --accent: #3B94FF; --accent2: #6AABFF; --gold: #FFB706; --good: #2BB37A;
-  --ink: #EAF2FF; --ink-dim: rgba(234, 242, 255, .62); --line: rgba(255, 255, 255, .12);
-  --glass: rgba(255, 255, 255, .06); --card: rgba(255, 255, 255, .045); --navbg: rgba(10, 36, 67, .55);
+  --ink: #EAF2FF; --ink-dim: rgba(234, 242, 255, .64); --line: rgba(255, 255, 255, .14);
+  --glass: rgba(255, 255, 255, .08); --card: rgba(255, 255, 255, .065); --navbg: rgba(10, 36, 67, .55);
 }
 
 .cine-glass {
@@ -90,7 +90,15 @@
   color: #0A2443;
   box-shadow: 0 18px 44px -20px var(--gold);
 }
+/* Static blue→gold gradient for the dashboard name (matches the Claude design —
+   no animation). The animated variant (.cine-grad-flow) is for course titles. */
 .cine-grad-text {
+  background: linear-gradient(100deg, var(--accent) 0%, var(--accent2) 42%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.cine-grad-flow {
   background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 45%, var(--gold) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, Flame, Trophy, Award, Compass, Gamepad2, MessageCircle,
-  BookOpen, PenTool, ArrowRight, Play, Crown,
+  BookOpen, PenTool, ArrowRight, Play, Crown, Check,
 } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
@@ -68,87 +68,79 @@ export default function CinematicHome() {
   const resumeHref = lastTopic ? `/lesson?topic=${encodeURIComponent(lastTopic)}` : '/lesson';
   const people = (board?.people || []).slice(0, 5);
   const champ = new Set(board?.championIds || []);
+  const firstName = (name || 'there').split(' ')[0];
+  // A 5-level "journey" window centered near the current level.
+  const journeyStart = Math.max(1, level - 1);
+  const journey = [0, 1, 2, 3, 4].map((i) => journeyStart + i);
 
   return (
     <CinematicShell>
-      {/* HERO */}
-      <section className="cine-rise">
-        <span className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full mb-4" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>
-          <span className="w-2 h-2 rounded-full" style={{ background: 'var(--good)', boxShadow: '0 0 8px var(--good)' }} />
-          {streak}-day streak · {title}
-        </span>
-        <h1 className="font-display font-extrabold text-4xl sm:text-5xl leading-tight">
-          Welcome back, <span className="cine-grad-text">{name}</span>
-        </h1>
-        <p className="mt-3 text-base max-w-2xl" style={{ color: 'var(--ink-dim)' }}>
-          You&apos;re Level {level} · {title} with {totalXp.toLocaleString()} XP. Pick up where you left off, or explore something new.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link href={resumeHref} className="cine-pill cine-lift relative overflow-hidden inline-flex items-center gap-2 h-12 px-6 font-semibold">
-            <Play className="w-4 h-4" /> Resume learning
-          </Link>
-          <Link href="/discover" className="cine-glass cine-lift inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold" style={{ color: 'var(--ink)' }}>
-            Explore courses <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </section>
-
-      {/* LEVEL + STATS + LEADERBOARD */}
-      <section className="grid lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 cine-glass rounded-3xl p-6 cine-rise">
-          <div className="flex items-center gap-4">
-            <div className="relative w-16 h-16 rounded-2xl grid place-items-center font-display font-extrabold text-2xl" style={{ background: 'linear-gradient(135deg,var(--gold),#ffce4d)', color: '#0A2443', boxShadow: '0 0 24px -6px var(--gold)' }}>
-              {level}
-              <span className="absolute -bottom-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'var(--accent)', color: '#fff' }}>LV</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-display font-bold text-xl">{title}</p>
-              <p className="text-sm" style={{ color: 'var(--ink-dim)' }}>Level {level} · {totalXp.toLocaleString()} XP</p>
-            </div>
-            <Link href="/achievements" className="text-sm font-semibold cine-lift hidden sm:inline" style={{ color: 'var(--accent2)' }}>
-              Achievements →
+      {/* HERO + LEVEL JOURNEY */}
+      <section className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center cine-rise">
+        {/* Left: welcome */}
+        <div>
+          <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-5" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--ink-dim)' }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: 'var(--good)', boxShadow: '0 0 8px var(--good)' }} />
+            {streak}-day streak · {title}
+          </span>
+          <h1 className="font-display font-extrabold text-5xl sm:text-6xl leading-[1.03] tracking-tight">
+            Welcome back,<br /><span className="cine-grad-text">{firstName}.</span>
+          </h1>
+          <p className="mt-5 text-lg max-w-md" style={{ color: 'var(--ink-dim)' }}>
+            {lp.xpToNext
+              ? <>You&apos;re <span style={{ color: 'var(--ink)', fontWeight: 600 }}>{lp.xpToNext} XP</span> from <span style={{ color: 'var(--ink)', fontWeight: 600 }}>Level {level + 1}</span>. One lesson stands between you and your next badge.</>
+              : <>You&apos;re at the top level — keep the streak alive.</>}
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link href={resumeHref} className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-6 font-semibold">
+              Resume{lastTopic ? ` — ${lastTopic}` : ' learning'} <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/discover" className="cine-glass cine-lift inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold" style={{ color: 'var(--ink)' }}>
+              Explore courses
             </Link>
           </div>
-          <div className="mt-5">
-            <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--glass)' }}>
-              <div className="h-full rounded-full" style={{ width: `${lp.percent || 0}%`, background: 'linear-gradient(90deg,var(--accent),var(--accent2))', boxShadow: '0 0 12px var(--accent)' }} />
-            </div>
-            <p className="mt-2 text-xs" style={{ color: 'var(--ink-dim)' }}>
-              {lp.xpToNext ? `${lp.xpToNext} XP to Level ${level + 1}` : `You're at the top — keep going!`}
-            </p>
+        </div>
+
+        {/* Right: level-journey staircase + stat tiles */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-display font-bold">Your level journey</p>
+            <span className="text-xs" style={{ color: 'var(--ink-dim)' }}>Level {level} · next is {level + 1}</span>
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-3">
+          <div className="flex items-end justify-between gap-2 sm:gap-3 h-56">
+            {journey.map((lvl, i) => {
+              const state = lvl < level ? 'done' : lvl === level ? 'current' : lvl === level + 1 ? 'next' : 'upcoming';
+              const h = [46, 60, 74, 87, 100][i];
+              const barStyle = state === 'current'
+                ? { background: 'linear-gradient(180deg,var(--accent),var(--accent2))', color: '#fff', boxShadow: '0 0 30px -6px var(--accent)' }
+                : state === 'done'
+                  ? { background: 'var(--glass)', color: 'var(--ink)', border: '1px solid var(--line)' }
+                  : state === 'next'
+                    ? { background: 'transparent', color: 'var(--gold)', border: '1.5px dashed var(--gold)' }
+                    : { background: 'var(--card)', color: 'var(--ink-dim)', border: '1px solid var(--line)' };
+              return (
+                <div key={lvl} className="relative flex-1 flex flex-col items-center justify-end h-full">
+                  {state === 'current' && (
+                    <div className="absolute top-0 flex flex-col items-center" style={{ transform: 'translateY(-110%)' }}>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full mb-1 whitespace-nowrap" style={{ background: 'var(--accent)', color: '#fff', boxShadow: '0 0 12px var(--accent)' }}>YOU&apos;RE HERE</span>
+                      <span className="w-7 h-7 rounded-full grid place-items-center font-display font-bold text-[10px]" style={{ background: 'linear-gradient(135deg,var(--gold),var(--accent))', color: '#0A2443' }}>{initials(name)}</span>
+                    </div>
+                  )}
+                  <div className="w-full rounded-2xl flex flex-col items-center justify-between py-3 transition-all" style={{ height: `${h}%`, ...barStyle }}>
+                    <span className="font-display font-extrabold text-lg">{lvl}</span>
+                    {state === 'done' && <Check className="w-4 h-4" style={{ color: 'var(--good)' }} />}
+                    {state === 'current' && <Play className="w-3.5 h-3.5" />}
+                    {state === 'next' && <Sparkles className="w-3.5 h-3.5" />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3">
             <StatCard icon={Flame} value={streak} label="day streak" tint="#FF7A45" />
             <StatCard icon={Sparkles} value={totalXp.toLocaleString()} label="total XP" tint="#3B94FF" />
             <StatCard icon={Award} value={badgeCount} label="badges" tint="#FFB706" />
           </div>
-        </div>
-
-        <div className="cine-glass rounded-3xl p-6 cine-rise">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-display font-bold inline-flex items-center gap-2"><Trophy className="w-4 h-4" style={{ color: 'var(--gold)' }} /> Top learners</p>
-            <Link href="/leaderboard" className="text-xs font-semibold cine-lift" style={{ color: 'var(--accent2)' }}>View all →</Link>
-          </div>
-          {people.length === 0 ? (
-            <p className="text-sm italic" style={{ color: 'var(--ink-dim)' }}>Rankings appear as the team earns XP.</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {people.map((p, i) => (
-                <li key={p.learnerId} className="flex items-center gap-3 rounded-xl px-2 py-1.5" style={p.learnerId === myId ? { background: 'rgba(59,148,255,.14)' } : undefined}>
-                  <span className="w-6 text-center text-sm font-bold">{MEDAL[i + 1] || i + 1}</span>
-                  <span className="w-8 h-8 rounded-full grid place-items-center font-display font-bold text-[11px] shrink-0" style={{ background: 'linear-gradient(135deg,var(--accent),var(--gold))', color: '#0A2443' }}>
-                    {initials(p.name)}
-                  </span>
-                  <span className="flex-1 min-w-0 truncate text-sm font-medium flex items-center gap-1.5">
-                    {p.name}
-                    {champ.has(p.learnerId) && <Crown className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--gold)' }} />}
-                    {p.learnerId === myId && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase" style={{ background: 'var(--accent)', color: '#fff' }}>You</span>}
-                  </span>
-                  <span className="text-sm font-bold shrink-0">{(p.totalXp || 0).toLocaleString()}</span>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </section>
 
@@ -195,6 +187,34 @@ export default function CinematicHome() {
         <Link href="/daily" className="cine-gold cine-lift inline-flex items-center gap-2 h-11 px-5 rounded-full font-bold shrink-0">
           Start <ArrowRight className="w-4 h-4" />
         </Link>
+      </section>
+
+      {/* LEADERBOARD */}
+      <section className="cine-rise cine-glass rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-display font-bold inline-flex items-center gap-2"><Trophy className="w-4 h-4" style={{ color: 'var(--gold)' }} /> Top learners</p>
+          <Link href="/leaderboard" className="text-xs font-semibold cine-lift" style={{ color: 'var(--accent2)' }}>View full leaderboard →</Link>
+        </div>
+        {people.length === 0 ? (
+          <p className="text-sm italic" style={{ color: 'var(--ink-dim)' }}>Rankings appear as the team earns XP.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {people.map((p, i) => (
+              <li key={p.learnerId} className="flex items-center gap-3 rounded-xl px-2 py-1.5" style={p.learnerId === myId ? { background: 'rgba(59,148,255,.14)' } : undefined}>
+                <span className="w-6 text-center text-sm font-bold">{MEDAL[i + 1] || i + 1}</span>
+                <span className="w-8 h-8 rounded-full grid place-items-center font-display font-bold text-[11px] shrink-0" style={{ background: 'linear-gradient(135deg,var(--accent),var(--gold))', color: '#0A2443' }}>
+                  {initials(p.name)}
+                </span>
+                <span className="flex-1 min-w-0 truncate text-sm font-medium flex items-center gap-1.5">
+                  {p.name}
+                  {champ.has(p.learnerId) && <Crown className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--gold)' }} />}
+                  {p.learnerId === myId && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase" style={{ background: 'var(--accent)', color: '#fff' }}>You</span>}
+                </span>
+                <span className="text-sm font-bold shrink-0">{(p.totalXp || 0).toLocaleString()} XP</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <p className="text-center text-xs pb-6" style={{ color: 'var(--ink-dim)' }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { createContext, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -11,7 +11,7 @@ import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { useTour } from '@/components/guided-tour-provider';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
-import { NAV_SECTIONS, SKILL_SHOP_LINKS, ADMIN_ITEMS } from '@/components/sidebar';
+import { NAV_SECTIONS, SKILL_SHOP_LINKS, ADMIN_ITEMS, useSidebar } from '@/components/sidebar';
 
 function initials(name) {
   if (!name) return 'YOU';
@@ -104,17 +104,17 @@ function Drawer({ open, onClose }) {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — only on small screens (docked on desktop, no dimming). */}
       <div
         onClick={onClose}
         aria-hidden="true"
-        className="fixed inset-0 z-[60] transition-opacity duration-300"
+        className="fixed inset-0 z-[60] transition-opacity duration-300 lg:hidden"
         style={{ background: 'rgba(3,10,24,.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' }}
       />
-      {/* Panel */}
+      {/* Panel — docked below the top bar, slides in/out. */}
       <aside
-        className="cine fixed top-0 left-0 z-[65] h-screen w-[344px] max-w-[86vw] overflow-y-auto transition-transform duration-300"
-        style={{ transform: open ? 'translateX(0)' : 'translateX(-104%)', boxShadow: '0 0 60px -10px rgba(0,0,0,.6)', backgroundAttachment: 'scroll' }}
+        className="cine fixed top-16 left-0 z-[60] h-[calc(100dvh-4rem)] w-80 max-w-[86vw] overflow-y-auto transition-transform duration-300"
+        style={{ transform: open ? 'translateX(0)' : 'translateX(-104%)', boxShadow: '0 0 60px -10px rgba(0,0,0,.5)', backgroundAttachment: 'scroll' }}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 cine-glass" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, borderTop: 0 }}>
           <div className="flex items-center gap-2.5">
@@ -206,55 +206,46 @@ function Drawer({ open, onClose }) {
 const FrameContext = createContext(false);
 export function useInCinematicFrame() { return useContext(FrameContext); }
 
-function useDrawerState() {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') setOpen(false); }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
-  return [open, setOpen];
-}
-
-// Immersive shell — full cinematic background + ambient blobs + top bar + overlay
-// drawer + a standard <main>. Used by the bespoke (fully-redesigned) screens.
+// Immersive shell — cinematic background + top bar + docked, persistent drawer
+// (shared app-wide via useSidebar, so it stays open page to page) + a standard
+// <main>. Used by the bespoke (fully-redesigned) screens.
 export default function CinematicShell({ children }) {
   const { profile } = useProfile();
   const name = profile?.display_name || 'there';
-  const [drawerOpen, setDrawerOpen] = useDrawerState();
+  const { open, setOpen, toggle } = useSidebar();
 
   return (
     <FrameContext.Provider value={true}>
-      <div className="cine relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-24 right-0 w-[480px] h-[480px] rounded-full cine-blob1" style={{ background: 'radial-gradient(circle,rgba(59,148,255,.20),transparent 70%)' }} />
-        <div className="pointer-events-none absolute top-1/3 -left-32 w-[420px] h-[420px] rounded-full cine-blob2" style={{ background: 'radial-gradient(circle,rgba(255,183,6,.12),transparent 70%)' }} />
-
-        <TopNav name={name} onMenu={() => setDrawerOpen(true)} />
-        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-
-        <main className="relative max-w-6xl mx-auto px-6 py-10 space-y-10">
-          {children}
-        </main>
+      <div className="cine relative">
+        <TopNav name={name} onMenu={toggle} />
+        <Drawer open={open} onClose={() => setOpen(false)} />
+        <div className={`transition-[padding] duration-300 ${open ? 'lg:pl-80' : ''}`}>
+          <main className="relative max-w-6xl mx-auto px-6 py-10 space-y-10">
+            {children}
+          </main>
+        </div>
       </div>
     </FrameContext.Provider>
   );
 }
 
-// Chrome-only frame — cinematic top bar + drawer, but the page brings its own
-// (already theme-aware) content. Lets complex functional pages adopt the
-// cinematic navigation without a full rewrite. The page's own PageHeader hides
-// itself via FrameContext so there's no double bar.
+// Chrome-only frame — cinematic top bar + docked persistent drawer, but the page
+// brings its own (already theme-aware) content. Lets complex functional pages
+// adopt the cinematic navigation without a full rewrite. The page's own
+// PageHeader hides itself via FrameContext so there's no double bar.
 export function CinematicFrame({ children }) {
   const { profile } = useProfile();
   const name = profile?.display_name || 'there';
-  const [drawerOpen, setDrawerOpen] = useDrawerState();
+  const { open, setOpen, toggle } = useSidebar();
 
   return (
     <FrameContext.Provider value={true}>
       <div className="cine-frame cine-vars">
-        <TopNav name={name} onMenu={() => setDrawerOpen(true)} />
-        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-        {children}
+        <TopNav name={name} onMenu={toggle} />
+        <Drawer open={open} onClose={() => setOpen(false)} />
+        <div className={`transition-[padding] duration-300 ${open ? 'lg:pl-80' : ''}`}>
+          {children}
+        </div>
       </div>
     </FrameContext.Provider>
   );
