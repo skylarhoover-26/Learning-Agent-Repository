@@ -16,6 +16,7 @@ import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
 import { useTour } from '@/components/guided-tour-provider';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
+import { isCinematicRoute } from '@/lib/cinematic-routes';
 
 // Stable tour anchor for a nav item, derived from its href so the sidebar and
 // the guided-tour step list stay in sync (e.g. '/my-tasks' -> 'nav-my-tasks').
@@ -36,7 +37,7 @@ function SectionHeader({ title, tour }) {
   );
 }
 
-const NAV_SECTIONS = [
+export const NAV_SECTIONS = [
   {
     title: 'Learn',
     icon: BookOpen,
@@ -91,11 +92,11 @@ const NAV_SECTIONS = [
 
 // Shown only to admins. Everything now lives behind the Admin Dashboard hub, so
 // the sidebar keeps a single entry instead of a long list.
-const ADMIN_ITEMS = [
+export const ADMIN_ITEMS = [
   { href: '/admin', icon: Settings, label: 'Admin Dashboard', desc: 'People & XP, content, settings — all admin tools' },
 ];
 
-const SKILL_SHOP_LINKS = [
+export const SKILL_SHOP_LINKS = [
   {
     href: 'https://housecallpro.docebosaas.com/pages/183/ai-resources-home-page',
     label: 'AI Resources Home',
@@ -212,10 +213,9 @@ export function MenuStrip() {
   const { open, toggle } = useSidebar();
   const pathname = usePathname();
   if (isChromeHiddenRoute(pathname)) return null;
-  // Reskinned routes (cinematic) provide their own hamburger in their top bar,
-  // so the shared strip would be a duplicate there. Grow this list as the
-  // cinematic reskin rolls out to more pages.
-  if (pathname === '/') return null;
+  // Reskinned routes (cinematic) provide their own top bar + drawer, so the
+  // shared chrome would duplicate there.
+  if (isCinematicRoute(pathname)) return null;
   return (
     <div className="js-menu-strip fixed top-16 left-0 right-0 z-30 h-11 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center px-4">
       <button
@@ -239,7 +239,7 @@ export function SidebarShell({ children }) {
   const { open, setOpen } = useSidebar();
   const pathname = usePathname();
   // No nav on onboarding/auth — don't shift content or show the backdrop there.
-  const showNav = open && !isChromeHiddenRoute(pathname);
+  const showNav = open && !isChromeHiddenRoute(pathname) && !isCinematicRoute(pathname);
   return (
     <>
       {/* Small screens only: dim + tap-to-close (the panel overlays content). */}
@@ -269,8 +269,10 @@ export function SideNav() {
   } = useMenuVisibility();
 
   // The app nav shouldn't appear during onboarding or auth — those are
-  // full-screen flows with no menu until the user is set up.
+  // full-screen flows with no menu until the user is set up. Cinematic routes
+  // render their own drawer.
   if (isChromeHiddenRoute(pathname)) return null;
+  if (isCinematicRoute(pathname)) return null;
 
   // Highlight only the single most-specific matching item. Without this, a
   // parent like /admin would also light up on /admin/skill-levels. We pick the
