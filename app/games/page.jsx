@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Gamepad2, Swords, Search, Timer, Eye, ChevronRight, Clock, BarChart3, Trophy, Zap,
 } from 'lucide-react';
@@ -57,6 +58,10 @@ const GAMES = [
 const ORDERED_GAMES = sortByDifficulty(GAMES);
 
 export default function GamesHub() {
+  return <CinematicFrame><GamesHubInner /></CinematicFrame>;
+}
+
+function GamesHubInner() {
   const [allStats, setAllStats] = useState({});
 
   useEffect(() => {

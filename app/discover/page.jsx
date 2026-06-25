@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { sortByDifficulty } from '@/lib/difficulty';
 import {
@@ -258,6 +259,10 @@ function DiscoverContent() {
 }
 
 export default function DiscoverPage() {
+  return <CinematicFrame><DiscoverPageInner /></CinematicFrame>;
+}
+
+function DiscoverPageInner() {
   return (
     <Suspense fallback={<div className="max-w-5xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
       <DiscoverContent />

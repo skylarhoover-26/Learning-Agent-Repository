@@ -3,12 +3,17 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { FileText, Search, X, Copy, Check, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
 import { PROMPTS, CATEGORIES, DEPARTMENTS } from '@/lib/prompts-data';
 import { useProfile } from '@/components/profile-provider';
 import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
 
 export default function PromptsPage() {
+  return <CinematicFrame><PromptsPageInner /></CinematicFrame>;
+}
+
+function PromptsPageInner() {
   const { profile } = useProfile();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');

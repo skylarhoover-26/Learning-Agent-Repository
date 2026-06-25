@@ -1,9 +1,14 @@
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import UseCaseLibrary from '@/components/use-case-library';
 import { Library } from 'lucide-react';
 
 // The Use Case Library is its own screen (split out from /discover).
 export default function LibraryPage() {
+  return <CinematicFrame><LibraryPageInner /></CinematicFrame>;
+}
+
+function LibraryPageInner() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={Library} title="Library" subtitle="Browse what AI can actually do for your work" />

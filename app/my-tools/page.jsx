@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProfile } from '@/components/profile-provider';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { chosenTools, serializeTools, toolKey, normalizeTool } from '@/lib/ai-tools';
@@ -11,6 +12,10 @@ import { PanelsTopLeft, Check, Star, Plus, ExternalLink } from 'lucide-react';
 // with one "primary" (the tool the coach opens by default). Saved to the
 // profile as `preferred_tools`.
 export default function MyToolsPage() {
+  return <CinematicFrame><MyToolsPageInner /></CinematicFrame>;
+}
+
+function MyToolsPageInner() {
   const { profile, updateProfile } = useProfile() || {};
   const { catalog } = useToolCatalog();
   const [set, setSet] = useState([]);

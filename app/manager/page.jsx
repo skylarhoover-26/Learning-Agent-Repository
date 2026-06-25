@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '../../components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   BarChart3, Users, BookOpen, TrendingUp, Award, Activity,
   Search, Loader2, Mail, Building2, XCircle, Check, X,
@@ -450,6 +451,10 @@ function DimensionCells({ selfScore, managerScore, rating, pendingValue, onPendi
 }
 
 export default function ManagerDashboard() {
+  return <CinematicFrame><ManagerDashboardInner /></CinematicFrame>;
+}
+
+function ManagerDashboardInner() {
   const [teamData, setTeamData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

@@ -8,6 +8,7 @@ import {
   Building2, Briefcase, Plus, Pencil, X, Loader2,
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
 import AvatarLocker from '@/components/avatar-locker';
@@ -36,6 +37,10 @@ function formatDate(isoString) {
 }
 
 export default function ProfilePage() {
+  return <CinematicFrame><ProfilePageInner /></CinematicFrame>;
+}
+
+function ProfilePageInner() {
   const router = useRouter();
   const { profile: ctxProfile, updateProfile, isLoading: profileLoading } = useProfile();
   const { championIds } = useChampions();
