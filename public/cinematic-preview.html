@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:#EAF0FB;font-family:'Open Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+::selection{background:rgba(0,85,255,.18);}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+@keyframes spinSlow{to{transform:rotate(360deg);}}
+@keyframes spinRev{to{transform:rotate(-360deg);}}
+@keyframes floatA{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+@keyframes floatB{0%,100%{transform:translateY(0);}50%{transform:translateY(16px);}}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(60px,-40px) scale(1.12);}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-70px,50px) scale(1.18);}}
+@keyframes pulseGlow{0%,100%{opacity:.55;transform:scale(1);}50%{opacity:1;transform:scale(1.06);}}
+@keyframes sheen{0%{transform:translateX(-120%) skewX(-18deg);}100%{transform:translateX(220%) skewX(-18deg);}}
+@keyframes rise{from{opacity:0;transform:translateY(34px);}to{opacity:1;transform:translateY(0);}}
+@keyframes twinkle{0%,100%{opacity:.2;}50%{opacity:.9;}}
+@keyframes gradFlow{0%{background-position:0% 50%;}100%{background-position:200% 50%;}}
+@keyframes ringDraw{from{stroke-dashoffset:760;}}
+@keyframes confFall{to{transform:translate(var(--cx),120vh) rotate(var(--cr));opacity:0;}}
+@keyframes xpPop{0%{opacity:0;transform:translateY(20px) scale(.8);}30%{opacity:1;transform:translateY(-6px) scale(1.05);}100%{opacity:1;transform:translateY(-14px) scale(1);}}
+@keyframes courseIn{from{transform:translateY(46px);}to{transform:translateY(0);}}
+@keyframes badgeFloat{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-7px) rotate(1.5deg);}}
+@keyframes icoFlagWave{0%,100%{transform:rotate(-2deg) skewX(0deg);}50%{transform:rotate(2deg) skewX(-9deg);}}
+@keyframes icoFlicker{0%,100%{transform:scale(1,1) translateY(0);}25%{transform:scale(.95,1.09) translateY(-1px);}55%{transform:scale(1.05,.93) translateY(1px);}80%{transform:scale(.98,1.04);}}
+@keyframes icoZap{0%,60%,100%{transform:translateX(0) rotate(0);}15%{transform:translateX(-1px) rotate(-5deg);}30%{transform:translateX(1px) rotate(6deg) scale(1.1);}}
+@keyframes icoPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.13);}}
+@keyframes icoBob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-3px) rotate(3deg);}}
+@keyframes icoWiggle{0%,100%{transform:rotate(-7deg);}50%{transform:rotate(7deg);}}
+@keyframes icoTwirl{0%,100%{transform:rotate(0) scale(1);}50%{transform:rotate(13deg) scale(1.1);}}
+@keyframes icoSlide{0%,100%{transform:translateX(-2px);}50%{transform:translateX(4px);}}
+.reveal{transform:translateY(32px);transition:transform .85s cubic-bezier(.16,1,.3,1);}
+.reveal.in{transform:translateY(0);}
+.lift{transition:transform .5s cubic-bezier(.16,1,.3,1),box-shadow .5s,border-color .5s,background .5s;}
+</style>
+</helmet>
+
+<div ref="{{ rootRef }}" style="{{ rootStyle }}">
+
+  <!-- AMBIENT BACKGROUND -->
+  <div style="position:fixed;inset:0;z-index:0;overflow:hidden;background:radial-gradient(120% 90% at 78% 8%, var(--bg2,#160a36) 0%, var(--bg,#07081c) 55%, var(--bg,#05060f) 100%);pointer-events:none;">
+    <div data-depth="0.5" style="position:absolute;top:-12%;left:60%;width:46vw;height:46vw;border-radius:50%;background:radial-gradient(circle, var(--accent2,#bd8cff) 0%, transparent 65%);opacity:.34;filter:blur(36px);animation:drift1 22s ease-in-out infinite;"></div>
+    <div data-depth="0.85" style="position:absolute;top:30%;left:-10%;width:42vw;height:42vw;border-radius:50%;background:radial-gradient(circle, var(--accent,#5b8cff) 0%, transparent 65%);opacity:.3;filter:blur(40px);animation:drift2 26s ease-in-out infinite;"></div>
+    <div data-depth="0.35" style="position:absolute;bottom:-18%;left:40%;width:40vw;height:40vw;border-radius:50%;background:radial-gradient(circle, var(--gold,#ffc24b) 0%, transparent 60%);opacity:.16;filter:blur(50px);animation:drift1 30s ease-in-out infinite;"></div>
+    <div style="position:absolute;inset:0;background-image:radial-gradient(1.4px 1.4px at 12% 18%, var(--accent,#3B94FF) 50%, transparent), radial-gradient(1.2px 1.2px at 72% 28%, var(--accent,#3B94FF) 50%, transparent), radial-gradient(1.6px 1.6px at 44% 62%, var(--accent,#3B94FF) 50%, transparent), radial-gradient(1.1px 1.1px at 86% 72%, var(--accent,#3B94FF) 50%, transparent), radial-gradient(1.3px 1.3px at 28% 84%, var(--accent,#3B94FF) 50%, transparent), radial-gradient(1px 1px at 62% 14%, var(--accent,#3B94FF) 50%, transparent);opacity:.5;animation:twinkle 6s ease-in-out infinite;"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom, transparent 60%, var(--bg,#05060f) 100%);"></div>
+  </div>
+
+  <!-- LEFT: MENU + LOGO -->
+  <div style="position:fixed;top:22px;left:22px;z-index:85;display:flex;align-items:center;gap:2px;padding:7px 16px 7px 7px;border-radius:16px;background:var(--navbg,rgba(20,16,46,.55));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line,rgba(255,255,255,.12));box-shadow:0 18px 50px -18px rgba(0,0,0,.45);">
+    <button onClick="{{ openNav }}" title="Open menu" class="lift" style="display:grid;place-items:center;width:40px;height:40px;border-radius:12px;border:none;background:transparent;cursor:pointer;color:var(--ink,#fff);" style-hover="background:rgba(120,150,255,.16);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent,#0055FF),var(--accent2,#3B94FF));display:grid;place-items:center;box-shadow:0 0 18px -2px var(--accent,#0055FF);margin-left:4px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 6.8L21 11l-6.6 2.2L12 20l-2.4-6.8L3 11l6.6-2.2z" fill="#fff"/></svg>
+    </div>
+    <div style="line-height:1;margin-left:9px;">
+      <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:14px;color:var(--ink,#fff);letter-spacing:-.01em;">AI Coach</div>
+      <div style="font-size:9px;letter-spacing:.16em;color:var(--ink-dim,rgba(255,255,255,.5));text-transform:uppercase;">Housecall Pro</div>
+    </div>
+  </div>
+
+  <!-- CENTER: VIEW TABS + THEME (dashboard only) -->
+  <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+  <nav style="position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:55;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:var(--navbg,rgba(20,16,46,.55));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line,rgba(255,255,255,.12));box-shadow:0 18px 50px -18px rgba(0,0,0,.45);">
+    <div style="display:flex;gap:2px;">
+      <button onClick="{{ goDash }}" class="lift" style="{{ navDashStyle }}">Dashboard</button>
+      <button onClick="{{ goCourse }}" class="lift" style="{{ navCourseStyle }}">Course</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;padding-left:8px;margin-left:2px;border-left:1px solid var(--line,rgba(255,255,255,.12));">
+      <sc-for list="{{ moods }}" as="m" hint-placeholder-count="2">
+        <button onClick="{{ m.set }}" title="{{ m.name }}" class="lift" style="{{ m.dot }}"></button>
+      </sc-for>
+    </div>
+  </nav>
+  </sc-if>
+
+  <!-- RIGHT: HOME + NOTIFICATIONS + PROFILE -->
+  <div style="position:fixed;top:22px;right:22px;z-index:85;display:flex;align-items:center;gap:4px;padding:6px 8px 6px 6px;border-radius:999px;background:var(--navbg,rgba(20,16,46,.55));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line,rgba(255,255,255,.12));box-shadow:0 18px 50px -18px rgba(0,0,0,.45);">
+    <button onClick="{{ goDash }}" title="Home" class="lift" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:none;background:transparent;cursor:pointer;color:var(--ink,#fff);font-family:'Plus Jakarta Sans';font-weight:600;font-size:14px;" style-hover="background:rgba(120,150,255,.16);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      Home
+    </button>
+    <button onClick="{{ toggleNotif }}" title="Notifications" class="lift" style="position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:none;background:transparent;cursor:pointer;color:var(--ink,#fff);" style-hover="background:rgba(120,150,255,.16);">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+      <span style="position:absolute;top:7px;right:9px;width:9px;height:9px;border-radius:50%;background:var(--gold,#FFB706);box-shadow:0 0 0 2px var(--navbg,#0A2443),0 0 8px var(--gold,#FFB706);"></span>
+    </button>
+    <button onClick="{{ toggleProfile }}" title="Brian Wells" class="lift" style="display:inline-flex;align-items:center;gap:9px;height:40px;padding:0 7px 0 14px;border-radius:999px;border:none;background:transparent;cursor:pointer;color:var(--ink,#fff);" style-hover="background:rgba(120,150,255,.16);">
+      <span style="font-family:'Plus Jakarta Sans';font-weight:600;font-size:14px;">Brian Wells</span>
+      <span style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold,#FFB706),var(--accent,#0055FF));display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;color:#0A2443;box-shadow:0 0 14px -3px var(--gold,#FFB706);">BW</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{ chevStyle }}"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+  </div>
+
+  <!-- POPOVER CLICK-CATCHER -->
+  <div onClick="{{ closePops }}" style="{{ popOverlayStyle }}"></div>
+
+  <!-- NOTIFICATIONS PANEL -->
+  <div style="{{ notifStyle }}">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 13px;border-bottom:1px solid var(--line,rgba(255,255,255,.1));">
+      <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;color:var(--ink,#fff);">Notifications</span>
+      <span class="lift" style="font-size:12px;color:var(--accent,#0055FF);cursor:pointer;font-weight:600;">Mark all read</span>
+    </div>
+    <div style="max-height:330px;overflow-y:auto;padding:6px;">
+      <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="3">
+        <div class="lift" style="display:flex;gap:12px;padding:11px 12px;border-radius:12px;cursor:pointer;" style-hover="background:rgba(120,150,255,.1);">
+          <span style="{{ n.chip }}">{{ n.icon }}</span>
+          <span style="flex:1;min-width:0;">
+            <span style="display:block;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:600;color:var(--ink,#fff);line-height:1.3;">{{ n.title }}</span>
+            <span style="display:block;font-family:'Open Sans',sans-serif;font-size:12px;color:var(--ink-dim,rgba(255,255,255,.5));margin-top:3px;">{{ n.time }}</span>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- PROFILE PANEL -->
+  <div style="{{ profileStyle }}">
+    <div style="display:flex;align-items:center;gap:12px;padding:18px;border-bottom:1px solid var(--line,rgba(255,255,255,.1));">
+      <span style="width:42px;height:42px;border-radius:50%;flex:none;background:linear-gradient(135deg,var(--gold,#FFB706),var(--accent,#0055FF));display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;color:#0A2443;box-shadow:0 0 14px -3px var(--gold,#FFB706);">BW</span>
+      <span style="min-width:0;">
+        <span style="display:block;font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;color:var(--ink,#fff);">Brian Wells</span>
+        <span style="display:block;font-family:'Open Sans',sans-serif;font-size:12px;color:var(--ink-dim,rgba(255,255,255,.55));margin-top:2px;">Practitioner · Level 2</span>
+      </span>
+    </div>
+    <div style="padding:6px;">
+      <button class="lift" onClick="{{ closePops }}" style="{{ profRow }}" style-hover="background:rgba(120,150,255,.12);"><span style="display:grid;place-items:center;width:20px;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>Profile</button>
+      <button class="lift" onClick="{{ closePops }}" style="{{ profRow }}" style-hover="background:rgba(120,150,255,.12);"><span style="display:grid;place-items:center;width:20px;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="3.2"/><path d="M3.5 20a6.5 6.5 0 0 1 11-4.7"/><circle cx="18" cy="17" r="2.4"/><path d="M18 13.6v1M18 19.4v1M21 17h-1M16 17h-1"/></svg></span>My Role</button>
+      <button class="lift" onClick="{{ closePops }}" style="{{ profRow }}" style-hover="background:rgba(120,150,255,.12);"><span style="display:grid;place-items:center;width:20px;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M3 9h6"/></svg></span>My AI Tools</button>
+      <button class="lift" onClick="{{ closePops }}" style="{{ profRow }}" style-hover="background:rgba(120,150,255,.12);"><span style="display:grid;place-items:center;width:20px;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/></svg></span>My Tasks</button>
+      <button class="lift" onClick="{{ closePops }}" style="{{ profRow }}" style-hover="background:rgba(120,150,255,.12);"><span style="display:grid;place-items:center;width:20px;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></span>Projects</button>
+    </div>
+    <div style="padding:6px;border-top:1px solid var(--line,rgba(255,255,255,.1));">
+      <button class="lift" onClick="{{ closePops }}" style="{{ profRow }}" style-hover="background:rgba(120,150,255,.12);"><span style="display:grid;place-items:center;width:20px;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.5"/></svg></span>Preview as user</button>
+    </div>
+    <div style="padding:6px;border-top:1px solid var(--line,rgba(255,255,255,.1));">
+      <button class="lift" onClick="{{ closePops }}" style="{{ profRowDanger }}" style-hover="background:rgba(229,84,75,.1);"><span style="display:grid;place-items:center;width:20px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h9"/><path d="M11 12h9M17 8l4 4-4 4"/></svg></span>Log out</button>
+    </div>
+  </div>
+
+  <!-- LEFT NAV DRAWER -->
+  <div onClick="{{ closeNav }}" style="{{ scrimStyle }}"></div>
+  <aside style="{{ drawerStyle }}">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 16px 14px 18px;border-bottom:1px solid var(--line,rgba(255,255,255,.1));flex:none;">
+      <span style="font-family:'Open Sans',sans-serif;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.55));font-weight:700;">Menu</span>
+      <button onClick="{{ closeNav }}" title="Close" class="lift" style="display:grid;place-items:center;width:34px;height:34px;border-radius:9px;border:none;background:transparent;cursor:pointer;color:var(--ink-dim,rgba(255,255,255,.6));" style-hover="background:rgba(120,150,255,.14);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:8px 10px 30px;">
+      <sc-for list="{{ navSections }}" as="sec" hint-placeholder-count="5">
+        <sc-if value="{{ sec.label }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:'Open Sans',sans-serif;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.5));font-weight:700;margin:20px 13px 6px;">{{ sec.label }}</div>
+        </sc-if>
+        <sc-for list="{{ sec.items }}" as="it" hint-placeholder-count="4">
+          <button onClick="{{ it.click }}" class="lift" style="{{ it.style }}" style-hover="background:rgba(120,150,255,.12);">
+            <span style="{{ it.iconStyle }}">{{ it.icon }}</span>
+            <span style="flex:1;">{{ it.name }}</span>
+          </button>
+        </sc-for>
+      </sc-for>
+
+      <div style="font-family:'Open Sans',sans-serif;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.5));font-weight:700;margin:20px 13px 6px;">Settings</div>
+      <button onClick="{{ toggleTheme }}" class="lift" style="display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:11px 13px;border-radius:11px;border:none;cursor:pointer;background:transparent;color:var(--ink,#fff);font-family:'Open Sans',sans-serif;" style-hover="background:rgba(120,150,255,.12);">
+        <span style="display:grid;place-items:center;width:22px;flex:none;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 0 1 11.2 3a7 7 0 1 0 9.8 9.8z"/></svg></span>
+        <span style="flex:1;"><span style="display:block;font-weight:600;font-size:15px;">Dark mode</span><span style="display:block;font-size:12px;color:var(--ink-dim,rgba(255,255,255,.55));margin-top:2px;">Switch the app's appearance</span></span>
+        <span style="{{ themeTrack }}"><span style="{{ themeKnob }}"></span></span>
+      </button>
+      <button class="lift" onClick="{{ goTour }}" style="display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:11px 13px;border-radius:11px;border:none;cursor:pointer;background:transparent;color:var(--ink,#fff);font-family:'Open Sans',sans-serif;font-weight:600;font-size:15px;" style-hover="background:rgba(120,150,255,.12);">
+        <span style="display:grid;place-items:center;width:22px;flex:none;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5l11 7-11 7z"/></svg></span>
+        <span style="flex:1;">Tour</span>
+      </button>
+      <div style="display:flex;align-items:center;gap:13px;width:100%;padding:11px 13px;border-radius:11px;">
+        <span style="display:grid;place-items:center;width:22px;flex:none;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5a4 4 0 0 1 0 5"/><path d="M19.5 7a7 7 0 0 1 0 10"/></svg></span>
+        <span style="flex:1;font-family:'Open Sans',sans-serif;font-weight:600;font-size:15px;color:var(--ink,#fff);">Voice</span>
+        <select style="padding:7px 10px;border-radius:10px;border:1px solid var(--line,rgba(255,255,255,.14));background:var(--glass,rgba(255,255,255,.06));color:var(--ink,#fff);font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
+          <option>Nova</option><option>Atlas</option><option>Sol</option><option>Echo</option>
+        </select>
+      </div>
+
+      <div style="font-family:'Open Sans',sans-serif;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.5));font-weight:700;margin:20px 13px 6px;">Admin</div>
+      <button onClick="{{ closeNav }}" class="lift" style="display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:11px 13px;border-radius:11px;border:none;cursor:pointer;background:transparent;color:var(--ink,#fff);font-family:'Open Sans',sans-serif;font-weight:600;font-size:15px;" style-hover="background:rgba(120,150,255,.12);">
+        <span style="display:grid;place-items:center;width:22px;flex:none;color:var(--ink-dim,rgba(255,255,255,.55));"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span>
+        <span style="flex:1;">Admin Dashboard</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <main id="dash" style="position:relative;z-index:10;max-width:1180px;margin:0 auto;padding:104px 32px 120px;">
+
+    <!-- HERO -->
+    <section style="display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;">
+      <div>
+        <div class="reveal" style="display:inline-flex;align-items:center;gap:8px;padding:6px 13px;border-radius:999px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.12));font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.6));margin-bottom:24px;transition-delay:.02s;">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--good,#4fe6b0);box-shadow:0 0 10px var(--good,#4fe6b0);"></span>6-day streak · Practitioner
+        </div>
+        <h1 class="reveal" style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(48px,6.6vw,92px);line-height:.94;letter-spacing:-.035em;margin:0;color:var(--ink,#fff);transition-delay:.08s;">
+          Welcome back,<br><span style="background:linear-gradient(110deg,var(--accent,#5b8cff),var(--accent2,#bd8cff),var(--gold,#ffc24b),var(--accent,#5b8cff));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradFlow 7s linear infinite;">Brian.</span>
+        </h1>
+        <p style="font-size:18px;line-height:1.55;color:var(--ink-dim,rgba(255,255,255,.62));max-width:440px;margin:22px 0 34px;transition-delay:.16s;" class="reveal">
+          You're <b style="color:var(--ink,#fff);">135 XP</b> from <b style="color:var(--ink,#fff);">Level 3</b>. One lesson stands between you and your next badge.
+        </p>
+        <div class="reveal" style="display:flex;gap:14px;flex-wrap:wrap;transition-delay:.24s;">
+          <button onClick="{{ goCourse }}" class="lift" style="position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:12px;padding:18px 26px;border-radius:16px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent,#5b8cff),var(--accent2,#bd8cff));color:#fff;font-family:'Plus Jakarta Sans';font-weight:600;font-size:16px;box-shadow:0 22px 50px -20px var(--accent,#5b8cff);">
+            <span style="position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:sheen 3.4s ease-in-out infinite;"></span>
+            <span style="position:relative;">Resume — Prompt Engineering</span>
+            <svg style="position:relative;" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="lift" style="padding:18px 24px;border-radius:16px;cursor:pointer;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.14));color:var(--ink,#fff);font-family:'Plus Jakarta Sans';font-weight:600;font-size:16px;" style-hover="background:rgba(255,255,255,.12);">Explore courses</button>
+        </div>
+      </div>
+
+      <!-- ORBITAL PROGRESS ECOSYSTEM -->
+      <div data-depth="1.6" class="reveal" style="display:grid;place-items:center;transition-delay:.2s;">
+        <div data-tilt style="position:relative;width:min(440px,86vw);">
+
+          <!-- LIVE PREVIEW PANEL -->
+          <div style="position:relative;margin-bottom:22px;padding:20px 22px;border-radius:20px;background:var(--glass,rgba(255,255,255,.06));border:1px solid var(--line,rgba(255,255,255,.12));backdrop-filter:blur(14px);box-shadow:0 24px 60px -34px rgba(0,0,0,.6);min-height:152px;">
+            <div style="display:flex;align-items:center;gap:13px;">
+              <span style="{{ stairActive.badgeStyle }}">{{ stairActive.badgeLabel }}</span>
+              <div style="min-width:0;">
+                <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:22px;letter-spacing:-.01em;color:var(--ink,#fff);line-height:1.1;">{{ stairActive.name }}</div>
+                <div style="font-size:12px;letter-spacing:.02em;color:{{ stairActive.metaColor }};font-weight:600;margin-top:4px;">{{ stairActive.meta }}</div>
+              </div>
+            </div>
+            <p style="font-size:14px;line-height:1.5;color:var(--ink-dim,rgba(255,255,255,.62));margin:14px 0 0;">{{ stairActive.desc }}</p>
+            <sc-if value="{{ stairActive.cta }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ stairActive.click }}" class="lift" style="margin-top:16px;display:inline-flex;align-items:center;gap:9px;padding:11px 18px;border-radius:12px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent,#5b8cff),var(--accent2,#bd8cff));color:#fff;font-family:'Plus Jakarta Sans';font-weight:600;font-size:14px;box-shadow:0 16px 34px -16px var(--accent,#5b8cff);" style-hover="transform:translateY(-2px);">
+                {{ stairActive.cta }}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </sc-if>
+          </div>
+
+          <!-- INTERACTIVE STAIRCASE -->
+          <div style="position:relative;display:flex;align-items:flex-end;justify-content:center;gap:9px;height:292px;padding-top:60px;">
+            <sc-for list="{{ stairSteps }}" as="st" hint-placeholder-count="5">
+              <div onClick="{{ st.click }}" onMouseEnter="{{ st.enter }}" onMouseLeave="{{ st.leave }}" style="{{ st.colStyle }}" style-hover="transform:translateY(-7px);">
+                <sc-if value="{{ st.isCurrent }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;top:-56px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px;white-space:nowrap;animation:floatA 5s ease-in-out infinite;">
+                    <span style="padding:3px 9px;border-radius:999px;background:var(--accent,#0055FF);color:#fff;font-family:'Plus Jakarta Sans';font-weight:700;font-size:9px;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 0 16px var(--accent,#0055FF);">You're here</span>
+                    <span style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold,#FFB706),var(--accent,#0055FF));display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:12px;color:#0A2443;box-shadow:0 6px 16px -4px rgba(0,0,0,.5);border:2px solid var(--bg,#07081c);">BW</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ st.isNext }}" hint-placeholder-val="{{ false }}">
+                  <div title="Your next milestone" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);animation:badgeFloat 4s ease-in-out infinite;">
+                    <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#FFD24D,#FFB706);color:#0A2443;box-shadow:0 8px 20px -6px var(--gold,#FFB706);">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3v18M6 4h11l-2 3.5L17 11H6z"/></svg>
+                    </span>
+                  </div>
+                </sc-if>
+                <span style="{{ st.numStyle }}">{{ st.num }}</span>
+                <span style="{{ st.iconStyle }}">{{ st.icon }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+        </div>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <sc-for list="{{ heroStats }}" as="s" hint-placeholder-count="3">
+            <div class="lift" title="{{ s.hint }}" style="display:flex;align-items:center;gap:10px;text-align:left;padding:12px 16px;border-radius:14px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.1));backdrop-filter:blur(10px);cursor:default;" style-hover="transform:translateY(-4px);border-color:var(--accent,rgba(91,140,255,.5));">
+              <span style="flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:{{ s.chip }};color:{{ s.ink }};box-shadow:0 0 12px {{ s.chip }};">{{ s.icon }}</span>
+              <div>
+                <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:22px;line-height:1;color:var(--ink,#fff);">{{ s.value }}</div>
+                <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.5));margin-top:4px;">{{ s.label }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- DISCOVER BANNER -->
+    <section class="reveal" style="margin-top:70px;">
+      <div data-tilt style="position:relative;overflow:hidden;border-radius:28px;padding:54px 48px;background:linear-gradient(125deg,var(--accent,#5b8cff),var(--accent2,#bd8cff));box-shadow:0 40px 90px -40px var(--accent,rgba(91,140,255,.8));">
+        <div style="position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent),radial-gradient(1px 1px at 70% 60%, #fff 50%, transparent),radial-gradient(1.5px 1.5px at 85% 25%, #fff 50%, transparent);opacity:.35;"></div>
+        <div data-depth="0.6" style="position:absolute;top:-40%;right:-6%;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.4),transparent 65%);"></div>
+        <div style="position:relative;max-width:560px;">
+          <div style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:rgba(255,255,255,.18);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#fff;font-weight:600;margin-bottom:18px;">Discover</div>
+          <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(30px,4vw,52px);line-height:1;letter-spacing:-.03em;margin:0 0 14px;color:#fff;">Find AI for your actual work.</h2>
+          <p style="font-size:17px;line-height:1.5;color:rgba(255,255,255,.85);margin:0 0 26px;">Tell the coach what your day looks like — it surfaces specific, usable AI moves for your real workflow, not generic ideas.</p>
+          <button class="lift" style="display:inline-flex;align-items:center;gap:10px;padding:16px 24px;border-radius:14px;border:none;cursor:pointer;background:var(--gold,#FFB706);color:#0A2443;font-family:'Plus Jakarta Sans';font-weight:600;font-size:15px;" style-hover="transform:translateY(-3px);">
+            Discover what AI can do for you
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#0A2443" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+    <!-- WAYS TO LEARN -->
+    <section class="reveal" style="margin-top:64px;">
+      <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(28px,3.4vw,44px);letter-spacing:-.03em;margin:0 0 26px;color:var(--ink,#fff);">Ways to learn</h2>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;">
+        <sc-for list="{{ modes }}" as="c" hint-placeholder-count="5">
+          <div onClick="{{ c.click }}" data-tilt class="lift" style="position:relative;overflow:hidden;padding:24px 22px 26px;border-radius:20px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.1));backdrop-filter:blur(12px);cursor:pointer;min-height:178px;display:flex;flex-direction:column;justify-content:space-between;" style-hover="transform:translateY(-8px);border-color:var(--accent,rgba(91,140,255,.55));box-shadow:0 28px 60px -28px var(--accent,rgba(91,140,255,.7));">
+            <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,{{ c.glow }},transparent 70%);opacity:.5;"></div>
+            <div style="position:relative;width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,{{ c.glow }},transparent);border:1px solid var(--line,rgba(255,255,255,.16));color:var(--ink,#fff);">{{ c.icon }}</div>
+            <div style="position:relative;">
+              <div style="font-family:'Plus Jakarta Sans';font-weight:600;font-size:19px;color:var(--ink,#fff);">{{ c.title }}</div>
+              <div style="font-size:13px;color:var(--ink-dim,rgba(255,255,255,.55));margin-top:4px;line-height:1.4;">{{ c.desc }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- TODAY'S PICK -->
+    <section class="reveal" style="margin-top:56px;">
+      <div onClick="{{ goLesson }}" class="lift" data-tilt style="position:relative;overflow:hidden;display:flex;align-items:center;gap:22px;cursor:pointer;border-radius:22px;padding:26px 28px;background:linear-gradient(120deg, rgba(255,183,6,.15), var(--glass,rgba(255,255,255,.05)) 60%);border:1px solid rgba(255,183,6,.5);box-shadow:0 26px 60px -38px var(--gold,#FFB706);backdrop-filter:blur(12px);" style-hover="transform:translateY(-4px);box-shadow:0 34px 72px -34px var(--gold,#FFB706);">
+        <div style="position:absolute;top:-46%;right:-3%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,var(--gold,#FFB706),transparent 65%);opacity:.16;pointer-events:none;"></div>
+        <span style="flex:none;width:66px;height:66px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,#FFD24D,#FFB706);box-shadow:0 14px 30px -10px var(--gold,#FFB706);color:#0A2443;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 2l2.1 6.1L20 9.2l-6.4 1.3L11.5 17l-2.1-6.5L3 9.2l6.4-1.1z"/><path d="M19 13.5l.9 2.4 2.5.6-2.5.9L19 20l-.9-2.6-2.5-.9 2.5-.6z"/></svg>
+        </span>
+        <div style="position:relative;flex:1;min-width:0;">
+          <div style="display:inline-flex;align-items:center;gap:7px;font-family:'Open Sans',sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#b07d00;font-weight:700;margin-bottom:8px;">Today's pick · picked for you</div>
+          <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(22px,2.6vw,30px);letter-spacing:-.02em;color:var(--ink,#fff);">Try: Data Privacy</div>
+          <p style="font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.5;color:var(--ink-dim,rgba(255,255,255,.62));margin:6px 0 0;max-width:580px;">A gap in your knowledge — a focused 5-minute lesson here rounds out your AI skills. Refreshes daily at 8 AM PT.</p>
+        </div>
+        <span style="flex:none;display:inline-flex;align-items:center;gap:9px;padding:14px 22px;border-radius:14px;background:var(--gold,#FFB706);color:#0A2443;font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;box-shadow:0 14px 30px -12px var(--gold,#FFB706);">Start<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0A2443" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </section>
+
+    <!-- YOUR STATS: STREAK + LEADERBOARD -->
+    <section class="reveal" style="margin-top:70px;">
+      <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(28px,3.4vw,44px);letter-spacing:-.03em;margin:0 0 24px;color:var(--ink,#fff);">Your stats</h2>
+      <div style="display:grid;grid-template-columns:.82fr 1.18fr;gap:16px;">
+        <div style="position:relative;overflow:hidden;border-radius:22px;padding:26px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.1));backdrop-filter:blur(12px);display:flex;flex-direction:column;">
+          <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,var(--gold,#FFB706),transparent 70%);opacity:.16;"></div>
+          <div style="position:relative;display:flex;align-items:center;gap:10px;">
+            <span style="color:var(--gold,#FFB706);display:grid;place-items:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c2.4 3.8 5 5.3 5 9.3a5 5 0 0 1-10 0c0-1.7.7-3 1.8-3.9C9.7 9.4 12 8 12 2z"/></svg></span>
+            <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:18px;color:var(--ink,#fff);">Current streak</span>
+          </div>
+          <div style="position:relative;display:flex;align-items:baseline;gap:9px;margin-top:16px;">
+            <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:60px;line-height:1;color:var(--ink,#fff);">6</span>
+            <span style="font-family:'Open Sans',sans-serif;font-size:15px;color:var(--ink-dim,rgba(255,255,255,.55));">days in a row</span>
+          </div>
+          <div style="position:relative;display:flex;gap:8px;margin-top:22px;">
+            <sc-for list="{{ streakWeek }}" as="d" hint-placeholder-count="7">
+              <div style="{{ d.style }}">{{ d.l }}</div>
+            </sc-for>
+          </div>
+          <p style="position:relative;font-family:'Open Sans',sans-serif;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.55));margin:18px 0 0;">You're on a roll — one lesson today keeps it alive.</p>
+        </div>
+
+        <div style="border-radius:22px;padding:24px 22px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.1));backdrop-filter:blur(12px);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:18px;color:var(--ink,#fff);">Top learners</span>
+            <button onClick="{{ goAch }}" class="lift" style="border:none;background:transparent;cursor:pointer;font-family:'Plus Jakarta Sans';font-weight:600;font-size:13px;color:var(--accent,#0055FF);">View full leaderboard →</button>
+          </div>
+          <sc-for list="{{ leaders }}" as="l" hint-placeholder-count="5">
+            <div style="{{ l.rowStyle }}">
+              <span style="{{ l.rankBadge }}">{{ l.rank }}</span>
+              <span style="{{ l.avatar }}">{{ l.initials }}</span>
+              <span style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;">
+                <span style="font-family:'Plus Jakarta Sans';font-weight:600;font-size:15px;color:var(--ink,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ l.name }}</span>
+                <sc-if value="{{ l.you }}" hint-placeholder-val="{{ false }}">
+                  <span style="flex:none;padding:2px 9px;border-radius:999px;background:var(--accent,#0055FF);color:#fff;font-family:'Plus Jakarta Sans';font-weight:700;font-size:10px;letter-spacing:.04em;">YOU</span>
+                </sc-if>
+              </span>
+              <span style="{{ l.xpStyle }}">{{ l.xp }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- YOUR SKILLS -->
+    <section class="reveal" style="margin-top:70px;">
+      <div style="border-radius:22px;padding:28px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.1));backdrop-filter:blur(12px);">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:24px;letter-spacing:-.02em;margin:0;color:var(--ink,#fff);">Your skills</h2>
+          <button onClick="{{ goAch }}" class="lift" style="border:none;background:transparent;cursor:pointer;font-family:'Plus Jakarta Sans';font-weight:600;font-size:13px;color:var(--accent,#0055FF);">View skill graph →</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:24px;">
+          <sc-for list="{{ skillCols }}" as="c" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;">
+                <span style="{{ c.dot }}"></span>
+                <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;color:var(--ink,#fff);">{{ c.label }}</span>
+                <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.45));">{{ c.count }}</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <sc-for list="{{ c.items }}" as="it" hint-placeholder-count="2">
+                  <span style="{{ c.chipStyle }}">{{ it }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI NEWS -->
+    <section class="reveal" style="margin-top:70px;">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px;">
+        <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(28px,3.4vw,44px);letter-spacing:-.03em;margin:0;color:var(--ink,#fff);">AI news</h2>
+      </div>
+      <p style="font-family:'Open Sans',sans-serif;font-size:14px;color:var(--ink-dim,rgba(255,255,255,.55));margin:0 0 22px;">We scan AI developments daily and flag what changes your skills.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <sc-for list="{{ news }}" as="n" hint-placeholder-count="3">
+          <div onClick="{{ goLesson }}" class="lift" style="display:flex;flex-direction:column;cursor:pointer;border-radius:18px;padding:22px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.1));backdrop-filter:blur(10px);min-height:170px;" style-hover="transform:translateY(-6px);border-color:var(--accent,rgba(91,140,255,.5));">
+            <span style="{{ n.tagStyle }}">{{ n.tag }}</span>
+            <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:16px;line-height:1.3;color:var(--ink,#fff);margin-top:14px;flex:1;">{{ n.title }}</div>
+            <div style="font-family:'Open Sans',sans-serif;font-size:12px;color:var(--ink-dim,rgba(255,255,255,.5));margin-top:12px;">{{ n.source }}</div>
+            <div style="{{ n.noteStyle }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg>{{ n.note }}
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================== ACHIEVEMENTS ===================== -->
+  <div id="ach" style="{{ achStyle }}">
+    <div style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(120% 80% at 50% -8%, var(--bg2,#fff) 0%, var(--bg,#EAF0FB) 60%);">
+      <div data-depth="0.6" style="position:absolute;top:-10%;left:60%;width:38vw;height:38vw;border-radius:50%;background:radial-gradient(circle,var(--gold,#FFB706),transparent 65%);opacity:.14;filter:blur(48px);"></div>
+      <div data-depth="0.9" style="position:absolute;bottom:-14%;left:-6%;width:36vw;height:36vw;border-radius:50%;background:radial-gradient(circle,var(--accent,#0055FF),transparent 65%);opacity:.13;filter:blur(50px);"></div>
+    </div>
+
+    <!-- context bar -->
+    <div style="position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:12px;padding:9px 16px 9px 10px;border-radius:999px;background:var(--navbg,rgba(20,16,46,.6));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line,rgba(255,255,255,.14));box-shadow:0 18px 50px -18px rgba(0,0,0,.5);">
+      <button onClick="{{ goDash }}" class="lift" style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;border:none;cursor:pointer;background:transparent;color:var(--ink,#fff);font-family:'Plus Jakarta Sans';font-weight:600;font-size:13px;" style-hover="background:var(--glass,rgba(255,255,255,.1));">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Dashboard
+      </button>
+      <span style="width:1px;height:20px;background:var(--line,rgba(255,255,255,.16));"></span>
+      <div style="display:inline-flex;align-items:center;gap:9px;padding-right:6px;">
+        <span style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--gold,#FFB706),var(--accent,#0055FF));display:grid;place-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A2443" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M9 13l-2 8 5-3 5 3-2-8"/></svg></span>
+        <span style="font-family:'Plus Jakarta Sans';font-weight:600;font-size:13px;color:var(--ink,#fff);">Achievements</span>
+      </div>
+    </div>
+
+    <div style="position:relative;z-index:10;max-width:1080px;margin:0 auto;padding:116px 32px 120px;">
+      <!-- LEVEL HERO -->
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.12));border-radius:24px;padding:30px 34px;backdrop-filter:blur(12px);box-shadow:0 30px 80px -46px var(--accent,#0055FF);">
+        <div style="position:relative;width:98px;height:98px;border-radius:24px;background:linear-gradient(140deg,#FFD24D,#FFB706);display:grid;place-items:center;box-shadow:0 18px 44px -14px var(--gold,#FFB706);flex:none;">
+          <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:46px;color:#0A2443;line-height:1;">2</span>
+          <span style="position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);background:var(--accent,#0055FF);color:#fff;font-family:'Plus Jakarta Sans';font-weight:700;font-size:10px;letter-spacing:.12em;padding:3px 9px;border-radius:999px;border:2px solid var(--bg2,#fff);">LV</span>
+        </div>
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+            <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(26px,3.2vw,38px);letter-spacing:-.02em;margin:0;color:var(--ink,#fff);">Prompt Sprout</h2>
+            <span style="font-family:'Open Sans',sans-serif;font-size:14px;color:var(--ink-dim,rgba(255,255,255,.55));">Level 2 · 105 XP total</span>
+          </div>
+          <div style="margin-top:16px;display:flex;align-items:center;gap:14px;">
+            <div style="flex:1;height:10px;border-radius:999px;background:var(--line,rgba(255,255,255,.14));overflow:hidden;"><div style="height:100%;width:44%;border-radius:999px;background:linear-gradient(90deg,var(--accent,#0055FF),var(--accent2,#3B94FF),var(--gold,#FFB706));box-shadow:0 0 14px var(--accent2,rgba(59,148,255,.5));"></div></div>
+            <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.6));white-space:nowrap;">135 XP to Level 3</span>
+          </div>
+          <div style="display:flex;gap:26px;margin-top:18px;flex-wrap:wrap;">
+            <div style="font-family:'Open Sans',sans-serif;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.55));"><b style="font-family:'Plus Jakarta Sans';font-size:18px;color:var(--ink,#fff);">2/16</b> &nbsp;Badges</div>
+            <div style="font-family:'Open Sans',sans-serif;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.55));"><b style="font-family:'Plus Jakarta Sans';font-size:18px;color:var(--ink,#fff);">6</b> &nbsp;Day streak</div>
+            <div style="font-family:'Open Sans',sans-serif;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.55));"><b style="font-family:'Plus Jakarta Sans';font-size:18px;color:var(--ink,#fff);">105</b> &nbsp;Total XP</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BADGES -->
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin:44px 0 2px;">
+        <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(24px,3vw,34px);letter-spacing:-.02em;margin:0;color:var(--ink,#fff);">Badges</h2>
+        <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:14px;color:var(--accent,#0055FF);">{{ earnedTotal }} earned</span>
+      </div>
+      <p style="font-family:'Open Sans',sans-serif;font-size:14px;color:var(--ink-dim,rgba(255,255,255,.55));margin:6px 0 0;">Earn badges as you learn, build streaks, and level up.</p>
+
+      <sc-for list="{{ badgeSections }}" as="s" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;gap:12px;margin:38px 0 16px;">
+          <span style="{{ s.dot }}"></span>
+          <h3 style="font-family:'Open Sans',sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.6));font-weight:700;margin:0;">{{ s.label }}</h3>
+          <span style="flex:1;height:1px;background:var(--line,rgba(255,255,255,.1));"></span>
+          <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:12px;color:var(--ink-dim,rgba(255,255,255,.5));">{{ s.count }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+          <sc-for list="{{ s.items }}" as="b" hint-placeholder-count="4">
+            <div class="lift" style="{{ b.cardStyle }}" style-hover="transform:translateY(-6px);">
+              <div style="{{ b.medalWrap }}" style-hover="transform:scale(1.08) rotate(-4deg);">
+                <div style="{{ b.disc }}">
+                  <span style="{{ b.gloss }}"></span>
+                  <span style="{{ b.iconWrap }}" style-hover="{{ b.iconHover }}">{{ b.icon }}</span>
+                </div>
+                <sc-if value="{{ b.earned }}" hint-placeholder-val="{{ false }}">
+                  <span style="position:absolute;top:2px;right:14px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 9px #fff;animation:twinkle 2.4s ease-in-out infinite;"></span>
+                  <span style="position:absolute;bottom:12px;left:6px;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 7px #fff;animation:twinkle 2.4s ease-in-out .8s infinite;"></span>
+                  <span style="position:absolute;top:18px;left:16px;width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:0 0 6px #fff;animation:twinkle 2.4s ease-in-out 1.5s infinite;"></span>
+                </sc-if>
+                <sc-if value="{{ b.locked }}" hint-placeholder-val="{{ true }}">
+                  <span style="position:absolute;bottom:2px;right:8px;width:28px;height:28px;border-radius:50%;background:var(--bg2,#fff);border:1px solid var(--line,rgba(255,255,255,.18));display:grid;place-items:center;color:var(--ink-dim,rgba(255,255,255,.5));box-shadow:0 4px 12px -4px rgba(0,0,0,.35);">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                  </span>
+                </sc-if>
+              </div>
+              <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;color:var(--ink,#fff);margin-top:15px;text-align:center;">{{ b.name }}</div>
+              <div style="font-family:'Open Sans',sans-serif;font-size:12px;color:var(--ink-dim,rgba(255,255,255,.55));margin-top:4px;text-align:center;line-height:1.35;">{{ b.req }}</div>
+              <sc-if value="{{ b.earned }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ b.pill }}">✓ Earned</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+
+      <!-- RECENT XP -->
+      <div style="display:flex;align-items:center;gap:10px;margin:48px 0 16px;">
+        <span style="display:grid;place-items:center;color:var(--accent,#0055FF);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg></span>
+        <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:22px;letter-spacing:-.02em;margin:0;color:var(--ink,#fff);">Recent XP</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <sc-for list="{{ recentXp }}" as="x" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.12));border-radius:16px;padding:16px 22px;backdrop-filter:blur(10px);">
+            <div style="min-width:0;">
+              <div style="font-family:'Plus Jakarta Sans';font-weight:600;font-size:15px;color:var(--ink,#fff);">{{ x.label }}</div>
+              <div style="font-family:'Open Sans',sans-serif;font-size:12px;color:var(--ink-dim,rgba(255,255,255,.5));margin-top:2px;">{{ x.date }}</div>
+            </div>
+            <span style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:16px;color:var(--gold,#FFB706);white-space:nowrap;">{{ x.xp }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LESSON CHOOSER ===================== -->
+  <div id="lesson" style="{{ lessonStyle }}">
+    <div style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(120% 80% at 50% -8%, var(--bg2,#fff) 0%, var(--bg,#EAF0FB) 60%);">
+      <div data-depth="0.6" style="position:absolute;top:-12%;left:62%;width:40vw;height:40vw;border-radius:50%;background:radial-gradient(circle,var(--accent,#0055FF),transparent 65%);opacity:.16;filter:blur(46px);"></div>
+      <div data-depth="0.9" style="position:absolute;bottom:-16%;left:-8%;width:38vw;height:38vw;border-radius:50%;background:radial-gradient(circle,var(--gold,#FFB706),transparent 65%);opacity:.12;filter:blur(50px);"></div>
+    </div>
+
+    <!-- context bar -->
+    <div style="position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:12px;padding:9px 16px 9px 10px;border-radius:999px;background:var(--navbg,rgba(20,16,46,.6));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line,rgba(255,255,255,.14));box-shadow:0 18px 50px -18px rgba(0,0,0,.5);">
+      <button onClick="{{ goDash }}" class="lift" style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;border:none;cursor:pointer;background:transparent;color:var(--ink,#fff);font-family:'Plus Jakarta Sans';font-weight:600;font-size:13px;" style-hover="background:var(--glass,rgba(255,255,255,.1));">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Dashboard
+      </button>
+      <span style="width:1px;height:20px;background:var(--line,rgba(255,255,255,.16));"></span>
+      <div style="display:inline-flex;align-items:center;gap:9px;padding-right:6px;">
+        <span style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent,#0055FF),var(--accent2,#3B94FF));display:grid;place-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7v14H4z"/><path d="M13 5h7v14h-7z"/></svg></span>
+        <span style="font-family:'Plus Jakarta Sans';font-weight:600;font-size:13px;color:var(--ink,#fff);">New lesson</span>
+      </div>
+    </div>
+
+    <div style="position:relative;z-index:10;max-width:1080px;margin:0 auto;padding:120px 32px 170px;">
+      <!-- hero -->
+      <div style="text-align:center;margin-bottom:48px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 15px;border-radius:999px;background:var(--glass,rgba(255,255,255,.06));border:1px solid var(--line,rgba(255,255,255,.14));font-family:'Open Sans',sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent,#0055FF);font-weight:700;margin-bottom:22px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Create a lesson
+        </div>
+        <h1 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(38px,5.4vw,68px);line-height:1;letter-spacing:-.035em;margin:0;color:var(--ink,#fff);">What do you want to <span style="background:linear-gradient(110deg,var(--accent,#0055FF),var(--accent2,#3B94FF),var(--gold,#FFB706));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradFlow 7s linear infinite;">learn?</span></h1>
+        <p style="font-family:'Open Sans',sans-serif;font-size:17px;line-height:1.5;color:var(--ink-dim,rgba(255,255,255,.62));max-width:480px;margin:18px auto 0;">Set the depth, choose how you learn, pick a topic — we generate it instantly.</p>
+      </div>
+
+      <!-- step 1: depth -->
+      <div style="display:flex;align-items:center;gap:12px;margin:0 0 18px;">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent,#0055FF);color:#fff;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;flex:none;">1</span>
+        <span style="font-family:'Open Sans',sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.55));font-weight:700;">How deep do you want to go?</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+        <sc-for list="{{ depths }}" as="d" hint-placeholder-count="4">
+          <button onClick="{{ d.set }}" class="lift" style="{{ d.cardStyle }}" style-hover="transform:translateY(-5px);">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="{{ d.iconChip }}">{{ d.icon }}</span>
+              <span style="font-family:'Open Sans',sans-serif;font-size:12px;font-weight:700;color:var(--ink-dim,rgba(255,255,255,.6));background:var(--glass,rgba(255,255,255,.06));border:1px solid var(--line,rgba(255,255,255,.14));padding:4px 10px;border-radius:999px;white-space:nowrap;">{{ d.time }}</span>
+            </div>
+            <div>
+              <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:18px;color:var(--ink,#fff);">{{ d.title }}</div>
+              <div style="font-family:'Open Sans',sans-serif;font-size:13px;line-height:1.45;color:var(--ink-dim,rgba(255,255,255,.55));margin-top:6px;">{{ d.desc }}</div>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+
+      <!-- step 2: format -->
+      <div style="display:flex;align-items:center;gap:12px;margin:42px 0 18px;">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent,#0055FF);color:#fff;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;flex:none;">2</span>
+        <span style="font-family:'Open Sans',sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.55));font-weight:700;">How do you want to learn?</span>
+      </div>
+      <div style="display:inline-flex;gap:4px;padding:5px;border-radius:999px;background:var(--glass,rgba(255,255,255,.06));border:1px solid var(--line,rgba(255,255,255,.14));">
+        <sc-for list="{{ formats }}" as="f" hint-placeholder-count="2">
+          <button onClick="{{ f.set }}" class="lift" style="{{ f.style }}">
+            <span style="display:grid;place-items:center;">{{ f.icon }}</span>{{ f.label }}
+          </button>
+        </sc-for>
+      </div>
+      <p style="font-family:'Open Sans',sans-serif;font-size:14px;color:var(--ink-dim,rgba(255,255,255,.55));margin:14px 0 0;">{{ formatHint }}</p>
+
+      <!-- step 3: topic -->
+      <div style="display:flex;align-items:center;gap:12px;margin:42px 0 18px;">
+        <span style="width:26px;height:26px;border-radius:50%;background:var(--accent,#0055FF);color:#fff;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;flex:none;">3</span>
+        <span style="font-family:'Open Sans',sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.55));font-weight:700;">Pick a topic</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+        <sc-for list="{{ topics }}" as="t" hint-placeholder-count="6">
+          <button onClick="{{ t.set }}" class="lift" style="{{ t.style }}" style-hover="transform:translateY(-4px);">
+            <span style="{{ t.chip }}">{{ t.icon }}</span>
+            <span style="flex:1;min-width:0;text-align:left;">
+              <span style="display:block;font-family:'Plus Jakarta Sans';font-weight:700;font-size:16px;color:var(--ink,#fff);">{{ t.title }}</span>
+              <span style="display:block;font-family:'Open Sans',sans-serif;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.55));margin-top:3px;line-height:1.4;">{{ t.desc }}</span>
+            </span>
+            <span style="{{ t.arrowStyle }}">{{ t.arrowIcon }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:26px;">
+        <button onClick="{{ surprise }}" class="lift" style="display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:999px;border:none;cursor:pointer;background:var(--gold,#FFB706);color:#0A2443;font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;box-shadow:0 16px 36px -16px var(--gold,#FFB706);" style-hover="transform:translateY(-3px);">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>Surprise me
+        </button>
+      </div>
+
+      <!-- type your own -->
+      <div style="margin-top:34px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.12));border-radius:20px;padding:22px 24px;backdrop-filter:blur(10px);">
+        <div style="font-family:'Open Sans',sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.55));font-weight:700;">Or type your own</div>
+        <div style="display:flex;gap:12px;margin-top:14px;">
+          <input onInput="{{ onCustom }}" placeholder="e.g., how to use AI for budget forecasting" style="flex:1;min-width:0;padding:15px 18px;border-radius:14px;border:1px solid var(--line,rgba(255,255,255,.16));background:var(--bg2,#fff);color:var(--ink,#fff);font-family:'Open Sans',sans-serif;font-size:15px;outline:none;">
+          <button onClick="{{ generate }}" class="lift" style="flex:none;padding:0 26px;border-radius:14px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent,#0055FF),var(--accent2,#3B94FF));color:#fff;font-family:'Plus Jakarta Sans';font-weight:600;font-size:15px;box-shadow:0 16px 36px -18px var(--accent,#0055FF);" style-hover="transform:translateY(-2px);">Start</button>
+        </div>
+      </div>
+
+      <p style="text-align:center;font-family:'Open Sans',sans-serif;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.5));margin-top:30px;">✨ Suggested topics are personalized to your role and tasks · Refreshes daily at 8 AM PT</p>
+    </div>
+
+    <!-- LAUNCH BAR -->
+    <div style="{{ launchStyle }}">
+      <div style="min-width:0;">
+        <div style="font-family:'Open Sans',sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.55));font-weight:700;">Ready to generate</div>
+        <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;color:var(--ink,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48vw;margin-top:2px;">{{ launchSummary }}</div>
+      </div>
+      <button onClick="{{ generate }}" class="lift" style="position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:10px;padding:15px 26px;border-radius:999px;border:none;cursor:pointer;background:var(--gold,#FFB706);color:#0A2443;font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;box-shadow:0 18px 40px -16px var(--gold,#FFB706);" style-hover="transform:translateY(-2px);">
+        <span style="position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:sheen 3.4s ease-in-out infinite;"></span>
+        <span style="position:relative;">Generate lesson</span>
+        <svg style="position:relative;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0A2443" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== COURSE OVERLAY ===================== -->
+  <div id="course" style="{{ courseStyle }}">
+    <!-- course ambient -->
+    <div style="position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(110% 80% at 50% -10%, var(--bg2,#1a0d3e) 0%, var(--bg,#06081a) 60%);overflow:hidden;">
+      <div id="cglow" style="position:absolute;top:-20%;left:50%;width:60vw;height:60vw;margin-left:-30vw;border-radius:50%;background:radial-gradient(circle,var(--accent2,#bd8cff) 0%,transparent 60%);opacity:.3;filter:blur(50px);"></div>
+      <div id="cfloor" style="position:absolute;bottom:-30%;left:-10%;right:-10%;height:70%;background-image:linear-gradient(var(--line,rgba(255,255,255,.16)) 1px,transparent 1px),linear-gradient(90deg,var(--line,rgba(255,255,255,.16)) 1px,transparent 1px);background-size:60px 60px;transform:perspective(420px) rotateX(64deg);opacity:.18;mask-image:linear-gradient(to top,#000,transparent);-webkit-mask-image:linear-gradient(to top,#000,transparent);"></div>
+    </div>
+
+    <!-- floating course controls -->
+    <div style="position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 14px;border-radius:999px;background:var(--navbg,rgba(20,16,46,.6));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line,rgba(255,255,255,.14));box-shadow:0 18px 50px -18px rgba(0,0,0,.7);">
+      <button onClick="{{ goDash }}" class="lift" style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;border:none;cursor:pointer;background:transparent;color:var(--ink,#fff);font-family:'Plus Jakarta Sans';font-weight:600;font-size:13px;" style-hover="background:var(--glass,rgba(255,255,255,.1));">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Dashboard
+      </button>
+      <div style="font-family:'Plus Jakarta Sans';font-weight:600;font-size:13px;color:var(--ink,#fff);">Prompt Engineering</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:130px;height:6px;border-radius:6px;background:var(--line,rgba(255,255,255,.14));overflow:hidden;">
+          <div id="ctopbar" style="height:100%;width:8%;border-radius:6px;background:linear-gradient(90deg,var(--accent,#5b8cff),var(--accent2,#bd8cff));transition:width .2s;"></div>
+        </div>
+        <span id="ctoppct" style="font-size:12px;color:var(--ink-dim,rgba(255,255,255,.6));font-variant-numeric:tabular-nums;min-width:34px;">8%</span>
+      </div>
+    </div>
+
+    <!-- vertical chapter rail -->
+    <div style="position:fixed;left:34px;top:50%;transform:translateY(-50%);z-index:30;display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div style="position:relative;width:3px;height:240px;border-radius:3px;background:var(--line,rgba(255,255,255,.14));overflow:hidden;">
+        <div id="crail" style="position:absolute;top:0;left:0;width:100%;height:8%;background:linear-gradient(var(--accent,#5b8cff),var(--accent2,#bd8cff));transition:height .2s;"></div>
+      </div>
+    </div>
+
+    <div style="position:relative;z-index:10;max-width:880px;margin:0 auto;padding:0 32px;">
+
+      <!-- HERO -->
+      <section style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+        <div id="chero" style="display:flex;flex-direction:column;align-items:center;">
+          <div style="display:inline-flex;align-items:center;gap:9px;padding:7px 15px;border-radius:999px;background:var(--glass,rgba(255,255,255,.06));border:1px solid var(--line,rgba(255,255,255,.14));font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent,#0055FF);font-weight:600;margin-bottom:26px;">Chapter 03 · 12 min</div>
+          <h1 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(56px,9vw,128px);line-height:.9;letter-spacing:-.04em;margin:0;color:var(--ink,#fff);">Prompt<br><span style="background:linear-gradient(110deg,var(--accent,#5b8cff),var(--accent2,#bd8cff),var(--gold,#ffc24b));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradFlow 7s linear infinite;">Engineering</span></h1>
+          <p style="font-size:19px;line-height:1.5;color:var(--ink-dim,rgba(255,255,255,.65));max-width:480px;margin:28px 0 0;">Turn vague requests into reliable AI results. The difference between a toy and a tool is how you ask.</p>
+        </div>
+        <div style="position:absolute;bottom:46px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink-dim,rgba(255,255,255,.55));font-size:12px;letter-spacing:.14em;text-transform:uppercase;animation:floatB 2.4s ease-in-out infinite;">
+          Scroll to begin
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </section>
+
+      <!-- OUTCOMES -->
+      <section class="reveal" style="padding:90px 0;">
+        <div style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent2,#bd8cff);font-weight:600;margin-bottom:14px;">What you'll master</div>
+        <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(30px,4.4vw,52px);line-height:1.02;letter-spacing:-.03em;margin:0 0 40px;color:var(--ink,#fff);">Three moves that change everything.</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+          <sc-for list="{{ outcomes }}" as="o" hint-placeholder-count="3">
+            <div class="lift" style="padding:26px 22px;border-radius:18px;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--line,rgba(255,255,255,.1));backdrop-filter:blur(10px);" style-hover="transform:translateY(-6px);border-color:var(--accent,rgba(91,140,255,.5));">
+              <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:30px;color:var(--accent2,#bd8cff);">{{ o.n }}</div>
+              <div style="font-family:'Plus Jakarta Sans';font-weight:600;font-size:19px;color:var(--ink,#fff);margin-top:10px;">{{ o.t }}</div>
+              <div style="font-size:14px;line-height:1.5;color:var(--ink-dim,rgba(255,255,255,.55));margin-top:8px;">{{ o.d }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <!-- CONCEPT -->
+      <section class="reveal" style="padding:60px 0;">
+        <div style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent2,#bd8cff);font-weight:600;margin-bottom:14px;">The anatomy</div>
+        <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(30px,4.4vw,52px);line-height:1.02;letter-spacing:-.03em;margin:0 0 32px;color:var(--ink,#fff);">A strong prompt has four layers.</h2>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ layers }}" as="l" hint-placeholder-count="4">
+            <div class="lift" style="display:flex;align-items:center;gap:18px;padding:20px 24px;border-radius:16px;background:linear-gradient(100deg,{{ l.glow }},var(--glass,rgba(255,255,255,.04)));border:1px solid var(--line,rgba(255,255,255,.1));" style-hover="transform:translateX(8px);">
+              <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink,#fff);min-width:96px;">{{ l.label }}</div>
+              <div style="font-size:15px;color:var(--ink-dim,rgba(255,255,255,.7));font-style:italic;">"{{ l.example }}"</div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <!-- ACTIVITY -->
+      <section class="reveal" style="padding:60px 0 40px;">
+        <div style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent,#0055FF);font-weight:600;margin-bottom:14px;">Your move</div>
+        <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(30px,4.4vw,52px);line-height:1.02;letter-spacing:-.03em;margin:0 0 14px;color:var(--ink,#fff);">Which prompt gets a usable answer?</h2>
+        <p style="font-size:16px;color:var(--ink-dim,rgba(255,255,255,.6));margin:0 0 28px;">You need a customer follow-up email after a completed HVAC repair.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <button onClick="{{ pickA }}" style="{{ optAStyle }}">
+            <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.5));margin-bottom:10px;">Option A</div>
+            <div style="font-size:16px;line-height:1.5;color:var(--ink,#fff);">"Write a follow-up email to a customer."</div>
+          </button>
+          <button onClick="{{ pickB }}" style="{{ optBStyle }}">
+            <div style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim,rgba(255,255,255,.5));margin-bottom:10px;">Option B</div>
+            <div style="font-size:16px;line-height:1.5;color:var(--ink,#fff);">"You're a friendly HVAC dispatcher. Write a 4-sentence follow-up email thanking the customer for the AC repair, confirming the 1-year warranty, and inviting a Google review."</div>
+          </button>
+        </div>
+        <div style="{{ feedbackStyle }}">
+          <span style="font-weight:700;">{{ feedbackTitle }}</span> {{ feedbackBody }}
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:34px;">
+          <button onClick="{{ doComplete }}" class="lift" style="{{ completeBtnStyle }}">
+            <span style="position:relative;">Complete lesson</span>
+            <svg style="position:relative;" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <div style="height:120px;"></div>
+    </div>
+
+    <!-- COMPLETION MOMENT -->
+    <div style="{{ completePanelStyle }}">
+      <div style="text-align:center;max-width:460px;padding:0 24px;">
+        <div style="position:relative;width:128px;height:128px;margin:0 auto 8px;display:grid;place-items:center;">
+          <div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,var(--gold,#ffc24b),transparent 65%);opacity:.6;animation:pulseGlow 2s ease-in-out infinite;"></div>
+          <div style="position:absolute;inset:18%;border-radius:50%;border:2px dashed var(--gold,#ffc24b);animation:spinSlow 16s linear infinite;"></div>
+          <div style="position:relative;width:74px;height:74px;border-radius:22px;background:linear-gradient(135deg,var(--gold,#ffc24b),var(--accent2,#bd8cff));display:grid;place-items:center;box-shadow:0 0 36px var(--gold,rgba(255,194,75,.7));">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z" fill="#fff"/></svg>
+          </div>
+        </div>
+        <div style="font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent,#0055FF);font-weight:600;margin-bottom:8px;">Badge unlocked</div>
+        <h2 style="font-family:'Plus Jakarta Sans';font-weight:700;font-size:clamp(36px,6vw,60px);line-height:.98;letter-spacing:-.03em;margin:0;color:var(--ink,#fff);">Prompt Architect</h2>
+        <p style="font-size:17px;color:var(--ink-dim,rgba(255,255,255,.65));margin:16px 0 6px;">You can now structure prompts that get reliable results on the first try.</p>
+        <div style="display:inline-flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans';font-weight:700;font-size:22px;color:var(--good,#4fe6b0);animation:xpPop .7s cubic-bezier(.16,1,.3,1) both;">+45 XP</div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-top:30px;">
+          <button onClick="{{ goDash }}" class="lift" style="padding:16px 26px;border-radius:14px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent,#5b8cff),var(--accent2,#bd8cff));color:#fff;font-family:'Plus Jakarta Sans';font-weight:600;font-size:15px;box-shadow:0 20px 44px -20px var(--accent,#5b8cff);" style-hover="transform:translateY(-3px);">Back to dashboard</button>
+          <button onClick="{{ restart }}" class="lift" style="padding:16px 24px;border-radius:14px;cursor:pointer;background:var(--glass,rgba(255,255,255,.06));border:1px solid var(--line,rgba(255,255,255,.16));color:var(--ink,#fff);font-family:'Plus Jakarta Sans';font-weight:600;font-size:15px;" style-hover="background:rgba(255,255,255,.12);">Replay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CELEBRATION LAYER -->
+  <div ref="{{ confettiRef }}" style="position:fixed;inset:0;z-index:90;pointer-events:none;overflow:hidden;"></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { view: 'dash', hoverStep: null, mood: 'light', activity: 'idle', picked: null, navOpen: false, notifOpen: false, profileOpen: false, lessonDepth: 'lesson', lessonFormat: 'read', lessonTopic: null, lessonCustom: '' };
+
+  themes = {
+    light: { '--bg':'#EAF0FB','--bg2':'#ffffff','--ink':'#0A2443','--ink-dim':'rgba(10,36,67,.6)','--glass':'rgba(255,255,255,.72)','--line':'rgba(10,36,67,.1)','--navbg':'rgba(255,255,255,.82)','--accent':'#0055FF','--accent2':'#3B94FF','--gold':'#FFB706','--good':'#1AA06A','--card':'rgba(255,255,255,.7)' },
+    dark: { '--bg':'#06142E','--bg2':'#0A2443','--ink':'#EAF2FF','--ink-dim':'rgba(234,242,255,.62)','--glass':'rgba(255,255,255,.06)','--line':'rgba(255,255,255,.12)','--navbg':'rgba(10,36,67,.6)','--accent':'#3B94FF','--accent2':'#6AABFF','--gold':'#FFB706','--good':'#2BB37A','--card':'rgba(255,255,255,.04)' },
+  };
+
+  componentDidMount() {
+    // scroll reveals
+    this.io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.18});
+    this.refreshReveals();
+    // mouse parallax
+    this.onMove = (e)=>{
+      const w=window.innerWidth, h=window.innerHeight;
+      const dx=(e.clientX-w/2)/w, dy=(e.clientY-h/2)/h;
+      if(!this.root) return;
+      this.root.querySelectorAll('[data-depth]').forEach(el=>{
+        const d=parseFloat(el.getAttribute('data-depth'))||0.5;
+        el.style.transform=`translate3d(${-dx*d*30}px,${-dy*d*30}px,0)`;
+      });
+      this.root.querySelectorAll('[data-tilt]').forEach(el=>{
+        el.style.transform=`perspective(900px) rotateY(${dx*5}deg) rotateX(${-dy*5}deg)`;
+      });
+    };
+    window.addEventListener('mousemove', this.onMove);
+    requestAnimationFrame(()=>this.forceInView());
+    setTimeout(()=>this.forceInView(), 900);
+    window.addEventListener('scroll', ()=>this.forceInView(), {passive:true});
+    this.setupCourse();
+  }
+  componentWillUnmount(){ window.removeEventListener('mousemove', this.onMove); this.io&&this.io.disconnect(); }
+  componentDidUpdate(){ this.refreshReveals(); }
+  refreshReveals(){ if(!this.root)return; this.root.querySelectorAll('.reveal:not(.in)').forEach(el=>this.io.observe(el)); this.forceInView(); }
+  forceInView(){ if(!this.root)return; const vh=window.innerHeight||800; this.root.querySelectorAll('.reveal:not(.in)').forEach(el=>{ if(el.closest('#course'))return; const r=el.getBoundingClientRect(); if(r.top < vh*0.92) el.classList.add('in'); }); }
+  setupCourse(){ const c=this.root&&this.root.querySelector('#course'); if(!c||this.courseEl===c)return; this.courseEl=c; c.addEventListener('scroll',()=>this.onCourseScroll(),{passive:true}); }
+  onCourseScroll(){ const c=this.courseEl; if(!c)return; const max=c.scrollHeight-c.clientHeight; const p=max>0?Math.min(1,c.scrollTop/max):0; const pct=Math.round(8+p*92); const bar=c.querySelector('#ctopbar'),pt=c.querySelector('#ctoppct'),rail=c.querySelector('#crail'),hero=c.querySelector('#chero'),glow=c.querySelector('#cglow'); if(bar)bar.style.width=pct+'%'; if(pt)pt.textContent=pct+'%'; if(rail)rail.style.height=pct+'%'; if(hero){hero.style.transform=`translateY(${c.scrollTop*0.32}px)`;hero.style.opacity=Math.max(0,1-c.scrollTop/520);} if(glow)glow.style.transform=`translateY(${c.scrollTop*0.18}px)`; const vh=window.innerHeight||800; c.querySelectorAll('.reveal:not(.in)').forEach(el=>{const r=el.getBoundingClientRect(); if(r.top < vh*0.86) el.classList.add('in');}); }
+
+  setMood(m){ this.setState({mood:m}); }
+  dashFx(on){ const d=this.root&&this.root.querySelector('#dash'); if(d){ d.style.transition='filter .6s ease, transform .6s ease, opacity .6s ease'; d.style.filter=on?'blur(7px) brightness(.65)':'none'; d.style.transform=on?'scale(.97)':'none'; d.style.transformOrigin='center top'; } }
+  goDash(){ this.setState({view:'dash'}); this.dashFx(false); window.scrollTo({top:0,behavior:'smooth'}); }
+  goCourse(){ this.setState({view:'course'}); this.dashFx(true); const c=this.root&&this.root.querySelector('#course'); if(c)c.scrollTop=0; setTimeout(()=>{const cc=this.root&&this.root.querySelector('#course'); if(cc)cc.scrollTop=0;},50); }
+
+  goTour(){ this.setState({navOpen:false}); }
+  goLesson(){ this.setState({view:'lesson', navOpen:false, notifOpen:false, profileOpen:false}); const l=this.root&&this.root.querySelector('#lesson'); if(l)l.scrollTop=0; }
+  goAch(){ this.setState({view:'achievements', navOpen:false, notifOpen:false, profileOpen:false}); const a=this.root&&this.root.querySelector('#ach'); if(a)a.scrollTop=0; }
+  setDepth(id){ this.setState({lessonDepth:id}); }
+  setFormat(id){ this.setState({lessonFormat:id}); }
+  setTopic(id){ this.setState({lessonTopic: this.state.lessonTopic===id?null:id, lessonCustom:''}); }
+  setCustom(v){ this.setState({lessonCustom:v, lessonTopic: v.trim()? null : this.state.lessonTopic}); }
+  surprise(){ const ids=['agents','gap','content','refresh','measure','chain']; this.setState({lessonTopic: ids[Math.floor(Math.random()*ids.length)], lessonCustom:''}); }
+  generate(){ if(!(this.state.lessonTopic||(this.state.lessonCustom||'').trim())) return; this.goCourse(); }
+  navData(){
+    const E=React.createElement;
+    const S=(...c)=>E('svg',{width:19,height:19,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.7,strokeLinecap:'round',strokeLinejoin:'round'},c.map((x,i)=>React.cloneElement(x,{key:i})));
+    const P=d=>E('path',{d}), C=(cx,cy,r)=>E('circle',{cx,cy,r}), R=(x,y,w,h,rx)=>E('rect',{x,y,width:w,height:h,rx});
+    const it=(name,icon,opts)=>{ opts=opts||{}; const a=!!opts.active;
+      return { name, icon, active:a,
+        iconStyle:`display:grid;place-items:center;width:22px;flex:none;color:${a?'var(--accent,#0055FF)':'var(--ink-dim,rgba(255,255,255,.5))'};`,
+        style:`display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:11px 13px;border-radius:11px;border:none;cursor:pointer;font-family:'Open Sans',sans-serif;font-weight:600;font-size:15px;line-height:1.15;background:${a?'rgba(43,108,255,.12)':'transparent'};color:${a?'var(--accent,#0055FF)':'var(--ink,#fff)'};`,
+        click: ()=>{ if(opts.go==='course') this.goCourse(); else if(opts.go==='lesson') this.goLesson(); else if(opts.go==='ach') this.goAch(); else if(opts.go==='dash') this.goDash(); this.setState({navOpen:false}); } };
+    };
+    const ext=()=>S(P('M14 4h6v6'),P('M20 4l-8 8'),P('M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5'));
+    return [
+      { items:[ it('Home', S(P('M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z')), {active:true, go:'dash'}) ] },
+      { label:'Learn', items:[
+        it('Discovery', S(C(12,12,9),P('M15.5 8.5l-2 5-5 2 2-5z'))),
+        it('Library', S(P('M5 5v14'),P('M9 5v14'),P('M13 5v14'),P('M16.4 5.6l3.4 13.1'))),
+        it('Games', S(R(2,7,20,11,5),C(8,12.5,1),C(16,12.5,1))),
+        it('Just Chat', S(P('M4 5h16v11H9l-5 4z'))),
+        it('Lesson', S(P('M4 5h7v14H4z'),P('M13 5h7v14h-7z')), {go:'lesson'}),
+        it('Practice', S(P('M4 20l2-6 9-9 4 4-9 9z'),P('M13 5l4 4'))),
+        it('Prompts', S(P('M5 8l4 4-4 4'),P('M12 16h7'))),
+        it("Today's Pick", S(P('M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9z')), {go:'course'}),
+      ]},
+      { label:'HCP Skill Shop', items:[
+        it('AI Resources Home', ext()),
+        it('Level 1 — Beginner', ext()),
+        it('Level 2 — Intermediate', ext()),
+        it('Level 3 — Advanced', ext()),
+      ]},
+      { label:'Your Progress', items:[
+        it('Achievements', S(C(12,8,5),P('M9 12l-2 9 5-3 5 3-2-9')), {go:'ach'}),
+        it('AI Impact', S(P('M9 4h6v3H9z'),P('M7 5H5v16h14V5h-2'),P('M9 14l2 2 4-4'))),
+        it('Calibrate', S(C(12,12,8),P('M12 2v3'),P('M12 19v3'),P('M2 12h3'),P('M19 12h3'),C(12,12,1.6))),
+        it('Check-in', S(R(4,5,16,16,2),P('M4 10h16'),P('M8 3v4'),P('M16 3v4'),P('M9 15l2 2 4-4'))),
+        it('Goals', S(C(12,12,8),C(12,12,4.6),C(12,12,1.3))),
+        it('Knowledge Heatmap', S(R(4,4,16,16,2),P('M4 10h16'),P('M4 16h16'),P('M10 4v16'),P('M16 4v16'))),
+        it('Leaderboard', S(P('M7 4h10v4a5 5 0 0 1-10 0z'),P('M7 5H4v1a3 3 0 0 0 3 3'),P('M17 5h3v1a3 3 0 0 1-3 3'),P('M10 16h4v4h-4z'),P('M8 20h8'))),
+        it('Quests', S(P('M9 15c-2 .5-3 3-3 4 1 0 3.5-1 4-3'),P('M9 15l-3-3c1.5-6 6-9 12-9 0 6-3 10.5-9 12z'),C(14.5,9.5,1.5))),
+        it('Review', S(P('M20 11a8 8 0 0 0-14-4'),P('M4 5v3h3'),P('M4 13a8 8 0 0 0 14 4'),P('M20 19v-3h-3'))),
+        it('Skill Graph', S(C(5,12,2),C(19,6,2),C(19,18,2),P('M7 11l10-4'),P('M7 13l10 4'))),
+      ]},
+      { label:'Manager', items:[
+        it('Team Dashboard', S(P('M5 20V10'),P('M12 20V4'),P('M19 20v-7'),P('M3 20h18'))),
+      ]},
+    ];
+  }
+  pick(id){ this.setState({picked:id, activity: id==='b'?'correct':'wrong'}); }
+  complete(){ this.setState({activity:'done'}); this.burst(); window.scrollTo&&0; const c=this.root&&this.root.querySelector('#course'); }
+  resetCourse(){ this.setState({activity:'idle',picked:null}); const c=this.root&&this.root.querySelector('#course'); if(c)c.scrollTop=0; }
+
+  burst(){
+    const layer=this.confetti; if(!layer) return;
+    const cols=['#FFB706','#0055FF','#3B94FF','#0A2443','#6AABFF'];
+    for(let i=0;i<90;i++){
+      const s=document.createElement('span');
+      const left=50+(Math.random()*40-20), size=6+Math.random()*9;
+      s.style.cssText=`position:absolute;top:38%;left:${left}%;width:${size}px;height:${size*0.5}px;background:${cols[i%cols.length]};border-radius:2px;opacity:1;--cx:${(Math.random()*2-1)*60}vw;--cr:${Math.random()*720}deg;animation:confFall ${1.1+Math.random()*1.1}s cubic-bezier(.2,.6,.4,1) ${Math.random()*.25}s forwards;`;
+      layer.appendChild(s);
+      setTimeout(()=>s.remove(),2600);
+    }
+  }
+
+  navBtn(active){
+    return `padding:9px 18px;border-radius:999px;border:none;cursor:pointer;font-family:'Plus Jakarta Sans';font-weight:600;font-size:14px;background:${active?'var(--ink,#fff)':'transparent'};color:${active?'var(--bg,#07081c)':'var(--ink-dim,rgba(255,255,255,.6))'};`;
+  }
+  moodDot(key,c){
+    const active=this.state.mood===key;
+    return `width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid ${active?'var(--ink,#fff)':'transparent'};background:${c};box-shadow:0 0 10px ${c};padding:0;`;
+  }
+  node(title,meta,st,glyph,onClick){
+    const map={done:{bg:'linear-gradient(135deg,var(--accent,#5b8cff),var(--accent2,#bd8cff))',bd:'transparent',col:'#fff',sh:'0 0 22px var(--accent2,rgba(189,140,255,.7))'},
+      current:{bg:'var(--gold,#ffc24b)',bd:'transparent',col:'#0A2443',sh:'0 0 28px var(--gold,rgba(255,183,6,.9))'},
+      next:{bg:'var(--glass,rgba(255,255,255,.08))',bd:'var(--accent,rgba(91,140,255,.6))',col:'var(--ink,#fff)',sh:'none'},
+      locked:{bg:'var(--glass,rgba(255,255,255,.04))',bd:'var(--line,rgba(255,255,255,.14))',col:'var(--ink-dim,rgba(255,255,255,.4))',sh:'none'}};
+    const m=map[st];
+    const up=['done','next'].includes(st);
+    return {
+      title, meta, glyph,
+      click: (st==='locked')?(()=>{}):onClick,
+      wrap:`position:relative;flex:1;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:0;cursor:${st==='locked'?'default':'pointer'};`,
+      labelBox:`position:absolute;${up?'bottom:calc(50% + 34px)':'top:calc(50% + 34px)'};text-align:center;`,
+      node:`position:relative;z-index:2;width:${st==='current'?'56px':'44px'};height:${st==='current'?'56px':'44px'};border-radius:50%;display:grid;place-items:center;background:${m.bg};border:2px solid ${m.bd};color:${m.col};box-shadow:${m.sh};font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;${st==='current'?'animation:pulseGlow 2.4s ease-in-out infinite;':''}`,
+    };
+  }
+
+  lockIcon(){ return React.createElement('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none'},React.createElement('rect',{x:5,y:11,width:14,height:9,rx:2,fill:'currentColor'}),React.createElement('path',{d:'M8 11V8a4 4 0 0 1 8 0v3',stroke:'currentColor',strokeWidth:2})); }
+  optCard(id){
+    const a=this.state.activity, picked=this.state.picked, correct='b';
+    let bd='var(--line,rgba(255,255,255,.12))', bg='var(--glass,rgba(255,255,255,.05))', sh='none';
+    if(picked===id){
+      if(id===correct){ bd='var(--good,#4fe6b0)'; bg='rgba(79,230,176,.12)'; sh='0 0 30px -6px var(--good,rgba(79,230,176,.6))'; }
+      else { bd='#E5544B'; bg='rgba(229,84,75,.1)'; sh='0 0 30px -10px rgba(229,84,75,.45)'; }
+    }
+    return `text-align:left;cursor:pointer;padding:22px;border-radius:18px;background:${bg};border:1.5px solid ${bd};box-shadow:${sh};backdrop-filter:blur(10px);transition:transform .35s,border-color .35s,box-shadow .35s,background .35s;font-family:'Open Sans',sans-serif;`;
+  }
+  stairData(){
+    const E=React.createElement;
+    const P=d=>E('path',{d});
+    const ico=(stroke,fill,d,sz)=>E('svg',{width:sz||16,height:sz||16,viewBox:'0 0 24 24',fill:fill||'none',stroke:stroke||'none',strokeWidth:2.2,strokeLinecap:'round',strokeLinejoin:'round'},P(d));
+    const lvls=[
+      {num:'1',name:'Spark',meta:'Completed',desc:'Where every learner starts — your first wins with everyday AI.',status:'done',cta:'Review level'},
+      {num:'2',name:'Prompt Sprout',meta:'105 XP · In progress',desc:"You're here. Keep the momentum going — finish one lesson to push toward Level 3.",status:'current',cta:'Resume lesson'},
+      {num:'3',name:'Prompt Pro',meta:'135 XP to go',desc:'Your next milestone. Clear it to unlock a fresh badge and level up.',status:'next',cta:'Start next level'},
+      {num:'4',name:'AI Builder',meta:'Unlocks at Level 4',desc:'Chain prompts together into repeatable AI workflows for real jobs.',status:'locked'},
+      {num:'5',name:'AI Architect',meta:'Unlocks at Level 5',desc:'Design AI systems that scale across your whole team.',status:'locked'},
+    ];
+    const curIdx=1;
+    const tone={
+      done:    {col:'#fff', meta:'rgba(255,255,255,.6)', bg:'linear-gradient(180deg,rgba(91,140,255,.34),rgba(91,140,255,.12))', bd:'1px solid rgba(91,140,255,.45)', sh:'', badge:'background:rgba(91,140,255,.22);color:#bcd0ff;', icon:ico('currentColor',null,'M5 13l4 4L19 7')},
+      current: {col:'#fff', meta:'rgba(255,255,255,.85)', bg:'linear-gradient(180deg,var(--accent,#5b8cff),var(--accent2,#bd8cff))', bd:'1px solid rgba(255,255,255,.32)', sh:'box-shadow:0 0 34px -4px var(--accent,#5b8cff),0 18px 42px -20px var(--accent,#5b8cff);', badge:'background:linear-gradient(135deg,var(--accent,#5b8cff),var(--accent2,#bd8cff));color:#fff;', icon:ico(null,'currentColor','M8 5v14l11-7z')},
+      next:    {col:'var(--gold,#FFB706)', meta:'var(--gold,#FFB706)', bg:'linear-gradient(180deg,rgba(255,194,75,.30),rgba(255,194,75,.07))', bd:'1px solid rgba(255,183,6,.55)', sh:'', badge:'background:rgba(255,183,6,.2);color:var(--gold,#FFB706);', icon:ico(null,'currentColor','M12 3l2.4 6.8L21 11l-6.6 2.2L12 20l-2.4-6.8L3 11l6.6-2.2z')},
+      locked:  {col:'rgba(255,255,255,.42)', meta:'rgba(255,255,255,.45)', bg:'var(--glass,rgba(255,255,255,.05))', bd:'1px solid var(--line,rgba(255,255,255,.1))', sh:'', badge:'background:rgba(255,255,255,.08);color:rgba(255,255,255,.55);', icon:ico('currentColor',null,'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5z')},
+    };
+    const steps=lvls.map((l,i)=>{
+      const t=tone[l.status];
+      const h=84+i*36;
+      const clk=l.status!=='locked';
+      return {
+        num:l.num,
+        isCurrent:l.status==='current',
+        isNext:l.status==='next',
+        colStyle:`position:relative;width:62px;height:${h}px;border-radius:16px 16px 8px 8px;display:flex;flex-direction:column;align-items:center;padding-top:12px;background:${t.bg};border:${t.bd};${t.sh}cursor:${clk?'pointer':'default'};transition:transform .4s cubic-bezier(.16,1,.3,1),box-shadow .4s;`,
+        numStyle:`font-family:'Plus Jakarta Sans';font-weight:700;font-size:23px;line-height:1;color:${t.col};`,
+        icon:t.icon,
+        iconStyle:`margin-top:7px;display:grid;place-items:center;color:${t.col};opacity:.85;`,
+        enter:()=>this.setState({hoverStep:i}),
+        leave:()=>this.setState({hoverStep:null}),
+        click: clk?()=>this.goCourse():undefined,
+      };
+    });
+    const ai=this.state.hoverStep!=null?this.state.hoverStep:curIdx;
+    const A=lvls[ai], t=tone[A.status];
+    return {
+      stairSteps:steps,
+      stairActive:{
+        name:A.name, meta:A.meta, desc:A.desc,
+        badgeLabel:'L'+A.num,
+        badgeStyle:`flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:13px;font-family:'Plus Jakarta Sans';font-weight:800;font-size:16px;${t.badge}`,
+        metaColor:t.meta,
+        cta:A.cta||'',
+        click: A.status==='locked'?()=>{}:()=>this.goCourse(),
+      },
+    };
+  }
+  renderVals(){
+    const T=this.themes[this.state.mood];
+    const a=this.state.activity;
+    const dark=this.state.mood==='dark';
+    const E=React.createElement;
+    const ns=(...c)=>E('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round'},c.map((x,i)=>React.cloneElement(x,{key:i})));
+    const chip=(col)=>`display:grid;place-items:center;width:34px;height:34px;flex:none;border-radius:10px;background:${col}1f;color:${col};`;
+    const SI=(sz,...c)=>E('svg',{width:sz,height:sz,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.7,strokeLinecap:'round',strokeLinejoin:'round'},c.map((x,i)=>React.cloneElement(x,{key:i})));
+    const P=d=>E('path',{d}), C=(cx,cy,r)=>E('circle',{cx,cy,r}), R=(x,y,w,h,rx)=>E('rect',{x,y,width:w,height:h,rx});
+    const SB=(...c)=>E('svg',{width:54,height:54,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.9,strokeLinecap:'round',strokeLinejoin:'round'},c.map((x,i)=>React.cloneElement(x,{key:i})));
+    const SF=(...c)=>E('svg',{width:52,height:52,viewBox:'0 0 24 24',fill:'currentColor',stroke:'none'},c.map((x,i)=>React.cloneElement(x,{key:i})));
+    const fbMap={
+      wrong:{c:'#E5544B',bg:'rgba(229,84,75,.1)',bd:'rgba(229,84,75,.3)',t:'Too vague.',b:"The model has to guess the tone, length, and purpose. Try the option with a role, context, and clear output."},
+      correct:{c:'var(--good,#4fe6b0)',bg:'rgba(79,230,176,.1)',bd:'rgba(79,230,176,.3)',t:'Exactly right.',b:'Role + context + output format = a reliable, on-brand answer every time. Now complete the lesson.'},
+      done:{c:'var(--good,#4fe6b0)',bg:'rgba(79,230,176,.1)',bd:'rgba(79,230,176,.3)',t:'Exactly right.',b:'Role + context + output format = a reliable, on-brand answer every time.'},
+    };
+    const fb=fbMap[a];
+    const canComplete=(a==='correct'||a==='done');
+    const v=this.state.view;
+    return {
+      rootRef: el=>{this.root=el;},
+      confettiRef: el=>{this.confetti=el;},
+      rootStyle: { ...T, minHeight:'100vh', position:'relative', color:'var(--ink)', fontFamily:"'Open Sans',sans-serif", transition:'background .6s ease' },
+      courseStyle: { position:'fixed', inset:'0', zIndex:80, overflowY:'auto', overflowX:'hidden', background:'transparent', display: v==='course'?'block':'none', animation: v==='course'?'courseIn .6s cubic-bezier(.16,1,.3,1)':'none' },
+      navDashStyle: this.navBtn(v==='dash'),
+      navCourseStyle: this.navBtn(v==='course'),
+      goDash: ()=>this.goDash(),
+      goCourse: ()=>this.goCourse(),
+      isDash: this.state.view==='dash',
+      // ---- shell: drawer + popovers ----
+      openNav: ()=>this.setState({navOpen:true, notifOpen:false, profileOpen:false}),
+      closeNav: ()=>this.setState({navOpen:false}),
+      toggleNotif: ()=>this.setState(s=>({notifOpen:!s.notifOpen, profileOpen:false})),
+      toggleProfile: ()=>this.setState(s=>({profileOpen:!s.profileOpen, notifOpen:false})),
+      closePops: ()=>this.setState({notifOpen:false, profileOpen:false}),
+      goLesson: ()=>this.goLesson(),
+      goAch: ()=>this.goAch(),
+      ...this.stairData(),
+      // ---- dashboard stats ----
+      ...(()=>{
+        const ld=(rank,name,initials,g,xp,you)=>{
+          const mc=rank===1?'#FFB706':rank===2?'#AEBED4':rank===3?'#D08B52':null;
+          return { rank, name, initials, xp:`${xp} XP`, you,
+            rowStyle:`display:flex;align-items:center;gap:13px;padding:11px 12px;border-radius:14px;${you?'background:rgba(43,108,255,.1);':''}`,
+            rankBadge: mc?`width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:11px;color:#0A2443;background:${mc};box-shadow:0 0 9px ${mc}88;`:`width:24px;flex:none;text-align:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;color:var(--ink-dim,rgba(255,255,255,.45));`,
+            avatar:`width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;color:#fff;background:linear-gradient(135deg,${g[0]},${g[1]});`,
+            xpStyle:`font-family:'Plus Jakarta Sans';font-weight:700;font-size:15px;white-space:nowrap;color:${you?'var(--accent,#0055FF)':'var(--ink,#fff)'};` };
+        };
+        const sk=(label,color,tcol,items,cbg,cbd)=>({ label, count:items.length, items,
+          dot:`width:9px;height:9px;border-radius:50%;flex:none;background:${color};box-shadow:0 0 8px ${color};`,
+          chipStyle:`display:inline-flex;align-items:center;padding:7px 13px;border-radius:999px;font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;background:${cbg};color:${tcol};border:1px solid ${cbd};` });
+        const nws=(tag,tone,tcol,title,source,note)=>({ tag, title, source, note,
+          tagStyle:`align-self:flex-start;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;font-family:'Open Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:${tone}1f;color:${tcol};`,
+          noteStyle:`display:inline-flex;align-items:center;gap:6px;margin-top:13px;font-family:'Open Sans',sans-serif;font-size:12px;font-weight:700;color:${tcol};` });
+        return {
+          streakWeek: ['M','T','W','T','F','S','S'].map((l,i)=>({ l, style: (i<6)
+            ? `width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;flex:none;background:linear-gradient(135deg,#FFD24D,#FFB706);color:#0A2443;box-shadow:0 6px 14px -6px var(--gold,#FFB706);`
+            : `width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:700;font-size:13px;flex:none;background:var(--glass,rgba(255,255,255,.05));color:var(--ink-dim,rgba(255,255,255,.4));border:1px dashed var(--line,rgba(255,255,255,.22));` })),
+          leaders: [
+            ld(1,'Skylar Hoover','SH',['#FF8FB0','#E5447F'],150,false),
+            ld(2,'Bridget Leiber','BL',['#7FC0FF','#3B94FF'],120,false),
+            ld(3,'Brian Wells','BW',['#FFD24D','#FFB706'],105,true),
+            ld(4,'Rachel Z','RZ',['#3CCB91','#1AA06A'],60,false),
+            ld(5,'Cody Warford','CW',['#B6A6FF','#7C5CFF'],25,false),
+          ],
+          skillCols: [
+            sk('Strong','#1AA06A','#0c8a5a',['Prompt Basics','AI Foundations'],'rgba(26,160,106,.14)','rgba(26,160,106,.32)'),
+            sk('Growing','#FFB706','#9a6b00',['Prompt Engineering'],'rgba(255,183,6,.16)','rgba(255,183,6,.4)'),
+            sk('Gaps','#8aa0bf','var(--ink-dim,#8194ad)',['Data Privacy','AI in Workflow'],'var(--glass,rgba(255,255,255,.05))','var(--line,rgba(130,148,173,.4))'),
+          ],
+          news: [
+            nws('Model update','#0055FF','#0055FF','New reasoning models change how you should structure prompts','AI Weekly · 2h ago','Refresh: Prompt Engineering'),
+            nws('New tool','#1AA06A','#0c8a5a','AI scheduling assistants now handle multi-day dispatch','Field Service Today · 1d ago','Relevant to your role'),
+            nws('Policy','#FFB706','#9a6b00','Updated data-privacy guidance for customer-facing AI','HCP Trust & Safety · 3d ago','Linked to: Data Privacy'),
+          ],
+        };
+      })(),
+      // ---- achievements ----
+      ...(()=>{
+        const tiers={ blue:['#3B94FF','#0055FF'], gold:['#FFD24D','#FFB706'], green:['#3CCB91','#1AA06A'], sky:['#7FC0FF','#3B94FF'], royal:['#3B94FF','#0A2443'] };
+        let bi=0;
+        const mk=(name,req,t,icon,earned,an)=>{
+          const [lt,base]=tiers[t]; const isGold=(t==='gold'); const delay=((bi++)%6)*0.42; const aP=(an||'').split('|'), aA=aP[0]||'', aO=aP[1]||'center';
+          const iconColor = earned ? (isGold?'#0A2443':'#fff') : 'var(--ink-dim,rgba(120,140,170,.8))';
+          return {
+            name, req, earned, locked:!earned, icon,
+            medalWrap:`position:relative;width:106px;height:106px;display:grid;place-items:center;transition:transform .35s cubic-bezier(.16,1,.3,1);`,
+            disc: earned
+              ? `position:relative;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 26%, ${lt}, ${base});box-shadow:inset 0 2px 7px rgba(255,255,255,.55), inset 0 -8px 15px rgba(0,0,0,.22), 0 0 0 4px ${base}33, 0 18px 40px -12px ${base};animation:badgeFloat 4s ease-in-out ${delay}s infinite;`
+              : `position:relative;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg, rgba(150,165,190,.38), rgba(120,140,170,.2));box-shadow:inset 0 2px 6px rgba(255,255,255,.32), inset 0 -8px 15px rgba(0,0,0,.08), 0 0 0 4px rgba(120,140,170,.12);`,
+            gloss:`position:absolute;top:10px;left:16px;width:44px;height:28px;border-radius:50%;background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.78), transparent 70%);opacity:${earned?'.85':'.4'};pointer-events:none;`,
+            iconWrap:`position:relative;display:grid;place-items:center;color:${iconColor};transform-origin:${aO};${earned?'filter:drop-shadow(0 2px 3px rgba(0,0,0,.28));':''}${earned&&aA?`animation:${aA};`:''}`,
+            iconHover: aA?`transform-origin:${aO};animation:${aA.replace(' infinite','')};`:'',
+            cardStyle: `display:flex;flex-direction:column;align-items:center;padding:26px 18px 24px;border-radius:20px;background:var(--glass,rgba(255,255,255,.05));border:1px solid ${earned?base+'66':'var(--line,rgba(255,255,255,.12))'};backdrop-filter:blur(10px);box-shadow:${earned?`0 26px 58px -34px ${base}`:'none'};transition:transform .3s,box-shadow .3s;${earned?'':'opacity:.92;'}`,
+            pill: `margin-top:14px;display:inline-flex;align-items:center;gap:4px;padding:5px 13px;border-radius:999px;font-family:'Open Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.03em;color:${isGold?'#8a6200':base};background:${base}22;`,
+          };
+        };
+        const sect=(label,t,items)=>{ const e=items.filter(i=>i.earned).length; const [,base]=tiers[t]; return { label, count:`${e}/${items.length}`, dot:`width:10px;height:10px;border-radius:50%;flex:none;background:${base};box-shadow:0 0 10px ${base};`, items }; };
+        // icons — bold / filled
+        const iFlag=SF(P('M6 3a1 1 0 0 0-1 1v17a1 1 0 0 0 2 0v-5.6c2.6-1.1 5.2.9 8.4-.4a1 1 0 0 0 .6-.9V5.2a1 1 0 0 0-1.4-.9c-2.8 1.1-5.2-.8-8.6-.3z'));
+        const iGo=SB(P('M5 5l6 7-6 7'),P('M13 5l6 7-6 7'));
+        const iBook=SF(P('M4 4.5c2.6-1 5.4-.8 7.5.9a.9.9 0 0 1 .5.8v12.5c0 .8-.9 1.2-1.5.7-1.8-1.4-4-1.6-6.2-1A1 1 0 0 1 3 18.5V5.4c0-.4.2-.7.6-.8z'),P('M20 4.5c-2.6-1-5.4-.8-7.5.9a.9.9 0 0 0-.5.8v12.5c0 .8.9 1.2 1.5.7 1.8-1.4 4-1.6 6.2-1a1 1 0 0 0 1.3-.9V5.4c0-.4-.2-.7-.6-.8z'));
+        const iFlame=SF(P('M12 2c2.4 3.8 5 5.3 5 9.3a5 5 0 0 1-10 0c0-1.7.7-3 1.8-3.9C9.7 9.4 12 8 12 2z'),P('M12 21a3 3 0 0 0 3-3c0-1.6-1.4-2.6-1.9-3.6-.6 1-2.1 1.6-2.1 3.2A2.9 2.9 0 0 0 12 21z'));
+        const iBolt=SF(P('M13 2L4 13.5h5.5L8 22l9-12.5h-5.5z'));
+        const iQ=SF(C(12,12,10),E('path',{d:'M9.2 9.4a2.9 2.9 0 1 1 3.9 2.7c-.8.4-1.1 1-1.1 1.9h-2c0-1.7.8-2.4 1.8-3 .6-.3.9-.7.9-1.3a1.5 1.5 0 0 0-3 0z',fill:'#fff'}),E('circle',{cx:12,cy:16.5,r:1.1,fill:'#fff'}));
+        const iMedal=SF(P('M8.5 2h7l-1.2 6.2a4.5 4.5 0 0 1-4.6 0z'),C(12,15,5.5),E('path',{d:'M12 11.8l1 2 2.2.3-1.6 1.6.4 2.2-2-1-2 1 .4-2.2-1.6-1.6 2.2-.3z',fill:'#fff'}));
+        const iPad=SF(P('M7 7.5h10a4.5 4.5 0 0 1 4.4 5.5l-.7 3.2A2.4 2.4 0 0 1 16.5 18l-1.3-1.8a1.5 1.5 0 0 0-1.2-.7h-4a1.5 1.5 0 0 0-1.2.7L7.5 18a2.4 2.4 0 0 1-4.2-1.8l-.7-3.2A4.5 4.5 0 0 1 7 7.5z'),E('circle',{cx:8.5,cy:12,r:1.2,fill:'#fff'}),E('circle',{cx:15.5,cy:12,r:1.2,fill:'#fff'}));
+        const iStick=SF(C(12,6,3),P('M11 9h2v5h-2z'),P('M6 20l1.4-4h9.2L18 20z'));
+        const iTarget=SF(C(12,12,9.5),E('circle',{cx:12,cy:12,r:6,fill:'#fff'}),E('circle',{cx:12,cy:12,r:3.2,fill:'currentColor'}));
+        const iStar=SF(P('M12 2.3l2.9 6.3 6.8.7-5.1 4.6 1.5 6.8L12 17.7 5.9 21l1.5-6.8L2.3 9.6l6.8-.7z'));
+        const iTrophy=SF(P('M6 4h12v2.5a6 6 0 0 1-12 0z'),P('M5 4.5H3v1.5A3.5 3.5 0 0 0 6.5 9.5V7.5A1.5 1.5 0 0 1 5 6z'),P('M19 4.5h2v1.5A3.5 3.5 0 0 1 17.5 9.5V7.5A1.5 1.5 0 0 0 19 6z'),P('M11 11.5h2V16h-2z'),P('M8 16h8l1 4H7z'));
+        const iRocket=SF(P('M14.5 3C9 3 5.5 6.5 4 12l3 3c5.5-1.5 9-5 9-10.5A9 9 0 0 0 14.5 3z'),E('circle',{cx:14,cy:9,r:1.7,fill:'#fff'}),P('M4 15c-1.3 1.3-1.5 5-1.5 5s3.7-.2 5-1.5z'));
+        const iLvl=SF(P('M12 3l8 7h-4.5v4h-7v-4H4z'),P('M8.5 17h7v3h-7z'));
+        const iMountain=SF(P('M3 20l6.5-12 3.5 5.5 2.2-3.5L21 20z'),E('path',{d:'M8.3 9.7l1.2-2.2 1.3 2z',fill:'#fff'}));
+        const sections=[
+          sect('Learning milestones','blue',[
+            mk('First Steps','Complete your first lesson','blue',iFlag,true,'icoFlagWave 2.4s ease-in-out infinite|left center'),
+            mk('Getting Going','Complete 3 lessons','blue',iGo,false,'icoSlide 1.5s ease-in-out infinite'),
+            mk('Bookworm','Complete 10 lessons','blue',iBook,false,'icoWiggle 3s ease-in-out infinite'),
+            mk('Power Learner','Reach Level 5','blue',iRocket,false,'icoBob 1.8s ease-in-out infinite|center'),
+          ]),
+          sect('Streaks','gold',[
+            mk('On Fire','Learn 3 days in a row','gold',iFlame,true,'icoFlicker 1.1s ease-in-out infinite|bottom center'),
+            mk('Unstoppable','Learn 7 days in a row','gold',iBolt,false,'icoZap 1.8s ease-in-out infinite'),
+          ]),
+          sect('Quiz & mastery','green',[
+            mk('Pop Quiz','Answer your first quiz question','green',iQ,false,'icoPulse 2s ease-in-out infinite'),
+            mk('Quiz Master','Get 10 quiz answers correct','green',iMedal,false,'icoTwirl 3s ease-in-out infinite'),
+            mk('Game On','Play your first learning game','green',iPad,false,'icoWiggle 2.4s ease-in-out infinite'),
+            mk('High Scorer','Play 5 learning games','green',iStick,false,'icoWiggle 2.2s ease-in-out infinite|bottom center'),
+          ]),
+          sect('Goals & quests','sky',[
+            mk('Goal Getter','Set your first learning goal','sky',iTarget,false,'icoPulse 1.8s ease-in-out infinite'),
+            mk('Aim High','Add your first work project','sky',iStar,false,'icoTwirl 2.6s ease-in-out infinite'),
+            mk('Quest Champion','Complete your first project quest','sky',iTrophy,false,'icoBob 2.8s ease-in-out infinite'),
+          ]),
+          sect('Level up','royal',[
+            mk('Double Digits','Reach Level 10','royal',iLvl,false,'icoBob 2s ease-in-out infinite'),
+            mk('Quarter Way','Reach Level 25','royal',iMedal,false,'icoTwirl 2.8s ease-in-out infinite'),
+            mk('Halfway Hero','Reach Level 50','royal',iMountain,false,'icoPulse 3.2s ease-in-out infinite'),
+            mk('Top of the Class','Reach Level 100','royal',iTrophy,false,'icoBob 2.6s ease-in-out infinite'),
+          ]),
+        ];
+        const earned=sections.reduce((n,s)=>n+s.items.filter(i=>i.earned).length,0);
+        const total=sections.reduce((n,s)=>n+s.items.length,0);
+        return {
+          achStyle: { position:'fixed', inset:'0', zIndex:80, overflowY:'auto', overflowX:'hidden', display: this.state.view==='achievements'?'block':'none', background:'var(--bg,#EAF0FB)', color:'var(--ink)', animation: this.state.view==='achievements'?'courseIn .5s cubic-bezier(.16,1,.3,1)':'none' },
+          badgeSections: sections,
+          earnedTotal: `${earned} / ${total}`,
+          recentXp: [
+            { label:'Completed — Prompt Engineering', date:'June 24, 2026', xp:'+45 XP' },
+            { label:'6-day streak bonus', date:'June 24, 2026', xp:'+15 XP' },
+            { label:'Welcome bonus', date:'June 18, 2026', xp:'+25 XP' },
+          ],
+        };
+      })(),
+      // ---- lesson chooser ----
+      ...(()=>{
+        const D=this.state.lessonDepth, F=this.state.lessonFormat, TOP=this.state.lessonTopic, CUST=(this.state.lessonCustom||'');
+        const iconChip=(sel)=> sel
+          ? `width:42px;height:42px;border-radius:12px;flex:none;display:grid;place-items:center;background:var(--accent,#0055FF);color:#fff;box-shadow:0 0 18px -4px var(--accent,#0055FF);`
+          : `width:42px;height:42px;border-radius:12px;flex:none;display:grid;place-items:center;background:var(--glass,rgba(255,255,255,.08));color:var(--ink-dim,rgba(255,255,255,.55));border:1px solid var(--line,rgba(255,255,255,.14));`;
+        const depthCard=(sel)=>`position:relative;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:16px;padding:20px;min-height:188px;border-radius:18px;background:${sel?'rgba(43,108,255,.1)':'var(--glass,rgba(255,255,255,.05))'};border:1.5px solid ${sel?'var(--accent,#0055FF)':'var(--line,rgba(255,255,255,.12))'};backdrop-filter:blur(10px);box-shadow:${sel?'0 24px 54px -28px var(--accent,#0055FF)':'none'};transition:transform .3s,border-color .3s,box-shadow .3s,background .3s;font-family:'Open Sans',sans-serif;`;
+        const fmtBtn=(sel)=>`display:inline-flex;align-items:center;gap:9px;padding:11px 22px;border-radius:999px;border:none;cursor:pointer;font-family:'Plus Jakarta Sans';font-weight:600;font-size:14px;transition:background .25s,color .25s,box-shadow .25s;background:${sel?'var(--accent,#0055FF)':'transparent'};color:${sel?'#fff':'var(--ink-dim,rgba(255,255,255,.6))'};box-shadow:${sel?'0 12px 26px -12px var(--accent,#0055FF)':'none'};`;
+        const topicCard=(sel)=>`position:relative;display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;padding:18px;border-radius:16px;background:${sel?'rgba(43,108,255,.1)':'var(--glass,rgba(255,255,255,.05))'};border:1.5px solid ${sel?'var(--accent,#0055FF)':'var(--line,rgba(255,255,255,.12))'};backdrop-filter:blur(10px);box-shadow:${sel?'0 22px 50px -28px var(--accent,#0055FF)':'none'};transition:transform .3s,border-color .3s,box-shadow .3s,background .3s;font-family:'Open Sans',sans-serif;`;
+        const arrow=(sel)=>`flex:none;display:grid;place-items:center;color:${sel?'var(--accent,#0055FF)':'var(--ink-dim,rgba(255,255,255,.4))'};`;
+        const tchip=(col)=>`width:46px;height:46px;flex:none;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,${col},transparent);border:1px solid var(--line,rgba(255,255,255,.16));color:var(--ink,#fff);`;
+        const check=SI(18,P('M5 12l5 5L20 7')), chev=SI(18,P('M9 6l6 6-6 6'));
+        const depthDefs=[
+          {id:'tip', time:'60 sec', title:'Quick Tip', desc:'One bite-sized insight to read and apply right away.', icon:SI(22,P('M13 2L4 14h6l-1 8 9-12h-6z'))},
+          {id:'lesson', time:'3–5 min', title:'Quick Lesson', desc:'A focused walkthrough with one hands-on exercise.', icon:SI(22,P('M4 5h7v14H4z'),P('M13 5h7v14h-7z'))},
+          {id:'deep', time:'15–20 min', title:'Deep Dive', desc:'A step-by-step lesson with multiple exercises.', icon:SI(22,P('M12 3l9 5-9 5-9-5z'),P('M3 13l9 5 9-5'))},
+          {id:'project', time:'20–60 min', title:'Project Quest', desc:'Build something real start to finish, guided.', icon:SI(22,P('M7 4h10v4a5 5 0 0 1-10 0z'),P('M7 5H4v1a3 3 0 0 0 3 3'),P('M17 5h3v1a3 3 0 0 1-3 3'),P('M10 16h4v4h-4z'),P('M8 20h8'))},
+        ];
+        const fmtDefs=[
+          {id:'read', label:'Read & practice', icon:SI(17,P('M4 5h7v14H4z'),P('M13 5h7v14h-7z'))},
+          {id:'narrated', label:'Narrated lesson', icon:SI(17,C(12,12,9),P('M10 9l5 3-5 3z'))},
+        ];
+        const tones=['rgba(0,85,255,.2)','rgba(255,183,6,.22)','rgba(26,160,106,.2)'];
+        const topicDefs=[
+          {id:'agents', title:'Build Enablement Agents', desc:'Design and deploy AI agents that support your team.', icon:SI(20,R(6,6,12,12,2),R(9.5,9.5,5,5,1),P('M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3'))},
+          {id:'gap', title:'Automate Gap Analysis', desc:'Use AI workflows to analyze assessment data continuously.', icon:SI(20,P('M5 20V10'),P('M12 20V4'),P('M19 20v-7'),P('M3 20h18'))},
+          {id:'content', title:'AI-Assisted Content Creation', desc:'Draft, structure, and refine training content with AI.', icon:SI(20,P('M4 20l2-6 9-9 4 4-9 9z'),P('M13 5l4 4'))},
+          {id:'refresh', title:'Content Refresh Automation', desc:'Build pipelines that flag outdated training material.', icon:SI(20,P('M20 11a8 8 0 0 0-14-4'),P('M4 5v3h3'),P('M4 13a8 8 0 0 0 14 4'),P('M20 19v-3h-3'))},
+          {id:'measure', title:'Measure Training Effectiveness', desc:'Synthesize completion and assessment data with AI.', icon:SI(20,P('M4 19V5'),P('M4 19h16'),P('M7 15l4-4 3 3 5-6'))},
+          {id:'chain', title:'Chaining Enablement Workflows', desc:'Connect multiple AI actions into multi-step flows.', icon:SI(20,P('M9 15l6-6'),P('M8 12l-2 2a3 3 0 0 0 4 4l2-2'),P('M16 12l2-2a3 3 0 0 0-4-4l-2 2'))},
+        ];
+        const topicTitle = TOP ? (topicDefs.find(t=>t.id===TOP)||{}).title : '';
+        const depthTitle = (depthDefs.find(d=>d.id===D)||{}).title || '';
+        const fmtLabel = (fmtDefs.find(f=>f.id===F)||{}).label || '';
+        const ready = !!(TOP || CUST.trim());
+        const chosen = TOP ? topicTitle : (CUST.trim()? `“${CUST.trim()}”` : 'Choose a topic');
+        return {
+          depths: depthDefs.map(d=>({ ...d, sel:D===d.id, set:()=>this.setDepth(d.id), cardStyle:depthCard(D===d.id), iconChip:iconChip(D===d.id) })),
+          formats: fmtDefs.map(f=>({ ...f, set:()=>this.setFormat(f.id), style:fmtBtn(F===f.id) })),
+          formatHint: F==='read' ? 'Work through a hands-on lesson step by step.' : 'Listen to a narrated lesson in the Nova voice, hands-free.',
+          topics: topicDefs.map((t,i)=>({ ...t, set:()=>this.setTopic(t.id), style:topicCard(TOP===t.id), chip:tchip(tones[i%tones.length]), arrowStyle:arrow(TOP===t.id), arrowIcon: TOP===t.id?check:chev })),
+          surprise: ()=>this.surprise(),
+          onCustom: (e)=>this.setCustom(e.target.value),
+          generate: ()=>this.generate(),
+          launchSummary: `${depthTitle} · ${fmtLabel} · ${chosen}`,
+          lessonStyle: { position:'fixed', inset:'0', zIndex:80, overflowY:'auto', overflowX:'hidden', display: this.state.view==='lesson'?'block':'none', background:'var(--bg,#EAF0FB)', color:'var(--ink)', animation: this.state.view==='lesson'?'courseIn .5s cubic-bezier(.16,1,.3,1)':'none' },
+          launchStyle: { position:'fixed', left:'50%', bottom:'24px', zIndex:84, display: this.state.view==='lesson'?'flex':'none', alignItems:'center', gap:'20px', padding:'12px 12px 12px 26px', borderRadius:'999px', background:'var(--navbg,rgba(20,16,46,.6))', backdropFilter:'blur(22px)', WebkitBackdropFilter:'blur(22px)', border:'1px solid var(--line,rgba(255,255,255,.14))', boxShadow:'0 30px 70px -22px rgba(8,18,38,.55)', maxWidth:'92vw', transform: ready?'translateX(-50%) translateY(0)':'translateX(-50%) translateY(150%)', transition:'transform .5s cubic-bezier(.16,1,.3,1)' },
+        };
+      })(),
+      goTour: ()=>this.goTour(),
+      toggleTheme: ()=>this.setMood(dark?'light':'dark'),
+      navSections: this.navData(),
+      chevStyle: { transition:'transform .25s ease', transform: this.state.profileOpen?'rotate(180deg)':'rotate(0deg)', opacity:.6 },
+      themeTrack: `width:42px;height:24px;flex:none;border-radius:999px;position:relative;transition:background .25s;background:${dark?'var(--accent,#0055FF)':'rgba(120,140,170,.45)'};`,
+      themeKnob: `position:absolute;top:3px;left:${dark?'21px':'3px'};width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .25s;`,
+      profRow: `display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:none;cursor:pointer;background:transparent;color:var(--ink,#fff);font-family:'Open Sans',sans-serif;font-weight:600;font-size:14px;`,
+      profRowDanger: `display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:none;cursor:pointer;background:transparent;color:#E5544B;font-family:'Open Sans',sans-serif;font-weight:600;font-size:14px;`,
+      notifs: [
+        { title:'Badge unlocked — Prompt Architect', time:'2 minutes ago', chip:chip('#FFB706'), icon: ns(E('path',{d:'M12 3l2.4 6.8L21 11l-6.6 2.2L12 20l-2.4-6.8L3 11l6.6-2.2z'})) },
+        { title:'New lesson added to Prompt Engineering', time:'1 hour ago', chip:chip('#0055FF'), icon: ns(E('path',{d:'M4 5h7v14H4z'}),E('path',{d:'M13 5h7v14h-7z'})) },
+        { title:'Keep your 6-day streak alive', time:'Today', chip:chip('#1AA06A'), icon: ns(E('path',{d:'M12 3c2 3.5 4.6 4.8 4.6 8.6a4.6 4.6 0 0 1-9.2 0c0-1.5.6-2.6 1.5-3.4C8.6 11 12 9 12 3z'})) },
+      ],
+      scrimStyle: { position:'fixed', inset:'0', zIndex:92, background:'rgba(8,18,38,.46)', backdropFilter:'blur(3px)', WebkitBackdropFilter:'blur(3px)', opacity:this.state.navOpen?1:0, pointerEvents:this.state.navOpen?'auto':'none', transition:'opacity .35s ease' },
+      drawerStyle: { position:'fixed', top:'0', left:'0', height:'100vh', width:'344px', maxWidth:'86vw', zIndex:95, display:'flex', flexDirection:'column', background:'var(--bg2)', color:'var(--ink)', borderRight:'1px solid var(--line)', boxShadow:'30px 0 80px -20px rgba(8,18,38,.5)', transform:this.state.navOpen?'translateX(0)':'translateX(-105%)', transition:'transform .42s cubic-bezier(.16,1,.3,1)' },
+      popOverlayStyle: { position:'fixed', inset:'0', zIndex:86, display:(this.state.notifOpen||this.state.profileOpen)?'block':'none' },
+      notifStyle: { position:'fixed', top:'76px', right:'22px', width:'330px', maxWidth:'90vw', zIndex:88, background:'var(--bg2)', color:'var(--ink)', border:'1px solid var(--line)', borderRadius:'18px', boxShadow:'0 30px 70px -25px rgba(8,18,38,.55)', overflow:'hidden', transformOrigin:'top right', transition:'opacity .26s ease, transform .26s cubic-bezier(.16,1,.3,1)', opacity:this.state.notifOpen?1:0, transform:this.state.notifOpen?'translateY(0) scale(1)':'translateY(-8px) scale(.97)', pointerEvents:this.state.notifOpen?'auto':'none' },
+      profileStyle: { position:'fixed', top:'76px', right:'22px', width:'252px', maxWidth:'90vw', zIndex:88, background:'var(--bg2)', color:'var(--ink)', border:'1px solid var(--line)', borderRadius:'18px', boxShadow:'0 30px 70px -25px rgba(8,18,38,.55)', overflow:'hidden', transformOrigin:'top right', transition:'opacity .26s ease, transform .26s cubic-bezier(.16,1,.3,1)', opacity:this.state.profileOpen?1:0, transform:this.state.profileOpen?'translateY(0) scale(1)':'translateY(-8px) scale(.97)', pointerEvents:this.state.profileOpen?'auto':'none' },
+      moods: [
+        {name:'Light', set:()=>this.setMood('light'), dot:this.moodDot('light','#FFB706')},
+        {name:'Dark', set:()=>this.setMood('dark'), dot:this.moodDot('dark','#3B94FF')},
+      ],
+      heroStats: [
+        {value:'6', label:'Day streak', hint:'Gold dot — your daily learning streak', chip:'var(--gold,#FFB706)', ink:'#0A2443', icon: React.createElement('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'currentColor'},React.createElement('path',{d:'M12 3c2 3.5 4.6 4.8 4.6 8.6a4.6 4.6 0 0 1-9.2 0c0-1.5.6-2.6 1.5-3.4C8.6 11 12 9 12 3z'}))},
+        {value:'105', label:'Total XP', hint:'Blue dot — experience points earned', chip:'var(--accent,#0055FF)', ink:'#fff', icon: React.createElement('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'currentColor'},React.createElement('path',{d:'M13 2L4 14h6l-1 8 9-12h-6z'}))},
+        {value:'2', label:'Badges', hint:'Green dot — badges unlocked', chip:'var(--good,#1AA06A)', ink:'#fff', icon: React.createElement('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'currentColor'},React.createElement('path',{d:'M12 3l2.4 6.8L21 11l-6.6 2.2L12 20l-2.4-6.8L3 11l6.6-2.2z'}))},
+      ],
+      modes: [
+        {title:'Games', click:()=>this.goCourse(), desc:'Learn by playing fast AI challenges.', glow:'rgba(189,140,255,.5)', icon: React.createElement('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none'},React.createElement('rect',{x:2,y:7,width:20,height:11,rx:5,stroke:'currentColor','strokeWidth':1.8}),React.createElement('circle',{cx:8,cy:12.5,r:1.4,fill:'currentColor'}),React.createElement('circle',{cx:16,cy:12.5,r:1.4,fill:'currentColor'}))},
+        {title:'Just Chat', click:()=>this.goCourse(), desc:'Ask the coach anything, anytime.', glow:'rgba(91,140,255,.5)', icon: React.createElement('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none'},React.createElement('path',{d:'M4 5h16v11H9l-5 4z',stroke:'currentColor',strokeWidth:1.8,strokeLinejoin:'round'}))},
+        {title:'Lesson', click:()=>this.goLesson(), desc:'Guided, immersive deep dives.', glow:'rgba(79,230,176,.5)', icon: React.createElement('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none'},React.createElement('path',{d:'M4 5h7v14H4zM13 5h7v14h-7z',stroke:'currentColor',strokeWidth:1.8,strokeLinejoin:'round'}))},
+        {title:'Practice', click:()=>this.goCourse(), desc:'Apply skills to your real work.', glow:'rgba(255,194,75,.5)', icon: React.createElement('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none'},React.createElement('path',{d:'M12 3l2.6 6.5L21 12l-6.4 2.5L12 21l-2.6-6.5L3 12l6.4-2.5z',stroke:'currentColor',strokeWidth:1.8,strokeLinejoin:'round'}))},
+        {title:'Review', click:()=>this.goCourse(), desc:'Refresh fading skills.', glow:'rgba(91,140,255,.5)', icon: React.createElement('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round'},React.createElement('path',{d:'M20 11a8 8 0 0 0-14-4M4 5v3h3'}),React.createElement('path',{d:'M4 13a8 8 0 0 0 14 4M20 19v-3h-3'}))},
+      ],
+      // ---- course ----
+      outcomes: [
+        {n:'01', t:'Structure', d:'Give the model a role, a task, and a format so it stops guessing.'},
+        {n:'02', t:'Context', d:'Feed it the specifics of your job — names, constraints, goals.'},
+        {n:'03', t:'Iterate', d:'Refine in seconds. Treat the first answer as a draft, not the finish.'},
+      ],
+      layers: [
+        {label:'Role', example:"You're a friendly HVAC dispatcher.", glow:'rgba(91,140,255,.12)'},
+        {label:'Task', example:'Write a 4-sentence follow-up email.', glow:'rgba(189,140,255,.12)'},
+        {label:'Context', example:'Thank them for the AC repair, confirm the 1-year warranty.', glow:'rgba(79,230,176,.12)'},
+        {label:'Format', example:'Warm tone, end with a Google review invite.', glow:'rgba(255,194,75,.12)'},
+      ],
+      pickA: ()=>this.pick('a'),
+      pickB: ()=>this.pick('b'),
+      optAStyle: this.optCard('a'),
+      optBStyle: this.optCard('b'),
+      feedbackStyle: { marginTop:'22px', padding: fb?'16px 20px':'0', borderRadius:'14px', fontSize:'15px', lineHeight:1.55, color: fb?fb.c:'transparent', background: fb?fb.bg:'transparent', border: fb?`1px solid ${fb.bd}`:'none', display: fb?'block':'none' },
+      feedbackTitle: fb?fb.t:'',
+      feedbackBody: fb?fb.b:'',
+      doComplete: ()=> canComplete && this.complete(),
+      completeBtnStyle: `position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:10px;padding:17px 30px;border-radius:15px;border:none;font-family:'Plus Jakarta Sans';font-weight:600;font-size:16px;color:#fff;transition:transform .3s,opacity .3s,box-shadow .3s;${canComplete?"cursor:pointer;background:linear-gradient(135deg,var(--accent,#5b8cff),var(--accent2,#bd8cff));box-shadow:0 22px 50px -20px var(--accent,#5b8cff);opacity:1;":"cursor:not-allowed;background:var(--glass,rgba(255,255,255,.06));box-shadow:none;opacity:.45;"}`,
+      completePanelStyle: { position:'fixed', inset:'0', zIndex:50, display: a==='done'?'grid':'none', placeItems:'center', background:'var(--bg,rgba(6,8,26,.86))', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' },
+      restart: ()=>this.resetCourse(),
+    };
+  }
+}
+</script>
+</body>
+</html>
