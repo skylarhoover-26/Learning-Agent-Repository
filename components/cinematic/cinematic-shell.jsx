@@ -4,9 +4,9 @@ import { createContext, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Menu, X, Home, Bell, ChevronDown, Sparkles, ExternalLink, Play,
+  Menu, X, Home, Sparkles, ExternalLink, Play,
 } from 'lucide-react';
-import { useProfile } from '@/components/profile-provider';
+import UserMenu from '@/components/user-menu';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { useTour } from '@/components/guided-tour-provider';
 import { MenuThemeToggle } from '@/components/theme-toggle';
@@ -20,45 +20,40 @@ function initials(name) {
 
 // Cinematic top bar — logo + hamburger (opens the cinematic drawer), with
 // Home / notifications / profile on the right.
-function TopNav({ name, onMenu }) {
+function TopNav({ onMenu }) {
+  // A dark cinematic top bar (like prod's) so the real UserMenu — Home,
+  // notifications, and the full profile dropdown (Profile, My Role, My AI Tools,
+  // My Tasks, Projects, Back to admin view, Log out) — reads in both themes.
   return (
-    <header className="sticky top-0 z-40 cine-glass" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, borderTop: 0 }}>
-      <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+    <header
+      className="sticky top-0 z-40 text-white"
+      style={{
+        background: 'linear-gradient(90deg, rgba(6,16,38,.94), rgba(10,35,71,.88))',
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,.08)',
+      }}
+    >
+      <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
           <button
             onClick={onMenu}
-            aria-label="Open menu"
-            className="cine-lift w-10 h-10 rounded-full grid place-items-center"
-            style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--ink)' }}
+            aria-label="Toggle menu"
+            className="cine-lift w-10 h-10 rounded-full grid place-items-center text-white shrink-0"
+            style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.14)' }}
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl grid place-items-center" style={{ background: 'linear-gradient(135deg,var(--accent),var(--gold))', boxShadow: '0 0 18px -3px var(--accent)' }}>
+          <Link href="/" className="flex items-center gap-2.5 min-w-0">
+            <span className="w-9 h-9 rounded-xl grid place-items-center shrink-0" style={{ background: 'linear-gradient(135deg,#3B94FF,#FFB706)', boxShadow: '0 0 18px -3px #3B94FF' }}>
               <Sparkles className="w-5 h-5 text-white" strokeWidth={2.4} />
-            </div>
-            <div className="leading-tight">
-              <p className="font-display font-bold text-[15px]">AI Learning Coach</p>
-              <p className="text-[11px]" style={{ color: 'var(--ink-dim)' }}>By Housecall Pro</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Link href="/" className="cine-lift inline-flex items-center gap-2 h-10 px-4 rounded-full font-semibold text-sm" style={{ color: 'var(--ink)' }}>
-            <Home className="w-4 h-4" /> <span className="hidden sm:inline">Home</span>
-          </Link>
-          <Link href="/#" className="cine-lift relative w-10 h-10 rounded-full grid place-items-center" style={{ color: 'var(--ink)' }} aria-label="Notifications">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-2 right-2.5 w-2.5 h-2.5 rounded-full" style={{ background: 'var(--gold)', boxShadow: '0 0 8px var(--gold)' }} />
-          </Link>
-          <Link href="/profile" className="cine-lift inline-flex items-center gap-2 h-10 pl-3 pr-2 rounded-full" style={{ color: 'var(--ink)' }}>
-            <span className="hidden sm:inline font-semibold text-sm">{name}</span>
-            <span className="w-8 h-8 rounded-full grid place-items-center font-display font-bold text-[12px]" style={{ background: 'linear-gradient(135deg,var(--gold),var(--accent))', color: '#0A2443' }}>
-              {initials(name)}
             </span>
-            <ChevronDown className="w-4 h-4" style={{ color: 'var(--ink-dim)' }} />
+            <span className="leading-tight min-w-0">
+              <span className="block font-display font-bold text-[15px] text-white truncate">AI Learning Coach</span>
+              <span className="block text-[11px] text-white/60">By Housecall Pro</span>
+            </span>
           </Link>
         </div>
+        <UserMenu />
       </div>
     </header>
   );
@@ -210,14 +205,12 @@ export function useInCinematicFrame() { return useContext(FrameContext); }
 // (shared app-wide via useSidebar, so it stays open page to page) + a standard
 // <main>. Used by the bespoke (fully-redesigned) screens.
 export default function CinematicShell({ children }) {
-  const { profile } = useProfile();
-  const name = profile?.display_name || 'there';
   const { open, setOpen, toggle } = useSidebar();
 
   return (
     <FrameContext.Provider value={true}>
       <div className="cine relative">
-        <TopNav name={name} onMenu={toggle} />
+        <TopNav onMenu={toggle} />
         <Drawer open={open} onClose={() => setOpen(false)} />
         <div className={`transition-[padding] duration-300 ${open ? 'lg:pl-80' : ''}`}>
           <main className="relative max-w-6xl mx-auto px-6 py-10 space-y-10">
@@ -234,14 +227,12 @@ export default function CinematicShell({ children }) {
 // adopt the cinematic navigation without a full rewrite. The page's own
 // PageHeader hides itself via FrameContext so there's no double bar.
 export function CinematicFrame({ children }) {
-  const { profile } = useProfile();
-  const name = profile?.display_name || 'there';
   const { open, setOpen, toggle } = useSidebar();
 
   return (
     <FrameContext.Provider value={true}>
       <div className="cine-frame cine-vars">
-        <TopNav name={name} onMenu={toggle} />
+        <TopNav onMenu={toggle} />
         <Drawer open={open} onClose={() => setOpen(false)} />
         <div className={`transition-[padding] duration-300 ${open ? 'lg:pl-80' : ''}`}>
           {children}
