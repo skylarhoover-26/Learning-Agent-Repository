@@ -1,8 +1,9 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, Fragment } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useProfile } from '@/components/profile-provider';
 import {
   Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
   CalendarDays, Play, GraduationCap, ClipboardCheck,
@@ -28,7 +29,7 @@ function SectionHeader({ title, tour }) {
   return (
     <p
       data-tour={tour}
-      className="px-4 pt-5 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500"
+      className="px-4 pt-5 pb-1 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
     >
       {title}
     </p>
@@ -125,11 +126,56 @@ function isChromeHiddenRoute(pathname) {
 
 const SidebarContext = createContext(null);
 
+const SIDEBAR_KEY = 'sidebar_open';
+
 export function SidebarProvider({ children }) {
-  // Closed by default: the menu is an overlay (Amazon-style) that slides over
-  // the page on top of a dimmed backdrop, so it starts closed and opens on the
-  // hamburger — leaving it open by default would dim every page on load.
-  const [open, setOpen] = useState(false);
+  // Open by default and persisted. The menu stays open across reloads and
+  // navigation; once the user opens or closes it we remember that choice in
+  // localStorage and stop auto-managing it. The one exception is the first-run
+  // onboarding welcome — we keep the menu closed while that card is up so it
+  // doesn't compete for attention. Starts closed for SSR so the first client
+  // render matches the server; the effects below settle the real state right
+  // after mount (the panel slides in via its transform transition).
+  const [open, setOpenState] = useState(false);
+  const pathname = usePathname();
+  const profileCtx = useProfile();
+  const profile = profileCtx?.profile;
+
+  // Once the user makes an explicit choice (or we restore a saved one), the
+  // auto-default effect stops touching the menu.
+  const userDecidedRef = useRef(false);
+
+  // Setter for explicit user actions (hamburger, ✕, backdrop, Escape) — it
+  // records the choice so it persists and isn't overridden by the default.
+  const setOpen = useCallback((next) => {
+    userDecidedRef.current = true;
+    setOpenState(prev => {
+      const value = typeof next === 'function' ? next(prev) : next;
+      try { localStorage.setItem(SIDEBAR_KEY, value ? 'true' : 'false'); } catch {}
+      return value;
+    });
+  }, []);
+
+  // Restore a saved choice on mount, if there is one.
+  useEffect(() => {
+    let stored = null;
+    try { stored = localStorage.getItem(SIDEBAR_KEY); } catch {}
+    if (stored === 'true' || stored === 'false') {
+      userDecidedRef.current = true;
+      setOpenState(stored === 'true');
+    }
+  }, []);
+
+  // Default-open behavior, active only until the user decides for themselves:
+  // open everywhere, EXCEPT while the first-run onboarding welcome card is
+  // showing (a profile exists but the tour was never offered) — keep it closed
+  // then. Re-runs when onboarding completes (tour_offered flips true), so the
+  // menu opens once the welcome is dismissed.
+  useEffect(() => {
+    if (userDecidedRef.current) return;
+    const onboardingWelcome = pathname === '/' && profile && profile.tour_offered === false;
+    setOpenState(!onboardingWelcome);
+  }, [pathname, profile]);
 
   useEffect(() => {
     function handleEscape(e) {
@@ -137,7 +183,7 @@ export function SidebarProvider({ children }) {
     }
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
+  }, [setOpen]);
 
   // Mark the document while the menu is open so the top bar can hold its
   // full width while the body shifts, and the hamburger strip can hide
@@ -277,17 +323,23 @@ export function SideNav() {
       <Link
         key={item.href}
         href={item.href}
-        title={item.desc}
         data-tour={navItemTour(item.href)}
         aria-current={active ? 'page' : undefined}
-        className={`flex items-center gap-3 px-4 py-2 border-l-2 transition-colors ${
+        className={`group flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
           active
             ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
             : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
         }`}
       >
-        <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
-        <span className="text-sm font-medium">{item.label}</span>
+        <item.icon className={`w-4 h-4 shrink-0 mt-0.5 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
+        <span className="min-w-0">
+          <span className="block text-sm font-medium leading-tight">{item.label}</span>
+          {item.desc && (
+            <span className={`hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 ${active ? 'text-brand/70' : 'text-slate-500 dark:text-slate-400'}`}>
+              {item.desc}
+            </span>
+          )}
+        </span>
       </Link>
     );
   }
@@ -301,7 +353,7 @@ export function SideNav() {
       aria-hidden={!open}
     >
       <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 flex items-center justify-between z-10">
-        <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Menu</p>
+        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Menu</p>
         <button
           onClick={() => setOpen(false)}
           data-tour="menu-toggle"
@@ -350,12 +402,16 @@ export function SideNav() {
                 <button
                   key="tour"
                   onClick={startTour}
-                  title={item.desc}
                   data-tour="nav-tour"
-                  className="w-full flex items-center gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="group w-full flex items-start gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <item.icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
-                  <span className="text-sm font-medium">{item.label}</span>
+                  <item.icon className="w-4 h-4 shrink-0 mt-0.5 text-slate-500 dark:text-slate-400" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium leading-tight">{item.label}</span>
+                    {item.desc && (
+                      <span className="hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 text-slate-500 dark:text-slate-400">{item.desc}</span>
+                    )}
+                  </span>
                 </button>
               ) : (
                 renderNavItem(item)
@@ -378,11 +434,15 @@ export function SideNav() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title={link.desc}
-                  className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="group flex items-start gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <ExternalLink className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                  <span>{link.label}</span>
+                  <ExternalLink className="w-4 h-4 shrink-0 mt-0.5 text-slate-400 dark:text-slate-500" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium leading-tight">{link.label}</span>
+                    {link.desc && (
+                      <span className="hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 text-slate-500 dark:text-slate-400">{link.desc}</span>
+                    )}
+                  </span>
                 </a>
                 )
               ))}
