@@ -212,6 +212,10 @@ export function MenuStrip() {
   const { open, toggle } = useSidebar();
   const pathname = usePathname();
   if (isChromeHiddenRoute(pathname)) return null;
+  // Reskinned routes (cinematic) provide their own hamburger in their top bar,
+  // so the shared strip would be a duplicate there. Grow this list as the
+  // cinematic reskin rolls out to more pages.
+  if (pathname === '/') return null;
   return (
     <div className="js-menu-strip fixed top-16 left-0 right-0 z-30 h-11 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center px-4">
       <button
