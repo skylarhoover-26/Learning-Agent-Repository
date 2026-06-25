@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   getScores, saveScores,
   SCORE_LABELS, DIMENSION_LABELS, getOverallLevel,
@@ -59,6 +60,10 @@ const CHECKIN_QUESTIONS = [
 ];
 
 export default function CheckInPage() {
+  return <CinematicFrame><CheckInPageInner /></CinematicFrame>;
+}
+
+function CheckInPageInner() {
   const router = useRouter();
   const [previousScores, setPreviousScores] = useState(null);
   const [step, setStep] = useState(0);

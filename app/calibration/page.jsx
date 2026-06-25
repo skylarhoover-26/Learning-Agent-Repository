@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   saveCalibrationData, calculateSkills,
   SKILL_LABELS, SKILL_KEYS,
@@ -26,6 +27,10 @@ const SKILL_ICONS = {
 const TOTAL_STEPS = SCENARIOS.length + 2;
 
 export default function CalibrationPage() {
+  return <CinematicFrame><CalibrationPageInner /></CinematicFrame>;
+}
+
+function CalibrationPageInner() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});

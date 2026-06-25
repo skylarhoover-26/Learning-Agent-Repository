@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { Brain, ChevronRight, Check, X, RotateCcw, BarChart3, Zap } from 'lucide-react';
 import { QUALITY_BUTTONS, formatNextReview } from '@/lib/sm2';
 import { buildReviewQueue, updateCardAfterReview, getCardState, getReviewStats } from '@/lib/review-store';
@@ -14,6 +15,10 @@ import { useProgression } from '@/components/progression-provider';
 import { trackReviewCard } from '@/lib/track';
 
 export default function ReviewPage() {
+  return <CinematicFrame><ReviewPageInner /></CinematicFrame>;
+}
+
+function ReviewPageInner() {
   const { profile } = useProfile();
   const { refresh: refreshProgression } = useProgression() || {};
   const [queue, setQueue] = useState([]);

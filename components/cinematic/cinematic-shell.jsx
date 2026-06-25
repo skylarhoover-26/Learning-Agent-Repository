@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -201,31 +201,61 @@ function Drawer({ open, onClose }) {
   );
 }
 
-// Cinematic shell: the immersive background, ambient blobs, top bar, overlay
-// drawer (own state, starts closed), and the page content. Reused by every
-// cinematic-reskinned screen.
-export default function CinematicShell({ children }) {
-  const { profile } = useProfile();
-  const name = profile?.display_name || 'there';
-  const [drawerOpen, setDrawerOpen] = useState(false);
+// Marks that a cinematic top bar is already present, so the legacy PageHeader
+// renders nothing (avoids a double header on framed pages).
+const FrameContext = createContext(false);
+export function useInCinematicFrame() { return useContext(FrameContext); }
 
+function useDrawerState() {
+  const [open, setOpen] = useState(false);
   useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') setDrawerOpen(false); }
+    function onKey(e) { if (e.key === 'Escape') setOpen(false); }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
+  return [open, setOpen];
+}
+
+// Immersive shell — full cinematic background + ambient blobs + top bar + overlay
+// drawer + a standard <main>. Used by the bespoke (fully-redesigned) screens.
+export default function CinematicShell({ children }) {
+  const { profile } = useProfile();
+  const name = profile?.display_name || 'there';
+  const [drawerOpen, setDrawerOpen] = useDrawerState();
 
   return (
-    <div className="cine relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-24 right-0 w-[480px] h-[480px] rounded-full cine-blob1" style={{ background: 'radial-gradient(circle,rgba(59,148,255,.20),transparent 70%)' }} />
-      <div className="pointer-events-none absolute top-1/3 -left-32 w-[420px] h-[420px] rounded-full cine-blob2" style={{ background: 'radial-gradient(circle,rgba(255,183,6,.12),transparent 70%)' }} />
+    <FrameContext.Provider value={true}>
+      <div className="cine relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-24 right-0 w-[480px] h-[480px] rounded-full cine-blob1" style={{ background: 'radial-gradient(circle,rgba(59,148,255,.20),transparent 70%)' }} />
+        <div className="pointer-events-none absolute top-1/3 -left-32 w-[420px] h-[420px] rounded-full cine-blob2" style={{ background: 'radial-gradient(circle,rgba(255,183,6,.12),transparent 70%)' }} />
 
-      <TopNav name={name} onMenu={() => setDrawerOpen(true)} />
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+        <TopNav name={name} onMenu={() => setDrawerOpen(true)} />
+        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      <main className="relative max-w-6xl mx-auto px-6 py-10 space-y-10">
+        <main className="relative max-w-6xl mx-auto px-6 py-10 space-y-10">
+          {children}
+        </main>
+      </div>
+    </FrameContext.Provider>
+  );
+}
+
+// Chrome-only frame — cinematic top bar + drawer, but the page brings its own
+// (already theme-aware) content. Lets complex functional pages adopt the
+// cinematic navigation without a full rewrite. The page's own PageHeader hides
+// itself via FrameContext so there's no double bar.
+export function CinematicFrame({ children }) {
+  const { profile } = useProfile();
+  const name = profile?.display_name || 'there';
+  const [drawerOpen, setDrawerOpen] = useDrawerState();
+
+  return (
+    <FrameContext.Provider value={true}>
+      <div className="cine-frame cine-vars">
+        <TopNav name={name} onMenu={() => setDrawerOpen(true)} />
+        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         {children}
-      </main>
-    </div>
+      </div>
+    </FrameContext.Provider>
   );
 }

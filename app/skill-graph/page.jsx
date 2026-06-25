@@ -6,6 +6,7 @@ import {
   GitBranch, ArrowRight, Clock, Sparkles, Lock, Unlock, ChevronRight,
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProgression } from '@/components/progression-provider';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
@@ -265,6 +266,10 @@ const GRAPH_NAME_TO_HEATMAP = {
 };
 
 export default function SkillGraphPage() {
+  return <CinematicFrame><SkillGraphPageInner /></CinematicFrame>;
+}
+
+function SkillGraphPageInner() {
   const [selectedId, setSelectedId] = useState(null);
   const prog = useProgression();
 

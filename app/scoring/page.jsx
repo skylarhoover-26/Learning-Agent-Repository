@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   getScores, saveScores,
   SCORE_LABELS, DIMENSION_LABELS, getOverallLevel,
@@ -79,6 +80,10 @@ const QUESTIONS = [
 ];
 
 export default function ScoringPage() {
+  return <CinematicFrame><ScoringPageInner /></CinematicFrame>;
+}
+
+function ScoringPageInner() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});

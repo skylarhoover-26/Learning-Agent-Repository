@@ -46,10 +46,29 @@
     radial-gradient(900px 520px at -5% 8%, rgba(255, 183, 6, .10), transparent 55%),
     linear-gradient(180deg, #06142E 0%, #0A2443 100%);
 }
-.cine h1, .cine h2, .cine h3, .cine h4, .cine .font-display {
+.cine h1, .cine h2, .cine h3, .cine h4, .cine .font-display, .font-display {
   font-family: 'Plus Jakarta Sans', 'Open Sans', sans-serif;
 }
 .cine ::selection { background: rgba(59, 148, 255, .28); }
+
+/* Inside a cinematic frame, the legacy page header (and its hamburger strip) is
+   replaced by the cinematic top bar — hide the originals. */
+.cine-frame .js-topbar,
+.cine-frame .js-menu-strip { display: none !important; }
+
+/* Cinematic CSS variables WITHOUT the immersive bg/min-height — for chrome
+   (top bar, drawer) that frames an otherwise-unstyled page. Pairs with the
+   CinematicFrame wrapper. */
+.cine-vars {
+  --accent: #0055FF; --accent2: #3B94FF; --gold: #FFB706; --good: #1AA06A;
+  --ink: #0A2443; --ink-dim: rgba(10, 36, 67, .60); --line: rgba(10, 36, 67, .10);
+  --glass: rgba(255, 255, 255, .72); --card: rgba(255, 255, 255, .70); --navbg: rgba(255, 255, 255, .82);
+}
+.dark .cine-vars {
+  --accent: #3B94FF; --accent2: #6AABFF; --gold: #FFB706; --good: #2BB37A;
+  --ink: #EAF2FF; --ink-dim: rgba(234, 242, 255, .62); --line: rgba(255, 255, 255, .12);
+  --glass: rgba(255, 255, 255, .06); --card: rgba(255, 255, 255, .045); --navbg: rgba(10, 36, 67, .55);
+}
 
 .cine-glass {
   background: var(--card);

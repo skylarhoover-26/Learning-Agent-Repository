@@ -5,6 +5,8 @@ import UserMenu from '@/components/user-menu';
 // button (e.g. the Tour's play button). When omitted, the icon is decorative.
 // `actions` renders optional controls in the right cluster, just before the
 // user menu (e.g. a "Clear chat" button).
+// NOTE: inside a CinematicFrame this header is hidden via CSS
+// (`.cine-frame .js-topbar`) so the cinematic top bar isn't duplicated.
 export default function PageHeader({ icon: Icon, title, subtitle, iconButton, actions }) {
   return (
     <header className="js-topbar bg-ink sticky top-0 z-50 text-white">
