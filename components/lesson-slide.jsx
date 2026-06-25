@@ -138,19 +138,27 @@ export function FormattedContent({ text }) {
       continue;
     }
 
-    // Bullet list items (- or *)
+    // Bullet list items (- or *). Leading whitespace is captured so bullets
+    // nested under a numbered step stay indented under it (e.g. step 3's
+    // sub-points), instead of flattening to the left margin.
     if (/^\s*[-*] /.test(line)) {
       const listItems = [];
       while (i < lines.length && /^\s*[-*] /.test(lines[i])) {
-        listItems.push(lines[i].replace(/^\s*[-*] /, ''));
+        const m = lines[i].match(/^(\s*)[-*] /);
+        const indent = m ? m[1].replace(/\t/g, '  ').length : 0;
+        listItems.push({ text: lines[i].replace(/^\s*[-*] /, ''), indent });
         i += 1;
       }
       elements.push(
-        <ul key={`ul-${elements.length}`} className="space-y-1.5 my-3">
+        <ul key={`ul-${elements.length}`} className="space-y-2 my-3">
           {listItems.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
-              <span className="text-brand mt-1.5 text-xs">●</span>
-              <span>{renderInline(item)}</span>
+            <li
+              key={idx}
+              className="flex items-start gap-2.5 text-slate-700 dark:text-slate-300 leading-relaxed"
+              style={item.indent >= 2 ? { paddingLeft: '1.75rem' } : undefined}
+            >
+              <span className="text-brand mt-1.5 text-xs shrink-0">●</span>
+              <span className="flex-1">{renderInline(item.text)}</span>
             </li>
           ))}
         </ul>
@@ -168,13 +176,13 @@ export function FormattedContent({ text }) {
         i += 1;
       }
       elements.push(
-        <ol key={`ol-${elements.length}`} className="space-y-1.5 my-3">
+        <ol key={`ol-${elements.length}`} className="space-y-2 my-3">
           {listItems.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
-              <span className="text-brand font-semibold min-w-[1.25rem] text-right mt-0.5">
+            <li key={idx} className="flex items-start gap-3 text-slate-700 dark:text-slate-300 leading-relaxed">
+              <span className="text-brand font-semibold min-w-[1.5rem] text-right shrink-0">
                 {item.num ?? idx + 1}.
               </span>
-              <span>{renderInline(item.text)}</span>
+              <span className="flex-1">{renderInline(item.text)}</span>
             </li>
           ))}
         </ol>
@@ -198,7 +206,7 @@ export function FormattedContent({ text }) {
     i += 1;
   }
 
-  return <div className="space-y-1">{elements}</div>;
+  return <div className="space-y-2">{elements}</div>;
 }
 
 /**

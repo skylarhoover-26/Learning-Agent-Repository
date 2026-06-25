@@ -26,7 +26,6 @@ import PausedLessonsBox from '@/components/paused-lessons-box';
 import { listPausedLessons } from '@/lib/paused-lessons';
 import { QUESTS } from '@/lib/quest-data';
 import { useActiveTool } from '@/components/active-tool-provider';
-import SurpriseWin from '@/components/surprise-win';
 
 // Prefilled into the chat bar at the lesson's first practice point so the learner
 // can hit enter to kick off an interactive, personalized scenario.
@@ -97,6 +96,11 @@ function LessonContent() {
   // When the narrated player is showing a Project Quest, this holds the quest id so
   // the script is sourced from the quest's curated steps.
   const [videoQuestId, setVideoQuestId] = useState(null);
+  // "Surprise me" auto-picks a personalized topic, then runs it as a normal
+  // Quick Tip lesson (so it gets a finish button, saves to resume, and honors
+  // read/narrated mode). These track that one-shot pick.
+  const [surpriseError, setSurpriseError] = useState(null);
+  const surpriseStartedRef = useRef(false);
 
   // Lesson state
   const [slides, setSlides] = useState([]);
@@ -647,6 +651,44 @@ function LessonContent() {
     setVideoTopic(t);
   }, [format]);
 
+  // "Surprise me": pick a personalized topic (same source as the old quick-win
+  // surprise), then launch it as a normal Quick Tip lesson — narrated when the
+  // learner is in watch mode, otherwise the conversational quick tip. Routing
+  // through the real lesson flow is what gives it a Finish button, a saved
+  // resume entry, and correct narrated behavior.
+  async function startSurprise() {
+    setSurpriseError(null);
+    try {
+      const res = await fetch('/api/quick-win', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tools }),
+      });
+      const data = await res.json();
+      const t = data?.quickWin?.title;
+      if (!res.ok || !t) throw new Error(data?.error || 'Could not find a tip just now.');
+      setFormat('quick_tip');
+      setTopic(t);
+      setSurpriseMode(false);
+      if (learnMode === 'watch') {
+        launchVideo(t);
+      } else {
+        setView('lesson');
+        fetchStartLesson(t, 'quick_tip');
+      }
+    } catch (err) {
+      setSurpriseError(err.message || 'Something went wrong. Please try again.');
+    }
+  }
+
+  // Kick off the surprise pick once when entering surprise mode.
+  useEffect(() => {
+    if (!surpriseMode || surpriseStartedRef.current) return;
+    surpriseStartedRef.current = true;
+    startSurprise();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surpriseMode]);
+
   // Resume a paused lesson in-place: quick tips restore their conversational
   // state here; plan-driven formats (Quick Lesson / Deep Dive / Project Quest)
   // rehydrate from their own saved state when the player mounts. Shared by the
@@ -743,15 +785,27 @@ function LessonContent() {
           <PageHeader icon={Zap} title="Quick Tip" subtitle="One thing you can do with AI right now" />
           <main className="max-w-3xl mx-auto px-6 py-10">
             <button
-              onClick={() => setSurpriseMode(false)}
+              onClick={() => { surpriseStartedRef.current = false; setSurpriseError(null); setSurpriseMode(false); }}
               className="inline-flex items-center gap-1.5 mb-6 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
             >
               <ChevronRight className="w-4 h-4 rotate-180" />
               Back to lessons
             </button>
-            <SurpriseWin
-              onStartLesson={(t) => { setSurpriseMode(false); startLesson(t); }}
-            />
+            {surpriseError ? (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-red-200 shadow-card p-10 max-w-xl mx-auto text-center">
+                <p className="text-red-600 font-medium mb-4">{surpriseError}</p>
+                <button
+                  onClick={() => { setSurpriseError(null); startSurprise(); }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 max-w-xl mx-auto">
+                <BookLoader message="Finding a surprise Quick Tip for you…" size="lg" />
+              </div>
+            )}
           </main>
         </>
       );

@@ -50,6 +50,18 @@ export function ProfileProvider({ children }) {
     fetchProfile();
   }, [fetchProfile]);
 
+  // Cache the resolved profile to localStorage so non-React modules can read
+  // the learner id outside this provider — notably game XP (lib/game-store.js)
+  // and analytics (lib/track.js), which read 'learner_profile'. Without this
+  // the cached learner id is always null, so finishing a game awards no XP.
+  useEffect(() => {
+    try {
+      if (profile) localStorage.setItem('learner_profile', JSON.stringify(profile));
+    } catch {
+      /* storage may be unavailable; XP just falls back to no-op */
+    }
+  }, [profile]);
+
   useEffect(() => {
     if (isLoading || profile) return;
     if (hasRedirected.current) return;

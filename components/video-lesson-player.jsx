@@ -14,6 +14,32 @@ import { FormattedContent } from '@/components/lesson-slide';
 // for dense topics, fast for review.
 const SPEEDS = [1, 1.25, 1.5, 2, 0.75];
 
+// Split a spoken-narration string into one line per sentence so step-by-step
+// instructions (e.g. "do X in Claude") render readably instead of as one dense
+// block. Display-only — TTS still speaks the original string.
+function splitIntoLines(text) {
+  if (!text) return [];
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// Rough spoken-duration estimate from the total narration word count
+// (~150 words/min). Shown so the learner knows the time commitment before
+// starting. Returns e.g. "~30 sec" or "~3 min", or null if no narration.
+function estimateNarrationTime(script) {
+  if (!script?.scenes?.length) return null;
+  const words = script.scenes.reduce(
+    (n, s) => n + (s.narration ? s.narration.trim().split(/\s+/).filter(Boolean).length : 0),
+    0,
+  );
+  if (!words) return null;
+  const sec = Math.round(words / 2.5); // ~150 words per minute spoken
+  if (sec < 75) return `~${Math.max(10, Math.round(sec / 10) * 10)} sec`;
+  return `~${Math.round(sec / 60)} min`;
+}
+
 /**
  * VideoLessonPlayer — the "prefer to watch" alternative to a chat-driven lesson.
  * Fetches a linear narrated script for a topic, then plays it as an auto-advancing
@@ -364,7 +390,9 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 leading-tight">{script.title}</h2>
               <p className="text-slate-400 mb-8 text-sm">
-                {total} {total === 1 ? 'scene' : 'scenes'} · read aloud · you advance each scene yourself
+                {total} {total === 1 ? 'scene' : 'scenes'}
+                {estimateNarrationTime(script) ? ` · ${estimateNarrationTime(script)}` : ''}
+                {' '}· read aloud · you advance each scene yourself
               </p>
               <button
                 onClick={handleStart}
@@ -443,12 +471,17 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               )}
             </div>
 
-            {/* Caption (the spoken narration) */}
+            {/* Caption (the spoken narration). Split into sentences so any
+                step-by-step instructions read as separate lines instead of one
+                dense paragraph. This only affects display — TTS still speaks
+                the full scene.narration string. */}
             {!showDone && scene && (
               <div className="px-8 sm:px-14 pb-2">
-                <p className="text-slate-300 text-sm leading-relaxed bg-slate-950/40 rounded-xl px-4 py-3 min-h-[3.5rem]">
-                  {scene.narration}
-                </p>
+                <div className="text-slate-300 text-sm leading-relaxed bg-slate-950/40 rounded-xl px-4 py-3 min-h-[3.5rem] space-y-1.5">
+                  {splitIntoLines(scene.narration).map((line, idx) => (
+                    <p key={idx}>{line}</p>
+                  ))}
+                </div>
               </div>
             )}
 

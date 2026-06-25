@@ -137,7 +137,9 @@ function Write({ activity, onResolve, resolved, passed, toolLabel, onAskCoach })
       grade?.improvement ? `The grader's note: ${grade.improvement}` : '',
       'Why did I get this score, and what specifically should I change to score higher?',
     ].filter(Boolean).join('\n');
-    onAskCoach(q);
+    // Send the full context to the coach, but show only a short, clean question
+    // in the chat bubble (not the whole baked-in prompt).
+    onAskCoach(q, 'Why did I get this score, and how can I improve?');
   }
 
   async function submit() {

@@ -6,6 +6,7 @@ import { getTotalXp, getLevel, getLevelProgress, calculateStreak, awardFirstLogi
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { onXp } from '@/lib/xp-bus';
+import { hydrate } from '@/lib/sync-store';
 
 const ProgressionContext = createContext(null);
 
@@ -51,7 +52,7 @@ export function ProgressionProvider({ children }) {
   // Holds a one-time welcome-bonus result so the global XP popup can celebrate
   // it. Cleared once shown.
   const [welcomeBonus, setWelcomeBonus] = useState(null);
-  const firstLoginCheckedRef = useRef(null);
+  const bootstrapRef = useRef(null);
 
   const load = useCallback(() => {
     if (profile) {
@@ -71,19 +72,38 @@ export function ProgressionProvider({ children }) {
   // already reflects the new total — which looks like XP went missing.
   useEffect(() => onXp(() => load()), [load]);
 
-  // Award the one-time first-login bonus the first time a learner's profile is
-  // available. Guarded per learner here, and idempotent in awardFirstLoginXp,
-  // so it can never double-award.
+  // One-time per learner: restore progress from the blob backup when local is
+  // empty, THEN award the one-time first-login bonus.
+  //
+  // Order is critical and is the fix for the "logout/new device reset my
+  // progress" data-loss bug: awarding the bonus BEFORE hydrating reads an empty
+  // local XP log, so the idempotent check misses and it re-grants 25 XP — then
+  // that fresh, 25-XP-only history is synced back to the blob, permanently
+  // destroying the learner's real progress. Hydrating first restores their data
+  // (so the bonus is correctly skipped) and is also what brings progress back on
+  // a new device or after a cleared cache.
   useEffect(() => {
     if (!profile) return;
     const learnerId = resolveLearnerId(profile);
-    if (firstLoginCheckedRef.current === learnerId) return;
-    firstLoginCheckedRef.current = learnerId;
-    const result = awardFirstLoginXp(learnerId);
-    if (result) {
+    if (bootstrapRef.current === learnerId) return;
+    bootstrapRef.current = learnerId;
+    (async () => {
+      try {
+        await Promise.all([
+          hydrate(`lp_xp_${learnerId}`),
+          hydrate(`lp_badges_${learnerId}`),
+          hydrate(`lp_lessons_${learnerId}`),
+        ]);
+      } catch {
+        // best-effort — fall through to whatever is in local storage
+      }
       load();
-      setWelcomeBonus(result);
-    }
+      const result = awardFirstLoginXp(learnerId);
+      if (result) {
+        load();
+        setWelcomeBonus(result);
+      }
+    })();
   }, [profile, load]);
 
   // Detect an admin "Reset all progress" and apply it locally: clear this
@@ -108,8 +128,9 @@ export function ProgressionProvider({ children }) {
         localStorage.removeItem('learner_game_state');
         localStorage.setItem('lp_reset_seen', String(resetAt));
 
-        // Re-grant the one-time welcome bonus from the clean slate.
-        firstLoginCheckedRef.current = null;
+        // Re-grant the one-time welcome bonus from the clean slate. We award it
+        // directly here (rather than re-running the bootstrap effect) so the
+        // just-cleared local data is NOT re-hydrated from the blob backup.
         const result = awardFirstLoginXp(lid);
         load();
         if (result) setWelcomeBonus(result);

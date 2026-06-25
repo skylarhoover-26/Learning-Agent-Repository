@@ -18,7 +18,7 @@ import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
 import {
   Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare, RefreshCw,
-  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowDown, MousePointerClick,
+  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowUp, MousePointerClick,
 } from 'lucide-react';
 
 const FORMAT_LABEL = { standard: 'Quick Lesson', deep_dive: 'Deep Dive', project_quest: 'Project Quest' };
@@ -96,6 +96,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // Inline Q&A thread shown under the chat on the current step (no navigation,
   // no inserted step). Each entry: { id, q, a, loading, error }.
   const [qaThread, setQaThread] = useState([]);
+  // Collapse the chat history (not the input) so it stops eating the screen
+  // after a long back-and-forth. The thread itself is retained in qaThread.
+  const [chatCollapsed, setChatCollapsed] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
   // The tool the lesson is actually built around (recommended-if-owned, else the
   // learner's starred tool). Sent first so generation centers on it.
@@ -681,14 +684,19 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // Ask a question without leaving the step: the answer threads in below the
   // chat. The full lesson-so-far is sent so the answer is grounded (the model
   // is NOT stateless from the learner's point of view anymore).
-  async function askQuestion(qOverride) {
+  async function askQuestion(qOverride, displayOverride) {
     const q = (typeof qOverride === 'string' ? qOverride : question).trim();
     if (!q || asking) return;
+    // `display` is what shows in the chat bubble; `q` is the full prompt sent to
+    // the coach. They differ for actions like "Why this score?" that bake score
+    // context into the prompt but should show a short, clean question.
+    const display = (typeof displayOverride === 'string' && displayOverride.trim()) || q;
     setQuestion('');
+    setChatCollapsed(false); // a new message always reopens the thread
     setAsking(true);
     const id = `q_${stepIdx}_${q.length}_${qaThread.length}`;
     setQaThread((prev) => {
-      const next = [...prev, { id, q, a: '', loading: true }];
+      const next = [...prev, { id, q: display, a: '', loading: true }];
       persist({ qaThread: next });
       return next;
     });
@@ -769,10 +777,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // Every in-lesson "ask about this" action (e.g. "Why this score?") funnels
   // into the SAME coach thread instead of its own box. The caller passes a
   // fully-formed question with any context baked in, so there's one chat bucket.
-  function askCoach(text) {
+  function askCoach(text, display) {
     if (!text) return;
     setRefineOpen(false);
-    askQuestion(text);
+    askQuestion(text, display);
     setTimeout(() => {
       try { document.getElementById('lesson-coach')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* ignore */ }
     }, 50);
@@ -1309,7 +1317,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             <button onClick={() => setRefineOpen(false)} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0">Back to lesson help</button>
           </div>
         ) : (
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 px-1">Need a hand? Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — I&apos;ll help right here without losing your place.</p>
+          <div className="flex items-start justify-between gap-2 mb-2 px-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400">Need a hand? Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — I&apos;ll help right here without losing your place.</p>
+            {(qaThread.length > 0 || refineMessages.length > 0) && (
+              <button
+                onClick={() => setChatCollapsed((v) => !v)}
+                className="shrink-0 text-xs font-medium text-brand hover:text-brand-600 transition-colors"
+              >
+                {chatCollapsed ? `Show chat (${qaThread.length + refineMessages.length})` : 'Hide chat'}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Input — hidden only once a better-fit topic is ready to confirm. */}
@@ -1329,8 +1347,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         </div>
         )}
 
-        {/* One thread: coach Q&A first, then the find-a-better-fit turns. */}
-        {(qaThread.length > 0 || refineMessages.length > 0) && (
+        {/* One thread: coach Q&A first, then the find-a-better-fit turns.
+            Hidden (but retained) when the learner collapses it. */}
+        {(qaThread.length > 0 || refineMessages.length > 0) && (!chatCollapsed || refineOpen) && (
           <div className="mt-3 space-y-3 border-t border-slate-100 dark:border-slate-700 pt-3">
             {qaThread.map((item) => (
               <div key={item.id} className="space-y-1.5">
@@ -1405,7 +1424,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                 // An actionable gate — make it bold and prominent so it's clear
                 // what to finish before they can move on.
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
-                  <ArrowDown className="w-4 h-4" />
+                  <ArrowUp className="w-4 h-4" />
                   {isActivity ? 'Complete the activity above to continue'
                     : isBuild ? 'Add or skip your piece above to continue'
                     : exploreGateMsg}
