@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
   Gamepad2, Swords, Search, Timer, Eye, ChevronRight, Clock, BarChart3, Trophy, Zap,
 } from 'lucide-react';
@@ -87,7 +88,13 @@ function GamesHubInner() {
         subtitle="Practice AI skills the fun way"
       />
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
+        <CinematicPageHero
+          eyebrow="Games"
+          title="Learning Games"
+          subtitle="Practice AI skills the fun way"
+          icon={Gamepad2}
+        />
         <p className="text-slate-600 dark:text-slate-400 mb-2 text-lg">
           Sharpen your AI skills with interactive challenges. Pick a game and start playing.
         </p>
@@ -103,7 +110,7 @@ function GamesHubInner() {
                 key={game.slug}
                 data-tour={i === 0 ? 'game-card' : undefined}
                 href={`/games/${game.slug}`}
-                className="group bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover p-6 transition-all flex flex-col"
+                className="group cine-glass cine-tilt rounded-2xl p-6 transition-all flex flex-col"
               >
                 <div className="w-14 h-14 rounded-xl bg-brand-50 dark:bg-slate-700 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4 group-hover:bg-brand group-hover:text-white transition-all">
                   <game.icon className="w-7 h-7" />

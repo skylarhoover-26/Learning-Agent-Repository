@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { FileText, Search, X, Copy, Check, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
 import { PROMPTS, CATEGORIES, DEPARTMENTS } from '@/lib/prompts-data';
 import { useProfile } from '@/components/profile-provider';
@@ -81,8 +82,14 @@ function PromptsPageInner() {
         subtitle={`${PROMPTS.length} ready-to-use prompts across departments`}
       />
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
+      <main className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
+        <CinematicPageHero
+          eyebrow="Prompts"
+          title="Shared Prompts Library"
+          subtitle={`${PROMPTS.length} ready-to-use prompts across departments`}
+          icon={FileText}
+        />
+        <div className="cine-glass rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-brand-50 ring-1 ring-brand-100 flex items-center justify-center text-brand shrink-0">
               <FileText className="w-5 h-5" />
@@ -118,7 +125,7 @@ function PromptsPageInner() {
           </div>
         )}
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-5 mb-6">
+        <div className="cine-glass rounded-2xl p-5 mb-6">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex-1 min-w-[200px]">
               <label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-1.5 block">
@@ -194,7 +201,7 @@ function PromptsPageInner() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 p-10 text-center">
+          <div className="cine-glass rounded-2xl border-dashed p-10 text-center">
             <p className="text-slate-500 dark:text-slate-400">No prompts match your filters. Try clearing some.</p>
           </div>
         ) : (
@@ -224,7 +231,7 @@ function DailyPromptCard({ prompt }) {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-cta-200 dark:border-slate-700 shadow-card overflow-hidden">
+    <div className="cine-glass rounded-2xl overflow-hidden">
       <div className="p-5">
         <div className="flex items-center gap-2 mb-1.5">
           <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${cat.color}`}>{cat.label}</span>
@@ -269,7 +276,7 @@ function PromptCard({ prompt }) {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover shadow-card transition-all overflow-hidden">
+    <div className="cine-glass rounded-2xl transition-all overflow-hidden">
       <div className="p-5">
         <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1.5">{prompt.title}</h3>
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{prompt.description}</p>

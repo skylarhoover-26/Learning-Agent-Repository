@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
   BookOpen, ChevronRight, Filter, Search, Sparkles,
 } from 'lucide-react';
@@ -66,7 +67,13 @@ function StructuredLessonPicker() {
         subtitle="Practice real-world AI skills with guided 5-step exercises"
       />
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-6 py-12 sm:py-16">
+        <CinematicPageHero
+          eyebrow="Practice"
+          title="Structured Lessons"
+          subtitle="Practice real-world AI skills with guided 5-step exercises"
+          icon={BookOpen}
+        />
         {/* Today's practice — personalized, fresh daily */}
         {todaysPicks.length > 0 && (
           <div className="mb-8">
@@ -80,7 +87,7 @@ function StructuredLessonPicker() {
                 <Link
                   key={`pick-${lesson.id}`}
                   href={`/structured-lesson/${lesson.id}`}
-                  className="group bg-white dark:bg-slate-800 rounded-2xl border border-cta-200 dark:border-slate-700 shadow-card hover:shadow-md hover:border-cta-300 transition-all p-6"
+                  className="group cine-glass cine-tilt rounded-2xl transition-all p-6"
                 >
                   <div className="flex items-start gap-4">
                     <div className="text-3xl">{lesson.icon}</div>
@@ -103,7 +110,7 @@ function StructuredLessonPicker() {
         )}
 
         {/* How it works */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+        <div className="cine-glass rounded-2xl p-6 mb-8">
           <h2 className="text-sm font-bold text-ink dark:text-slate-200 uppercase tracking-wide mb-3">How it works</h2>
           <div className="grid grid-cols-5 gap-4">
             {[
@@ -160,7 +167,7 @@ function StructuredLessonPicker() {
             <Link
               key={lesson.id}
               href={`/structured-lesson/${lesson.id}`}
-              className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card hover:shadow-md hover:border-brand-200 dark:hover:border-brand-700 transition-all p-6"
+              className="group cine-glass cine-tilt rounded-2xl transition-all p-6"
             >
               <div className="flex items-start gap-4">
                 <div className="text-3xl">{lesson.icon}</div>

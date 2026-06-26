@@ -238,7 +238,7 @@ export default function CinematicShell({ children }) {
         <TopNav onMenu={toggle} />
         <Drawer open={open} onClose={() => setOpen(false)} />
         <div className={`transition-[padding] duration-300 ${open ? 'lg:pl-80' : ''}`}>
-          <main className="relative max-w-6xl mx-auto px-6 py-10 space-y-10">
+          <main className="relative max-w-5xl mx-auto px-6 py-16 space-y-20 sm:space-y-24">
             {children}
           </main>
         </div>

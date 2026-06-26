@@ -72,10 +72,12 @@
 
 .cine-glass {
   background: var(--card);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: 0 18px 50px -28px rgba(0, 0, 0, .55);
+  /* Apple-minimal: a near-invisible hairline + a very soft, low shadow so
+     cards read as quiet planes separated by whitespace, not boxed-in panels. */
+  border: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 24px 48px -36px rgba(0, 0, 0, .38);
 }
 .cine-lift { transition: transform .45s cubic-bezier(.16, 1, .3, 1), box-shadow .45s cubic-bezier(.16, 1, .3, 1), background .3s ease; }
 .cine-lift:hover { transform: translateY(-3px); box-shadow: 0 28px 60px -30px rgba(0, 0, 0, .6); }
@@ -96,7 +98,7 @@
   transition: transform .3s cubic-bezier(.16, 1, .3, 1), box-shadow .4s ease, border-color .3s ease;
   will-change: transform;
 }
-.cine-tilt:hover { --tilt-lift: -8px; box-shadow: 0 28px 60px -28px var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.cine-tilt:hover { --tilt-lift: -6px; box-shadow: 0 30px 70px -42px var(--accent); border-color: color-mix(in srgb, var(--accent) 38%, transparent); }
 @media (prefers-reduced-motion: reduce) {
   .cine-tilt { transform: none; transition: none; }
   .cine-tilt:hover { --tilt-lift: 0px; }

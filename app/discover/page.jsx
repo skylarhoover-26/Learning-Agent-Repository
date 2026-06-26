@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { sortByDifficulty } from '@/lib/difficulty';
 import {
@@ -101,7 +102,13 @@ function DiscoverContent() {
     <div className="min-h-screen">
       <PageHeader icon={Search} title="Discovery" subtitle="Find AI opportunities for your actual work" />
 
-      <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 py-10">
+      <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 py-12 sm:py-16">
+        <CinematicPageHero
+          eyebrow="Discover"
+          title="Find AI opportunities for your actual work"
+          subtitle="Find AI opportunities for your actual work"
+          icon={Search}
+        />
         {!hasSearched && (
           <div>
             <div className="text-center mb-10">
@@ -117,7 +124,7 @@ function DiscoverContent() {
               </p>
             </div>
 
-            <div data-tour="page-discover" className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 mb-6">
+            <div data-tour="page-discover" className="cine-glass rounded-2xl p-6 mb-6">
               <textarea
                 data-tour="discover-input"
                 value={workDescription}
@@ -171,7 +178,7 @@ function DiscoverContent() {
                   <button
                     key={i}
                     onClick={() => setWorkDescription(s)}
-                    className="w-full text-left p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:bg-brand-50/50 dark:hover:bg-slate-700 transition-all text-sm text-slate-700 dark:text-slate-300"
+                    className="cine-glass cine-tilt w-full text-left p-4 rounded-xl transition-all text-sm text-slate-700 dark:text-slate-300"
                   >
                     {s}
                   </button>
@@ -209,7 +216,7 @@ function DiscoverContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {opportunities.map((opp, i) => (
-                <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:shadow-md transition-all p-5">
+                <div key={i} className="cine-glass rounded-2xl transition-all p-5">
                   <h3 className="font-semibold text-ink dark:text-slate-200 leading-tight mb-2">{opp.title}</h3>
                   <div className="flex items-center gap-2 flex-wrap mb-3">
                     <span className={difficultyPill}>{DIFFICULTY_LABELS[opp.difficulty] || 'Medium'}</span>
@@ -242,7 +249,7 @@ function DiscoverContent() {
         {/* Pointer to the full Use Case Library, now its own screen. */}
         <Link
           href="/library"
-          className="mt-10 flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 hover:border-brand-300 hover:shadow-md transition-all"
+          className="cine-glass cine-tilt mt-10 flex items-center gap-3 rounded-2xl p-5 transition-all"
         >
           <div className="w-10 h-10 rounded-lg bg-brand-50 ring-1 ring-brand-100 flex items-center justify-center text-brand shrink-0">
             <Library className="w-5 h-5" />

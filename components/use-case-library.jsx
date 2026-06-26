@@ -126,7 +126,7 @@ export default function UseCaseLibrary() {
 
   return (
     <div>
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
+      <div className="cine-glass rounded-2xl p-6 mb-6">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-brand-50 ring-1 ring-brand-100 flex items-center justify-center text-brand shrink-0">
             <Library className="w-5 h-5" />
@@ -140,7 +140,7 @@ export default function UseCaseLibrary() {
         </div>
       </div>
 
-      <div data-tour="page-library" className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-5 mb-6">
+      <div data-tour="page-library" className="cine-glass rounded-2xl p-5 mb-6">
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-[200px]">
             <label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-1.5 block">Search</label>
@@ -186,7 +186,7 @@ export default function UseCaseLibrary() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 p-10 text-center">
+        <div className="cine-glass rounded-2xl border-dashed p-10 text-center">
           <p className="text-slate-500 dark:text-slate-400">No use cases match your filters. Try clearing some.</p>
         </div>
       ) : (
@@ -194,7 +194,7 @@ export default function UseCaseLibrary() {
           {grouped.map(group => {
             const isCollapsed = collapsed[group.key];
             return (
-              <section key={group.key} className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <section key={group.key} className="cine-glass rounded-2xl overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggleCategory(group.key)}
@@ -253,7 +253,7 @@ function UseCaseCard({ uc, isPopular, isRecent }) {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card-hover shadow-card transition-all overflow-hidden">
+    <div className="cine-glass cine-tilt rounded-2xl transition-all overflow-hidden">
       <div className="p-5">
         <div className="mb-3">
           <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1.5">{uc.title}</h3>

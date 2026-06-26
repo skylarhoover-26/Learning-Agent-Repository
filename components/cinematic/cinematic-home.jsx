@@ -230,20 +230,20 @@ export default function CinematicHome() {
       </section>
 
       {/* DISCOVER BANNER */}
-      <Link href="/discover" className="cine-tilt group block relative overflow-hidden rounded-3xl p-8" style={{ background: 'linear-gradient(120deg,#0B49C9,#0055FF 55%,#1C6BFF)', boxShadow: '0 40px 90px -50px var(--accent)' }}>
-        <span className="inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full mb-3 cine-gold">
-          <Compass className="w-3.5 h-3.5" /> DISCOVER
+      <Link href="/discover" className="cine-tilt group block relative overflow-hidden rounded-[28px] p-10 sm:p-14" style={{ background: 'linear-gradient(135deg,#0A3AC8,#2E7BFF)', boxShadow: '0 40px 90px -60px var(--accent)' }}>
+        <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.18em] px-3 py-1 rounded-full mb-5 cine-gold">
+          <Compass className="w-3.5 h-3.5" /> Discover
         </span>
-        <h2 className="font-display font-extrabold text-3xl text-white max-w-xl">Find AI for your actual work</h2>
-        <p className="mt-2 text-white/80 max-w-xl">Tell me about your day-to-day and I&apos;ll surface specific AI opportunities you can use today — for your real work, not generic ideas.</p>
-        <span className="cine-gold inline-flex items-center gap-2 h-12 px-6 rounded-full font-bold mt-5">
+        <h2 className="font-display font-extrabold text-4xl sm:text-5xl tracking-tight leading-[1.04] text-white max-w-xl">Find AI for your actual work</h2>
+        <p className="mt-4 text-lg text-white/80 max-w-lg leading-relaxed">Tell me about your day-to-day and I&apos;ll surface specific AI opportunities you can use today — for your real work, not generic ideas.</p>
+        <span className="cine-gold inline-flex items-center gap-2 h-12 px-6 rounded-full font-bold mt-7">
           Discover what AI can do for you <ArrowRight className="w-4 h-4" />
         </span>
       </Link>
 
       {/* WAYS TO LEARN */}
       <section className="cine-rise">
-        <h3 className="font-display font-bold text-2xl mb-4">Ways to learn</h3>
+        <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight mb-7">Ways to learn</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {WAYS.map((w) => (
             <Link key={w.href} href={w.href} className="cine-glass cine-tilt group relative overflow-hidden rounded-2xl p-5 flex flex-col gap-3">
@@ -277,7 +277,7 @@ export default function CinematicHome() {
 
       {/* YOUR STATS: streak + leaderboard */}
       <section className="cine-rise">
-        <h3 className="font-display font-bold text-2xl mb-4">Your stats</h3>
+        <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight mb-7">Your stats</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Current streak with weekday pills */}
           <div className="cine-glass cine-tilt rounded-3xl p-6">
@@ -357,7 +357,7 @@ export default function CinematicHome() {
         <section className="cine-rise">
           <div className="flex items-center gap-2 mb-1">
             <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
-            <h3 className="font-display font-bold text-2xl">AI news</h3>
+            <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight">AI news</h3>
           </div>
           <p className="text-sm mb-4" style={{ color: 'var(--ink-dim)' }}>We scan AI developments daily and flag what changes your skills.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

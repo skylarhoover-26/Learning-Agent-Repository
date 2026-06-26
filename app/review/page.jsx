@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { Brain, ChevronRight, Check, X, RotateCcw, BarChart3, Zap } from 'lucide-react';
 import { QUALITY_BUTTONS, formatNextReview } from '@/lib/sm2';
 import { buildReviewQueue, updateCardAfterReview, getCardState, getReviewStats } from '@/lib/review-store';
@@ -86,7 +87,14 @@ function ReviewPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Brain} title="Review" subtitle="Spaced repetition" />
-        <main className="max-w-2xl mx-auto px-6 py-10 text-center">
+        <main className="max-w-2xl mx-auto px-6 py-12 sm:py-16 text-center">
+          <CinematicPageHero
+            eyebrow="Review"
+            title="Review"
+            subtitle="Spaced repetition"
+            icon={Brain}
+            align="center"
+          />
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-10">
             <div className="text-5xl mb-4">🎯</div>
             <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">All caught up!</h2>
@@ -124,29 +132,36 @@ function ReviewPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Brain} title="Review" subtitle="Session complete" />
-        <main className="max-w-2xl mx-auto px-6 py-10 text-center">
+        <main className="max-w-2xl mx-auto px-6 py-12 sm:py-16 text-center">
+          <CinematicPageHero
+            eyebrow="Review"
+            title="Session complete"
+            subtitle="Nice work — here's how this round went"
+            icon={Brain}
+            align="center"
+          />
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-10">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">Review Complete!</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-6">You reviewed {reviewed} cards this session.</p>
 
             <div className="flex justify-center gap-6 mb-8">
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 min-w-[100px]">
+              <div className="cine-glass rounded-xl p-4 min-w-[100px]">
                 <div className="text-2xl font-bold text-ink dark:text-slate-200">{correct}</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">Correct</div>
               </div>
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 min-w-[100px]">
+              <div className="cine-glass rounded-xl p-4 min-w-[100px]">
                 <div className="text-2xl font-bold text-ink dark:text-slate-200">{reviewed - correct}</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">To Review</div>
               </div>
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 min-w-[100px]">
+              <div className="cine-glass rounded-xl p-4 min-w-[100px]">
                 <div className="text-2xl font-bold text-ink dark:text-slate-200">{updatedStats.accuracy}%</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">All-Time</div>
               </div>
             </div>
 
             <div className="flex gap-3 justify-center">
-              <button onClick={restart} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-medium">
+              <button onClick={restart} className="cine-glass inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-slate-700 dark:text-slate-300 font-medium">
                 <RotateCcw className="w-4 h-4" /> Review more
               </button>
               <Link href="/" className="px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm">
@@ -166,7 +181,13 @@ function ReviewPageInner() {
     <div className="min-h-screen">
       <PageHeader icon={Brain} title="Review" subtitle={`Card ${currentIdx + 1} of ${queue.length}`} />
 
-      <main className="max-w-2xl mx-auto px-6 py-10">
+      <main className="max-w-2xl mx-auto px-6 py-12 sm:py-16">
+        <CinematicPageHero
+          eyebrow="Review"
+          title="Review"
+          subtitle={`Card ${currentIdx + 1} of ${queue.length}`}
+          icon={Brain}
+        />
         <div className="flex items-center justify-between mb-6">
           <div className="flex gap-1 flex-1 mr-4">
             {queue.map((_, i) => (
@@ -181,7 +202,7 @@ function ReviewPageInner() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8">
+        <div className="cine-glass rounded-2xl p-8">
           <div className="flex items-center gap-2 mb-4">
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">
               {card.type === 'multiple_choice' ? 'Multiple Choice' : 'Short Answer'}
