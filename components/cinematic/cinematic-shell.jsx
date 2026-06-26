@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -16,6 +16,30 @@ import { NAV_SECTIONS, SKILL_SHOP_LINKS, ADMIN_ITEMS, useSidebar } from '@/compo
 function initials(name) {
   if (!name) return 'YOU';
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('') || 'YOU';
+}
+
+// Scene-wide pointer tilt: a single mousemove handler writes shared rotation
+// vars on <html>; every `.cine-tilt` card reads them and tips toward the cursor
+// (matches the design's data-tilt parallax). rAF-throttled; respects
+// reduced-motion. Active on all cinematic pages via the two shells below.
+function useSceneTilt() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let raf = 0;
+    const onMove = (e) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const dx = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+        const dy = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+        const root = document.documentElement;
+        root.style.setProperty('--tilt-ry', `${(dx * 5).toFixed(2)}deg`);
+        root.style.setProperty('--tilt-rx', `${(-dy * 5).toFixed(2)}deg`);
+      });
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); };
+  }, []);
 }
 
 // Cinematic top bar — logo + hamburger (opens the cinematic drawer), with
@@ -206,6 +230,7 @@ export function useInCinematicFrame() { return useContext(FrameContext); }
 // <main>. Used by the bespoke (fully-redesigned) screens.
 export default function CinematicShell({ children }) {
   const { open, setOpen, toggle } = useSidebar();
+  useSceneTilt();
 
   return (
     <FrameContext.Provider value={true}>
@@ -228,6 +253,7 @@ export default function CinematicShell({ children }) {
 // PageHeader hides itself via FrameContext so there's no double bar.
 export function CinematicFrame({ children }) {
   const { open, setOpen, toggle } = useSidebar();
+  useSceneTilt();
 
   return (
     <FrameContext.Provider value={true}>

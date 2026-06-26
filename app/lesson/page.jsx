@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicCourse from '@/components/cinematic/cinematic-course';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
 import LessonQuiz from '@/components/lesson-quiz';
 import PlanLessonPlayer from '@/components/plan-lesson-player';
@@ -1176,7 +1178,16 @@ function LessonContent() {
   // Quick Lessons, Deep Dives & Project Quests (read mode) use the plan-driven
   // player: Bloom objectives, required interactive activities, Step X of N,
   // pause/resume.
-  if (view === 'lesson' && learnMode === 'read' && (format === 'standard' || format === 'deep_dive' || format === 'project_quest')) {
+  // Quick Lesson & Deep Dive (read mode) get the immersive full-scroll course
+  // reader — the cinematic "chapter" experience. Same plan/teach APIs, grading,
+  // and XP as the step player; only the presentation is the scroll.
+  if (view === 'lesson' && learnMode === 'read' && (format === 'standard' || format === 'deep_dive')) {
+    return <CinematicCourse key={`${format}__${topic}`} topic={topic} format={format} onExit={resetToPickerView} />;
+  }
+
+  // Project Quests (read mode) keep the step-driven build player (build engine,
+  // artifact assembly) which the scroll reader doesn't cover.
+  if (view === 'lesson' && learnMode === 'read' && format === 'project_quest') {
     return (
       <>
         <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
@@ -1341,10 +1352,12 @@ function LessonContent() {
 
 export default function LessonPage() {
   return (
-    <div className="min-h-screen">
-      <Suspense fallback={<div className="max-w-4xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
-        <LessonContent />
-      </Suspense>
-    </div>
+    <CinematicFrame>
+      <div className="min-h-screen">
+        <Suspense fallback={<div className="max-w-4xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
+          <LessonContent />
+        </Suspense>
+      </div>
+    </CinematicFrame>
   );
 }

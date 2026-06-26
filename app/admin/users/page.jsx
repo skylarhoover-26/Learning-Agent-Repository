@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
 import { Users, Search, Zap, Loader2, Crown, Award, BookOpen, Check, RotateCcw } from 'lucide-react';
@@ -47,6 +48,10 @@ function fmtDate(iso) {
 }
 
 export default function AdminUsersPage() {
+  return <CinematicFrame><AdminUsersPageInner /></CinematicFrame>;
+}
+
+function AdminUsersPageInner() {
   const [allowed, setAllowed] = useState(null);
   const [people, setPeople] = useState([]);
   const [championSet, setChampionSet] = useState(new Set());

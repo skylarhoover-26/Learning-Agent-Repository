@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { SlidersHorizontal, Loader2, RotateCcw } from 'lucide-react';
 
 const LEVEL_OPTIONS = ['beginner', 'intermediate', 'advanced'];
 
 export default function SkillLevelsAdminPage() {
+  return <CinematicFrame><SkillLevelsAdminPageInner /></CinematicFrame>;
+}
+
+function SkillLevelsAdminPageInner() {
   const [allowed, setAllowed] = useState(null); // null = checking
   const [catalog, setCatalog] = useState([]);
   const [levels, setLevels] = useState({});

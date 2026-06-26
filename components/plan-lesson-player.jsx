@@ -1060,38 +1060,34 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         </div>
       )}
 
-      {/* Progress + step count */}
+      {/* Chapter progress rail — accent gradient, sleeker than a plain bar. */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div className="h-full bg-brand rounded-full transition-all duration-500" style={{ width: `${((stepIdx + 1) / total) * 100}%` }} />
+        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--line)' }}>
+          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((stepIdx + 1) / total) * 100}%`, background: 'linear-gradient(90deg,var(--accent),var(--accent2))' }} />
         </div>
-        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">Step {stepIdx + 1} of {total}</span>
-        <button onClick={pauseAndExit} className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors">
+        <span className="text-xs font-medium whitespace-nowrap tabular-nums" style={{ color: 'var(--ink-dim)' }}>{stepIdx + 1} / {total}</span>
+        <button onClick={pauseAndExit} className="inline-flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-70" style={{ color: 'var(--ink-dim)' }}>
           <Pause className="w-3.5 h-3.5" /> Pause
         </button>
       </div>
 
-      {/* Lesson title + objectives — pinned under the steps on every screen so
-          the learner always sees what they picked and where it's headed. */}
-      <div className="rounded-2xl border border-brand-200 dark:border-slate-700 bg-brand-50/50 dark:bg-slate-800 p-4 sm:p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-300">
-          {FORMAT_LABEL[format] || 'Lesson'}
-        </p>
-        <h2 className="text-lg sm:text-xl font-bold text-ink dark:text-slate-200 leading-snug mt-0.5">{topic}</h2>
-        {objectives.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-brand-200/70 dark:border-slate-700">
-            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink dark:text-slate-200 mb-1.5">
-              <Target className="w-4 h-4 text-brand" /> By the end, you'll be able to:
-            </h3>
-            <ul className="space-y-1">
-              {objectives.map((o) => (
-                <li key={o.id} className="flex items-start gap-2 text-sm text-ink dark:text-slate-300">
-                  <Check className="w-4 h-4 text-brand mt-0.5 shrink-0" />
-                  <span>{o.text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* Chapter hero — eyebrow + big gradient topic title, pinned on every
+          screen so the learner always sees what they're in. Objectives show on
+          the opening step only, like a chapter intro. */}
+      <div className="text-center pt-4 pb-1">
+        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-4" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
+          {FORMAT_LABEL[format] || 'Lesson'} · Step {stepIdx + 1} of {total}
+        </span>
+        <h1 className="font-display font-extrabold leading-[1.04] tracking-tight cine-grad-flow mx-auto max-w-3xl" style={{ fontSize: 'clamp(28px,4vw,48px)' }}>{topic}</h1>
+        {stepIdx === 0 && objectives.length > 0 && (
+          <ul className="mt-5 max-w-md mx-auto space-y-1.5 text-left">
+            {objectives.map((o) => (
+              <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
+                <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--good)' }} />
+                <span>{o.text}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 

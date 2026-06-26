@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Swords, ChevronRight, RotateCcw, Loader2, Lightbulb, Trophy,
 } from 'lucide-react';
@@ -40,7 +41,11 @@ function ScoreBar({ label, score, feedback, animate }) {
   );
 }
 
-export default function PromptBattle() {
+export default function PromptBattlePage() {
+  return <CinematicFrame><PromptBattle /></CinematicFrame>;
+}
+
+function PromptBattle() {
   const [started, setStarted] = useState(false);
   const [scenarioIdx, setScenarioIdx] = useState(0);
   const [prompt, setPrompt] = useState('');

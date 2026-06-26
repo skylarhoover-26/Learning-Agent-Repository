@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import AdminLessonContent from '@/components/admin-lesson-content';
 import { ClipboardCheck, Loader2, AlertTriangle, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
 
 // Admin-only review of the hidden lesson self-QA. Shows each generated lesson's
 // quality score, verdict, issues, and who it was shown to. Learners never see this.
 export default function LessonQaPage() {
+  return <CinematicFrame><LessonQaPageInner /></CinematicFrame>;
+}
+
+function LessonQaPageInner() {
   const [allowed, setAllowed] = useState(null);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);

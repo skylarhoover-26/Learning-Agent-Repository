@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProfile } from '@/components/profile-provider';
 import { getModulesForTier, getPersonalizedSubtitle } from '@/lib/modules-data';
 import { trackModuleSectionRead, trackQuizAttempt, trackModuleComplete } from '@/lib/track';
@@ -33,6 +34,10 @@ const MODULE_ICONS = {
 const MAX_QUIZ_ATTEMPTS = 3;
 
 export default function ModulesPage() {
+  return <CinematicFrame><ModulesPageInner /></CinematicFrame>;
+}
+
+function ModulesPageInner() {
   const { profile, isLoading: profileLoading } = useProfile();
   const [selectedModule, setSelectedModule] = useState(null);
   const [expandedSection, setExpandedSection] = useState(0);

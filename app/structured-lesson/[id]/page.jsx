@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import LlmWindowCallout from '@/components/llm-window-callout';
 import {
   BookOpen, ChevronRight, ChevronLeft, Check,
@@ -28,7 +29,11 @@ const TONE_COLORS = {
   playful: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-300',
 };
 
-export default function StructuredLessonPlayer({ params }) {
+export default function StructuredLessonPlayerPage({ params }) {
+  return <CinematicFrame><StructuredLessonPlayer params={params} /></CinematicFrame>;
+}
+
+function StructuredLessonPlayer({ params }) {
   const { id } = use(params);
   const router = useRouter();
   const lesson = getLessonById(id);

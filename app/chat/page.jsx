@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-store';
 import { onChatMessage } from '@/lib/progression';
 import { emitXp } from '@/lib/xp-bus';
@@ -61,16 +62,18 @@ function groupTurns(msgs) {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex flex-col">
-        <PageHeader icon={MessageCircle} title="Just Chat" subtitle="Ask me anything about AI" />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-        </main>
-      </div>
-    }>
-      <ChatPageInner />
-    </Suspense>
+    <CinematicFrame>
+      <Suspense fallback={
+        <div className="h-[calc(100dvh-4rem)] flex flex-col">
+          <PageHeader icon={MessageCircle} title="Just Chat" subtitle="Ask me anything about AI" />
+          <main className="flex-1 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+          </main>
+        </div>
+      }>
+        <ChatPageInner />
+      </Suspense>
+    </CinematicFrame>
   );
 }
 
@@ -236,7 +239,7 @@ function ChatPageInner() {
   );
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-[calc(100dvh-4rem)] flex flex-col">
       <PageHeader
         icon={MessageCircle}
         title="Just Chat"

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   BookOpen, ChevronRight, Filter, Search, Sparkles,
 } from 'lucide-react';
@@ -27,7 +28,11 @@ const TIER_DIFFICULTY = {
   developer: 'Advanced',
 };
 
-export default function StructuredLessonPicker() {
+export default function StructuredLessonPage() {
+  return <CinematicFrame><StructuredLessonPicker /></CinematicFrame>;
+}
+
+function StructuredLessonPicker() {
   const { profile } = useProfile();
   const lessons = getAllLessons();
   const categories = getLessonCategories();

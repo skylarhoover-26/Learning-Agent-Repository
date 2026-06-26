@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { AI_TOOLS } from '@/lib/ai-tools';
 import { Wrench, Loader2, RotateCcw, Sparkles } from 'lucide-react';
 
@@ -12,6 +13,10 @@ const DEFAULTS = Object.fromEntries(AI_TOOLS.map((t) => [t.id, t]));
 // the AI landscape shifts; "Suggest updates" drafts refreshed descriptions with
 // AI for the admin to review before saving. Changes apply everywhere, no deploy.
 export default function AiToolsAdminPage() {
+  return <CinematicFrame><AiToolsAdminPageInner /></CinematicFrame>;
+}
+
+function AiToolsAdminPageInner() {
   const [allowed, setAllowed] = useState(null); // null = checking
   const [form, setForm] = useState({}); // id -> { label, strengths, url }
   const [suggestions, setSuggestions] = useState({}); // id -> { strengths, reason, changed }

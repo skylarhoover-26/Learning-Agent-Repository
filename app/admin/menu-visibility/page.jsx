@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { Eye, EyeOff, Clock, Loader2, Shield, User } from 'lucide-react';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
@@ -45,6 +46,10 @@ function TriToggle({ value, onChange, disabled }) {
 }
 
 export default function MenuVisibilityAdminPage() {
+  return <CinematicFrame><MenuVisibilityAdminPageInner /></CinematicFrame>;
+}
+
+function MenuVisibilityAdminPageInner() {
   const { previewAsUser, setPreviewAsUser, refresh } = useMenuVisibility();
   const [allowed, setAllowed] = useState(null); // null = checking
   const [catalog, setCatalog] = useState([]);

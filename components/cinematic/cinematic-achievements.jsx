@@ -33,38 +33,38 @@ function xpSourceLabel(source) {
 const BADGE_CATEGORIES = [
   {
     title: 'Learning milestones', tint: '#3B94FF', badges: [
-      { id: 'first_lesson', name: 'First Steps', emoji: '🎓', description: 'Complete your first lesson' },
-      { id: 'three_lessons', name: 'Getting Going', emoji: '📚', description: 'Complete 3 lessons' },
-      { id: 'ten_lessons', name: 'Bookworm', emoji: '🤓', description: 'Complete 10 lessons' },
+      { id: 'first_lesson', name: 'First Steps', emoji: '🎓', description: 'Complete your first lesson', href: '/lesson' },
+      { id: 'three_lessons', name: 'Getting Going', emoji: '📚', description: 'Complete 3 lessons', href: '/lesson' },
+      { id: 'ten_lessons', name: 'Bookworm', emoji: '🤓', description: 'Complete 10 lessons', href: '/lesson' },
     ],
   },
   {
     title: 'Streaks', tint: '#FF7A45', badges: [
-      { id: 'three_day_streak', name: 'On Fire', emoji: '🔥', description: 'Learn 3 days in a row' },
-      { id: 'seven_day_streak', name: 'Unstoppable', emoji: '⚡', description: 'Learn 7 days in a row' },
+      { id: 'three_day_streak', name: 'On Fire', emoji: '🔥', description: 'Learn 3 days in a row', href: '/lesson' },
+      { id: 'seven_day_streak', name: 'Unstoppable', emoji: '⚡', description: 'Learn 7 days in a row', href: '/lesson' },
     ],
   },
   {
     title: 'Quiz & mastery', tint: '#1AA06A', badges: [
-      { id: 'first_quiz', name: 'Pop Quiz', emoji: '✏️', description: 'Answer your first quiz question' },
-      { id: 'quiz_master', name: 'Quiz Master', emoji: '💯', description: 'Get 10 quiz answers correct' },
-      { id: 'first_game', name: 'Game On', emoji: '🎮', description: 'Play your first learning game' },
-      { id: 'five_games', name: 'High Scorer', emoji: '🕹️', description: 'Play 5 learning games' },
+      { id: 'first_quiz', name: 'Pop Quiz', emoji: '✏️', description: 'Answer your first quiz question', href: '/lesson' },
+      { id: 'quiz_master', name: 'Quiz Master', emoji: '💯', description: 'Get 10 quiz answers correct', href: '/lesson' },
+      { id: 'first_game', name: 'Game On', emoji: '🎮', description: 'Play your first learning game', href: '/games' },
+      { id: 'five_games', name: 'High Scorer', emoji: '🕹️', description: 'Play 5 learning games', href: '/games' },
     ],
   },
   {
     title: 'Goals & quests', tint: '#FFB706', badges: [
-      { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest' },
-      { id: 'first_project', name: 'Goal Getter', emoji: '🎯', description: 'Add your first work project' },
-      { id: 'first_goal', name: 'Aim High', emoji: '⭐', description: 'Set your first learning goal' },
+      { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest', href: '/quests' },
+      { id: 'first_project', name: 'Goal Getter', emoji: '🎯', description: 'Add your first work project', href: '/projects' },
+      { id: 'first_goal', name: 'Aim High', emoji: '⭐', description: 'Set your first learning goal', href: '/goals' },
     ],
   },
   {
     title: 'Level up', tint: '#6AABFF', badges: [
-      { id: 'level_5', name: 'Power Learner', emoji: '🚀', description: 'Reach Level 5' },
-      { id: 'level_10', name: 'Double Digits', emoji: '🔟', description: 'Reach Level 10' },
-      { id: 'level_25', name: 'Quarter Way', emoji: '🌟', description: 'Reach Level 25' },
-      { id: 'level_50', name: 'Halfway Hero', emoji: '🏔️', description: 'Reach Level 50' },
+      { id: 'level_5', name: 'Power Learner', emoji: '🚀', description: 'Reach Level 5', href: '/lesson' },
+      { id: 'level_10', name: 'Double Digits', emoji: '🔟', description: 'Reach Level 10', href: '/lesson' },
+      { id: 'level_25', name: 'Quarter Way', emoji: '🌟', description: 'Reach Level 25', href: '/lesson' },
+      { id: 'level_50', name: 'Halfway Hero', emoji: '🏔️', description: 'Reach Level 50', href: '/lesson' },
     ],
   },
 ];
@@ -90,6 +90,24 @@ function BadgeTile({ badge, earned, tint }) {
 
 export default function CinematicAchievements() {
   const prog = useProgression();
+
+  // Match prod: show a skeleton until progression data has hydrated, so badges
+  // and XP don't flash empty/locked on first paint.
+  if (!prog?.isLoaded) {
+    return (
+      <CinematicShell>
+        <div className="cine-rise space-y-6">
+          <div className="h-44 rounded-3xl cine-glass animate-pulse" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-32 rounded-2xl cine-glass animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </CinematicShell>
+    );
+  }
+
   const lp = prog?.levelProgress || { level: 1, percent: 0, xpToNext: 100 };
   const level = lp.level || prog?.level || 1;
   const title = getLevelTitle(level);
@@ -141,7 +159,9 @@ export default function CinematicAchievements() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {cat.badges.map((b) => (
-              <BadgeTile key={b.id} badge={b} earned={earnedIds.has(b.id)} tint={cat.tint} />
+              <Link key={b.id} href={b.href || '/lesson'}>
+                <BadgeTile badge={b} earned={earnedIds.has(b.id)} tint={cat.tint} />
+              </Link>
             ))}
           </div>
         </section>
@@ -152,17 +172,31 @@ export default function CinematicAchievements() {
         <section className="cine-rise">
           <h2 className="font-display font-bold mb-3">Recent XP</h2>
           <div className="cine-glass rounded-2xl divide-y" style={{ borderColor: 'var(--line)' }}>
-            {recentXp.map((e, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{xpSourceLabel(e.source)}</p>
-                  <p className="text-xs" style={{ color: 'var(--ink-dim)' }}>{new Date(e.created_at).toLocaleDateString()}</p>
+            {recentXp.map((e, i) => {
+              // Admin grants/corrections carry a reason and attribution — surface
+              // them so the XP history is auditable (matches prod).
+              const isAdminEvent = e.source === 'admin_grant' || e.source === 'admin_correction';
+              const reason = e.meta?.reason;
+              const by = e.meta?.by;
+              return (
+                <div key={e.id || i} className="flex items-center justify-between px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{xpSourceLabel(e.source)}</p>
+                    {isAdminEvent && reason && (
+                      <p className="text-xs" style={{ color: 'var(--ink-dim)' }}>“{reason}”</p>
+                    )}
+                    <p className="text-xs" style={{ color: 'var(--ink-dim)' }}>
+                      {isAdminEvent && by ? `by ${by}` : ''}
+                      {isAdminEvent && by && e.created_at ? ' · ' : ''}
+                      {e.created_at ? new Date(e.created_at).toLocaleDateString() : ''}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold shrink-0" style={{ color: (e.amount || 0) >= 0 ? 'var(--good)' : '#e0556b' }}>
+                    {(e.amount || 0) >= 0 ? '+' : ''}{e.amount || 0} XP
+                  </span>
                 </div>
-                <span className="text-sm font-bold shrink-0" style={{ color: (e.amount || 0) >= 0 ? 'var(--good)' : '#e0556b' }}>
-                  {(e.amount || 0) >= 0 ? '+' : ''}{e.amount || 0} XP
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

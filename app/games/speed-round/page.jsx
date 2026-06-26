@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Timer, ChevronRight, RotateCcw, CheckCircle2, XCircle, Trophy,
 } from 'lucide-react';
@@ -60,7 +61,11 @@ function TimerRing({ secondsLeft, total }) {
   );
 }
 
-export default function SpeedRound() {
+export default function SpeedRoundPage() {
+  return <CinematicFrame><SpeedRound /></CinematicFrame>;
+}
+
+function SpeedRound() {
   const [questions, setQuestions] = useState(() =>
     shuffleAndPick(ALL_QUESTIONS, QUESTIONS_PER_GAME)
   );
@@ -311,6 +316,12 @@ export default function SpeedRound() {
         ) : (
         <>
         <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
+        {/* Question counter — previously shown in the page header, which the
+            cinematic frame hides, so surface it in-body. */}
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
+          Question {qIdx + 1} of {questions.length}
+        </p>
 
         {/* Progress bar */}
         <div className="flex items-center gap-1 mb-6">

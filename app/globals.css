@@ -78,7 +78,37 @@
   box-shadow: 0 18px 50px -28px rgba(0, 0, 0, .55);
 }
 .cine-lift { transition: transform .45s cubic-bezier(.16, 1, .3, 1), box-shadow .45s cubic-bezier(.16, 1, .3, 1), background .3s ease; }
-.cine-lift:hover { transform: translateY(-3px); }
+.cine-lift:hover { transform: translateY(-3px); box-shadow: 0 28px 60px -30px rgba(0, 0, 0, .6); }
+/* A quick "press = jump up" on click/tap — the AI news + action cards pop. */
+.cine-lift:active { transform: translateY(-6px) scale(.995); }
+
+/* A list row that softly highlights on hover (leaderboard, list rows). */
+.cine-row { border-radius: 14px; transition: background .2s ease, transform .2s ease; }
+.cine-row:hover { background: var(--glass); transform: translateX(2px); }
+
+/* Scene-wide pointer tilt (matches the design): every .cine-tilt card tips
+   toward the cursor via shared --tilt-rx/--tilt-ry vars set on <html> by a
+   global mousemove handler, and lifts -8px on hover. Composed in one transform
+   so tilt + lift don't fight. */
+.cine-tilt {
+  transform: perspective(900px) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg)) translateY(var(--tilt-lift, 0px));
+  transform-style: preserve-3d;
+  transition: transform .3s cubic-bezier(.16, 1, .3, 1), box-shadow .4s ease, border-color .3s ease;
+  will-change: transform;
+}
+.cine-tilt:hover { --tilt-lift: -8px; box-shadow: 0 28px 60px -28px var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .cine-tilt { transform: none; transition: none; }
+  .cine-tilt:hover { --tilt-lift: 0px; }
+}
+
+/* Scroll-reveal: sections rise + fade in as they enter the viewport (the
+   full-scroll lesson). JS adds `.in` via IntersectionObserver. */
+.reveal { opacity: 0; transform: translateY(32px); transition: opacity .7s ease, transform .85s cubic-bezier(.16, 1, .3, 1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
 .cine-pill {
   border-radius: 999px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));

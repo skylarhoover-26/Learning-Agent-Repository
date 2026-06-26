@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Eye, Check, X, ChevronRight, Trophy, Bot, User, RotateCcw,
 } from 'lucide-react';
@@ -23,7 +24,11 @@ function shuffleAndPick(arr, count) {
   return shuffled.slice(0, count);
 }
 
-export default function AiOrHuman() {
+export default function AiOrHumanPage() {
+  return <CinematicFrame><AiOrHuman /></CinematicFrame>;
+}
+
+function AiOrHuman() {
   const [content, setContent] = useState(() =>
     shuffleAndPick(ALL_CONTENT, ITEMS_PER_GAME)
   );

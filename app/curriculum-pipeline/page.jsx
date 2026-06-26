@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   getFindings, saveFindings,
   getProposals, saveProposals, updateProposalStatus,
@@ -57,6 +58,10 @@ const STATUS_STYLES = {
 };
 
 export default function CurriculumPipelinePage() {
+  return <CinematicFrame><CurriculumPipelinePageInner /></CinematicFrame>;
+}
+
+function CurriculumPipelinePageInner() {
   const router = useRouter();
   const [findings, setFindings] = useState([]);
   const [proposals, setProposals] = useState([]);
