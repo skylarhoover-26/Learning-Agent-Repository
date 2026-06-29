@@ -15,6 +15,10 @@ export function relTime(iso) {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
+function weekday(iso) {
+  try { return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short' }); } catch { return ''; }
+}
+
 const COLUMNS = [
   { key: 'name', label: 'Name' },
   { key: 'department', label: 'Team' },
@@ -38,9 +42,29 @@ function StatCard({ icon: Icon, label, value, sub }) {
   );
 }
 
-// Presentational report body: overview cards, optional engagement chart, a
-// sortable people table, and top topics. Shared by the authed /reporting page
-// and the public token-shared view so both look identical.
+// A compact vertical bar chart for categorical counts (e.g. activity by type,
+// learners by team). Value on top, branded bar, wrapped label below.
+function VBarChart({ items }) {
+  if (!items?.length) return null;
+  const max = Math.max(1, ...items.map((i) => i.value));
+  return (
+    <div className="flex items-end gap-2 sm:gap-3 h-48">
+      {items.map((it, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center justify-end min-w-0 h-full" title={`${it.label}: ${it.value}`}>
+          <span className="text-xs font-bold text-ink dark:text-slate-200 mb-1 tabular-nums">{it.value}</span>
+          <div className="w-full flex items-end justify-center" style={{ height: `${Math.max(2, (it.value / max) * 100)}%` }}>
+            <div className="w-full max-w-[44px] h-full bg-gradient-to-t from-brand to-[#3b82f6] rounded-t-md" />
+          </div>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 text-center leading-tight line-clamp-2 break-words w-full">{it.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Presentational report body: overview cards, engagement chart, learners-by-team
+// and activity charts, a sortable people table, and top topics. Shared by the
+// authed /reporting page and the public token-shared view so both look identical.
 export default function ReportView({ people = [], overview, engagement = null, activityByType = null }) {
   const [sort, setSort] = useState({ key: 'totalXp', dir: 'desc' });
 
@@ -56,6 +80,17 @@ export default function ReportView({ people = [], overview, engagement = null, a
     }
     return [...counts.entries()].map(([topic, count]) => ({ topic, count }))
       .sort((a, b) => b.count - a.count).slice(0, 15);
+  }, [people]);
+
+  // Learners per team (top 8) for the "by team" chart — scope-aware.
+  const teamStats = useMemo(() => {
+    const counts = new Map();
+    for (const p of people) {
+      const t = p.department || 'Unassigned';
+      counts.set(t, (counts.get(t) || 0) + 1);
+    }
+    return [...counts.entries()].map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value).slice(0, 8);
   }, [people]);
 
   const sorted = useMemo(() => {
@@ -103,21 +138,30 @@ export default function ReportView({ people = [], overview, engagement = null, a
             </div>
             <div className="relative flex items-end gap-1.5 h-32">
               {engagement.map((d) => (
-                <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0 z-10" title={`${d.date}: ${d.activeUsers} active · ${d.lessons} lessons · ${d.events} events`}>
+                <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0 z-10" title={`${weekday(d.date)} ${d.date}: ${d.activeUsers} active · ${d.lessons} lessons · ${d.events} events`}>
                   <div className="w-full flex items-end justify-center h-full">
-                    <div className="w-full max-w-[24px] bg-brand rounded-t transition-all hover:bg-brand-600" style={{ height: `${Math.max(4, Math.round((d.activeUsers / engMax) * 100))}%` }} />
+                    <div className="w-full max-w-[24px] bg-brand rounded-t transition-all hover:bg-brand-600" style={{ height: d.activeUsers ? `${Math.max(8, Math.round((d.activeUsers / engMax) * 100))}%` : '0%' }} />
                   </div>
-                  <span className="text-[9px] text-slate-400 tabular-nums">{d.date.slice(5)}</span>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500 leading-none">{weekday(d.date)}</span>
+                  <span className="text-[9px] text-slate-400 tabular-nums leading-none">{d.date.slice(5)}</span>
                 </div>
               ))}
               {/* Lessons-completed line overlaid on the active-learner bars. */}
-              <svg className="absolute inset-x-0 top-0 w-full pointer-events-none" style={{ height: 'calc(100% - 0.875rem)' }} viewBox="0 0 100 100" preserveAspectRatio="none">
+              <svg className="absolute inset-x-0 top-0 w-full pointer-events-none" style={{ height: 'calc(100% - 1.6rem)' }} viewBox="0 0 100 100" preserveAspectRatio="none">
                 <polyline points={linePts} fill="none" className="stroke-cta" strokeWidth="2" vectorEffect="non-scaling-stroke" />
               </svg>
             </div>
           </div>
         );
       })()}
+
+      {teamStats.length > 1 && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+          <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Learners by team</h2>
+          <p className="text-xs text-slate-400 mb-5">people with activity, by department</p>
+          <VBarChart items={teamStats} />
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-x-auto mb-8">
         <table className="w-full text-sm">
@@ -156,31 +200,23 @@ export default function ReportView({ people = [], overview, engagement = null, a
       {activityByType?.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
           <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">What people are doing</h2>
-          <p className="text-xs text-slate-400 mb-4">actions across the app · last 14 days</p>
-          <div className="space-y-2">
-            {activityByType.map((a) => (
-              <div key={a.type} className="flex items-center gap-3">
-                <span className="flex-1 text-sm text-ink dark:text-slate-200 truncate">{a.label}</span>
-                <span className="text-xs text-slate-400 tabular-nums w-12 text-right">{a.count}</span>
-                <div className="w-40 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-brand rounded-full" style={{ width: `${(a.count / activityByType[0].count) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-slate-400 mb-5">actions across the app · last 14 days</p>
+          <VBarChart items={activityByType.map((a) => ({ label: a.label, value: a.count }))} />
         </div>
       )}
 
       {topTopics.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
           <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-4">Most-taken topics</h2>
-          <div className="space-y-2">
-            {topTopics.map((t) => (
+          <div className="space-y-2.5">
+            {topTopics.map((t, i) => (
               <div key={t.topic} className="flex items-center gap-3">
-                <span className="flex-1 text-sm text-ink dark:text-slate-200 truncate">{t.topic}</span>
-                <span className="text-xs text-slate-400 tabular-nums w-10 text-right">{t.count}</span>
-                <div className="w-32 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-brand rounded-full" style={{ width: `${(t.count / topTopics[0].count) * 100}%` }} />
+                <span className="w-4 text-xs text-slate-400 tabular-nums text-right shrink-0">{i + 1}</span>
+                <span className="w-52 shrink-0 text-sm text-ink dark:text-slate-200 truncate" title={t.topic}>{t.topic}</span>
+                <div className="flex-1 h-5 bg-slate-100 dark:bg-slate-700 rounded-md overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-brand to-[#3b82f6] rounded-md flex items-center justify-end px-2 min-w-[1.5rem]" style={{ width: `${Math.max(8, (t.count / topTopics[0].count) * 100)}%` }}>
+                    <span className="text-[10px] font-bold text-white tabular-nums">{t.count}</span>
+                  </div>
                 </div>
               </div>
             ))}
