@@ -1,4 +1,4 @@
-import { getAuthenticatedUser } from '@/lib/auth-helpers';
+import { getAuthenticatedUser, getIdentityEmail, oktaConfigured } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { getOrgData } from '@/lib/manager-data';
 import { buildReport } from '@/lib/reporting';
@@ -22,9 +22,18 @@ async function isManager(email) {
 }
 
 export async function GET() {
-  const user = await getAuthenticatedUser();
-  const email = user?.email;
-  if (!email) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  // This report exposes cross-user data, so require a REAL identity — not the
+  // pre-Okta "demo" default that getAuthenticatedUser falls back to when there's
+  // no identity cookie (that default is a seed admin, which would let an
+  // unauthenticated request read the whole report).
+  let email = null;
+  if (oktaConfigured) {
+    const user = await getAuthenticatedUser();
+    email = user?.email || null;
+  } else {
+    email = await getIdentityEmail();
+  }
+  if (!email) return Response.json({ error: 'Sign in to view reporting.' }, { status: 401 });
 
   const [admin, manager] = await Promise.all([isAdmin(email), isManager(email)]);
   if (!admin && !manager) {
