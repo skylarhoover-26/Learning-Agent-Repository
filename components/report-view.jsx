@@ -112,7 +112,7 @@ export default function ReportView({ people = [], overview, topTopics = [], enga
                   <span className="font-medium text-ink dark:text-slate-200">{p.name}</span>
                   {p.title && <span className="block text-xs text-slate-400">{p.title}</span>}
                 </td>
-                <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300">{p.department}{p.subTeam ? ` · ${p.subTeam}` : ''}</td>
+                <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300">{p.department}{p.subTeam && p.subTeam !== p.department ? ` · ${p.subTeam}` : ''}</td>
                 <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300">{p.manager || '—'}</td>
                 <td className="py-2.5 px-4 text-right tabular-nums">{p.lessonsCompleted}</td>
                 <td className="py-2.5 px-4 text-right tabular-nums font-semibold">{p.totalXp.toLocaleString()}</td>
