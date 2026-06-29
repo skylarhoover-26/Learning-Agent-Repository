@@ -23,6 +23,11 @@ export default function FeatureGuard({ children }) {
   const pathname = usePathname();
   const { loaded, routeState } = useMenuVisibility();
 
+  // The public token-shared report is never gated — it has its own token auth
+  // and must work for signed-out viewers. (It also shares the /reporting prefix,
+  // which would otherwise inherit the Reporting item's visibility.)
+  if (pathname.startsWith('/reporting/shared')) return children;
+
   if (loaded) {
     const state = routeState(pathname);
     // "coming soon" gets the teaser; "hidden" gets a neutral not-available page
