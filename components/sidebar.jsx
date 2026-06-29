@@ -36,6 +36,19 @@ function SectionHeader({ title, tour }) {
   );
 }
 
+// A menu item's description shown as a styled hover popup. Absolutely positioned
+// just below the row (constrained to the panel width) so it's visible without
+// growing the row or reflowing the menu, and so it can't clip off the side. The
+// parent row must be `relative` and `group`.
+function ItemDescPopup({ text }) {
+  if (!text) return null;
+  return (
+    <span className="pointer-events-none absolute left-10 right-2 top-[calc(100%-0.25rem)] z-50 hidden group-hover:block group-focus-within:block rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs leading-snug px-3 py-2 shadow-xl">
+      {text}
+    </span>
+  );
+}
+
 const NAV_SECTIONS = [
   {
     title: 'Learn',
@@ -324,17 +337,15 @@ export function SideNav() {
         href={item.href}
         data-tour={navItemTour(item.href)}
         aria-current={active ? 'page' : undefined}
-        title={item.desc || undefined}
-        className={`group flex items-center gap-3 px-4 py-2 border-l-2 transition-colors ${
+        className={`group relative flex items-center gap-3 px-4 py-2 border-l-2 transition-colors ${
           active
             ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
             : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
         }`}
       >
         <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
-        {/* The description is a hover popup (title) instead of an inline line, so
-            the row no longer grows and reflows the menu on hover. */}
         <span className="min-w-0 block text-sm font-medium leading-tight truncate">{item.label}</span>
+        <ItemDescPopup text={item.desc} />
       </Link>
     );
   }
@@ -398,15 +409,11 @@ export function SideNav() {
                   key="tour"
                   onClick={startTour}
                   data-tour="nav-tour"
-                  className="group w-full flex items-start gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="group relative w-full flex items-center gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <item.icon className="w-4 h-4 shrink-0 mt-0.5 text-slate-500 dark:text-slate-400" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium leading-tight">{item.label}</span>
-                    {item.desc && (
-                      <span className="hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 text-slate-500 dark:text-slate-400">{item.desc}</span>
-                    )}
-                  </span>
+                  <item.icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
+                  <span className="min-w-0 block text-sm font-medium leading-tight truncate">{item.label}</span>
+                  <ItemDescPopup text={item.desc} />
                 </button>
               ) : (
                 renderNavItem(item)
@@ -429,15 +436,11 @@ export function SideNav() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-start gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="group relative flex items-center gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <ExternalLink className="w-4 h-4 shrink-0 mt-0.5 text-slate-400 dark:text-slate-500" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium leading-tight">{link.label}</span>
-                    {link.desc && (
-                      <span className="hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 text-slate-500 dark:text-slate-400">{link.desc}</span>
-                    )}
-                  </span>
+                  <ExternalLink className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <span className="min-w-0 block text-sm font-medium leading-tight truncate">{link.label}</span>
+                  <ItemDescPopup text={link.desc} />
                 </a>
                 )
               ))}
