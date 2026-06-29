@@ -62,6 +62,89 @@ function VBarChart({ items }) {
   );
 }
 
+// Engagement combo chart: gradient bars for active learners + an orange line
+// with a soft area fill for lessons completed. Each day is clickable to drill
+// into who was active (grouped by team).
+function EngagementChart({ engagement }) {
+  const [sel, setSel] = useState(null);
+  const usersMax = Math.max(1, ...engagement.map((d) => d.activeUsers));
+  const lessonMax = Math.max(1, ...engagement.map((d) => d.lessons));
+  const n = engagement.length;
+  const pts = engagement.map((d, i) => ({ x: ((i + 0.5) / n) * 100, y: 100 - (d.lessons / lessonMax) * 100 }));
+  const linePts = pts.map((p) => `${p.x},${p.y}`).join(' ');
+  const areaPts = `${pts[0].x},100 ${linePts} ${pts[n - 1].x},100`;
+  const selected = sel != null ? engagement[sel] : null;
+
+  const byTeam = useMemo(() => {
+    if (!selected) return [];
+    const m = new Map();
+    for (const a of selected.active || []) {
+      if (!m.has(a.department)) m.set(a.department, []);
+      m.get(a.department).push(a.name);
+    }
+    return [...m.entries()].map(([team, names]) => ({ team, names })).sort((a, b) => b.names.length - a.names.length);
+  }, [selected]);
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-base font-bold text-ink dark:text-slate-200">Engagement — last 14 days</h2>
+        <span className="text-xs text-slate-400">app-wide</span>
+      </div>
+      <div className="flex items-center gap-4 mb-3 text-xs text-slate-500 dark:text-slate-400">
+        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-gradient-to-t from-brand to-[#3b82f6] inline-block" /> Active learners</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-0.5 bg-cta inline-block" /> Lessons completed</span>
+      </div>
+      <div className="relative flex items-end gap-1.5 h-32">
+        {engagement.map((d, i) => (
+          <button
+            key={d.date}
+            type="button"
+            onClick={() => setSel(sel === i ? null : i)}
+            className="flex-1 flex flex-col items-center gap-1 min-w-0 z-10 group h-full justify-end"
+            title={`${weekday(d.date)} ${d.date}: ${d.activeUsers} active · ${d.lessons} lessons`}
+          >
+            <div className="w-full flex items-end justify-center h-full">
+              <div
+                className={`w-full max-w-[24px] rounded-t bg-gradient-to-t from-brand to-[#3b82f6] transition-all group-hover:opacity-80 ${sel === i ? 'ring-2 ring-brand-300 ring-offset-1 dark:ring-offset-slate-800' : ''}`}
+                style={{ height: d.activeUsers ? `${Math.max(8, Math.round((d.activeUsers / usersMax) * 100))}%` : '0%' }}
+              />
+            </div>
+            <span className={`text-[9px] leading-none ${sel === i ? 'text-brand font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>{weekday(d.date)}</span>
+            <span className={`text-[9px] tabular-nums leading-none ${sel === i ? 'text-brand font-semibold' : 'text-slate-400'}`}>{d.date.slice(5)}</span>
+          </button>
+        ))}
+        {/* Lessons line + soft area fill (currentColor = cta via text-cta). */}
+        <svg className="absolute inset-x-0 top-0 w-full pointer-events-none text-cta" style={{ height: 'calc(100% - 1.6rem)' }} viewBox="0 0 100 100" preserveAspectRatio="none">
+          <polygon points={areaPts} fill="currentColor" fillOpacity="0.14" />
+          <polyline points={linePts} fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        </svg>
+      </div>
+      <p className="text-xs text-slate-400 mt-2.5">Tap a day to see who was active</p>
+      {selected && (
+        <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-bg-warm/60 dark:bg-slate-900/40 p-4">
+          <p className="text-sm font-semibold text-ink dark:text-slate-200">
+            {weekday(selected.date)} {selected.date} — {selected.activeUsers} active · {selected.lessons} lessons
+          </p>
+          {byTeam.length === 0 ? (
+            <p className="text-xs text-slate-400 mt-1">No active learners this day.</p>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {byTeam.map((t) => (
+                <div key={t.team} className="text-sm leading-snug">
+                  <span className="font-semibold text-brand">{t.team}</span>
+                  <span className="text-slate-400"> ({t.names.length}) · </span>
+                  <span className="text-ink dark:text-slate-200">{t.names.join(', ')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Presentational report body: overview cards, engagement chart, learners-by-team
 // and activity charts, a sortable people table, and top topics. Shared by the
 // authed /reporting page and the public token-shared view so both look identical.
@@ -109,8 +192,6 @@ export default function ReportView({ people = [], overview, engagement = null, a
       : { key, dir: COLUMNS.find((c) => c.key === key)?.num ? 'desc' : 'asc' });
   }
 
-  const engMax = engagement?.length ? Math.max(1, ...engagement.map((d) => d.activeUsers)) : 1;
-
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -120,40 +201,7 @@ export default function ReportView({ people = [], overview, engagement = null, a
         <StatCard icon={Zap} label="Total XP" value={(overview.xp || 0).toLocaleString()} />
       </div>
 
-      {engagement?.length > 0 && (() => {
-        const lessonMax = Math.max(1, ...engagement.map((d) => d.lessons));
-        const n = engagement.length;
-        const linePts = engagement
-          .map((d, i) => `${((i + 0.5) / n) * 100},${100 - (d.lessons / lessonMax) * 100}`)
-          .join(' ');
-        return (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-base font-bold text-ink dark:text-slate-200">Engagement — last 14 days</h2>
-              <span className="text-xs text-slate-400">app-wide</span>
-            </div>
-            <div className="flex items-center gap-4 mb-3 text-xs text-slate-500 dark:text-slate-400">
-              <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand inline-block" /> Active learners</span>
-              <span className="inline-flex items-center gap-1.5"><span className="w-3 h-0.5 bg-cta inline-block" /> Lessons completed</span>
-            </div>
-            <div className="relative flex items-end gap-1.5 h-32">
-              {engagement.map((d) => (
-                <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0 z-10" title={`${weekday(d.date)} ${d.date}: ${d.activeUsers} active · ${d.lessons} lessons · ${d.events} events`}>
-                  <div className="w-full flex items-end justify-center h-full">
-                    <div className="w-full max-w-[24px] bg-brand rounded-t transition-all hover:bg-brand-600" style={{ height: d.activeUsers ? `${Math.max(8, Math.round((d.activeUsers / engMax) * 100))}%` : '0%' }} />
-                  </div>
-                  <span className="text-[9px] text-slate-400 dark:text-slate-500 leading-none">{weekday(d.date)}</span>
-                  <span className="text-[9px] text-slate-400 tabular-nums leading-none">{d.date.slice(5)}</span>
-                </div>
-              ))}
-              {/* Lessons-completed line overlaid on the active-learner bars. */}
-              <svg className="absolute inset-x-0 top-0 w-full pointer-events-none" style={{ height: 'calc(100% - 1.6rem)' }} viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polyline points={linePts} fill="none" className="stroke-cta" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-              </svg>
-            </div>
-          </div>
-        );
-      })()}
+      {engagement?.length > 0 && <EngagementChart engagement={engagement} />}
 
       {teamStats.length > 1 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
