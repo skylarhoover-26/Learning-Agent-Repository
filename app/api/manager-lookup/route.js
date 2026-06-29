@@ -1,5 +1,11 @@
 import { getOrgData } from '@/lib/manager-data';
 
+// On a cold cache this triggers the n8n→Snowflake webhook fetch inline, which
+// can exceed Vercel's default ~10s function limit. Give it room so the first
+// lookup of the day can't get cut off mid-fetch.
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 // Index every employee by normalized name → { name, email, title, subTeam,

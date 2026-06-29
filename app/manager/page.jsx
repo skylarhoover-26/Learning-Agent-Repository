@@ -457,6 +457,13 @@ export default function ManagerDashboard() {
   const [scoresLoading, setScoresLoading] = useState(false);
   const [rating, setRating] = useState(false);
 
+  // Warm the org-data cache as soon as the dashboard opens (fire-and-forget), so
+  // the first lookup reads a ready cache instead of triggering the slow
+  // n8n→Snowflake fetch inline. The lookup still self-fetches as a fallback.
+  useEffect(() => {
+    fetch('/api/manager-data').catch(() => { /* best-effort warm */ });
+  }, []);
+
   const fetchTeamScores = useCallback(async (emails) => {
     setScoresLoading(true);
     try {
