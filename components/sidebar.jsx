@@ -246,7 +246,7 @@ export function SidebarShell({ children }) {
           aria-hidden="true"
         />
       )}
-      <div className={`transition-[padding] duration-200 ${showNav ? 'lg:pl-96' : ''}`}>
+      <div className={`transition-[padding] duration-200 ${showNav ? 'lg:pl-80' : ''}`}>
         {children}
       </div>
     </>
@@ -347,7 +347,7 @@ export function SideNav() {
   return (
     <nav
       data-tour="sidebar"
-      className={`fixed top-16 left-0 h-[calc(100dvh-4rem)] w-96 max-w-[88vw] z-[45] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
+      className={`fixed top-16 left-0 h-[calc(100dvh-4rem)] w-80 max-w-[88vw] z-[45] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-hidden={!open}

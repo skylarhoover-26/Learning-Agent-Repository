@@ -49,16 +49,17 @@ body {
   animation: heatmap-pulse 1.5s ease-in-out infinite;
 }
 
-/* Docked menu chrome. The body content shifts right (lg:pl-96) when the menu
+/* Docked menu chrome. The body content shifts right (lg:pl-80) when the menu
    is open; these rules keep the dark top bar full-width across the top (it
-   counter-shifts back) and hide the hamburger strip while the menu is open. */
+   counter-shifts back) and hide the hamburger strip while the menu is open.
+   The -20rem must match the menu width (w-80) in sidebar.jsx. */
 .js-topbar {
   transition: margin-left 0.2s ease, width 0.2s ease;
 }
 @media (min-width: 1024px) {
   html.menu-open .js-topbar {
-    margin-left: -24rem;
-    width: calc(100% + 24rem);
+    margin-left: -20rem;
+    width: calc(100% + 20rem);
   }
 }
 html.menu-open .js-menu-strip {
