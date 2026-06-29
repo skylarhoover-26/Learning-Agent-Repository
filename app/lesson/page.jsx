@@ -23,7 +23,7 @@ import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import PausedLessonsBox from '@/components/paused-lessons-box';
-import { listPausedLessons } from '@/lib/paused-lessons';
+import { listPausedLessons, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import { QUESTS } from '@/lib/quest-data';
 import { useActiveTool } from '@/components/active-tool-provider';
 
@@ -640,15 +640,27 @@ function LessonContent() {
   // duration are recorded just like a read lesson. For a Project Quest, if the
   // topic matches a curated quest we pass its id so the narration walks the
   // quest's REAL steps (matching the read version); custom topics stay generic.
-  const launchVideo = useCallback((t) => {
+  const launchVideo = useCallback((t, fmt = format) => {
     videoStartedAt.current = new Date().toISOString();
     videoCompletedRef.current = false;
     const norm = (s) => (s || '').trim().toLowerCase();
-    const quest = format === 'project_quest'
+    const quest = fmt === 'project_quest'
       ? QUESTS.find((q) => norm(q.title) === norm(t))
       : null;
     setVideoQuestId(quest ? quest.id : null);
     setVideoTopic(t);
+    // Narrated lessons are resumable too: record a paused entry so they show up
+    // in the resume list / header bell. Reopening regenerates the narration from
+    // the start (narrated scripts aren't checkpointed) — the intended behavior.
+    try {
+      upsertPausedLesson({
+        format: fmt,
+        topic: t,
+        state: { topic: t, format: fmt, learnMode: 'watch', lessonStartedAt: videoStartedAt.current },
+        stepLabel: 'Narrated',
+        startedAt: videoStartedAt.current,
+      });
+    } catch { /* resume persistence is best-effort */ }
   }, [format]);
 
   // "Surprise me": pick a personalized topic (same source as the old quick-win
@@ -698,6 +710,14 @@ function LessonContent() {
     const s = entry.state || {};
     setTopic(entry.topic);
     setFormat(entry.format || 'standard');
+    // Narrated ("watch") lessons reopen straight into the player and regenerate
+    // from the start; every other format resumes the read flow in place.
+    if (s.learnMode === 'watch') {
+      setLearnMode('watch');
+      setView('picker'); // the narrated player is a modal layered over the picker
+      launchVideo(entry.topic, entry.format || 'standard');
+      return;
+    }
     setLearnMode('read');
     if (entry.format === 'quick_tip') {
       setSlides(s.slides || []);
@@ -709,7 +729,7 @@ function LessonContent() {
       practicePrefilledRef.current = true; // don't auto-prefill mid-lesson on resume
     }
     setView('lesson');
-  }, []);
+  }, [launchVideo]);
 
   // Deep link from the header bell: /lesson?resume=<entryKey> resumes that exact
   // paused lesson. Runs once per distinct key so navigating here jumps straight in.
@@ -761,6 +781,8 @@ function LessonContent() {
     if (videoCompletedRef.current) return;
     videoCompletedRef.current = true;
     try {
+      // A finished narrated lesson must leave the resume list.
+      if (videoTopic) removePausedLesson(format, videoTopic);
       if (profile && videoTopic) {
         const startedAt = videoStartedAt.current;
         const durationMs = startedAt ? Date.now() - new Date(startedAt).getTime() : 0;
