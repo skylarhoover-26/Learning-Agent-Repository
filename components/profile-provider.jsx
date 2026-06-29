@@ -75,7 +75,7 @@ export function ProfileProvider({ children }) {
   useEffect(() => {
     if (isLoading || profile) return;
     if (hasRedirected.current) return;
-    if (pathname === '/onboarding' || pathname.startsWith('/auth')) return;
+    if (pathname === '/onboarding' || pathname.startsWith('/auth') || pathname.startsWith('/reporting/shared')) return;
     hasRedirected.current = true;
     router.push('/onboarding');
   }, [isLoading, profile, pathname, router]);

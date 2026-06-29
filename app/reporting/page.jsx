@@ -2,42 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
-import { BarChart3, Users, Activity, BookOpen, Zap, Link2, Check, Loader2, ArrowUpDown } from 'lucide-react';
-
-function relTime(iso) {
-  if (!iso) return 'Never';
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return 'Never';
-  const days = Math.floor((Date.now() - t) / 86400000);
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  return `${Math.floor(days / 30)}mo ago`;
-}
-
-const COLUMNS = [
-  { key: 'name', label: 'Name' },
-  { key: 'department', label: 'Team' },
-  { key: 'manager', label: 'Manager' },
-  { key: 'lessonsCompleted', label: 'Lessons', num: true },
-  { key: 'totalXp', label: 'XP', num: true },
-  { key: 'level', label: 'Level', num: true },
-  { key: 'lastActive', label: 'Last active' },
-];
-
-function StatCard({ icon: Icon, label, value, sub }) {
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-5">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
-        <span className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-slate-700 flex items-center justify-center text-brand"><Icon className="w-4 h-4" /></span>
-      </div>
-      <p className="text-3xl font-extrabold text-ink dark:text-slate-100 leading-none">{value}</p>
-      {sub && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{sub}</p>}
-    </div>
-  );
-}
+import { BarChart3, Link2, Check, Loader2, Globe } from 'lucide-react';
+import ReportView from '@/components/report-view';
 
 export default function ReportingPage() {
   const [state, setState] = useState({ status: 'loading' }); // loading | forbidden | error | ok
@@ -45,10 +11,11 @@ export default function ReportingPage() {
   const [team, setTeam] = useState('');
   const [manager, setManager] = useState('');
   const [person, setPerson] = useState('');
-  const [sort, setSort] = useState({ key: 'totalXp', dir: 'desc' });
   const [copied, setCopied] = useState(false);
+  const [publicUrl, setPublicUrl] = useState('');
+  const [publicCopied, setPublicCopied] = useState(false);
+  const [minting, setMinting] = useState(false);
 
-  // Seed filters from the URL (so a shared link lands pre-filtered).
   useEffect(() => {
     try {
       const q = new URLSearchParams(window.location.search);
@@ -61,7 +28,7 @@ export default function ReportingPage() {
   useEffect(() => {
     fetch('/api/reporting', { cache: 'no-store' })
       .then(async (r) => {
-        if (r.status === 403) { setState({ status: 'forbidden' }); return; }
+        if (r.status === 403 || r.status === 401) { setState({ status: 'forbidden' }); return; }
         if (!r.ok) { setState({ status: 'error' }); return; }
         setData(await r.json());
         setState({ status: 'ok' });
@@ -69,9 +36,11 @@ export default function ReportingPage() {
       .catch(() => setState({ status: 'error' }));
   }, []);
 
-  // Keep the URL in sync with the filters so the current view is shareable.
+  // Keep the URL in sync with filters so the current view is shareable. Reset any
+  // minted public link when filters change (it was scoped to the old filters).
   useEffect(() => {
     if (state.status !== 'ok') return;
+    setPublicUrl('');
     try {
       const q = new URLSearchParams();
       if (team) q.set('team', team);
@@ -85,52 +54,52 @@ export default function ReportingPage() {
   const filtered = useMemo(() => {
     if (!data?.people) return [];
     const pq = person.trim().toLowerCase();
-    let list = data.people.filter((p) =>
+    return data.people.filter((p) =>
       (!team || p.department === team) &&
       (!manager || p.manager === manager) &&
       (!pq || p.name.toLowerCase().includes(pq) || (p.email || '').toLowerCase().includes(pq))
     );
-    const { key, dir } = sort;
-    const mult = dir === 'asc' ? 1 : -1;
-    list = [...list].sort((a, b) => {
-      const va = a[key], vb = b[key];
-      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * mult;
-      return String(va || '').localeCompare(String(vb || '')) * mult;
-    });
-    return list;
-  }, [data, team, manager, person, sort]);
+  }, [data, team, manager, person]);
 
   const overview = useMemo(() => {
     const now = Date.now();
     const active = filtered.filter((p) => p.lastActive && (now - new Date(p.lastActive).getTime()) / 86400000 <= 7).length;
-    const lessons = filtered.reduce((s, p) => s + (p.lessonsCompleted || 0), 0);
-    const xp = filtered.reduce((s, p) => s + (p.totalXp || 0), 0);
-    const avgLevel = filtered.length ? (filtered.reduce((s, p) => s + (p.level || 0), 0) / filtered.length) : 0;
-    return { learners: filtered.length, active, lessons, xp, avgLevel };
+    return {
+      learners: filtered.length,
+      active,
+      lessons: filtered.reduce((s, p) => s + (p.lessonsCompleted || 0), 0),
+      xp: filtered.reduce((s, p) => s + (p.totalXp || 0), 0),
+      avgLevel: filtered.length ? filtered.reduce((s, p) => s + (p.level || 0), 0) / filtered.length : 0,
+    };
   }, [filtered]);
 
-  const copyLink = useCallback(() => {
-    try {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard unavailable */ }
+  const copyViewLink = useCallback(() => {
+    try { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* */ }
   }, []);
 
-  function toggleSort(key) {
-    setSort((s) => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: COLUMNS.find((c) => c.key === key)?.num ? 'desc' : 'asc' });
-  }
+  const createPublicLink = useCallback(async () => {
+    setMinting(true);
+    try {
+      const res = await fetch('/api/reporting/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filters: { team, manager, person } }),
+      });
+      if (!res.ok) throw new Error('mint failed');
+      const { token } = await res.json();
+      const url = `${window.location.origin}/reporting/shared/${token}`;
+      setPublicUrl(url);
+      try { await navigator.clipboard.writeText(url); setPublicCopied(true); setTimeout(() => setPublicCopied(false), 2000); } catch { /* */ }
+    } catch { /* best-effort */ } finally { setMinting(false); }
+  }, [team, manager, person]);
 
   return (
     <div className="min-h-screen">
       <PageHeader icon={BarChart3} title="Reporting" subtitle="Team learning activity and progress" />
       <main className="max-w-6xl mx-auto px-6 py-10">
         {state.status === 'loading' && (
-          <div className="flex items-center justify-center py-20 text-slate-500 dark:text-slate-400 gap-2">
-            <Loader2 className="w-5 h-5 animate-spin" /> Building the report…
-          </div>
+          <div className="flex items-center justify-center py-20 text-slate-500 dark:text-slate-400 gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Building the report…</div>
         )}
-
         {state.status === 'forbidden' && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 text-center max-w-md mx-auto">
             <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
@@ -138,7 +107,6 @@ export default function ReportingPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400">Ask an admin if you think you should have access.</p>
           </div>
         )}
-
         {state.status === 'error' && (
           <div className="text-center py-20 text-slate-500 dark:text-slate-400">Couldn&apos;t load the report. Please try again.</div>
         )}
@@ -146,7 +114,7 @@ export default function ReportingPage() {
         {state.status === 'ok' && data && (
           <>
             {/* Filters */}
-            <div className="flex flex-wrap items-end gap-3 mb-6">
+            <div className="flex flex-wrap items-end gap-3 mb-4">
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Team</span>
                 <select value={team} onChange={(e) => setTeam(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200">
@@ -168,94 +136,30 @@ export default function ReportingPage() {
               {(team || manager || person) && (
                 <button onClick={() => { setTeam(''); setManager(''); setPerson(''); }} className="px-3 py-2 text-sm text-slate-500 hover:text-ink dark:hover:text-slate-200">Clear</button>
               )}
-              <button onClick={copyLink} className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-white text-sm font-semibold hover:bg-brand-600 transition-colors">
-                {copied ? <><Check className="w-4 h-4" /> Copied</> : <><Link2 className="w-4 h-4" /> Copy share link</>}
+            </div>
+
+            {/* Share controls */}
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              <button onClick={copyViewLink} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                {copied ? <><Check className="w-4 h-4" /> Copied</> : <><Link2 className="w-4 h-4" /> Copy view link</>}
+                <span className="text-xs text-slate-400 font-normal">(needs login)</span>
               </button>
-            </div>
-
-            {/* Overview */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard icon={Users} label="Learners" value={overview.learners} sub={`avg level ${overview.avgLevel.toFixed(1)}`} />
-              <StatCard icon={Activity} label="Active this week" value={overview.active} sub={overview.learners ? `${Math.round((overview.active / overview.learners) * 100)}% of group` : '—'} />
-              <StatCard icon={BookOpen} label="Lessons completed" value={overview.lessons} />
-              <StatCard icon={Zap} label="Total XP" value={overview.xp.toLocaleString()} />
-            </div>
-
-            {/* Engagement over time */}
-            {data.engagement?.length > 0 && (() => {
-              const engMax = Math.max(1, ...data.engagement.map((d) => d.activeUsers));
-              return (
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-base font-bold text-ink dark:text-slate-200">Engagement — last 14 days</h2>
-                    <span className="text-xs text-slate-400">active learners / day (app-wide)</span>
-                  </div>
-                  <div className="flex items-end gap-1.5 h-32">
-                    {data.engagement.map((d) => (
-                      <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0" title={`${d.date}: ${d.activeUsers} active · ${d.lessons} lessons · ${d.events} events`}>
-                        <div className="w-full flex items-end justify-center h-full">
-                          <div className="w-full max-w-[24px] bg-brand rounded-t transition-all hover:bg-brand-600" style={{ height: `${Math.max(4, Math.round((d.activeUsers / engMax) * 100))}%` }} />
-                        </div>
-                        <span className="text-[9px] text-slate-400 tabular-nums">{d.date.slice(5)}</span>
-                      </div>
-                    ))}
-                  </div>
+              <button onClick={createPublicLink} disabled={minting} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-white text-sm font-semibold hover:bg-brand-600 disabled:opacity-50 transition-colors">
+                {minting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                Create public link
+              </button>
+              {publicUrl && (
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <input readOnly value={publicUrl} className="flex-1 min-w-[240px] px-3 py-2 rounded-xl border border-brand-200 dark:border-brand-700 bg-brand-50/40 dark:bg-slate-800 text-xs text-ink dark:text-slate-200" onFocus={(e) => e.target.select()} />
+                  <button onClick={() => { navigator.clipboard.writeText(publicUrl); setPublicCopied(true); setTimeout(() => setPublicCopied(false), 2000); }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                    {publicCopied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                  </button>
                 </div>
-              );
-            })()}
-
-            {/* People table */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-x-auto mb-8">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-slate-400 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700">
-                    {COLUMNS.map((c) => (
-                      <th key={c.key} className={`py-3 px-4 font-semibold ${c.num ? 'text-right' : ''}`}>
-                        <button onClick={() => toggleSort(c.key)} className={`inline-flex items-center gap-1 hover:text-ink dark:hover:text-slate-200 ${sort.key === c.key ? 'text-ink dark:text-slate-200' : ''}`}>
-                          {c.label}<ArrowUpDown className="w-3 h-3" />
-                        </button>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
-                    <tr><td colSpan={COLUMNS.length} className="py-10 text-center text-slate-400">No learners match these filters.</td></tr>
-                  ) : filtered.map((p) => (
-                    <tr key={p.learnerId} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/40">
-                      <td className="py-2.5 px-4">
-                        <span className="font-medium text-ink dark:text-slate-200">{p.name}</span>
-                        {p.title && <span className="block text-xs text-slate-400">{p.title}</span>}
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300">{p.department}{p.subTeam ? ` · ${p.subTeam}` : ''}</td>
-                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300">{p.manager || '—'}</td>
-                      <td className="py-2.5 px-4 text-right tabular-nums">{p.lessonsCompleted}</td>
-                      <td className="py-2.5 px-4 text-right tabular-nums font-semibold">{p.totalXp.toLocaleString()}</td>
-                      <td className="py-2.5 px-4 text-right tabular-nums">{p.level}</td>
-                      <td className="py-2.5 px-4 text-slate-500 dark:text-slate-400">{relTime(p.lastActive)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              )}
             </div>
+            {publicUrl && <p className="text-xs text-slate-400 mb-6 -mt-3">Anyone with this link can view this exact slice (no login needed). It expires in 90 days.</p>}
 
-            {/* Top topics */}
-            {data.topTopics.length > 0 && (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
-                <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-4">Most-taken topics</h2>
-                <div className="space-y-2">
-                  {data.topTopics.map((t) => (
-                    <div key={t.topic} className="flex items-center gap-3">
-                      <span className="flex-1 text-sm text-ink dark:text-slate-200 truncate">{t.topic}</span>
-                      <span className="text-xs text-slate-400 tabular-nums w-10 text-right">{t.count}</span>
-                      <div className="w-32 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand rounded-full" style={{ width: `${(t.count / data.topTopics[0].count) * 100}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <ReportView people={filtered} overview={overview} topTopics={data.topTopics} engagement={data.engagement} />
 
             <p className="text-center text-xs text-slate-400 mt-6">
               Generated {new Date(data.generatedAt).toLocaleString()} · {data.people.length} learners with activity

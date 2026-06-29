@@ -128,7 +128,9 @@ const SKILL_SHOP_LINKS = [
 // Routes that are full-screen flows with no app chrome (nav rail / content
 // shift) until the user is set up.
 function isChromeHiddenRoute(pathname) {
-  return pathname.startsWith('/onboarding') || pathname.startsWith('/auth');
+  return pathname.startsWith('/onboarding')
+    || pathname.startsWith('/auth')
+    || pathname.startsWith('/reporting/shared'); // public, no-login shared report
 }
 
 const SidebarContext = createContext(null);
