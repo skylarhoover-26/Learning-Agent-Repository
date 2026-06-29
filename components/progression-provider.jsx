@@ -6,7 +6,7 @@ import { getTotalXp, getLevel, getLevelProgress, calculateStreak, awardFirstLogi
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { onXp } from '@/lib/xp-bus';
-import { hydrate } from '@/lib/sync-store';
+import { hydrate, saveToBlob } from '@/lib/sync-store';
 
 const ProgressionContext = createContext(null);
 
@@ -103,6 +103,17 @@ export function ProgressionProvider({ children }) {
         load();
         setWelcomeBonus(result);
       }
+      // Back the (now-hydrated) local progress up to the blob so the server-side
+      // leaderboard reflects this learner's real total. `hydrate` above guarantees
+      // local >= the blob backup, so this only ever brings the backup UP to date
+      // — it can't wipe it — and it heals a backup that fell behind because an
+      // earlier debounced sync was cancelled by navigation.
+      try {
+        const all = getAllData(learnerId);
+        if (all.xpEvents.length) saveToBlob(`lp_xp_${learnerId}`, all.xpEvents);
+        if (all.badgesEarned.length) saveToBlob(`lp_badges_${learnerId}`, all.badgesEarned);
+        if (all.lessonHistory.length) saveToBlob(`lp_lessons_${learnerId}`, all.lessonHistory);
+      } catch { /* best-effort backup */ }
     })();
   }, [profile, load]);
 
