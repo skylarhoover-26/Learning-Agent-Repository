@@ -79,7 +79,7 @@ export default function ReportView({ people = [], overview, engagement = null, a
       }
     }
     return [...counts.entries()].map(([topic, count]) => ({ topic, count }))
-      .sort((a, b) => b.count - a.count).slice(0, 15);
+      .sort((a, b) => b.count - a.count).slice(0, 8);
   }, [people]);
 
   // Learners per team (top 8) for the "by team" chart — scope-aware.
@@ -207,16 +207,18 @@ export default function ReportView({ people = [], overview, engagement = null, a
 
       {topTopics.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
-          <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-4">Most-taken topics</h2>
-          <div className="space-y-2.5">
+          <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Most-taken topics</h2>
+          <p className="text-xs text-slate-400 mb-4">top 8 by learners who took them</p>
+          <div className="space-y-3.5">
             {topTopics.map((t, i) => (
-              <div key={t.topic} className="flex items-center gap-3">
-                <span className="w-4 text-xs text-slate-400 tabular-nums text-right shrink-0">{i + 1}</span>
-                <span className="w-52 shrink-0 text-sm text-ink dark:text-slate-200 truncate" title={t.topic}>{t.topic}</span>
-                <div className="flex-1 h-5 bg-slate-100 dark:bg-slate-700 rounded-md overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-brand to-[#3b82f6] rounded-md flex items-center justify-end px-2 min-w-[1.5rem]" style={{ width: `${Math.max(8, (t.count / topTopics[0].count) * 100)}%` }}>
-                    <span className="text-[10px] font-bold text-white tabular-nums">{t.count}</span>
-                  </div>
+              <div key={t.topic}>
+                <div className="flex items-start gap-2 mb-1">
+                  <span className="w-4 text-xs text-slate-400 tabular-nums text-right shrink-0 mt-0.5">{i + 1}</span>
+                  <span className="flex-1 text-sm text-ink dark:text-slate-200 leading-snug line-clamp-2" title={t.topic}>{t.topic}</span>
+                  <span className="text-sm font-bold text-brand tabular-nums shrink-0 mt-0.5">{t.count}</span>
+                </div>
+                <div className="ml-6 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-brand to-[#3b82f6] rounded-full" style={{ width: `${(t.count / topTopics[0].count) * 100}%` }} />
                 </div>
               </div>
             ))}
