@@ -137,6 +137,12 @@ export function SidebarProvider({ children }) {
   // render matches the server; the effects below settle the real state right
   // after mount (the panel slides in via its transform transition).
   const [open, setOpenState] = useState(false);
+  // `ready` gates the open/close transitions. It stays false through the initial
+  // mount and state-settle so the menu lands in its resolved position WITHOUT a
+  // slide / content-resize / title-shift animation on every page load (those
+  // animations are what read as a "flash"). It flips true one frame later, so
+  // deliberate user toggles (hamburger / ✕) still animate normally.
+  const [ready, setReady] = useState(false);
   const pathname = usePathname();
   const profileCtx = useProfile();
   const profile = profileCtx?.profile;
@@ -194,8 +200,21 @@ export function SidebarProvider({ children }) {
     return () => root.classList.remove('menu-open');
   }, [open]);
 
+  // Enable transitions one frame after mount, once `open` has settled — so the
+  // initial position is painted instantly and only later toggles animate.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('menu-ready', ready);
+    return () => root.classList.remove('menu-ready');
+  }, [ready]);
+
   return (
-    <SidebarContext.Provider value={{ open, setOpen, toggle: () => setOpen(p => !p) }}>
+    <SidebarContext.Provider value={{ open, setOpen, ready, toggle: () => setOpen(p => !p) }}>
       {children}
     </SidebarContext.Provider>
   );
@@ -232,7 +251,7 @@ export function MenuStrip() {
 // too wide to push content, so it overlays with a dim backdrop you can tap to
 // close.
 export function SidebarShell({ children }) {
-  const { open, setOpen } = useSidebar();
+  const { open, setOpen, ready } = useSidebar();
   const pathname = usePathname();
   // No nav on onboarding/auth — don't shift content or show the backdrop there.
   const showNav = open && !isChromeHiddenRoute(pathname);
@@ -246,7 +265,7 @@ export function SidebarShell({ children }) {
           aria-hidden="true"
         />
       )}
-      <div className={`transition-[padding] duration-200 ${showNav ? 'lg:pl-80' : ''}`}>
+      <div className={`${ready ? 'transition-[padding] duration-200' : ''} ${showNav ? 'lg:pl-80' : ''}`}>
         {children}
       </div>
     </>
@@ -255,7 +274,7 @@ export function SidebarShell({ children }) {
 
 // The docked, full-height left navigation rail.
 export function SideNav() {
-  const { open, setOpen } = useSidebar();
+  const { open, setOpen, ready } = useSidebar();
   const { startTour } = useTour();
   const pathname = usePathname();
   const {
@@ -347,7 +366,7 @@ export function SideNav() {
   return (
     <nav
       data-tour="sidebar"
-      className={`fixed top-16 left-0 h-[calc(100dvh-4rem)] w-80 max-w-[88vw] z-[45] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
+      className={`fixed top-16 left-0 h-[calc(100dvh-4rem)] w-80 max-w-[88vw] z-[45] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto ${ready ? 'transition-transform duration-200' : ''} ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-hidden={!open}

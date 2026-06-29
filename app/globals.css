@@ -53,7 +53,9 @@ body {
    is open; these rules keep the dark top bar full-width across the top (it
    counter-shifts back) and hide the hamburger strip while the menu is open.
    The -20rem must match the menu width (w-80) in sidebar.jsx. */
-.js-topbar {
+/* Only animate the top-bar counter-shift after the menu is "ready" (one frame
+   past mount) so it doesn't flash/resize the title on every initial page load. */
+html.menu-ready .js-topbar {
   transition: margin-left 0.2s ease, width 0.2s ease;
 }
 @media (min-width: 1024px) {
