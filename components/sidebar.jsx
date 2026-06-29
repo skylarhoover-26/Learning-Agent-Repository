@@ -57,7 +57,6 @@ const NAV_SECTIONS = [
     tour: 'section-progress',
     items: [
       { href: '/achievements', icon: Award, label: 'Achievements', desc: 'Badges and milestones you have earned' },
-      { href: '/growth', icon: TrendingUp, label: 'My Growth', desc: 'Goals, AI impact & progress check-ins' },
       { href: '/calibration', icon: Crosshair, label: 'Calibrate', desc: 'Tune lessons to your current level' },
       { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap', desc: 'Where you are strong and where to grow' },
       { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', desc: 'See how you rank across your team' },

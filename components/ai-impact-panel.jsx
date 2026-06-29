@@ -74,10 +74,10 @@ const QUESTIONS = [
   },
 ];
 
-// AI Impact section of the "My Growth" page. Same self-assessment as the old
-// /scoring page (still writes ai_impact_scores via saveScores, which the manager
-// dashboard reads). If a profile already exists, we show it with a Retake option
-// instead of forcing the wizard.
+// The AI Impact self-assessment behind the "My Impact" page. Still writes
+// ai_impact_scores via saveScores, which the manager dashboard reads. If a
+// profile already exists, we show it with a Retake option instead of forcing
+// the wizard.
 export default function AiImpactPanel() {
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
@@ -188,7 +188,7 @@ export default function AiImpactPanel() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8 text-center">
             <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">Measure your AI impact</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
-              A quick 4-question self-assessment across Personal, Team, Org, and AI Development. Your scores power your growth profile and your manager&apos;s team view.
+              A quick 4-question self-assessment across Personal, Team, Org, and AI Development. Your scores power your profile and your manager&apos;s team view.
             </p>
             <button
               onClick={startAssessment}

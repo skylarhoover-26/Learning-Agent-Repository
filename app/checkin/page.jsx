@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// Check-in moved into the unified "My Growth" page.
-export default function CheckinRedirect() {
-  redirect('/growth?tab=checkin');
+// The Check-in was removed from the app. Send old links home.
+export default function CheckinRemovedRedirect() {
+  redirect('/');
 }

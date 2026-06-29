@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// Goals moved into the unified "My Growth" page.
-export default function GoalsRedirect() {
-  redirect('/growth?tab=goals');
+// The Goals tracker was removed from the app. Send old links home.
+export default function GoalsRemovedRedirect() {
+  redirect('/');
 }
