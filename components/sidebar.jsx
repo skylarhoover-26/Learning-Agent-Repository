@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import {
-  Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
-  CalendarDays, Play, GraduationCap, ClipboardCheck,
-  Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
+  Menu, X, Crosshair, BarChart3,
+  CalendarDays, Play, GraduationCap,
+  Grid3X3, Gamepad2, Award, MessageCircle,
   Compass, Trophy, BookOpen, Terminal, Home, Library,
-  Rocket, RefreshCw, ExternalLink, TrendingUp,
+  ExternalLink, TrendingUp,
   Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
@@ -57,10 +57,8 @@ const NAV_SECTIONS = [
     tour: 'section-progress',
     items: [
       { href: '/achievements', icon: Award, label: 'Achievements', desc: 'Badges and milestones you have earned' },
-      { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact', desc: 'Measure how AI is helping your work' },
+      { href: '/growth', icon: TrendingUp, label: 'My Growth', desc: 'Goals, AI impact & progress check-ins' },
       { href: '/calibration', icon: Crosshair, label: 'Calibrate', desc: 'Tune lessons to your current level' },
-      { href: '/checkin', icon: CalendarCheck, label: 'Check-in', desc: 'A quick pulse on your progress' },
-      { href: '/goals', icon: Target, label: 'Goals', desc: 'Set and track your learning goals' },
       { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap', desc: 'Where you are strong and where to grow' },
       { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', desc: 'See how you rank across your team' },
     ],
