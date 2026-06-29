@@ -181,6 +181,29 @@ export default function ReportingPage() {
               <StatCard icon={Zap} label="Total XP" value={overview.xp.toLocaleString()} />
             </div>
 
+            {/* Engagement over time */}
+            {data.engagement?.length > 0 && (() => {
+              const engMax = Math.max(1, ...data.engagement.map((d) => d.activeUsers));
+              return (
+                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-base font-bold text-ink dark:text-slate-200">Engagement — last 14 days</h2>
+                    <span className="text-xs text-slate-400">active learners / day (app-wide)</span>
+                  </div>
+                  <div className="flex items-end gap-1.5 h-32">
+                    {data.engagement.map((d) => (
+                      <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0" title={`${d.date}: ${d.activeUsers} active · ${d.lessons} lessons · ${d.events} events`}>
+                        <div className="w-full flex items-end justify-center h-full">
+                          <div className="w-full max-w-[24px] bg-brand rounded-t transition-all hover:bg-brand-600" style={{ height: `${Math.max(4, Math.round((d.activeUsers / engMax) * 100))}%` }} />
+                        </div>
+                        <span className="text-[9px] text-slate-400 tabular-nums">{d.date.slice(5)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* People table */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-x-auto mb-8">
               <table className="w-full text-sm">
