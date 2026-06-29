@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   Grid3X3, CheckCircle, Circle, Triangle, AlertTriangle,
-  ArrowRight, Clock, TrendingDown, GitBranch,
+  ArrowRight, Clock, TrendingDown,
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { useProgression } from '@/components/progression-provider';
@@ -384,13 +384,6 @@ export default function HeatmapPage() {
             Mastery is computed from your lesson history, module progress, and calibration results. Freshness tracks how recently you studied each skill.
           </p>
         </section>
-
-        <div className="flex items-center gap-2">
-          <GitBranch className="w-4 h-4 text-brand" />
-          <Link href="/skill-graph" className="text-sm font-medium text-brand hover:text-brand-600 transition-colors">
-            View Skill Graph — see how skills connect &rarr;
-          </Link>
-        </div>
       </main>
     </div>
   );

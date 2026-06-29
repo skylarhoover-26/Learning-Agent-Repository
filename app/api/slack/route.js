@@ -181,12 +181,6 @@ function buildSkillsBlocks() {
           url: `${APP_URL}/heatmap`,
           action_id: 'open_heatmap',
         },
-        {
-          type: 'button',
-          text: { type: 'plain_text', text: 'View Skill Graph' },
-          url: `${APP_URL}/skill-graph`,
-          action_id: 'open_skill_graph',
-        },
       ],
     },
   ];

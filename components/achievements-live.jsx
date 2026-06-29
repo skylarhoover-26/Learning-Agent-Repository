@@ -38,7 +38,7 @@ const ALL_BADGES = [
   { id: 'seven_day_streak', name: 'Unstoppable', emoji: '⚡', description: 'Learn 7 days in a row', href: '/lesson' },
   { id: 'first_quiz', name: 'Pop Quiz', emoji: '✏️', description: 'Answer your first quiz question', href: '/lesson' },
   { id: 'quiz_master', name: 'Quiz Master', emoji: '💯', description: 'Get 10 quiz answers correct', href: '/lesson' },
-  { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest', href: '/quests' },
+  { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest', href: '/lesson' },
   { id: 'first_project', name: 'Goal Getter', emoji: '🎯', description: 'Add your first work project', href: '/projects' },
   { id: 'first_goal', name: 'Aim High', emoji: '⭐', description: 'Set your first learning goal', href: '/goals' },
   { id: 'first_game', name: 'Game On', emoji: '🎮', description: 'Play your first learning game', href: '/games' },

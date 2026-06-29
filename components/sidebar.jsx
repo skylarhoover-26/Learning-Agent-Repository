@@ -47,7 +47,6 @@ const NAV_SECTIONS = [
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
-      { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Hands-on exercises with instant feedback' },
       { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
       { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
     ],
@@ -64,9 +63,6 @@ const NAV_SECTIONS = [
       { href: '/goals', icon: Target, label: 'Goals', desc: 'Set and track your learning goals' },
       { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap', desc: 'Where you are strong and where to grow' },
       { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', desc: 'See how you rank across your team' },
-      { href: '/quests', icon: Rocket, label: 'Quests', desc: 'Build something real, start to finish' },
-      { href: '/review', icon: RefreshCw, label: 'Review', desc: 'Revisit key concepts so they stick' },
-      { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph', desc: 'A visual map of your AI skills' },
     ],
   },
   {

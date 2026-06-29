@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   Sparkles, TrendingUp, BookOpen,
-  ChevronRight, BarChart2, GitBranch, Compass, Rss,
+  ChevronRight, BarChart2, Grid3X3, Compass, Rss,
 } from 'lucide-react';
 import LiveLevelBadges from '@/components/live-level-badges';
 import LiveStreakCard from '@/components/live-streak-card';
@@ -211,13 +211,13 @@ export default async function Dashboard() {
               <TrendingUp className="w-5 h-5 text-brand" />
               <h3 className="font-semibold text-ink dark:text-slate-200">Your Skills</h3>
             </div>
-            <GatedHomeSection href="/skill-graph">
+            <GatedHomeSection href="/heatmap">
               <Link
-                href="/skill-graph"
+                href="/heatmap"
                 className="group inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-brand-600 transition-all"
               >
-                <GitBranch className="w-4 h-4" />
-                View Skill Graph
+                <Grid3X3 className="w-4 h-4" />
+                View Heatmap
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </GatedHomeSection>
