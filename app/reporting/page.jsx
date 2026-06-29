@@ -159,7 +159,7 @@ export default function ReportingPage() {
             </div>
             {publicUrl && <p className="text-xs text-slate-400 mb-6 -mt-3">Anyone with this link can view this exact slice (no login needed). It expires in 90 days.</p>}
 
-            <ReportView people={filtered} overview={overview} topTopics={data.topTopics} engagement={data.engagement} />
+            <ReportView people={filtered} overview={overview} engagement={data.engagement} activityByType={data.activityByType} />
 
             <p className="text-center text-xs text-slate-400 mt-6">
               Generated {new Date(data.generatedAt).toLocaleString()} · {data.people.length} learners with activity

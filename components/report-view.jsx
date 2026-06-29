@@ -41,8 +41,22 @@ function StatCard({ icon: Icon, label, value, sub }) {
 // Presentational report body: overview cards, optional engagement chart, a
 // sortable people table, and top topics. Shared by the authed /reporting page
 // and the public token-shared view so both look identical.
-export default function ReportView({ people = [], overview, topTopics = [], engagement = null }) {
+export default function ReportView({ people = [], overview, engagement = null, activityByType = null }) {
   const [sort, setSort] = useState({ key: 'totalXp', dir: 'desc' });
+
+  // Most-taken topics, computed from whatever slice of people is shown (so it's
+  // correct for a filtered view or a scoped share link, not just globally).
+  const topTopics = useMemo(() => {
+    const counts = new Map();
+    for (const p of people) {
+      for (const t of (p.topics || [])) {
+        const k = (t || '').trim();
+        if (k) counts.set(k, (counts.get(k) || 0) + 1);
+      }
+    }
+    return [...counts.entries()].map(([topic, count]) => ({ topic, count }))
+      .sort((a, b) => b.count - a.count).slice(0, 15);
+  }, [people]);
 
   const sorted = useMemo(() => {
     const { key, dir } = sort;
@@ -71,24 +85,39 @@ export default function ReportView({ people = [], overview, topTopics = [], enga
         <StatCard icon={Zap} label="Total XP" value={(overview.xp || 0).toLocaleString()} />
       </div>
 
-      {engagement?.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-ink dark:text-slate-200">Engagement — last 14 days</h2>
-            <span className="text-xs text-slate-400">active learners / day (app-wide)</span>
-          </div>
-          <div className="flex items-end gap-1.5 h-32">
-            {engagement.map((d) => (
-              <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0" title={`${d.date}: ${d.activeUsers} active · ${d.lessons} lessons · ${d.events} events`}>
-                <div className="w-full flex items-end justify-center h-full">
-                  <div className="w-full max-w-[24px] bg-brand rounded-t transition-all hover:bg-brand-600" style={{ height: `${Math.max(4, Math.round((d.activeUsers / engMax) * 100))}%` }} />
+      {engagement?.length > 0 && (() => {
+        const lessonMax = Math.max(1, ...engagement.map((d) => d.lessons));
+        const n = engagement.length;
+        const linePts = engagement
+          .map((d, i) => `${((i + 0.5) / n) * 100},${100 - (d.lessons / lessonMax) * 100}`)
+          .join(' ');
+        return (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-base font-bold text-ink dark:text-slate-200">Engagement — last 14 days</h2>
+              <span className="text-xs text-slate-400">app-wide</span>
+            </div>
+            <div className="flex items-center gap-4 mb-3 text-xs text-slate-500 dark:text-slate-400">
+              <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand inline-block" /> Active learners</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-3 h-0.5 bg-cta inline-block" /> Lessons completed</span>
+            </div>
+            <div className="relative flex items-end gap-1.5 h-32">
+              {engagement.map((d) => (
+                <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0 z-10" title={`${d.date}: ${d.activeUsers} active · ${d.lessons} lessons · ${d.events} events`}>
+                  <div className="w-full flex items-end justify-center h-full">
+                    <div className="w-full max-w-[24px] bg-brand rounded-t transition-all hover:bg-brand-600" style={{ height: `${Math.max(4, Math.round((d.activeUsers / engMax) * 100))}%` }} />
+                  </div>
+                  <span className="text-[9px] text-slate-400 tabular-nums">{d.date.slice(5)}</span>
                 </div>
-                <span className="text-[9px] text-slate-400 tabular-nums">{d.date.slice(5)}</span>
-              </div>
-            ))}
+              ))}
+              {/* Lessons-completed line overlaid on the active-learner bars. */}
+              <svg className="absolute inset-x-0 top-0 w-full pointer-events-none" style={{ height: 'calc(100% - 0.875rem)' }} viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polyline points={linePts} fill="none" className="stroke-cta" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+              </svg>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-x-auto mb-8">
         <table className="w-full text-sm">
@@ -123,6 +152,24 @@ export default function ReportView({ people = [], overview, topTopics = [], enga
           </tbody>
         </table>
       </div>
+
+      {activityByType?.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+          <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">What people are doing</h2>
+          <p className="text-xs text-slate-400 mb-4">actions across the app · last 14 days</p>
+          <div className="space-y-2">
+            {activityByType.map((a) => (
+              <div key={a.type} className="flex items-center gap-3">
+                <span className="flex-1 text-sm text-ink dark:text-slate-200 truncate">{a.label}</span>
+                <span className="text-xs text-slate-400 tabular-nums w-12 text-right">{a.count}</span>
+                <div className="w-40 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-brand rounded-full" style={{ width: `${(a.count / activityByType[0].count) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {topTopics.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
