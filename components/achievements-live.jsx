@@ -136,7 +136,7 @@ export default function AchievementsLive() {
           {badgesWithStatus.map(badge => (
             <Link
               key={badge.id}
-              href={badge.href}
+              href={`${badge.href}?from=achievements`}
               className={`bg-white dark:bg-slate-800 rounded-2xl border p-5 text-center transition-all hover:scale-[1.03] hover:shadow-lg ${
                 badge.earned
                   ? 'border-cta-200 shadow-card'
