@@ -193,6 +193,27 @@ const LEVEL_STYLES = {
   'Not Started': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-600',
 };
 
+// A short, friendly "last active" label from an ISO timestamp, plus a colour
+// that cools off the longer it's been (green → amber → muted). null when never.
+function lastActiveInfo(iso) {
+  if (!iso) return { label: 'Never', tone: 'text-slate-400 dark:text-slate-500' };
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return { label: 'Never', tone: 'text-slate-400 dark:text-slate-500' };
+  const days = Math.floor((Date.now() - then) / 86400000);
+  let label;
+  if (days <= 0) label = 'Today';
+  else if (days === 1) label = 'Yesterday';
+  else if (days < 7) label = `${days}d ago`;
+  else if (days < 30) label = `${Math.floor(days / 7)}w ago`;
+  else label = `${Math.floor(days / 30)}mo ago`;
+  const tone = days <= 7
+    ? 'text-green-600 dark:text-green-400'
+    : days <= 14
+      ? 'text-amber-600 dark:text-amber-400'
+      : 'text-slate-400 dark:text-slate-500';
+  return { label, tone };
+}
+
 function ScoreDot({ score, type }) {
   if (score === null || score === undefined) {
     return <span className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-600" title="Not assessed" />;
@@ -246,6 +267,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
       managerScores: data.managerScores || null,
       progress: data.progress || 0,
       status: data.status || 'Not Started',
+      lastActive: data.lastActive || null,
     };
   });
 
@@ -347,7 +369,8 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                 <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>O</th>
                 <th className="pb-3 pr-4 font-semibold text-center" colSpan={2}>D</th>
                 <th className="pb-3 pr-4 font-semibold">Progress</th>
-                <th className="pb-3 font-semibold">Status</th>
+                <th className="pb-3 pr-4 font-semibold">Status</th>
+                <th className="pb-3 font-semibold">Last active</th>
               </tr>
               <tr className="text-[10px] text-slate-400 border-b border-slate-100 dark:border-slate-700">
                 <th colSpan={2} />
@@ -359,7 +382,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                 <th className="pb-2 text-center font-normal pr-4">M</th>
                 <th className="pb-2 text-center font-normal">S</th>
                 <th className="pb-2 text-center font-normal pr-4">M</th>
-                <th colSpan={2} />
+                <th colSpan={3} />
               </tr>
             </thead>
             <tbody>
@@ -405,9 +428,14 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                         <span className="text-xs text-slate-500 dark:text-slate-400 w-8 text-right">{person.progress}%</span>
                       </div>
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 pr-4">
                       <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES['Not Started']}`}>
                         {person.status}
+                      </span>
+                    </td>
+                    <td className="py-3 whitespace-nowrap">
+                      <span className={`text-xs font-medium ${lastActiveInfo(person.lastActive).tone}`}>
+                        {lastActiveInfo(person.lastActive).label}
                       </span>
                     </td>
                   </tr>

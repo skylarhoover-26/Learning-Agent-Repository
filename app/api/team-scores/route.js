@@ -31,26 +31,39 @@ async function handleFetchTeamScores(emails) {
 
       const lessonBlob = dataTypes.find(d => d.name.startsWith('lp_lessons_'));
       let lessonCount = 0;
+      let lastLessonAt = null;
       if (lessonBlob) {
         try {
           const res = await fetch(lessonBlob.url);
           if (res.ok) {
             const lessons = await res.json();
-            lessonCount = Array.isArray(lessons) ? lessons.length : 0;
+            if (Array.isArray(lessons)) {
+              lessonCount = lessons.length;
+              for (const l of lessons) {
+                const t = l.completed_at || l.started_at;
+                if (t && (!lastLessonAt || t > lastLessonAt)) lastLessonAt = t;
+              }
+            }
           }
         } catch { /* skip */ }
       }
 
       const xpBlob = dataTypes.find(d => d.name.startsWith('lp_xp_'));
       let totalXp = 0;
+      let lastXpAt = null;
       if (xpBlob) {
         try {
           const res = await fetch(xpBlob.url);
           if (res.ok) {
             const events = await res.json();
-            totalXp = Array.isArray(events)
-              ? events.reduce((sum, e) => sum + (e.xp || 0), 0)
-              : 0;
+            if (Array.isArray(events)) {
+              // XP events store the points in `amount` (not `xp`).
+              totalXp = events.reduce((sum, e) => sum + (e.amount || 0), 0);
+              for (const e of events) {
+                const t = e.created_at;
+                if (t && (!lastXpAt || t > lastXpAt)) lastXpAt = t;
+              }
+            }
           }
         } catch { /* skip */ }
       }
@@ -78,7 +91,13 @@ async function handleFetchTeamScores(emails) {
         status = 'On Track';
       }
 
-      const lastActive = scoringData?.updated_at || null;
+      // "Last active" = most recent signal across lessons, XP, and the AI Impact
+      // self-assessment — not just the assessment's updated_at (most people never
+      // re-open it). ISO timestamps sort chronologically.
+      const lastActive = [scoringData?.updated_at, lastLessonAt, lastXpAt]
+        .filter(Boolean)
+        .sort()
+        .at(-1) || null;
       if (status === 'On Track' && lastActive) {
         const daysSince = (Date.now() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24);
         if (daysSince > 14) status = 'Needs Nudge';
