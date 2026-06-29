@@ -324,21 +324,17 @@ export function SideNav() {
         href={item.href}
         data-tour={navItemTour(item.href)}
         aria-current={active ? 'page' : undefined}
-        className={`group flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
+        title={item.desc || undefined}
+        className={`group flex items-center gap-3 px-4 py-2 border-l-2 transition-colors ${
           active
             ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
             : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
         }`}
       >
-        <item.icon className={`w-4 h-4 shrink-0 mt-0.5 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
-        <span className="min-w-0">
-          <span className="block text-sm font-medium leading-tight">{item.label}</span>
-          {item.desc && (
-            <span className={`hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 ${active ? 'text-brand/70' : 'text-slate-500 dark:text-slate-400'}`}>
-              {item.desc}
-            </span>
-          )}
-        </span>
+        <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
+        {/* The description is a hover popup (title) instead of an inline line, so
+            the row no longer grows and reflows the menu on hover. */}
+        <span className="min-w-0 block text-sm font-medium leading-tight truncate">{item.label}</span>
       </Link>
     );
   }
