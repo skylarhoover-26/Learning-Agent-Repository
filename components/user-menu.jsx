@@ -15,14 +15,14 @@ import { displayNameFromProfile } from '@/lib/display-name';
 // Profile-related links that live under the name dropdown (everything that used
 // to be in the sidebar's "Account" section except Manager, which stays in the menu).
 // `tour` anchors let the guided tour spotlight each item with the dropdown open.
-// Kept in alphabetical order by label.
+// All "My …" for a consistent, personalized feel; kept alphabetical by label.
 const PROFILE_LINKS = [
   { href: '/my-tools', icon: PanelsTopLeft, label: 'My AI Tools', tour: 'nav-my-tools' },
   { href: '/my-impact', icon: BarChart3, label: 'My Impact' },
+  { href: '/profile', icon: User, label: 'My Profile', tour: 'nav-profile' },
+  { href: '/projects', icon: FolderKanban, label: 'My Projects', tour: 'nav-projects' },
   { href: '/my-role', icon: UserCog, label: 'My Role', tour: 'nav-my-role' },
   { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', tour: 'nav-my-tasks' },
-  { href: '/profile', icon: User, label: 'Profile', tour: 'nav-profile' },
-  { href: '/projects', icon: FolderKanban, label: 'Projects', tour: 'nav-projects' },
 ];
 
 // Top-right header cluster: a persistent "Home" link (always reachable without
