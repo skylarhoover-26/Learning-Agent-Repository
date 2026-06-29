@@ -237,7 +237,8 @@ export function SidebarShell({ children }) {
   const { open, setOpen } = useSidebar();
   const pathname = usePathname();
   // No nav on onboarding/auth — don't shift content or show the backdrop there.
-  const showNav = open && !isChromeHiddenRoute(pathname);
+  const chromeHidden = isChromeHiddenRoute(pathname);
+  const showNav = open && !chromeHidden;
   return (
     <>
       {/* Small screens only: dim + tap-to-close (the panel overlays content). */}
@@ -248,7 +249,10 @@ export function SidebarShell({ children }) {
           aria-hidden="true"
         />
       )}
-      <div className={showNav ? 'lg:pl-80' : ''}>
+      {/* pt-16 clears the fixed top bar (it no longer occupies flow space like
+          the old sticky header did). Skipped on chrome-hidden full-screen flows
+          (onboarding/auth) that have no top bar. */}
+      <div className={`${chromeHidden ? '' : 'pt-16'} ${showNav ? 'lg:pl-80' : ''}`}>
         {children}
       </div>
     </>
