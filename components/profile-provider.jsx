@@ -20,7 +20,7 @@ export function ProfileProvider({ children }) {
   const hasRedirected = useRef(false);
   const hasFetched = useRef(false);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (attempt = 0) => {
     if (status === 'loading') return;
 
     try {
@@ -40,6 +40,16 @@ export function ProfileProvider({ children }) {
       }
     } catch {
       if (hasFetched.current) return;
+    }
+
+    // No profile found. Right after (re-)onboarding the freshly-saved profile
+    // can lag a beat on the read side; retry once before concluding there's none
+    // — otherwise the gate below bounces the user straight back into onboarding,
+    // which is exactly the "had to close and reopen" loop. Stay in the loading
+    // state during the retry so the gate doesn't fire prematurely.
+    if (attempt < 1) {
+      setTimeout(() => fetchProfile(attempt + 1), 800);
+      return;
     }
 
     setProfile(null);
