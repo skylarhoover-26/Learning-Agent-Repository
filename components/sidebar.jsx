@@ -81,6 +81,7 @@ const NAV_SECTIONS = [
     tour: 'section-manager',
     items: [
       { href: '/manager', icon: BarChart3, label: 'Team Dashboard', desc: 'Team learning dashboard for managers' },
+      { href: '/reporting', icon: FileText, label: 'Reporting', desc: 'Org-wide learning activity and progress' },
     ],
   },
   {
