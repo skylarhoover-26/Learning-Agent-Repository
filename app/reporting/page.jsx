@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
 import { BarChart3, Loader2, RefreshCw } from 'lucide-react';
 import ReportView from '@/components/report-view';
+import SearchableSelect from '@/components/searchable-select';
 
 export default function ReportingPage() {
   const [state, setState] = useState({ status: 'loading' }); // loading | forbidden | error | ok
@@ -179,20 +180,14 @@ export default function ReportingPage() {
                 and the people table react together. */}
             <div className="mb-4 space-y-3">
               <div className="flex flex-wrap items-end gap-3">
-                <label className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1">
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Team</span>
-                  <select value={team} onChange={(e) => setTeam(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200">
-                    <option value="">All teams</option>
-                    {data.teams.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1">
+                  <SearchableSelect value={team} onChange={setTeam} options={data.teams} allLabel="All teams" placeholder="Search teams…" widthClass="min-w-[180px]" />
+                </div>
+                <div className="flex flex-col gap-1">
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Manager</span>
-                  <select value={manager} onChange={(e) => setManager(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200">
-                    <option value="">All managers</option>
-                    {data.managers.map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </label>
+                  <SearchableSelect value={manager} onChange={setManager} options={data.managers} allLabel="All managers" placeholder="Search managers…" widthClass="min-w-[200px]" />
+                </div>
                 <label className="flex flex-col gap-1 flex-1 min-w-[180px]">
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Person</span>
                   <input value={person} onChange={(e) => setPerson(e.target.value)} placeholder="Search by name or email…" className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200" />
