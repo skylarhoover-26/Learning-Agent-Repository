@@ -159,6 +159,7 @@ export default function ReportView({
   activeLabel = 'Active this week',
   activeSub,                // sub-label for the Active card (defaults to % of group)
   lessonsSub,               // sub-label for the Lessons card
+  learnersSub,              // sub-label for the Registered learners card (e.g. coverage %)
 }) {
   const [sort, setSort] = useState({ key: 'totalXp', dir: 'desc' });
   const [statusFilter, setStatusFilter] = useState('all'); // all | active | inactive
@@ -204,25 +205,28 @@ export default function ReportView({
       : { key, dir: COLUMNS.find((c) => c.key === key)?.num ? 'desc' : 'asc' });
   }
 
-  // The rows actually rendered: sorted, then narrowed by the Active/Inactive
-  // toggle (only when status is being shown — i.e. a date range is in play).
+  // Active in the range / has-an-account-but-inactive / never signed in.
+  const statusOf = (p) => (!p.registered ? 'never' : (p.activeInRange ? 'active' : 'inactive'));
+
+  // The rows actually rendered: sorted, then narrowed by the status toggle (only
+  // when status is being shown — i.e. a date range is in play).
   const visible = useMemo(() => {
     if (!showActiveStatus || statusFilter === 'all') return sorted;
-    const want = statusFilter === 'active';
-    return sorted.filter((p) => !!p.activeInRange === want);
+    return sorted.filter((p) => statusOf(p) === statusFilter);
   }, [sorted, showActiveStatus, statusFilter]);
 
-  const activeCount = useMemo(
-    () => (showActiveStatus ? people.filter((p) => p.activeInRange).length : 0),
-    [people, showActiveStatus]
-  );
+  const counts = useMemo(() => {
+    const c = { active: 0, inactive: 0, never: 0 };
+    if (showActiveStatus) for (const p of people) c[statusOf(p)] += 1;
+    return c;
+  }, [people, showActiveStatus]);
 
   const colCount = COLUMNS.length + (showActiveStatus ? 1 : 0);
 
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Users} label="Registered learners" value={overview.learners} sub={overview.avgLevel != null ? `avg level ${overview.avgLevel.toFixed(1)}` : undefined} />
+        <StatCard icon={Users} label="Registered learners" value={overview.learners} sub={learnersSub ?? (overview.avgLevel != null ? `avg level ${overview.avgLevel.toFixed(1)}` : undefined)} />
         <StatCard icon={Activity} label={activeLabel} value={overview.active} sub={activeSub ?? (overview.learners ? `${Math.round((overview.active / overview.learners) * 100)}% of group` : '—')} />
         <StatCard icon={BookOpen} label="Lessons completed" value={overview.lessons} sub={lessonsSub} />
         <StatCard icon={Zap} label="Total XP" value={(overview.xp || 0).toLocaleString()} />
@@ -235,13 +239,14 @@ export default function ReportView({
         {showActiveStatus && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
             <p className="text-xs text-slate-400">
-              {activeCount} active · {Math.max(0, people.length - activeCount)} not active in range
+              {counts.active} active · {counts.inactive} inactive · {counts.never} never accessed
             </p>
             <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs font-semibold">
               {[
                 { key: 'all', label: 'All' },
                 { key: 'active', label: 'Active' },
                 { key: 'inactive', label: 'Inactive' },
+                { key: 'never', label: 'Never accessed' },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -289,13 +294,17 @@ export default function ReportView({
                   <td className="py-2.5 px-4 text-slate-500 dark:text-slate-400">{relTime(p.lastActive)}</td>
                   {showActiveStatus && (
                     <td className="py-2.5 px-4">
-                      {p.activeInRange ? (
+                      {statusOf(p) === 'active' ? (
                         <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                           <span className="w-2 h-2 rounded-full bg-emerald-500" /> Active
                         </span>
+                      ) : statusOf(p) === 'inactive' ? (
+                        <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                          <span className="w-2 h-2 rounded-full bg-amber-400" /> Inactive
+                        </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-slate-400">
-                          <span className="w-2 h-2 rounded-full border border-slate-300 dark:border-slate-600" /> Inactive
+                          <span className="w-2 h-2 rounded-full border border-slate-300 dark:border-slate-600" /> Never accessed
                         </span>
                       )}
                     </td>

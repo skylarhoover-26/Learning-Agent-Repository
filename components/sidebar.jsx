@@ -279,7 +279,7 @@ export function SideNav() {
   const { startTour } = useTour();
   const pathname = usePathname();
   const {
-    isAdmin,
+    isAdmin, isManager,
     isSectionHidden, isSectionComingSoon,
     isItemHidden, isItemComingSoon,
   } = useMenuVisibility();
@@ -398,7 +398,9 @@ export function SideNav() {
 
       {NAV_SECTIONS.map(section => (
         <Fragment key={section.title}>
-          {!isSectionHidden(section.title) && (
+          {/* The Manager section is only for people-managers (direct reports)
+              and admins — everyone else never sees it. */}
+          {(section.title !== 'Manager' || isAdmin || isManager) && !isSectionHidden(section.title) && (
           <div className="pb-1">
             <SectionHeader title={section.title} tour={section.tour} />
             {isSectionComingSoon(section.title)

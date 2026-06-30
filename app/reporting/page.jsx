@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
-import { BarChart3, Link2, Check, Loader2, Globe } from 'lucide-react';
+import { BarChart3, Loader2 } from 'lucide-react';
 import ReportView from '@/components/report-view';
 
 export default function ReportingPage() {
@@ -14,10 +14,6 @@ export default function ReportingPage() {
   const [from, setFrom] = useState(''); // YYYY-MM-DD, set on mount
   const [to, setTo] = useState('');
   const [bounds, setBounds] = useState({ min: '', max: '' }); // date-input limits (last 30 days)
-  const [copied, setCopied] = useState(false);
-  const [publicUrl, setPublicUrl] = useState('');
-  const [publicCopied, setPublicCopied] = useState(false);
-  const [minting, setMinting] = useState(false);
 
   // Set filters + the date range on mount. Default range is the last 14 days;
   // the picker can reach back 30 days (the window the server gathers). Computed
@@ -53,11 +49,9 @@ export default function ReportingPage() {
       .catch(() => setState({ status: 'error' }));
   }, []);
 
-  // Keep the URL in sync with filters so the current view is shareable. Reset any
-  // minted public link when filters change (it was scoped to the old filters).
+  // Keep the URL in sync with filters so the current view can be reopened/bookmarked.
   useEffect(() => {
     if (state.status !== 'ok') return;
-    setPublicUrl('');
     try {
       const q = new URLSearchParams();
       if (team) q.set('team', team);
@@ -124,38 +118,28 @@ export default function ReportingPage() {
       || activeEmailsInRange.has(String(p.learnerId).toLowerCase()),
   })), [filtered, activeEmailsInRange]);
 
-  const overview = useMemo(() => ({
-    learners: filtered.length,
-    active: peopleWithStatus.filter((p) => p.activeInRange).length,
-    lessons: rangeEngagement.reduce((s, d) => s + (d.lessons || 0), 0),
-    xp: filtered.reduce((s, p) => s + (p.totalXp || 0), 0),
-    avgLevel: filtered.length ? filtered.reduce((s, p) => s + (p.level || 0), 0) / filtered.length : 0,
-  }), [filtered, peopleWithStatus, rangeEngagement]);
+  const overview = useMemo(() => {
+    const registered = filtered.filter((p) => p.registered);
+    return {
+      learners: registered.length,   // people who have signed in at least once
+      employees: filtered.length,    // total roster in this slice (registered or not)
+      active: peopleWithStatus.filter((p) => p.activeInRange).length,
+      lessons: rangeEngagement.reduce((s, d) => s + (d.lessons || 0), 0),
+      xp: filtered.reduce((s, p) => s + (p.totalXp || 0), 0),
+      avgLevel: registered.length ? registered.reduce((s, p) => s + (p.level || 0), 0) / registered.length : 0,
+    };
+  }, [filtered, peopleWithStatus, rangeEngagement]);
+
+  const learnersSub = useMemo(() => {
+    if (!overview.employees) return undefined;
+    const pct = Math.round((overview.learners / overview.employees) * 100);
+    return `of ${overview.employees.toLocaleString()} employees · ${pct}%`;
+  }, [overview.learners, overview.employees]);
 
   const rangeLabel = useMemo(() => {
     const fmt = (d) => { try { return new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); } catch { return d; } };
     return from && to ? `${fmt(from)} – ${fmt(to)}` : '';
   }, [from, to]);
-
-  const copyViewLink = useCallback(() => {
-    try { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* */ }
-  }, []);
-
-  const createPublicLink = useCallback(async () => {
-    setMinting(true);
-    try {
-      const res = await fetch('/api/reporting/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filters: { team, manager, person } }),
-      });
-      if (!res.ok) throw new Error('mint failed');
-      const { token } = await res.json();
-      const url = `${window.location.origin}/reporting/shared/${token}`;
-      setPublicUrl(url);
-      try { await navigator.clipboard.writeText(url); setPublicCopied(true); setTimeout(() => setPublicCopied(false), 2000); } catch { /* */ }
-    } catch { /* best-effort */ } finally { setMinting(false); }
-  }, [team, manager, person]);
 
   return (
     <div className="min-h-screen">
@@ -216,26 +200,7 @@ export default function ReportingPage() {
               </div>
             </div>
 
-            {/* Share controls */}
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <button onClick={copyViewLink} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                {copied ? <><Check className="w-4 h-4" /> Copied</> : <><Link2 className="w-4 h-4" /> Copy view link</>}
-                <span className="text-xs text-slate-400 font-normal">(needs login)</span>
-              </button>
-              <button onClick={createPublicLink} disabled={minting} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-white text-sm font-semibold hover:bg-brand-600 disabled:opacity-50 transition-colors">
-                {minting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
-                Create public link
-              </button>
-              {publicUrl && (
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <input readOnly value={publicUrl} className="flex-1 min-w-[240px] px-3 py-2 rounded-xl border border-brand-200 dark:border-brand-700 bg-brand-50/40 dark:bg-slate-800 text-xs text-ink dark:text-slate-200" onFocus={(e) => e.target.select()} />
-                  <button onClick={() => { navigator.clipboard.writeText(publicUrl); setPublicCopied(true); setTimeout(() => setPublicCopied(false), 2000); }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                    {publicCopied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-                  </button>
-                </div>
-              )}
-            </div>
-            {publicUrl && <p className="text-xs text-slate-400 mb-6 -mt-3">Anyone with this link can view this exact slice (no login needed). It expires in 90 days.</p>}
+            <div className="mb-6" />
 
             <ReportView
               people={peopleWithStatus}
@@ -248,10 +213,11 @@ export default function ReportingPage() {
               activeLabel="Active"
               activeSub={rangeLabel ? `in ${rangeLabel}` : undefined}
               lessonsSub={rangeLabel ? `in ${rangeLabel}` : undefined}
+              learnersSub={learnersSub}
             />
 
             <p className="text-center text-xs text-slate-400 mt-6">
-              Generated {new Date(data.generatedAt).toLocaleString()} · {data.people.length} learners with activity
+              Generated {new Date(data.generatedAt).toLocaleString()} · {data.people.length.toLocaleString()} people in the roster
             </p>
           </>
         )}

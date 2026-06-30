@@ -13,6 +13,7 @@ const PREVIEW_KEY = 'mv_preview_as_user';
 
 export function MenuVisibilityProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false); // has direct reports (gates the Manager section)
   const [disabledSections, setDisabledSections] = useState([]); // "coming soon"
   const [disabledItems, setDisabledItems] = useState([]); // "coming soon"
   const [hiddenSections, setHiddenSections] = useState([]); // removed entirely
@@ -37,9 +38,11 @@ export function MenuVisibilityProvider({ children }) {
     Promise.all([
       fetch('/api/admin-check', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ isAdmin: false })),
       fetch('/api/menu-visibility', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ sections: [], items: [] })),
-    ]).then(([admin, vis]) => {
+      fetch('/api/manager-check', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ isManager: false })),
+    ]).then(([admin, vis, mgr]) => {
       if (cancelled) return;
       setIsAdmin(!!admin?.isAdmin);
+      setIsManager(!!mgr?.isManager);
       applyVisibility(vis);
       setLoaded(true);
     });
@@ -124,7 +127,7 @@ export function MenuVisibilityProvider({ children }) {
   return (
     <MenuVisibilityContext.Provider
       value={{
-        isAdmin, loaded, previewAsUser, setPreviewAsUser, refresh,
+        isAdmin, isManager, loaded, previewAsUser, setPreviewAsUser, refresh,
         sectionState, itemState, routeState,
         isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon,
         isSectionDisabled, isItemDisabled, isRouteDisabled,
@@ -138,6 +141,7 @@ export function MenuVisibilityProvider({ children }) {
 export function useMenuVisibility() {
   return useContext(MenuVisibilityContext) || {
     isAdmin: false,
+    isManager: false,
     loaded: false,
     previewAsUser: false,
     setPreviewAsUser: () => {},
