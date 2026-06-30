@@ -1,10 +1,53 @@
 'use client';
 
 import { useMemo } from 'react';
+import { Lightbulb } from 'lucide-react';
 import { groupPeople, metricsForGroup } from '@/lib/report-metrics';
 
 // Distinct series colors for up to 4 compared groups.
 const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6'];
+
+// Plain-language comparison highlights across the selected groups.
+function compareTakeaways(groups) {
+  if (groups.length < 2) return [];
+  const out = [];
+  const m = (g) => g.metrics;
+
+  // Adoption leader vs laggard
+  const byReg = [...groups].sort((a, b) => m(b).registeredPct - m(a).registeredPct);
+  const top = byReg[0], bottom = byReg[byReg.length - 1];
+  if (m(top).registeredPct === m(bottom).registeredPct) {
+    out.push(`Adoption is similar across these groups (~${m(top).registeredPct}%).`);
+  } else {
+    out.push(`${top.value} has the highest adoption (${m(top).registeredPct}%); ${bottom.value} the lowest (${m(bottom).registeredPct}%).`);
+  }
+
+  // Active-rate gap
+  const byActive = [...groups].sort((a, b) => m(b).activePct - m(a).activePct);
+  const aTop = byActive[0], aBot = byActive[byActive.length - 1];
+  if (m(aTop).activePct > 0 && m(aBot).activePct > 0 && aTop.value !== aBot.value) {
+    const ratio = m(aTop).activePct / m(aBot).activePct;
+    out.push(ratio >= 1.5
+      ? `${aTop.value}'s active rate is ${ratio.toFixed(1)}× ${aBot.value}'s (${m(aTop).activePct}% vs ${m(aBot).activePct}%).`
+      : `${aTop.value} is the most active (${m(aTop).activePct}%).`);
+  } else if (m(aTop).activePct > 0) {
+    out.push(`Only ${aTop.value} has active learners in this range (${m(aTop).activePct}%).`);
+  }
+
+  // Lessons leader
+  const byLessons = [...groups].sort((a, b) => m(b).lessons - m(a).lessons);
+  if (m(byLessons[0]).lessons > 0) {
+    out.push(`${byLessons[0].value} completed the most lessons (${m(byLessons[0]).lessons.toLocaleString()}).`);
+  }
+
+  // XP leader
+  const byXp = [...groups].sort((a, b) => m(b).xp - m(a).xp);
+  if (m(byXp[0]).xp > 0) {
+    out.push(`${byXp[0].value} has the most XP (${m(byXp[0]).xp.toLocaleString()}).`);
+  }
+
+  return out.slice(0, 4);
+}
 
 function Card({ children, className = '' }) {
   return (
@@ -144,8 +187,26 @@ export default function CompareView({ people = [], rangeEngagement = [], dimensi
     );
   }
 
+  const takeaways = compareTakeaways(groups);
+
   return (
     <>
+      {takeaways.length > 0 && (
+        <div className="bg-gradient-to-br from-brand-50 to-white dark:from-slate-800 dark:to-slate-800 rounded-2xl border border-brand-100 dark:border-slate-700 shadow-card p-5 mb-6">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-ink dark:text-slate-200 mb-3">
+            <Lightbulb className="w-4 h-4 text-brand" /> Key takeaways
+          </h2>
+          <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-2.5">
+            {takeaways.map((t, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-ink dark:text-slate-200 leading-snug">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand shrink-0" />
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <HeadlineTable groups={groups} />
       <TrendChart groups={groups} />
       <ColumnList
