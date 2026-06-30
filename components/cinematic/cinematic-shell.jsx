@@ -105,7 +105,7 @@ function Drawer({ open, onClose }) {
     return (
       <Link
         href={soon ? '#' : item.href}
-        onClick={soon ? (e) => e.preventDefault() : onClose}
+        onClick={soon ? (e) => e.preventDefault() : undefined}
         aria-disabled={soon}
         className="cine-lift flex items-center gap-3 mx-2 px-3 py-2 rounded-xl"
         style={{
@@ -193,7 +193,6 @@ function Drawer({ open, onClose }) {
                           href={link.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          onClick={onClose}
                           className="cine-lift flex items-center gap-3 mx-2 px-3 py-2 rounded-xl"
                           style={{ color: 'var(--ink)' }}
                         >
