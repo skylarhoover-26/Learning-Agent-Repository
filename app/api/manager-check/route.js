@@ -14,5 +14,7 @@ export async function GET() {
   } else {
     email = await getIdentityEmail();
   }
-  return Response.json({ isManager: await isManagerEmail(email) });
+  // cacheOnly: this is just menu gating — never trigger the slow Snowflake
+  // refresh here (it must not delay the sidebar from rendering).
+  return Response.json({ isManager: await isManagerEmail(email, { cacheOnly: true }) });
 }

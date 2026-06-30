@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Users, Activity, BookOpen, Zap, ArrowUpDown } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Users, Activity, BookOpen, Zap, ArrowUpDown, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const PAGE_SIZE = 10;
 
 export function relTime(iso) {
   if (!iso) return 'Never';
@@ -162,7 +164,9 @@ export default function ReportView({
   learnersSub,              // sub-label for the Registered learners card (e.g. coverage %)
 }) {
   const [sort, setSort] = useState({ key: 'totalXp', dir: 'desc' });
-  const [statusFilter, setStatusFilter] = useState('all'); // all | active | inactive
+  const [statusFilter, setStatusFilter] = useState('all'); // all | active | inactive | never
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
 
   // Most-taken topics, computed from whatever slice of people is shown (so it's
   // correct for a filtered view or a scoped share link, not just globally).
@@ -208,12 +212,15 @@ export default function ReportView({
   // Active in the range / has-an-account-but-inactive / never signed in.
   const statusOf = (p) => (!p.registered ? 'never' : (p.activeInRange ? 'active' : 'inactive'));
 
-  // The rows actually rendered: sorted, then narrowed by the status toggle (only
-  // when status is being shown — i.e. a date range is in play).
-  const visible = useMemo(() => {
-    if (!showActiveStatus || statusFilter === 'all') return sorted;
-    return sorted.filter((p) => statusOf(p) === statusFilter);
-  }, [sorted, showActiveStatus, statusFilter]);
+  // Sorted → narrowed by the status toggle → narrowed by the name/email search.
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sorted.filter((p) => {
+      if (showActiveStatus && statusFilter !== 'all' && statusOf(p) !== statusFilter) return false;
+      if (q && !(p.name || '').toLowerCase().includes(q) && !(p.email || '').toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [sorted, showActiveStatus, statusFilter, search]);
 
   const counts = useMemo(() => {
     const c = { active: 0, inactive: 0, never: 0 };
@@ -222,6 +229,14 @@ export default function ReportView({
   }, [people, showActiveStatus]);
 
   const colCount = COLUMNS.length + (showActiveStatus ? 1 : 0);
+
+  // Paginate so a multi-hundred-row roster doesn't dump everything on screen.
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = filteredRows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  // Jump back to the first page whenever the result set changes underneath us.
+  useEffect(() => { setPage(0); }, [search, statusFilter, sort, people]);
 
   return (
     <>
@@ -236,11 +251,24 @@ export default function ReportView({
           first thing you see. When a date range is active it also carries the
           Active/Inactive status column + toggle. */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden mb-8">
-        {showActiveStatus && (
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <p className="text-xs text-slate-400">
-              {counts.active} active · {counts.inactive} inactive · {counts.never} never accessed
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Find a teammate…"
+                className="pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 w-52"
+              />
+            </div>
+            {showActiveStatus && (
+              <p className="text-xs text-slate-400 hidden sm:block">
+                {counts.active} active · {counts.inactive} inactive · {counts.never} never accessed
+              </p>
+            )}
+          </div>
+          {showActiveStatus && (
             <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs font-semibold">
               {[
                 { key: 'all', label: 'All' },
@@ -261,8 +289,8 @@ export default function ReportView({
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -278,9 +306,9 @@ export default function ReportView({
               </tr>
             </thead>
             <tbody>
-              {visible.length === 0 ? (
-                <tr><td colSpan={colCount} className="py-10 text-center text-slate-400">No learners to show.</td></tr>
-              ) : visible.map((p) => (
+              {filteredRows.length === 0 ? (
+                <tr><td colSpan={colCount} className="py-10 text-center text-slate-400">{search.trim() ? 'No teammates match your search.' : 'No learners to show.'}</td></tr>
+              ) : paged.map((p) => (
                 <tr key={p.learnerId} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/40">
                   <td className="py-2.5 px-4">
                     <span className="font-medium text-ink dark:text-slate-200">{p.name}</span>
@@ -314,6 +342,46 @@ export default function ReportView({
             </tbody>
           </table>
         </div>
+        {filteredRows.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-700">
+            <span className="text-xs text-slate-400">
+              Showing {safePage * PAGE_SIZE + 1}–{Math.min(filteredRows.length, safePage * PAGE_SIZE + PAGE_SIZE)} of {filteredRows.length.toLocaleString()}
+            </span>
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <button
+                onClick={() => setPage(safePage - 1)}
+                disabled={safePage === 0}
+                aria-label="Previous page"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="inline-flex items-center gap-1.5">
+                Page
+                <input
+                  type="number"
+                  min={1}
+                  max={pageCount}
+                  value={safePage + 1}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(v)) setPage(Math.min(pageCount - 1, Math.max(0, v - 1)));
+                  }}
+                  className="w-14 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-center text-ink dark:text-slate-200"
+                />
+                of {pageCount}
+              </span>
+              <button
+                onClick={() => setPage(safePage + 1)}
+                disabled={safePage >= pageCount - 1}
+                aria-label="Next page"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {engagement?.length > 0 && <EngagementChart engagement={engagement} rangeLabel={rangeLabel} />}

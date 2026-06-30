@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
-import { BarChart3, Loader2 } from 'lucide-react';
+import { BarChart3, Loader2, RefreshCw } from 'lucide-react';
 import ReportView from '@/components/report-view';
 
 export default function ReportingPage() {
@@ -14,6 +14,7 @@ export default function ReportingPage() {
   const [from, setFrom] = useState(''); // YYYY-MM-DD, set on mount
   const [to, setTo] = useState('');
   const [bounds, setBounds] = useState({ min: '', max: '' }); // date-input limits (last 30 days)
+  const [refreshing, setRefreshing] = useState(false);
 
   // Set filters + the date range on mount. Default range is the last 14 days;
   // the picker can reach back 30 days (the window the server gathers). Computed
@@ -47,6 +48,18 @@ export default function ReportingPage() {
         setState({ status: 'ok' });
       })
       .catch(() => setState({ status: 'error' }));
+  }, []);
+
+  // Admin-only: force a rebuild of the cached snapshot now, then reload it.
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetch('/api/reporting', { method: 'POST' });
+      const r = await fetch('/api/reporting', { cache: 'no-store' });
+      if (r.ok) setData(await r.json());
+    } catch { /* best-effort */ } finally {
+      setRefreshing(false);
+    }
   }, []);
 
   // Keep the URL in sync with filters so the current view can be reopened/bookmarked.
@@ -216,9 +229,21 @@ export default function ReportingPage() {
               learnersSub={learnersSub}
             />
 
-            <p className="text-center text-xs text-slate-400 mt-6">
-              Generated {new Date(data.generatedAt).toLocaleString()} · {data.people.length.toLocaleString()} people in the roster
-            </p>
+            <div className="flex items-center justify-center gap-3 mt-6 text-xs text-slate-400">
+              <span>
+                Last updated {data.generatedAt ? new Date(data.generatedAt).toLocaleString() : '—'} · {data.people.length.toLocaleString()} people in the roster · refreshes daily
+              </span>
+              {data.viewer?.isAdmin && (
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing…' : 'Refresh now'}
+                </button>
+              )}
+            </div>
           </>
         )}
       </main>
