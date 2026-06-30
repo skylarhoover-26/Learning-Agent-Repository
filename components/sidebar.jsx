@@ -40,10 +40,15 @@ function SectionHeader({ title, tour }) {
 // just below the row (constrained to the panel width) so it's visible without
 // growing the row or reflowing the menu, and so it can't clip off the side. The
 // parent row must be `relative` and `group`.
+//
+// Hover-only: it appears on hover after a short delay (so it doesn't flash while
+// scanning the menu) and disappears immediately when the pointer leaves. It is
+// intentionally NOT tied to focus — clicking a row used to leave the description
+// stuck open (focus-within), which read as a bug.
 function ItemDescPopup({ text }) {
   if (!text) return null;
   return (
-    <span className="pointer-events-none absolute left-10 right-2 top-[calc(100%-0.25rem)] z-50 hidden group-hover:block group-focus-within:block rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs leading-snug px-3 py-2 shadow-xl">
+    <span className="pointer-events-none absolute left-10 right-2 top-[calc(100%-0.25rem)] z-50 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs leading-snug px-3 py-2 shadow-xl opacity-0 invisible transition-opacity duration-150 group-hover:opacity-100 group-hover:visible group-hover:delay-500">
       {text}
     </span>
   );

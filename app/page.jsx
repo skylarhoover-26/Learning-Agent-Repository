@@ -109,7 +109,7 @@ export default async function Dashboard() {
         </div>
       </header>
 
-      <main data-tour="page-home" className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <main data-tour="page-home" className="max-w-6xl mx-auto px-6 pt-14 pb-8 space-y-6">
 
         {/* ═══════════════════════════════════════════ */}
         {/* TOP ZONE: LEARNING                         */}
