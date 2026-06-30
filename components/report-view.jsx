@@ -163,7 +163,7 @@ export default function ReportView({
   lessonsSub,               // sub-label for the Lessons card
   learnersSub,              // sub-label for the Registered learners card (e.g. coverage %)
 }) {
-  const [sort, setSort] = useState({ key: 'totalXp', dir: 'desc' });
+  const [sort, setSort] = useState({ key: 'name', dir: 'asc' }); // default A→Z by name
   const [statusFilter, setStatusFilter] = useState('all'); // all | active | inactive | never
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
