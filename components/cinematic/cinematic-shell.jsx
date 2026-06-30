@@ -91,7 +91,7 @@ function SectionLabel({ children }) {
 function Drawer({ open, onClose }) {
   const pathname = usePathname();
   const { startTour } = useTour();
-  const { isAdmin, isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon } = useMenuVisibility();
+  const { isAdmin, actingAsAdmin, isManager, isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon } = useMenuVisibility();
 
   function isActive(href) {
     if (href === '/') return pathname === '/';
@@ -153,7 +153,9 @@ function Drawer({ open, onClose }) {
           </div>
 
           {NAV_SECTIONS.map((section) => (
-            isSectionHidden(section.title) ? null : (
+            // Manager section is only for people-managers (direct reports) or admins
+            // — and hidden when an admin is "viewing as a regular user" (actingAsAdmin).
+            (isSectionHidden(section.title) || (section.title === 'Manager' && !actingAsAdmin && !isManager)) ? null : (
               <div key={section.title}>
                 <SectionLabel>{section.title}</SectionLabel>
                 {isSectionComingSoon(section.title) ? (
