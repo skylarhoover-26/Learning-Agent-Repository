@@ -30,9 +30,11 @@ export async function GET() {
     return Response.json({ error: 'Reporting is available to admins and managers.' }, { status: 403 });
   }
 
-  // Serve the cached snapshot; cold-build once if it's never been generated.
+  // Serve the cached snapshot; rebuild if it's missing or was cached without the
+  // org roster (older caches won't have orgLoaded set → treated as needing a
+  // rebuild, which self-heals a previously poisoned/empty snapshot).
   let report = await getStoredReport();
-  if (!report) report = await buildAndStoreReport();
+  if (!report || !report.orgLoaded) report = await buildAndStoreReport();
   return Response.json({ ...report, viewer: { email, isAdmin: admin, isManager: manager } });
 }
 
