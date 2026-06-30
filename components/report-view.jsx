@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Users, Activity, BookOpen, Zap, ArrowUpDown, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Activity, BookOpen, Zap, ArrowUpDown, Search, ChevronLeft, ChevronRight, TrendingUp, Lightbulb } from 'lucide-react';
+
+const truncate = (s, n) => (s && s.length > n ? `${s.slice(0, n - 1)}…` : (s || ''));
+const TONE = { amber: 'text-amber-500', emerald: 'text-emerald-500', blue: 'text-brand', slate: 'text-slate-400' };
 
 const PAGE_SIZE = 10;
 
@@ -182,10 +185,12 @@ export default function ReportView({
       .sort((a, b) => b.count - a.count).slice(0, 8);
   }, [people]);
 
-  // Learners per team (top 8) for the "by team" chart — scope-aware.
+  // Signed-up learners per team (top 8) — counts only people who've actually
+  // signed in, NOT the full roster headcount, so the bars mean "who's learning."
   const teamStats = useMemo(() => {
     const counts = new Map();
     for (const p of people) {
+      if (!p.registered) continue;
       const t = p.department || 'Unassigned';
       counts.set(t, (counts.get(t) || 0) + 1);
     }
@@ -238,8 +243,73 @@ export default function ReportView({
   // Jump back to the first page whenever the result set changes underneath us.
   useEffect(() => { setPage(0); }, [search, statusFilter, sort, people]);
 
+  // Plain-language "story" derived from the numbers: a few key takeaways for the
+  // top panel plus one-line captions interpreting each chart.
+  const insights = useMemo(() => {
+    const out = { takeaways: [], teamCaption: '', activityCaption: '', topicCaption: '' };
+    const employees = overview.employees ?? people.length;
+    const registered = overview.learners ?? people.filter((p) => p.registered).length;
+    const pct = employees ? Math.round((registered / employees) * 100) : 0;
+    const inRange = rangeLabel ? ` in ${rangeLabel}` : '';
+
+    // Adoption & coverage
+    out.takeaways.push({
+      icon: Users,
+      tone: pct < 25 ? 'amber' : 'emerald',
+      text: `${registered.toLocaleString()} of ${employees.toLocaleString()} ${employees === 1 ? 'person has' : 'people have'} signed up (${pct}%)${pct < 25 ? ' — adoption is still early' : ''}`,
+    });
+
+    // Engagement & drop-off
+    if (showActiveStatus) {
+      out.takeaways.push({
+        icon: Activity,
+        tone: counts.active > 0 ? 'blue' : 'amber',
+        text: `${counts.active.toLocaleString()} active${inRange} · ${counts.never.toLocaleString()} have never signed in`,
+      });
+    }
+
+    // Team standout
+    if (teamStats.length) {
+      const top = teamStats[0];
+      out.takeaways.push({
+        icon: TrendingUp,
+        tone: 'blue',
+        text: `${top.label} leads with ${top.value} signed-up learner${top.value === 1 ? '' : 's'}`,
+      });
+      out.teamCaption = teamStats.length > 1
+        ? `${top.label} is furthest along — most teams are just getting started.`
+        : '';
+    }
+
+    // What they're learning
+    if (topTopics.length) {
+      out.takeaways.push({ icon: BookOpen, tone: 'blue', text: `Top interest: “${truncate(topTopics[0].topic, 64)}”` });
+      out.topicCaption = `Strongest interest is in ${truncate(topTopics[0].topic, 56)}.`;
+    }
+    if (activityByType?.length) {
+      out.activityCaption = `Most activity is ${activityByType[0].label.toLowerCase()}.`;
+    }
+    return out;
+  }, [overview, people, counts, teamStats, topTopics, activityByType, rangeLabel, showActiveStatus]);
+
   return (
     <>
+      {insights.takeaways.length > 0 && (
+        <div className="bg-gradient-to-br from-brand-50 to-white dark:from-slate-800 dark:to-slate-800 rounded-2xl border border-brand-100 dark:border-slate-700 shadow-card p-5 mb-6">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-ink dark:text-slate-200 mb-3">
+            <Lightbulb className="w-4 h-4 text-brand" /> Key takeaways
+          </h2>
+          <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-2.5">
+            {insights.takeaways.map((t, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-ink dark:text-slate-200 leading-snug">
+                <t.icon className={`w-4 h-4 mt-0.5 shrink-0 ${TONE[t.tone] || TONE.blue}`} />
+                <span>{t.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={Users} label="Registered learners" value={overview.learners} sub={learnersSub ?? (overview.avgLevel != null ? `avg level ${overview.avgLevel.toFixed(1)}` : undefined)} />
         <StatCard icon={Activity} label={activeLabel} value={overview.active} sub={activeSub ?? (overview.learners ? `${Math.round((overview.active / overview.learners) * 100)}% of group` : '—')} />
@@ -388,16 +458,18 @@ export default function ReportView({
 
       {!hideTeamChart && teamStats.length > 1 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
-          <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Learners by team</h2>
-          <p className="text-xs text-slate-400 mb-5">people with activity, by department</p>
-          <VBarChart items={teamStats} />
+          <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Signed-up learners by team</h2>
+          <p className="text-xs text-slate-400 mb-1">people who&apos;ve signed in, by department</p>
+          {insights.teamCaption && <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">{insights.teamCaption}</p>}
+          <div className={insights.teamCaption ? '' : 'mt-4'}><VBarChart items={teamStats} /></div>
         </div>
       )}
 
       {activityByType?.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
           <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">What people are doing</h2>
-          <p className="text-xs text-slate-400 mb-5">actions{rangeLabel ? ` · ${rangeLabel}` : ''}</p>
+          <p className="text-xs text-slate-400 mb-1">actions{rangeLabel ? ` · ${rangeLabel}` : ''}</p>
+          {insights.activityCaption && <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">{insights.activityCaption}</p>}
           <VBarChart items={activityByType.map((a) => ({ label: a.label, value: a.count }))} />
         </div>
       )}
@@ -405,7 +477,8 @@ export default function ReportView({
       {topTopics.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
           <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Most-taken topics</h2>
-          <p className="text-xs text-slate-400 mb-4">top 8 by learners who took them</p>
+          <p className="text-xs text-slate-400 mb-1">top 8 by learners who took them</p>
+          {insights.topicCaption && <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{insights.topicCaption}</p>}
           <div className="space-y-3.5">
             {topTopics.map((t, i) => (
               <div key={t.topic}>
