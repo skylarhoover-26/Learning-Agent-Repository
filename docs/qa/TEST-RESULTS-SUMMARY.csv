@@ -1,0 +1,20 @@
+Area,Total Steps,Pass,Fail,Blocked,Not Run,% Pass
+Setup,"=COUNTIF(UAT!B:B,A2)","=COUNTIFS(UAT!B:B,A2,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A2,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A2,UAT!I:I,""Blocked"")","=B2-C2-D2-E2","=IFERROR(C2/B2,0)"
+Onboarding,"=COUNTIF(UAT!B:B,A3)","=COUNTIFS(UAT!B:B,A3,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A3,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A3,UAT!I:I,""Blocked"")","=B3-C3-D3-E3","=IFERROR(C3/B3,0)"
+Home,"=COUNTIF(UAT!B:B,A4)","=COUNTIFS(UAT!B:B,A4,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A4,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A4,UAT!I:I,""Blocked"")","=B4-C4-D4-E4","=IFERROR(C4/B4,0)"
+Learn,"=COUNTIF(UAT!B:B,A5)","=COUNTIFS(UAT!B:B,A5,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A5,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A5,UAT!I:I,""Blocked"")","=B5-C5-D5-E5","=IFERROR(C5/B5,0)"
+Games,"=COUNTIF(UAT!B:B,A6)","=COUNTIFS(UAT!B:B,A6,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A6,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A6,UAT!I:I,""Blocked"")","=B6-C6-D6-E6","=IFERROR(C6/B6,0)"
+Tools,"=COUNTIF(UAT!B:B,A7)","=COUNTIFS(UAT!B:B,A7,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A7,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A7,UAT!I:I,""Blocked"")","=B7-C7-D7-E7","=IFERROR(C7/B7,0)"
+Progress,"=COUNTIF(UAT!B:B,A8)","=COUNTIFS(UAT!B:B,A8,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A8,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A8,UAT!I:I,""Blocked"")","=B8-C8-D8-E8","=IFERROR(C8/B8,0)"
+Settings,"=COUNTIF(UAT!B:B,A9)","=COUNTIFS(UAT!B:B,A9,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A9,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A9,UAT!I:I,""Blocked"")","=B9-C9-D9-E9","=IFERROR(C9/B9,0)"
+Manager,"=COUNTIF(UAT!B:B,A10)","=COUNTIFS(UAT!B:B,A10,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A10,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A10,UAT!I:I,""Blocked"")","=B10-C10-D10-E10","=IFERROR(C10/B10,0)"
+Admin,"=COUNTIF(UAT!B:B,A11)","=COUNTIFS(UAT!B:B,A11,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A11,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A11,UAT!I:I,""Blocked"")","=B11-C11-D11-E11","=IFERROR(C11/B11,0)"
+General,"=COUNTIF(UAT!B:B,A12)","=COUNTIFS(UAT!B:B,A12,UAT!I:I,""Pass"")","=COUNTIFS(UAT!B:B,A12,UAT!I:I,""Fail"")","=COUNTIFS(UAT!B:B,A12,UAT!I:I,""Blocked"")","=B12-C12-D12-E12","=IFERROR(C12/B12,0)"
+TOTAL,"=SUM(B2:B12)","=SUM(C2:C12)","=SUM(D2:D12)","=SUM(E2:E12)","=SUM(F2:F12)","=IFERROR(C13/B13,0)"
+,,,,,,
+SETUP NOTE,"Import TEST-SCRIPTS-UAT.csv as a tab and RENAME that tab to 'UAT' for these formulas to work. Then format the % Pass column as Percent. Severity counts below are optional.",,,,,
+,,,,,,
+Severity,Count,,,,,
+High open issues,"=COUNTIF(UAT!J:J,""High"")",,,,,
+Med open issues,"=COUNTIF(UAT!J:J,""Med"")",,,,,
+Low open issues,"=COUNTIF(UAT!J:J,""Low"")",,,,,
