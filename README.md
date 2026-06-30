@@ -1,69 +1,122 @@
-# Learning Agent
+# AI Learning Coach
 
-Live app: [learning-agent-pearl.vercel.app](https://learning-agent-pearl.vercel.app)
+Housecall Pro's internal AI learning platform — personalized lessons, games,
+prompts, an AI coach, progress tracking, and manager/admin reporting.
 
-## How It All Works
+**Live app:** [learning-agent-pearl.vercel.app](https://learning-agent-pearl.vercel.app)
+**Stack:** Next.js (App Router) · React · Tailwind CSS · Vercel (hosting + Blob storage) · n8n (Snowflake/Slack automations) · Anthropic Claude (lesson/content generation)
 
-- **Git** connects your terminal to GitHub. It's how you clone, push, and pull code. (Pre-installed on Mac. Windows users install it from [git-scm.com](https://git-scm.com).)
-- **Node.js** is the engine that runs the app's code. It comes with **npm**, which downloads all the libraries the app depends on (React, Next.js, etc.). Install it from [nodejs.org](https://nodejs.org).
-- **Vercel** is connected directly to the GitHub repo. You don't need to do anything with Vercel — it automatically builds and deploys the app whenever code is pushed to `main`.
+---
 
-## One-Time Setup
+## What's in this repo
 
-You only need to do these steps once on your computer.
+Everything at the root is either application code, a config file the framework
+needs, or this README. Project notes and exports live under `docs/` and `n8n/`.
 
-1. Install [Git](https://git-scm.com) (Windows only — Mac has it built in) and [Node.js](https://nodejs.org). These are normal app installers you download in your browser and click through.
+| Item | What it is |
+| --- | --- |
+| **`app/`** | The application itself (Next.js App Router). Each subfolder is a page/route — e.g. `app/reporting/`, `app/lesson/`, `app/games/`, `app/admin/`. `app/api/` holds the backend routes. `app/page.jsx` is the home page, `app/layout.jsx` the shared shell. |
+| **`components/`** | Reusable React UI pieces shared across pages (e.g. `sidebar.jsx`, `report-view.jsx`, `compare-view.jsx`, `searchable-select.jsx`). |
+| **`lib/`** | Non-UI logic: data access, auth, reporting rollups, AI calls, content, gamification. See the breakdown below. |
+| **`scripts/`** | Helper scripts. `deploy-prod.sh` is the verified production deploy (run via `npm run deploy:prod`). |
+| **`n8n/`** | Exported [n8n](https://n8n.io) workflow definitions (Snowflake org pull, Slack notifications, manager-dashboard + daily-digest webhooks). Reference copies of the automations that feed the app. |
+| **`prototypes/`** | Early standalone prototypes (Brian's, Rachel's) kept for reference only. **Not** part of the live app. |
+| **`docs/`** | All project documentation — backlog, feedback, deleted-feature notes, dated handoffs (`docs/handoffs/`), and QA scripts/results (`docs/qa/`). |
+| **`CLAUDE.md`** | Rules for the AI assistant (Claude Code) — how to deploy, the pre-push checklist, and what never to do. |
+| **`README.md`** | This file. |
+| **`auth.js`, `middleware.js`** | Authentication setup and request middleware. Next.js requires these at the root — don't move them. |
+| **Config files** | `next.config.mjs`, `package.json`, `vercel.json` (incl. cron schedules), `tailwind.config.mjs`, `postcss.config.mjs`, `jsconfig.json`, `.gitignore`. Build/deploy depend on these living at the root. |
 
-2. Open your terminal and clone the repo. This downloads a copy of the project to your computer:
+### Inside `app/`
+
+- **Learner pages:** `discover/`, `library/`, `games/`, `chat/`, `lesson/`,
+  `prompts/`, `daily/` (Today's Pick), `modules/`, `quick-win/`.
+- **Progress pages:** `achievements/`, `calibration/`, `heatmap/`,
+  `leaderboard/`, `growth/`, `my-impact/`, `my-role/`, `my-tasks/`, `my-tools/`.
+- **Manager/admin:** `manager/` (team dashboard), `reporting/` (org-wide
+  reporting), `admin/` (admin hub).
+- **Onboarding:** `onboarding/`, `getting-started/`, `auth/`.
+- **`app/api/`:** backend routes — reporting (`api/reporting/`), admin checks,
+  manager/org data, AI generation, and scheduled cron jobs (see `vercel.json`).
+
+### Inside `lib/` (grouped)
+
+- **Auth & access:** `auth-helpers.js`, `admin.js`, `manager-data.js` (also the
+  manager check), `menu-catalog.js`.
+- **Reporting:** `reporting.js` (builds + caches the org report),
+  `report-metrics.js` (per-group/compare math), `activity-labels.js`,
+  `audit-log.js`.
+- **AI & content:** `ai.js`, `ai-tools.js`, `prompts-data.js`, `modules-data.js`,
+  `daily-lessons.js`.
+- **Gamification & state:** `level-curve.js`, `paused-lessons.js`,
+  `sync-store.js`, and the various `*-store.js` blob helpers.
+
+---
+
+## How it all works (for non-developers)
+
+- **Git** connects your terminal to GitHub — how you clone, push, and pull code. (Pre-installed on Mac; Windows users install it from [git-scm.com](https://git-scm.com).)
+- **Node.js** runs the app's code. It comes with **npm**, which downloads the libraries the app depends on. Install from [nodejs.org](https://nodejs.org).
+- **Vercel** is connected directly to this GitHub repo. You don't touch Vercel — it automatically builds and deploys whenever code is pushed to `main`.
+
+## One-time setup
+
+You only need to do these once on your computer.
+
+1. Install [Git](https://git-scm.com) (Windows only — Mac has it built in) and [Node.js](https://nodejs.org).
+2. Clone the repo (downloads a copy to your computer):
    ```
    git clone https://github.com/skylarhoover-26/Learning-Agent-Repository.git
    ```
-
-3. Navigate into the project folder. This tells your terminal to work inside the project:
+3. Go into the project folder:
    ```
    cd Learning-Agent-Repository
    ```
-
-4. Install dependencies. This downloads all the libraries the app needs to run (React, Next.js, etc.):
+4. Install dependencies:
    ```
    npm install
    ```
 
-## Making Changes and Pushing to Production
+## Running it locally (optional)
 
-Every time you want to make a change, follow these steps. All commands are run in your terminal.
+```
+npm run dev
+```
+Then open the URL it prints (usually `http://localhost:3000`).
 
-### Starting a New Session
+## Making changes and deploying
 
-1. Open your terminal (Terminal on Mac, Git Bash on Windows).
+All commands run in your terminal, from inside the project folder.
 
-2. Navigate to the project folder. The terminal doesn't remember where you were last time, so you need to do this each time:
-   ```
-   cd Learning-Agent-Repository
-   ```
-
-### Making and Pushing Your Changes
-
-1. Pull the latest code before making changes. This makes sure you have everyone else's recent updates:
+1. Pull the latest code first:
    ```
    git pull origin main
    ```
-
-2. Make your code changes in your editor (e.g. VS Code).
-
-3. Stage your changes. This tells Git which files you want to include in your update:
+2. Make your edits in your editor (e.g. VS Code).
+3. Stage and commit your changes:
    ```
    git add .
-   ```
-
-4. Commit with a short description of what you changed. This saves a snapshot of your changes with a message:
-   ```
    git commit -m "Brief description of your change"
    ```
-
-5. Push to production. This sends your changes to GitHub, which triggers Vercel to rebuild and deploy the app:
+4. Push to GitHub (this triggers Vercel to rebuild and deploy):
    ```
    git push origin main
    ```
+5. Wait 1–2 minutes for Vercel to finish. Changes go live at
+   [learning-agent-pearl.vercel.app](https://learning-agent-pearl.vercel.app).
 
-6. Wait 1-2 minutes for Vercel to finish. Your changes will be live at [learning-agent-pearl.vercel.app](https://learning-agent-pearl.vercel.app)
+> For the verified deploy with safety checks, use `npm run deploy:prod` instead
+> of a manual Vercel command. See **`CLAUDE.md`** for the full pre-push checklist.
+
+---
+
+## Notes
+
+- **Environment variables** (Snowflake/n8n webhook URLs, Vercel Blob token, Okta
+  SSO keys, `CRON_SECRET`, Anthropic key) are configured in the Vercel project
+  settings, not in this repo. Anything reading `process.env` needs its variable
+  set in Vercel → Production.
+- **Scheduled jobs** are defined in `vercel.json` (`crons`) — e.g. the daily
+  reporting refresh and the daily curriculum/lesson generation.
+- **Project history & plans** live in `docs/` (backlog, handoffs, deleted
+  features) if you need context on why something exists.
