@@ -132,7 +132,7 @@ function Drawer({ open, onClose }) {
       />
       {/* Panel — docked below the top bar, slides in/out. */}
       <aside
-        className="cine fixed top-16 left-0 z-[60] h-[calc(100dvh-4rem)] w-80 max-w-[86vw] overflow-y-auto transition-transform duration-300"
+        className="cine fixed top-16 left-0 z-[60] h-[calc(100dvh-4rem)] min-h-0 w-80 max-w-[86vw] overflow-y-auto overscroll-contain transition-transform duration-300"
         style={{ transform: open ? 'translateX(0)' : 'translateX(-104%)', boxShadow: '0 0 60px -10px rgba(0,0,0,.5)', backgroundAttachment: 'scroll' }}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 cine-glass" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, borderTop: 0 }}>
