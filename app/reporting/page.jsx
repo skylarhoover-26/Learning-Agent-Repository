@@ -88,6 +88,12 @@ export default function ReportingPage() {
     );
   }, [data, team, manager, person]);
 
+  // Sorted, de-duplicated names for the Person picker.
+  const peopleNames = useMemo(
+    () => (data?.people ? [...new Set(data.people.map((p) => p.name).filter(Boolean))].sort((a, b) => a.localeCompare(b)) : []),
+    [data]
+  );
+
   // Set of identifiers (email + learnerId) for the people in the current
   // team/manager/person slice — used to scope the engagement series to them.
   const emailSet = useMemo(() => {
@@ -188,10 +194,10 @@ export default function ReportingPage() {
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Manager</span>
                   <SearchableSelect value={manager} onChange={setManager} options={data.managers} allLabel="All managers" placeholder="Search managers…" widthClass="min-w-[200px]" />
                 </div>
-                <label className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                <div className="flex flex-col gap-1">
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Person</span>
-                  <input value={person} onChange={(e) => setPerson(e.target.value)} placeholder="Search by name or email…" className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200" />
-                </label>
+                  <SearchableSelect value={person} onChange={setPerson} options={peopleNames} allLabel="Everyone" placeholder="Search by name…" widthClass="min-w-[220px]" />
+                </div>
                 {(team || manager || person) && (
                   <button onClick={() => { setTeam(''); setManager(''); setPerson(''); }} className="px-3 py-2 text-sm text-slate-500 hover:text-ink dark:hover:text-slate-200">Clear</button>
                 )}
