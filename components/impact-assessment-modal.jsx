@@ -39,7 +39,7 @@ export default function ImpactAssessmentModal() {
 
   function start() {
     setShow(false);
-    router.push('/scoring');
+    router.push('/my-impact');
   }
 
   return (

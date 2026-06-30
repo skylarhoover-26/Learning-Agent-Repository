@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, MessageCircle, BookOpen, PenTool, RefreshCw } from 'lucide-react';
+import { Gamepad2, MessageCircle, BookOpen } from 'lucide-react';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
 // The home-page "Other ways to learn" tiles. Kept as a self-contained client
@@ -13,8 +13,6 @@ const TILES = [
   { href: '/games', icon: Gamepad2, label: 'Games', tour: 'home-qa-games' },
   { href: '/chat', icon: MessageCircle, label: 'Just Chat', tour: 'home-qa-chat' },
   { href: '/lesson', icon: BookOpen, label: 'Lesson', tour: 'home-qa-lesson' },
-  { href: '/structured-lesson', icon: PenTool, label: 'Practice', tour: 'home-qa-practice' },
-  { href: '/review', icon: RefreshCw, label: 'Review', tour: 'home-qa-review' },
 ];
 
 export default function HomeQuickActions() {

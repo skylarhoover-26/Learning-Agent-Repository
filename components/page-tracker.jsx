@@ -8,8 +8,6 @@ const PAGE_NAMES = {
   '/': 'Home',
   '/lesson': 'Lesson',
   '/modules': 'Modules',
-  '/review': 'Review',
-  '/quests': 'Quests',
   '/heatmap': 'Heatmap',
   '/discover': 'Discover',
   '/games': 'Games',
@@ -20,7 +18,6 @@ const PAGE_NAMES = {
 
 function getPageName(path) {
   if (PAGE_NAMES[path]) return PAGE_NAMES[path];
-  if (path.startsWith('/quests/')) return 'Quest Detail';
   if (path.startsWith('/games/')) return 'Game';
   if (path.startsWith('/admin/')) return 'Admin';
   return path.replace(/^\//, '') || 'Unknown';

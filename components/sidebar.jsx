@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import {
-  Menu, X, Crosshair, GitBranch, BarChart3, PenTool,
-  CalendarDays, Play, GraduationCap, ClipboardCheck,
-  Target, Grid3X3, Gamepad2, Award, MessageCircle, CalendarCheck,
+  Menu, X, Crosshair, BarChart3,
+  CalendarDays, Play, GraduationCap,
+  Grid3X3, Gamepad2, Award, MessageCircle,
   Compass, Trophy, BookOpen, Terminal, Home, Library,
-  Rocket, RefreshCw, ExternalLink, TrendingUp,
+  ExternalLink, TrendingUp,
   Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
@@ -37,6 +37,24 @@ function SectionHeader({ title, tour }) {
   );
 }
 
+// A menu item's description shown as a styled hover popup. Absolutely positioned
+// just below the row (constrained to the panel width) so it's visible without
+// growing the row or reflowing the menu, and so it can't clip off the side. The
+// parent row must be `relative` and `group`.
+//
+// Hover-only: it appears on hover after a short delay (so it doesn't flash while
+// scanning the menu) and disappears immediately when the pointer leaves. It is
+// intentionally NOT tied to focus — clicking a row used to leave the description
+// stuck open (focus-within), which read as a bug.
+function ItemDescPopup({ text }) {
+  if (!text) return null;
+  return (
+    <span className="pointer-events-none absolute left-10 right-2 top-[calc(100%-0.25rem)] z-50 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs leading-snug px-3 py-2 shadow-xl opacity-0 invisible transition-opacity duration-150 group-hover:opacity-100 group-hover:visible group-hover:delay-500">
+      {text}
+    </span>
+  );
+}
+
 export const NAV_SECTIONS = [
   {
     title: 'Learn',
@@ -48,7 +66,6 @@ export const NAV_SECTIONS = [
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
-      { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Hands-on exercises with instant feedback' },
       { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
       { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
     ],
@@ -59,15 +76,9 @@ export const NAV_SECTIONS = [
     tour: 'section-progress',
     items: [
       { href: '/achievements', icon: Award, label: 'Achievements', desc: 'Badges and milestones you have earned' },
-      { href: '/scoring', icon: ClipboardCheck, label: 'AI Impact', desc: 'Measure how AI is helping your work' },
       { href: '/calibration', icon: Crosshair, label: 'Calibrate', desc: 'Tune lessons to your current level' },
-      { href: '/checkin', icon: CalendarCheck, label: 'Check-in', desc: 'A quick pulse on your progress' },
-      { href: '/goals', icon: Target, label: 'Goals', desc: 'Set and track your learning goals' },
       { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap', desc: 'Where you are strong and where to grow' },
       { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', desc: 'See how you rank across your team' },
-      { href: '/quests', icon: Rocket, label: 'Quests', desc: 'Build something real, start to finish' },
-      { href: '/review', icon: RefreshCw, label: 'Review', desc: 'Revisit key concepts so they stick' },
-      { href: '/skill-graph', icon: GitBranch, label: 'Skill Graph', desc: 'A visual map of your AI skills' },
     ],
   },
   {
@@ -76,6 +87,7 @@ export const NAV_SECTIONS = [
     tour: 'section-manager',
     items: [
       { href: '/manager', icon: BarChart3, label: 'Team Dashboard', desc: 'Team learning dashboard for managers' },
+      { href: '/reporting', icon: FileText, label: 'Reporting', desc: 'Org-wide learning activity and progress' },
     ],
   },
   {
@@ -122,7 +134,9 @@ export const SKILL_SHOP_LINKS = [
 // Routes that are full-screen flows with no app chrome (nav rail / content
 // shift) until the user is set up.
 function isChromeHiddenRoute(pathname) {
-  return pathname.startsWith('/onboarding') || pathname.startsWith('/auth');
+  return pathname.startsWith('/onboarding')
+    || pathname.startsWith('/auth')
+    || pathname.startsWith('/reporting/shared'); // public, no-login shared report
 }
 
 const SidebarContext = createContext(null);
@@ -188,7 +202,9 @@ export function SidebarProvider({ children }) {
 
   // Mark the document while the menu is open so the top bar can hold its
   // full width while the body shifts, and the hamburger strip can hide
-  // (see `.js-topbar` / `.js-menu-strip` in globals.css).
+  // (see `.js-topbar` / `.js-menu-strip` in globals.css). The open/close is
+  // instant (no transition) so the top bar's full-width counter-shift lands in
+  // a single frame — it can never wobble or flash a white gap mid-animation.
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('menu-open', open);
@@ -239,7 +255,8 @@ export function SidebarShell({ children }) {
   const { open, setOpen } = useSidebar();
   const pathname = usePathname();
   // No nav on onboarding/auth — don't shift content or show the backdrop there.
-  const showNav = open && !isChromeHiddenRoute(pathname) && !isCinematicRoute(pathname);
+  const chromeHidden = isChromeHiddenRoute(pathname);
+  const showNav = open && !chromeHidden && !isCinematicRoute(pathname);
   return (
     <>
       {/* Small screens only: dim + tap-to-close (the panel overlays content). */}
@@ -250,7 +267,10 @@ export function SidebarShell({ children }) {
           aria-hidden="true"
         />
       )}
-      <div className={`transition-[padding] duration-200 ${showNav ? 'lg:pl-96' : ''}`}>
+      {/* pt-16 clears the fixed top bar (it no longer occupies flow space like
+          the old sticky header did). Skipped on chrome-hidden full-screen flows
+          (onboarding/auth) that have no top bar. */}
+      <div className={`${chromeHidden ? '' : 'pt-16'} ${showNav ? 'lg:pl-80' : ''}`}>
         {children}
       </div>
     </>
@@ -263,7 +283,7 @@ export function SideNav() {
   const { startTour } = useTour();
   const pathname = usePathname();
   const {
-    isAdmin,
+    isAdmin, actingAsAdmin, isManager,
     isSectionHidden, isSectionComingSoon,
     isItemHidden, isItemComingSoon,
   } = useMenuVisibility();
@@ -331,21 +351,15 @@ export function SideNav() {
         href={item.href}
         data-tour={navItemTour(item.href)}
         aria-current={active ? 'page' : undefined}
-        className={`group flex items-start gap-3 px-4 py-2 border-l-2 transition-colors ${
+        className={`group relative flex items-center gap-3 px-4 py-2 border-l-2 transition-colors ${
           active
             ? 'border-brand bg-brand-50 dark:bg-brand-900/20 text-brand'
             : 'border-transparent text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
         }`}
       >
-        <item.icon className={`w-4 h-4 shrink-0 mt-0.5 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
-        <span className="min-w-0">
-          <span className="block text-sm font-medium leading-tight">{item.label}</span>
-          {item.desc && (
-            <span className={`hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 ${active ? 'text-brand/70' : 'text-slate-500 dark:text-slate-400'}`}>
-              {item.desc}
-            </span>
-          )}
-        </span>
+        <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`} />
+        <span className="min-w-0 block text-sm font-medium leading-tight truncate">{item.label}</span>
+        <ItemDescPopup text={item.desc} />
       </Link>
     );
   }
@@ -353,7 +367,7 @@ export function SideNav() {
   return (
     <nav
       data-tour="sidebar"
-      className={`fixed top-16 left-0 h-[calc(100dvh-4rem)] w-96 max-w-[88vw] z-[45] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto transition-transform duration-200 ${
+      className={`fixed top-16 left-0 h-[calc(100dvh-4rem)] w-80 max-w-[88vw] z-[45] bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl overflow-y-auto ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-hidden={!open}
@@ -390,7 +404,11 @@ export function SideNav() {
 
       {NAV_SECTIONS.map(section => (
         <Fragment key={section.title}>
-          {!isSectionHidden(section.title) && (
+          {/* The Manager section is only for people-managers (direct reports)
+              and admins — everyone else never sees it. Uses actingAsAdmin so an
+              admin "viewing as a regular user" without direct reports sees it
+              disappear too. */}
+          {(section.title !== 'Manager' || actingAsAdmin || isManager) && !isSectionHidden(section.title) && (
           <div className="pb-1">
             <SectionHeader title={section.title} tour={section.tour} />
             {isSectionComingSoon(section.title)
@@ -409,15 +427,11 @@ export function SideNav() {
                   key="tour"
                   onClick={startTour}
                   data-tour="nav-tour"
-                  className="group w-full flex items-start gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="group relative w-full flex items-center gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <item.icon className="w-4 h-4 shrink-0 mt-0.5 text-slate-500 dark:text-slate-400" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium leading-tight">{item.label}</span>
-                    {item.desc && (
-                      <span className="hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 text-slate-500 dark:text-slate-400">{item.desc}</span>
-                    )}
-                  </span>
+                  <item.icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
+                  <span className="min-w-0 block text-sm font-medium leading-tight truncate">{item.label}</span>
+                  <ItemDescPopup text={item.desc} />
                 </button>
               ) : (
                 renderNavItem(item)
@@ -440,15 +454,11 @@ export function SideNav() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-start gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="group relative flex items-center gap-3 px-4 py-2 text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <ExternalLink className="w-4 h-4 shrink-0 mt-0.5 text-slate-400 dark:text-slate-500" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium leading-tight">{link.label}</span>
-                    {link.desc && (
-                      <span className="hidden group-hover:block group-focus:block text-xs leading-snug mt-0.5 text-slate-500 dark:text-slate-400">{link.desc}</span>
-                    )}
-                  </span>
+                  <ExternalLink className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                  <span className="min-w-0 block text-sm font-medium leading-tight truncate">{link.label}</span>
+                  <ItemDescPopup text={link.desc} />
                 </a>
                 )
               ))}

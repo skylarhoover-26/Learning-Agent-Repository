@@ -1,6 +1,6 @@
-import CinematicGoals from '@/components/cinematic/cinematic-goals';
+import { redirect } from 'next/navigation';
 
-export default function GoalsPage() {
-  // Cinematic reskin (staging). Legacy version preserved in git history.
-  return <CinematicGoals />;
+// The Goals tracker was removed from the app. Send old links home.
+export default function GoalsRemovedRedirect() {
+  redirect('/');
 }

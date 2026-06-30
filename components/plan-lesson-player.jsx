@@ -690,7 +690,15 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     // `display` is what shows in the chat bubble; `q` is the full prompt sent to
     // the coach. They differ for actions like "Why this score?" that bake score
     // context into the prompt but should show a short, clean question.
-    const display = (typeof displayOverride === 'string' && displayOverride.trim()) || q;
+    let display = (typeof displayOverride === 'string' && displayOverride.trim()) || q;
+    // Safety net: if a multi-line, context-baked prompt ever arrives WITHOUT an
+    // explicit short display, never dump the whole block into the blue bubble —
+    // show only its final line (the actual question). Typed questions are
+    // single-line, so this only ever trims baked prompts like "Why this score?".
+    if (!(typeof displayOverride === 'string' && displayOverride.trim()) && q.includes('\n')) {
+      const lastLine = q.split('\n').map((s) => s.trim()).filter(Boolean).pop();
+      if (lastLine) display = lastLine;
+    }
     setQuestion('');
     setChatCollapsed(false); // a new message always reopens the thread
     setAsking(true);

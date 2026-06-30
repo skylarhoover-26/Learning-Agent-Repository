@@ -13,6 +13,7 @@ const PREVIEW_KEY = 'mv_preview_as_user';
 
 export function MenuVisibilityProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false); // has direct reports (gates the Manager section)
   const [disabledSections, setDisabledSections] = useState([]); // "coming soon"
   const [disabledItems, setDisabledItems] = useState([]); // "coming soon"
   const [hiddenSections, setHiddenSections] = useState([]); // removed entirely
@@ -43,6 +44,15 @@ export function MenuVisibilityProvider({ children }) {
       applyVisibility(vis);
       setLoaded(true);
     });
+
+    // Manager status is fetched on its OWN track — it can be slow (it may refresh
+    // the org data from Snowflake), and it must never delay admin status or the
+    // rest of the menu from rendering. The Manager section just appears once this
+    // resolves.
+    fetch('/api/manager-check', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(mgr => { if (!cancelled) setIsManager(!!mgr?.isManager); })
+      .catch(() => { /* not a manager / lookup failed */ });
     return () => { cancelled = true; };
   }, []);
 
@@ -124,7 +134,7 @@ export function MenuVisibilityProvider({ children }) {
   return (
     <MenuVisibilityContext.Provider
       value={{
-        isAdmin, loaded, previewAsUser, setPreviewAsUser, refresh,
+        isAdmin, actingAsAdmin, isManager, loaded, previewAsUser, setPreviewAsUser, refresh,
         sectionState, itemState, routeState,
         isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon,
         isSectionDisabled, isItemDisabled, isRouteDisabled,
@@ -138,6 +148,8 @@ export function MenuVisibilityProvider({ children }) {
 export function useMenuVisibility() {
   return useContext(MenuVisibilityContext) || {
     isAdmin: false,
+    actingAsAdmin: false,
+    isManager: false,
     loaded: false,
     previewAsUser: false,
     setPreviewAsUser: () => {},

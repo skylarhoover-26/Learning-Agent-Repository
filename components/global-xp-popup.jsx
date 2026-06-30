@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { onXp } from '@/lib/xp-bus';
+import { recordXpNotifications } from '@/lib/notifications-store';
 import { useProgression } from '@/components/progression-provider';
 import XpToast from '@/components/xp-toast';
 
@@ -15,11 +16,13 @@ export default function GlobalXpPopup() {
   const welcomeBonus = prog?.welcomeBonus;
   const clearWelcomeBonus = prog?.clearWelcomeBonus;
 
-  useEffect(() => onXp((r) => setResult(r)), []);
+  // Show the popup AND log a persistent notification for the bell feed.
+  useEffect(() => onXp((r) => { setResult(r); recordXpNotifications(r); }), []);
 
   useEffect(() => {
     if (welcomeBonus) {
       setResult({ ...welcomeBonus, welcome: true });
+      recordXpNotifications(welcomeBonus);
       clearWelcomeBonus?.();
     }
   }, [welcomeBonus, clearWelcomeBonus]);

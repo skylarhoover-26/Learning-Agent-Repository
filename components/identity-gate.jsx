@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Sparkles, Loader2 } from 'lucide-react';
 
 // Pre-Okta soft login. While SSO is off, each tester enters their company email
 // once so their data is kept separate (keyed by email). Hidden entirely when
 // Okta is configured — SSO handles identity then.
 export default function IdentityGate() {
+  const pathname = usePathname();
   const [status, setStatus] = useState('loading'); // loading | needed | ok
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -49,6 +51,8 @@ export default function IdentityGate() {
     }
   }
 
+  // The public shared-report route must never prompt for login.
+  if (pathname?.startsWith('/reporting/shared')) return null;
   if (status !== 'needed') return null;
 
   return (

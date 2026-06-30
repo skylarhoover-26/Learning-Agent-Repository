@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield } from 'lucide-react';
+import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, BarChart3 } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import PausedLessonsBell from '@/components/paused-lessons-bell';
 import Avatar from '@/components/avatar';
@@ -15,12 +15,14 @@ import { displayNameFromProfile } from '@/lib/display-name';
 // Profile-related links that live under the name dropdown (everything that used
 // to be in the sidebar's "Account" section except Manager, which stays in the menu).
 // `tour` anchors let the guided tour spotlight each item with the dropdown open.
+// All "My …" for a consistent, personalized feel; kept alphabetical by label.
 const PROFILE_LINKS = [
-  { href: '/profile', icon: User, label: 'Profile', tour: 'nav-profile' },
-  { href: '/my-role', icon: UserCog, label: 'My Role', tour: 'nav-my-role' },
   { href: '/my-tools', icon: PanelsTopLeft, label: 'My AI Tools', tour: 'nav-my-tools' },
+  { href: '/my-impact', icon: BarChart3, label: 'My Impact' },
+  { href: '/profile', icon: User, label: 'My Profile', tour: 'nav-profile' },
+  { href: '/projects', icon: FolderKanban, label: 'My Projects', tour: 'nav-projects' },
+  { href: '/my-role', icon: UserCog, label: 'My Role', tour: 'nav-my-role' },
   { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', tour: 'nav-my-tasks' },
-  { href: '/projects', icon: FolderKanban, label: 'Projects', tour: 'nav-projects' },
 ];
 
 // Top-right header cluster: a persistent "Home" link (always reachable without

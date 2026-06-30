@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { HelpCircle, X, BookOpen, Trophy, MessageCircle, Flame, Gamepad2, RefreshCw } from 'lucide-react';
+import { HelpCircle, X, BookOpen, Trophy, MessageCircle, Flame, Gamepad2 } from 'lucide-react';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
 // Listed alphabetically by label. Amounts match lib/progression.js (XP_AMOUNTS,
@@ -11,9 +11,8 @@ import { useMenuVisibility } from '@/components/menu-visibility-provider';
 // (or coming soon) for the viewer, the line is dropped so we never advertise XP
 // they can't currently earn. Streak XP has no page, so it always shows.
 const XP_SOURCES = [
-  { icon: RefreshCw, label: 'Answer a review card', amount: '+5 XP (20/day)', href: '/review' },
   { icon: MessageCircle, label: 'Chat with the AI coach', amount: '+2 XP (5/day)', href: '/chat' },
-  { icon: Trophy, label: 'Complete a project quest', amount: 'up to +200 XP', href: '/quests' },
+  { icon: Trophy, label: 'Complete a project quest', amount: 'up to +200 XP', href: '/lesson' },
   { icon: BookOpen, label: 'Finish a tip, lesson, or deep dive', amount: 'up to +15–100 XP', href: '/lesson' },
   { icon: Flame, label: 'Keep your streak going', amount: '+10 XP/day', href: null },
   { icon: Gamepad2, label: 'Play a learning game', amount: '+20–50 XP each', href: '/games' },

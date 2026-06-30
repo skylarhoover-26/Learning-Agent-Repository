@@ -1,6 +1,13 @@
 import { timingSafeEqual } from 'crypto';
 import { getOrgData, storeData } from '@/lib/manager-data';
 
+// This route round-trips to the n8n webhook (which queries Snowflake for ~1.7k
+// employees and returns ~350KB). That can take well past Vercel's default ~10s
+// function limit on a cold start, which would kill the request and surface as
+// "Team data is not available." Give it room, and never statically cache it.
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 const API_SECRET = process.env.MANAGER_DATA_SECRET;
 
 export async function GET(request) {

@@ -198,17 +198,19 @@ body {
   animation: heatmap-pulse 1.5s ease-in-out infinite;
 }
 
-/* Docked menu chrome. The body content shifts right (lg:pl-96) when the menu
-   is open; these rules keep the dark top bar full-width across the top (it
-   counter-shifts back) and hide the hamburger strip while the menu is open. */
+/* The dark top bar is FIXED to the viewport so it stays put while scrolling and
+   is present on every screen. Fixed (not sticky) is immune to the ancestor
+   overflow/transform quirks that were letting it scroll away on some pages, and
+   being inherently full-width it no longer needs a counter-shift when the docked
+   menu pushes content right. Content clears it via pt-16 in SidebarShell.
+   (This unlayered rule intentionally overrides the `sticky` Tailwind utility on
+   the .js-topbar headers.) */
 .js-topbar {
-  transition: margin-left 0.2s ease, width 0.2s ease;
-}
-@media (min-width: 1024px) {
-  html.menu-open .js-topbar {
-    margin-left: -24rem;
-    width: calc(100% + 24rem);
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
 }
 html.menu-open .js-menu-strip {
   display: none;
