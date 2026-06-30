@@ -397,7 +397,7 @@ export default function ReportView({
       {activityByType?.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
           <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">What people are doing</h2>
-          <p className="text-xs text-slate-400 mb-5">actions across the app · last 14 days</p>
+          <p className="text-xs text-slate-400 mb-5">actions{rangeLabel ? ` · ${rangeLabel}` : ''}</p>
           <VBarChart items={activityByType.map((a) => ({ label: a.label, value: a.count }))} />
         </div>
       )}

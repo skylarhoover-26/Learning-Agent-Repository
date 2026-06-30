@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
-import { BarChart3, Loader2, RefreshCw } from 'lucide-react';
+import { BarChart3, Loader2, RefreshCw, X } from 'lucide-react';
 import ReportView from '@/components/report-view';
 import SearchableSelect from '@/components/searchable-select';
+import CompareView from '@/components/compare-view';
+import { activityForEmails } from '@/lib/report-metrics';
 
 export default function ReportingPage() {
   const [state, setState] = useState({ status: 'loading' }); // loading | forbidden | error | ok
@@ -16,6 +18,9 @@ export default function ReportingPage() {
   const [to, setTo] = useState('');
   const [bounds, setBounds] = useState({ min: '', max: '' }); // date-input limits (last 30 days)
   const [refreshing, setRefreshing] = useState(false);
+  const [mode, setMode] = useState('single'); // single | compare
+  const [compareDim, setCompareDim] = useState('team'); // team | manager | person
+  const [compareValues, setCompareValues] = useState([]); // up to 4 selected groups
 
   // Set filters + the date range on mount. Default range is the last 14 days;
   // the picker can reach back 30 days (the window the server gathers). Computed
@@ -124,6 +129,21 @@ export default function ReportingPage() {
       });
   }, [data, from, to, hasPeopleFilter, emailSet]);
 
+  // The same date slice but UNscoped by the people filters — keeps each day's
+  // full active list + per-person activity so the activity chart (and compare)
+  // can scope to any subset themselves.
+  const rangeEngagementFull = useMemo(() => {
+    if (!data?.engagement || !from || !to) return [];
+    return data.engagement.filter((d) => d.date >= from && d.date <= to);
+  }, [data, from, to]);
+
+  // "What people are doing" for the current filter slice + date range (replaces
+  // the app-wide server aggregate so it reacts to the filters).
+  const activityInRange = useMemo(
+    () => activityForEmails(rangeEngagementFull, emailSet),
+    [rangeEngagementFull, emailSet]
+  );
+
   // Who showed up at least once in the range (by email/id), so each row can be
   // tagged active/inactive for the selected window.
   const activeEmailsInRange = useMemo(() => {
@@ -161,6 +181,22 @@ export default function ReportingPage() {
     return from && to ? `${fmt(from)} – ${fmt(to)}` : '';
   }, [from, to]);
 
+  // Options for the compare picker, per dimension, minus what's already chosen.
+  const compareOptions = useMemo(() => {
+    const base = compareDim === 'team' ? (data?.teams || [])
+      : compareDim === 'manager' ? (data?.managers || [])
+      : peopleNames;
+    return base.filter((v) => !compareValues.includes(v));
+  }, [compareDim, data, peopleNames, compareValues]);
+
+  const dimNoun = compareDim === 'person' ? 'person' : compareDim === 'manager' ? 'manager' : 'team';
+
+  function addCompareValue(v) {
+    if (!v) return;
+    setCompareValues((vals) => (vals.includes(v) || vals.length >= 4 ? vals : [...vals, v]));
+  }
+  function changeDim(d) { setCompareDim(d); setCompareValues([]); }
+
   return (
     <div className="min-h-screen">
       <PageHeader icon={BarChart3} title="Reporting" subtitle="Team learning activity and progress" />
@@ -181,54 +217,118 @@ export default function ReportingPage() {
 
         {state.status === 'ok' && data && (
           <>
-            {/* Filters — team / manager / person on top, date range below. They
-                all scope the report: the cards, engagement chart, learners-by-team
-                and the people table react together. */}
-            <div className="mb-4 space-y-3">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Team</span>
-                  <SearchableSelect value={team} onChange={setTeam} options={data.teams} allLabel="All teams" placeholder="Search teams…" widthClass="min-w-[180px]" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Manager</span>
-                  <SearchableSelect value={manager} onChange={setManager} options={data.managers} allLabel="All managers" placeholder="Search managers…" widthClass="min-w-[200px]" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Person</span>
-                  <SearchableSelect value={person} onChange={setPerson} options={peopleNames} allLabel="Everyone" placeholder="Search by name…" widthClass="min-w-[220px]" />
-                </div>
-                {(team || manager || person) && (
-                  <button onClick={() => { setTeam(''); setManager(''); setPerson(''); }} className="px-3 py-2 text-sm text-slate-500 hover:text-ink dark:hover:text-slate-200">Clear</button>
-                )}
-              </div>
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Date range</span>
-                  <div className="flex items-center gap-2">
-                    <input type="date" value={from} min={bounds.min} max={to || bounds.max} onChange={(e) => setFrom(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200" />
-                    <span className="text-sm text-slate-400">to</span>
-                    <input type="date" value={to} min={from || bounds.min} max={bounds.max} onChange={(e) => setTo(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200" />
-                  </div>
-                </label>
-              </div>
+            {/* View mode: the normal single report, or side-by-side compare. */}
+            <div className="mb-4 inline-flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-sm font-semibold">
+              {[['single', 'Single view'], ['compare', 'Compare']].map(([m, label]) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`px-4 py-2 transition-colors ${mode === m ? 'bg-brand text-white' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
-            <div className="mb-6" />
+            {mode === 'single' ? (
+              <>
+                {/* Filters — team / manager / person on top, date range below. They
+                    all scope the report: the cards, engagement chart, learners-by-team
+                    and the people table react together. */}
+                <div className="mb-4 space-y-3">
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Team</span>
+                      <SearchableSelect value={team} onChange={setTeam} options={data.teams} allLabel="All teams" placeholder="Search teams…" widthClass="min-w-[180px]" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Manager</span>
+                      <SearchableSelect value={manager} onChange={setManager} options={data.managers} allLabel="All managers" placeholder="Search managers…" widthClass="min-w-[200px]" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Person</span>
+                      <SearchableSelect value={person} onChange={setPerson} options={peopleNames} allLabel="Everyone" placeholder="Search by name…" widthClass="min-w-[220px]" />
+                    </div>
+                    {(team || manager || person) && (
+                      <button onClick={() => { setTeam(''); setManager(''); setPerson(''); }} className="px-3 py-2 text-sm text-slate-500 hover:text-ink dark:hover:text-slate-200">Clear</button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Date range</span>
+                      <div className="flex items-center gap-2">
+                        <input type="date" value={from} min={bounds.min} max={to || bounds.max} onChange={(e) => setFrom(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200" />
+                        <span className="text-sm text-slate-400">to</span>
+                        <input type="date" value={to} min={from || bounds.min} max={bounds.max} onChange={(e) => setTo(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200" />
+                      </div>
+                    </label>
+                  </div>
+                </div>
 
-            <ReportView
-              people={peopleWithStatus}
-              overview={overview}
-              engagement={rangeEngagement}
-              activityByType={data.activityByType}
-              showActiveStatus
-              hideTeamChart={!!person.trim()}
-              rangeLabel={rangeLabel}
-              activeLabel="Active"
-              activeSub={rangeLabel ? `in ${rangeLabel}` : undefined}
-              lessonsSub={rangeLabel ? `in ${rangeLabel}` : undefined}
-              learnersSub={learnersSub}
-            />
+                <div className="mb-6" />
+
+                <ReportView
+                  people={peopleWithStatus}
+                  overview={overview}
+                  engagement={rangeEngagement}
+                  activityByType={activityInRange}
+                  showActiveStatus
+                  hideTeamChart={!!person.trim()}
+                  rangeLabel={rangeLabel}
+                  activeLabel="Active"
+                  activeSub={rangeLabel ? `in ${rangeLabel}` : undefined}
+                  lessonsSub={rangeLabel ? `in ${rangeLabel}` : undefined}
+                  learnersSub={learnersSub}
+                />
+              </>
+            ) : (
+              <>
+                {/* Compare controls: dimension + date range, then the picked groups. */}
+                <div className="mb-6 space-y-3">
+                  <div className="flex flex-wrap items-end gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Compare by</span>
+                      <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-sm font-semibold">
+                        {[['team', 'Teams'], ['manager', 'Managers'], ['person', 'People']].map(([d, label]) => (
+                          <button
+                            key={d}
+                            onClick={() => changeDim(d)}
+                            className={`px-3 py-2 transition-colors ${compareDim === d ? 'bg-brand text-white' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Date range</span>
+                      <div className="flex items-center gap-2">
+                        <input type="date" value={from} min={bounds.min} max={to || bounds.max} onChange={(e) => setFrom(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200" />
+                        <span className="text-sm text-slate-400">to</span>
+                        <input type="date" value={to} min={from || bounds.min} max={bounds.max} onChange={(e) => setTo(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200" />
+                      </div>
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {compareValues.map((v) => (
+                      <span key={v} className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full bg-brand-50 dark:bg-slate-700 text-sm text-ink dark:text-slate-200">
+                        <span className="truncate max-w-[200px]">{v}</span>
+                        <button onClick={() => setCompareValues((vals) => vals.filter((x) => x !== v))} aria-label={`Remove ${v}`} className="p-0.5 rounded-full hover:bg-white/70 dark:hover:bg-slate-600">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                    {compareValues.length < 4 ? (
+                      <SearchableSelect value="" onChange={addCompareValue} options={compareOptions} allLabel={`Add a ${dimNoun}…`} placeholder={`Search ${dimNoun}s…`} widthClass="min-w-[200px]" />
+                    ) : (
+                      <span className="text-xs text-slate-400">Up to 4 at a time</span>
+                    )}
+                  </div>
+                </div>
+
+                <CompareView people={data.people} rangeEngagement={rangeEngagementFull} dimension={compareDim} values={compareValues} />
+              </>
+            )}
 
             <div className="flex items-center justify-center gap-3 mt-6 text-xs text-slate-400">
               <span>

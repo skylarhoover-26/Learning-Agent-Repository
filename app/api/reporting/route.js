@@ -1,7 +1,7 @@
 import { getAuthenticatedUser, getIdentityEmail, oktaConfigured } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { isManagerEmail } from '@/lib/manager-data';
-import { buildAndStoreReport, getStoredReport } from '@/lib/reporting';
+import { buildAndStoreReport, getStoredReport, REPORT_SCHEMA_VERSION } from '@/lib/reporting';
 
 // GET serves the cached snapshot (built daily by /api/reporting/refresh), so it's
 // fast for everyone. POST lets an admin force a rebuild. Building reads every
@@ -30,11 +30,13 @@ export async function GET() {
     return Response.json({ error: 'Reporting is available to admins and managers.' }, { status: 403 });
   }
 
-  // Serve the cached snapshot; rebuild if it's missing or was cached without the
-  // org roster (older caches won't have orgLoaded set → treated as needing a
-  // rebuild, which self-heals a previously poisoned/empty snapshot).
+  // Serve the cached snapshot; rebuild if it's missing, was cached without the
+  // org roster, or predates the current payload shape (schema bump). This
+  // self-heals a poisoned/empty/outdated snapshot without a manual refresh.
   let report = await getStoredReport();
-  if (!report || !report.orgLoaded) report = await buildAndStoreReport();
+  if (!report || !report.orgLoaded || report.schemaVersion !== REPORT_SCHEMA_VERSION) {
+    report = await buildAndStoreReport();
+  }
   return Response.json({ ...report, viewer: { email, isAdmin: admin, isManager: manager } });
 }
 
