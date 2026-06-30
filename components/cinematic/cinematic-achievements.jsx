@@ -53,10 +53,8 @@ const BADGE_CATEGORIES = [
     ],
   },
   {
-    title: 'Goals & quests', tint: '#FFB706', badges: [
-      { id: 'first_quest', name: 'Quest Champion', emoji: '🏆', description: 'Complete your first project quest', href: '/quests' },
+    title: 'Projects', tint: '#FFB706', badges: [
       { id: 'first_project', name: 'Goal Getter', emoji: '🎯', description: 'Add your first work project', href: '/projects' },
-      { id: 'first_goal', name: 'Aim High', emoji: '⭐', description: 'Set your first learning goal', href: '/goals' },
     ],
   },
   {

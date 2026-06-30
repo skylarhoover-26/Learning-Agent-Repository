@@ -25,8 +25,8 @@ const WAYS = [
   { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn by playing fast AI challenges.', tint: '#A06AFF' },
   { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask the coach anything, anytime.', tint: '#3B94FF' },
   { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Guided, immersive deep dives.', tint: '#1AA06A' },
-  { href: '/structured-lesson', icon: PenTool, label: 'Practice', desc: 'Apply skills to your real work.', tint: '#FFB706' },
-  { href: '/review', icon: RefreshCw, label: 'Review', desc: 'Refresh fading skills.', tint: '#6AABFF' },
+  { href: '/discover', icon: PenTool, label: 'Practice', desc: 'Apply AI to your real work.', tint: '#FFB706' },
+  { href: '/daily', icon: RefreshCw, label: "Today's Pick", desc: 'A fresh lesson picked for you.', tint: '#6AABFF' },
 ];
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -337,8 +337,8 @@ export default function CinematicHome() {
       <section className="cine-rise cine-glass rounded-3xl p-6">
         <div className="flex items-center justify-between mb-5">
           <p className="font-display font-bold inline-flex items-center gap-2"><TrendingUp className="w-4 h-4" style={{ color: 'var(--accent2)' }} /> Your skills</p>
-          <Link href="/skill-graph" className="text-xs font-semibold group inline-flex items-center gap-1" style={{ color: 'var(--accent2)' }}>
-            <GitBranch className="w-3.5 h-3.5" /> View skill graph <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+          <Link href="/heatmap" className="text-xs font-semibold group inline-flex items-center gap-1" style={{ color: 'var(--accent2)' }}>
+            <GitBranch className="w-3.5 h-3.5" /> View knowledge heatmap <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
         {skills === null ? (
