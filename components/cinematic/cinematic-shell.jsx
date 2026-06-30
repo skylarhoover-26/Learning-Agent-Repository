@@ -147,7 +147,7 @@ function Drawer({ open, onClose }) {
           </button>
         </div>
 
-        <nav className="pb-10">
+        <nav className="pb-28">
           <div className="pt-2">
             <NavRow item={{ href: '/', icon: Home, label: 'Home' }} />
           </div>
