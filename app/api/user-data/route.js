@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserData, saveUserData, deleteUserData } from '@/lib/blob-store';
+import { mirrorSave, mirrorDelete } from '@/lib/supabase-store';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 
 export async function GET(request) {
@@ -43,6 +44,9 @@ export async function POST(request) {
     }
 
     await saveUserData(user.email, type, data);
+    // Stage-2 dual-write: shadow into Supabase. Blob is authoritative; this
+    // never throws (failures are logged inside mirrorSave).
+    await mirrorSave(user.email, type, data);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('POST /api/user-data error:', error);
@@ -64,6 +68,8 @@ export async function DELETE(request) {
     }
 
     await deleteUserData(user.email, dataType);
+    // Stage-2 dual-write: mirror the delete into Supabase (never throws).
+    await mirrorDelete(user.email, dataType);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('DELETE /api/user-data error:', error);

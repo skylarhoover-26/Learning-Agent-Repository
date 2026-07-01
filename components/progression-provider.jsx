@@ -133,10 +133,17 @@ export function ProgressionProvider({ children }) {
         if (resetAt <= seen) return;
 
         const lid = resolveLearnerId(profile);
-        localStorage.removeItem(`lp_xp_${lid}`);
-        localStorage.removeItem(`lp_badges_${lid}`);
-        localStorage.removeItem(`lp_lessons_${lid}`);
-        localStorage.removeItem('learner_game_state');
+        // Full fresh-start wipe: clear every learner-scoped key so no stale
+        // local progress re-syncs to the (now empty) server after a reset.
+        [
+          `lp_xp_${lid}`, `lp_badges_${lid}`, `lp_lessons_${lid}`,
+          'lp_paused_lessons', 'lp_notifications', 'lp_notifications_read_at',
+          'learner_goals', 'learner_game_state', 'learner_chat_history',
+          'learner_library_usage', 'learner_module_state',
+          'calibration_profile', 'ai_impact_scores', 'ai_impact_snooze_until',
+          'curriculum_findings', 'curriculum_proposals', 'curriculum_patches',
+          'learner_lesson_state', 'lp_plan_lesson',
+        ].forEach((k) => localStorage.removeItem(k));
         localStorage.setItem('lp_reset_seen', String(resetAt));
 
         // Re-grant the one-time welcome bonus from the clean slate. We award it

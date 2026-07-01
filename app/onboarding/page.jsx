@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
@@ -49,6 +49,66 @@ export default function OnboardingPage() {
   const [addingTool, setAddingTool] = useState(false);
   const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
 
+  // Snowflake-sourced prefill (title/manager/hireDate carried onto the saved
+  // profile; department/sub-team pre-select the step-1 choices when valid).
+  const [prefill, setPrefill] = useState(null);
+  // Single source of truth for step 1's view so the department picker can ONLY
+  // appear as a final decision — never mid-flight (that was the flash: a timer
+  // dropped the loader while the lookup was still running, briefly showing the
+  // picker before the confirm card).
+  //   'loading' → spinner while we look you up
+  //   'confirm' → the "does this look right?" card (Snowflake matched)
+  //   'manual'  → the department picker (not matched, lookup failed, or editing)
+  const [phase, setPhase] = useState('loading');
+  const prefillFetched = useRef(false);
+
+  // On mount, look the signed-in user up in the org data and pre-fill what we
+  // can. Best-effort: an unlisted email, a failure, or a >15s timeout drops to
+  // the manual flow. We never leave 'loading' until the lookup truly resolves,
+  // so the picker can't flash before the card.
+  useEffect(() => {
+    if (prefillFetched.current) return;
+    prefillFetched.current = true;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    (async () => {
+      try {
+        const res = await fetch('/api/me/profile-prefill', { signal: controller.signal });
+        const p = res.ok ? await res.json() : null;
+        if (p?.found) {
+          setPrefill({
+            name: p.name || null,
+            title: p.title || null,
+            manager: p.manager || null,
+            hireDate: p.hireDate || null,
+            department: p.department || null, // raw Snowflake value (for display)
+            subTeam: p.subTeam || null,
+          });
+          if (p.department && DEPARTMENTS.includes(p.department)) {
+            setDepartment(p.department);
+            // Pre-fill the sub-team when valid, but DON'T jump to the sub-team
+            // picker — the confirm card shows it, and handleConfirmDetails routes
+            // to the picker only if it's missing.
+            if (SUB_TEAMS[p.department] && p.subTeam && SUB_TEAMS[p.department].includes(p.subTeam)) {
+              setSubTeam(p.subTeam);
+            }
+            setPhase('confirm');
+            return;
+          }
+        }
+        setPhase('manual');
+      } catch {
+        setPhase('manual');
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, []);
+
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
   const canAdvance = useCallback(() => {
@@ -91,6 +151,19 @@ export default function OnboardingPage() {
       setShowSubTeams(true);
     } else {
       setShowSubTeams(false);
+      setDirection('forward');
+      setStep(2);
+    }
+  }
+
+  // Confirm the Snowflake-detected details from step 1's summary card. If their
+  // department needs a sub-team and we didn't pre-fill one, send them to pick it;
+  // otherwise jump straight to top tasks.
+  function handleConfirmDetails() {
+    if (SUB_TEAMS[department] && !subTeam) {
+      setDirection('forward');
+      setShowSubTeams(true);
+    } else {
       setDirection('forward');
       setStep(2);
     }
@@ -180,6 +253,10 @@ export default function OnboardingPage() {
       goal: chosenGoals.join('; '),
       preferred_tools: serializeTools(aiTools),
       avatar,
+      // Snowflake-sourced context (kept for the manager dashboard / compare).
+      title: prefill?.title || existingProfile?.title || null,
+      manager: prefill?.manager || existingProfile?.manager || null,
+      hire_date: prefill?.hireDate || existingProfile?.hire_date || null,
       onboarded_at: new Date().toISOString(),
     };
     try {
@@ -254,7 +331,20 @@ export default function OnboardingPage() {
           key={`${step}-${showSubTeams}`}
           className="w-full max-w-2xl animate-fade-in"
         >
-          {step === 1 && !showSubTeams && (
+          {step === 1 && !showSubTeams && phase === 'loading' && (
+            <OnboardingPrefillLoading />
+          )}
+          {step === 1 && !showSubTeams && phase === 'confirm' && (
+            <StepConfirmDetails
+              displayName={displayName}
+              prefill={prefill}
+              department={department}
+              subTeam={subTeam}
+              onConfirm={handleConfirmDetails}
+              onEdit={() => setPhase('manual')}
+            />
+          )}
+          {step === 1 && !showSubTeams && phase === 'manual' && (
             <>
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight">
@@ -271,12 +361,17 @@ export default function OnboardingPage() {
             </>
           )}
           {step === 1 && showSubTeams && (
-            <StepSubTeam
-              department={department}
-              teams={SUB_TEAMS[department] || []}
-              selected={subTeam}
-              onSelect={handleSubTeamSelect}
-            />
+            <>
+              {prefill && (
+                <PrefillBanner prefill={prefill} />
+              )}
+              <StepSubTeam
+                department={department}
+                teams={SUB_TEAMS[department] || []}
+                selected={subTeam}
+                onSelect={handleSubTeamSelect}
+              />
+            </>
           )}
           {step === 2 && (
             <StepTopTasks
@@ -338,6 +433,78 @@ export default function OnboardingPage() {
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function PrefillBanner({ prefill }) {
+  return (
+    <div className="mb-5 flex items-start gap-3 rounded-xl border border-brand-100 bg-brand-50 dark:border-slate-700 dark:bg-slate-800 px-4 py-3">
+      <Sparkles className="w-5 h-5 text-brand shrink-0 mt-0.5" />
+      <p className="text-sm text-slate-700 dark:text-slate-300 leading-snug">
+        We pulled your details from your Housecall Pro profile
+        {prefill?.title ? <> — <span className="font-semibold">{prefill.title}</span></> : ''}
+        {prefill?.manager ? <>, reporting to <span className="font-semibold">{prefill.manager}</span></> : ''}.
+        {' '}Confirm the department below or pick another if it's not right.
+      </p>
+    </div>
+  );
+}
+
+function OnboardingPrefillLoading() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <div className="w-10 h-10 rounded-md bg-brand animate-pulse" />
+      <p className="text-sm text-slate-500 dark:text-slate-400">Getting your details…</p>
+    </div>
+  );
+}
+
+function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfirm, onEdit }) {
+  const rows = [
+    { label: 'Name', value: prefill?.name },
+    { label: 'Title', value: prefill?.title },
+    { label: 'Department', value: department },
+    { label: 'Team', value: subTeam },
+    { label: 'Manager', value: prefill?.manager },
+  ].filter((r) => r.value);
+
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-brand-50 mb-4">
+          <Sparkles className="w-7 h-7 text-brand" />
+        </div>
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
+          Hey {displayName}, does this look right?
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+          We pulled this from your Housecall Pro profile so you don't have to type it.
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700 mb-6">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-slate-500 dark:text-slate-400">{r.label}</span>
+            <span className="text-sm font-semibold text-ink dark:text-slate-200 text-right">{r.value}</span>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={onConfirm}
+        className="w-full flex items-center justify-center gap-2 bg-brand text-white font-semibold rounded-xl px-6 py-3 hover:bg-brand-600 transition-colors"
+      >
+        Yes, that's right
+        <ChevronRight className="w-4 h-4" />
+      </button>
+      <button
+        onClick={onEdit}
+        className="w-full mt-3 text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
+      >
+        Something's off — let me update it
+      </button>
     </div>
   );
 }

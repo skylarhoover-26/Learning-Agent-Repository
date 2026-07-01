@@ -130,9 +130,36 @@ export function ProfileProvider({ children }) {
 
   const value = { profile, isLoading, updateProfile, refreshProfile, session };
 
+  // While the profile is still resolving on a gated app route, show a splash
+  // instead of the children. This prevents the "flash of stale dashboard" a
+  // returning user would otherwise see right before being redirected to
+  // onboarding (their browser still holds old localStorage after a reset).
+  // Onboarding / auth / shared-report routes render normally — they don't need
+  // a profile. This only fires on a hard load (the provider isn't remounted on
+  // client-side navigation), so it's a sub-second splash at most.
+  const skipGate =
+    pathname === '/onboarding' || pathname.startsWith('/auth') || pathname.startsWith('/reporting/shared');
+  // Hold the splash on gated routes whenever we're still loading OR have no
+  // profile. The second case is the real flash: once loading ends with a null
+  // profile, the dashboard would paint one frame before the redirect effect
+  // pushes to /onboarding. Keeping the splash until we actually have a profile
+  // (or navigate to a skip route) removes that frame entirely.
+  const showSplash = !skipGate && (isLoading || !profile);
+
   return (
     <ProfileContext.Provider value={value}>
-      {children}
+      {showSplash ? <ProfileLoadingSplash /> : children}
     </ProfileContext.Provider>
+  );
+}
+
+function ProfileLoadingSplash() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-bg-warm dark:bg-slate-900">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 rounded-md bg-brand animate-pulse" />
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading your workspace…</p>
+      </div>
+    </div>
   );
 }
