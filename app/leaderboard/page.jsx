@@ -6,7 +6,7 @@ import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
 import { resolveLearnerId } from '@/lib/learner-id';
-import { Trophy, Sparkles, Users, Crown, Loader2 } from 'lucide-react';
+import { Trophy, Sparkles, Users, Crown, Loader2, Search, X } from 'lucide-react';
 import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
 
 const MEDAL = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
@@ -20,6 +20,7 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   // Default to the ego-centered "Near me" view; "All" shows the full ranking.
   const [view, setView] = useState('near');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -40,18 +41,21 @@ export default function LeaderboardPage() {
   const rest = people.slice(3);
   const myRankIndex = people.findIndex((p) => p.learnerId === myId);
 
-  // The rows shown under the podium depend on the toggle. In "Near me" we show a
-  // window of ±3 ranks centered on the user (clamped into the rest list); if the
-  // user is on the podium or unranked, we just show the first chunk of the rest.
+  // The rows shown under the podium depend on the toggle:
+  //  - "All": everyone from rank 4 down; a search box filters across the WHOLE
+  //    company (including the top 3) by name.
+  //  - "Near me": ONLY your own row (with your true rank, e.g. 100th) — everyone
+  //    else is hidden. If you're already in the top 3 you're on the podium, so
+  //    there's nothing to add below it.
+  const q = search.trim().toLowerCase();
   let listRows;
   if (view === 'all') {
-    listRows = rest.map((p, i) => ({ person: p, rank: i + 4 }));
-  } else if (myRankIndex >= 3) {
-    const start = Math.max(3, myRankIndex - 3);
-    const end = Math.min(people.length, myRankIndex + 4);
-    listRows = people.slice(start, end).map((p, i) => ({ person: p, rank: start + i + 1 }));
+    const all = people.map((p, i) => ({ person: p, rank: i + 1 }));
+    listRows = q
+      ? all.filter(({ person }) => (person.name || '').toLowerCase().includes(q))
+      : all.filter(({ rank }) => rank > 3);
   } else {
-    listRows = rest.slice(0, 7).map((p, i) => ({ person: p, rank: i + 4 }));
+    listRows = myRankIndex >= 3 ? [{ person: people[myRankIndex], rank: myRankIndex + 1 }] : [];
   }
 
   return (
@@ -89,7 +93,7 @@ export default function LeaderboardPage() {
                   <div className="flex justify-center">
                     <div className="inline-flex rounded-pill bg-slate-100 dark:bg-slate-800 p-1">
                       <button
-                        onClick={() => setView('near')}
+                        onClick={() => { setView('near'); setSearch(''); }}
                         className={`px-4 py-1.5 text-sm font-semibold rounded-pill transition-colors ${
                           view === 'near'
                             ? 'bg-white dark:bg-slate-700 text-ink dark:text-slate-100 shadow-sm'
@@ -111,22 +115,68 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
-                    {listRows.map(({ person, rank }) => (
-                      <PersonRow
-                        key={person.learnerId}
-                        person={person}
-                        rank={rank}
-                        crownTier={tierOf(person.learnerId)}
-                        isMe={person.learnerId === myId}
+                  {/* Search — only in the full "All" list. */}
+                  {view === 'all' && (
+                    <div className="relative max-w-sm mx-auto">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search everyone by name…"
+                        className="w-full pl-9 pr-9 py-2 rounded-pill border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-ink dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-brand"
                       />
-                    ))}
-                    {view === 'near' && myRankIndex === -1 && (
-                      <div className="px-4 py-3 text-center text-xs text-slate-400">
-                        You&rsquo;re not ranked yet — earn XP to join the board.
-                      </div>
-                    )}
-                  </div>
+                      {search && (
+                        <button
+                          onClick={() => setSearch('')}
+                          aria-label="Clear search"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {view === 'all' ? (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
+                      {listRows.map(({ person, rank }) => (
+                        <PersonRow
+                          key={person.learnerId}
+                          person={person}
+                          rank={rank}
+                          crownTier={tierOf(person.learnerId)}
+                          isMe={person.learnerId === myId}
+                        />
+                      ))}
+                      {q && listRows.length === 0 && (
+                        <div className="px-4 py-6 text-center text-sm text-slate-400">
+                          No one matches “{search.trim()}”.
+                        </div>
+                      )}
+                    </div>
+                  ) : myRankIndex === -1 ? (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card px-4 py-6 text-center text-sm text-slate-400">
+                      You&rsquo;re not ranked yet — earn XP to join the board.
+                    </div>
+                  ) : myRankIndex < 3 ? (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                      🎉 You&rsquo;re in the top 3 — you&rsquo;re up on the podium!
+                    </div>
+                  ) : (
+                    // Just you, with everyone else fogged out above and below so it's
+                    // clear where you sit in the crowd without exposing other people.
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card overflow-hidden">
+                      <FogStack side="top" count={myRankIndex - 3} />
+                      <PersonRow
+                        person={people[myRankIndex]}
+                        rank={myRankIndex + 1}
+                        crownTier={0}
+                        isMe
+                      />
+                      <FogStack side="bottom" count={people.length - 1 - myRankIndex} />
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -284,6 +334,36 @@ function Podium({ people, tierOf, myId }) {
         <PodiumSpot person={second} rank={2} tier={tierOf(second?.learnerId)} isMe={second?.learnerId === myId} />
         <PodiumSpot person={first} rank={1} tier={tierOf(first?.learnerId)} isMe={first?.learnerId === myId} />
         <PodiumSpot person={third} rank={3} tier={tierOf(third?.learnerId)} isMe={third?.learnerId === myId} />
+      </div>
+    </div>
+  );
+}
+
+// A soft "fog" of blurred, anonymous ghost rows shown above/below your own row
+// in Near me — it signals there's a crowd around you without revealing anyone.
+// `side` controls which edge fades into the card; `count` labels how many are
+// hidden on that side.
+function FogStack({ side, count }) {
+  if (!count || count <= 0) return null;
+  const rows = Math.min(3, count);
+  const fade = side === 'top'
+    ? 'bg-gradient-to-t from-transparent via-white/60 to-white dark:via-slate-800/60 dark:to-slate-800'
+    : 'bg-gradient-to-b from-transparent via-white/60 to-white dark:via-slate-800/60 dark:to-slate-800';
+  return (
+    <div className="relative select-none" aria-hidden="true">
+      <div className="px-4 py-2.5 space-y-3 blur-[2px] opacity-70">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-6 h-3 rounded bg-slate-200 dark:bg-slate-600" />
+            <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-600 shrink-0" />
+            <div className="h-3 rounded bg-slate-200 dark:bg-slate-600" style={{ width: `${42 + ((i * 19) % 34)}%` }} />
+            <div className="ml-auto w-12 h-3 rounded bg-slate-200 dark:bg-slate-600" />
+          </div>
+        ))}
+      </div>
+      <div className={`pointer-events-none absolute inset-0 ${fade}`} />
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-medium text-slate-400 dark:text-slate-500">
+        {count.toLocaleString()} more {side === 'top' ? 'above you' : 'below you'}
       </div>
     </div>
   );
