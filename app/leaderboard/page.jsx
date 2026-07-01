@@ -173,32 +173,45 @@ export default function LeaderboardPage() {
                     </div>
                   )}
 
-                  <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
-                    {listRows.map(({ person, rank }) => (
+                  {view === 'all' ? (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
+                      {listRows.map(({ person, rank }) => (
+                        <PersonRow
+                          key={person.learnerId}
+                          person={person}
+                          rank={rank}
+                          crownTier={tierOf(person.learnerId)}
+                          isMe={person.learnerId === myId}
+                        />
+                      ))}
+                      {q && listRows.length === 0 && (
+                        <div className="px-4 py-6 text-center text-sm text-slate-400">
+                          No one matches “{search.trim()}”.
+                        </div>
+                      )}
+                    </div>
+                  ) : myRankIndex === -1 ? (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card px-4 py-6 text-center text-sm text-slate-400">
+                      You&rsquo;re not ranked yet — earn XP to join the board.
+                    </div>
+                  ) : myRankIndex < 3 ? (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                      🎉 You&rsquo;re in the top 3 — you&rsquo;re up on the podium!
+                    </div>
+                  ) : (
+                    // Just you, with everyone else fogged out above and below so it's
+                    // clear where you sit in the crowd without exposing other people.
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card overflow-hidden">
+                      <FogStack side="top" count={myRankIndex - 3} />
                       <PersonRow
-                        key={person.learnerId}
-                        person={person}
-                        rank={rank}
-                        crownTier={tierOf(person.learnerId)}
-                        isMe={person.learnerId === myId}
+                        person={people[myRankIndex]}
+                        rank={myRankIndex + 1}
+                        crownTier={0}
+                        isMe
                       />
-                    ))}
-                    {view === 'all' && q && listRows.length === 0 && (
-                      <div className="px-4 py-6 text-center text-sm text-slate-400">
-                        No one matches “{search.trim()}”.
-                      </div>
-                    )}
-                    {view === 'near' && myRankIndex === -1 && (
-                      <div className="px-4 py-3 text-center text-xs text-slate-400">
-                        You&rsquo;re not ranked yet — earn XP to join the board.
-                      </div>
-                    )}
-                    {view === 'near' && myRankIndex >= 0 && myRankIndex < 3 && (
-                      <div className="px-4 py-3 text-center text-xs text-slate-500 dark:text-slate-400">
-                        🎉 You&rsquo;re in the top 3 — you&rsquo;re up on the podium!
-                      </div>
-                    )}
-                  </div>
+                      <FogStack side="bottom" count={people.length - 1 - myRankIndex} />
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -356,6 +369,36 @@ function Podium({ people, tierOf, myId }) {
         <PodiumSpot person={second} rank={2} tier={tierOf(second?.learnerId)} isMe={second?.learnerId === myId} />
         <PodiumSpot person={first} rank={1} tier={tierOf(first?.learnerId)} isMe={first?.learnerId === myId} />
         <PodiumSpot person={third} rank={3} tier={tierOf(third?.learnerId)} isMe={third?.learnerId === myId} />
+      </div>
+    </div>
+  );
+}
+
+// A soft "fog" of blurred, anonymous ghost rows shown above/below your own row
+// in Near me — it signals there's a crowd around you without revealing anyone.
+// `side` controls which edge fades into the card; `count` labels how many are
+// hidden on that side.
+function FogStack({ side, count }) {
+  if (!count || count <= 0) return null;
+  const rows = Math.min(3, count);
+  const fade = side === 'top'
+    ? 'bg-gradient-to-t from-transparent via-white/60 to-white dark:via-slate-800/60 dark:to-slate-800'
+    : 'bg-gradient-to-b from-transparent via-white/60 to-white dark:via-slate-800/60 dark:to-slate-800';
+  return (
+    <div className="relative select-none" aria-hidden="true">
+      <div className="px-4 py-2.5 space-y-3 blur-[2px] opacity-70">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-6 h-3 rounded bg-slate-200 dark:bg-slate-600" />
+            <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-600 shrink-0" />
+            <div className="h-3 rounded bg-slate-200 dark:bg-slate-600" style={{ width: `${42 + ((i * 19) % 34)}%` }} />
+            <div className="ml-auto w-12 h-3 rounded bg-slate-200 dark:bg-slate-600" />
+          </div>
+        ))}
+      </div>
+      <div className={`pointer-events-none absolute inset-0 ${fade}`} />
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-medium text-slate-400 dark:text-slate-500">
+        {count.toLocaleString()} more {side === 'top' ? 'above you' : 'below you'}
       </div>
     </div>
   );
