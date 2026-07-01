@@ -29,10 +29,10 @@ const PROFILE_LINKS = [
 // opening the menu) + a name dropdown with profile items and session actions.
 export default function UserMenu() {
   const { profile } = useProfile();
-  const { championIds } = useChampions();
+  const { crownTier } = useChampions();
   const { isAdmin, previewAsUser, setPreviewAsUser } = useMenuVisibility();
   const displayName = displayNameFromProfile(profile);
-  const isChampion = profile ? championIds.has(resolveLearnerId(profile)) : false;
+  const myTier = profile ? crownTier(resolveLearnerId(profile)) : 0;
 
   // Okta drives identity once it's configured; until then the "session" is the
   // IdentityGate soft-login cookie, which NextAuth's signOut doesn't touch.
@@ -115,7 +115,7 @@ export default function UserMenu() {
         >
           <span className="hidden sm:inline">{displayName}</span>
           <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center overflow-hidden">
-            <Avatar avatar={profile?.avatar} size={32} crown={isChampion} title={displayName} />
+            <Avatar avatar={profile?.avatar} size={32} crown={myTier} title={displayName} />
           </div>
           <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>

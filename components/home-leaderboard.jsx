@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Avatar from '@/components/avatar';
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
+import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
 import { Crown } from 'lucide-react';
 
 const MEDAL = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
 
-// Top 5 individual learners on the homepage card, with the crown on the overall
-// #1. Reuses the shared /api/leaderboard data.
+// Top 5 individual learners on the homepage card, with crowns on the top 3
+// (gold/silver/bronze). Reuses the shared /api/leaderboard data.
 export default function HomeLeaderboard() {
   const { profile } = useProfile();
   const myId = profile ? resolveLearnerId(profile) : null;
@@ -27,7 +28,8 @@ export default function HomeLeaderboard() {
 
   const allPeople = data?.people || [];
   const people = allPeople.slice(0, 5);
-  const champ = new Set(data?.championIds || []);
+  const championIds = data?.championIds || [];
+  const tierOf = (id) => crownTierFromIds(id, championIds);
 
   // Where the current user sits in the full ranking. If they're outside the
   // top 5 we append their own row below, so they can always see where they are.
@@ -48,20 +50,21 @@ export default function HomeLeaderboard() {
   return (
     <ul className="space-y-1.5">
       {people.map((p, i) => (
-        <Row key={p.learnerId} person={p} rank={i + 1} champ={champ} myId={myId} />
+        <Row key={p.learnerId} person={p} rank={i + 1} tierOf={tierOf} myId={myId} />
       ))}
       {showMyRow && (
         <>
           <li className="text-center text-xs text-slate-400 leading-none py-0.5">···</li>
-          <Row person={allPeople[myRankIndex]} rank={myRankIndex + 1} champ={champ} myId={myId} />
+          <Row person={allPeople[myRankIndex]} rank={myRankIndex + 1} tierOf={tierOf} myId={myId} />
         </>
       )}
     </ul>
   );
 }
 
-function Row({ person: p, rank, champ, myId }) {
+function Row({ person: p, rank, tierOf, myId }) {
   const isMe = p.learnerId === myId;
+  const tier = tierOf(p.learnerId);
   return (
     <li
       className={`flex items-center gap-3 rounded-lg px-2 py-1.5 ${isMe ? 'bg-brand-50 dark:bg-slate-700/50' : ''}`}
@@ -70,11 +73,11 @@ function Row({ person: p, rank, champ, myId }) {
         {MEDAL[rank] || rank}
       </span>
       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center shrink-0">
-        <Avatar avatar={p.avatar} size={30} crown={champ.has(p.learnerId)} title={p.name} />
+        <Avatar avatar={p.avatar} size={30} crown={tier} title={p.name} />
       </div>
       <div className="flex-1 min-w-0 flex items-center gap-1.5">
         <span className="text-sm font-medium text-ink dark:text-slate-200 truncate">{p.name}</span>
-        {champ.has(p.learnerId) && <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+        {tier > 0 && <Crown className={`w-3.5 h-3.5 shrink-0 ${CROWN_ICON_CLASS[tier]}`} />}
         {isMe && (
           <span className="text-[10px] font-bold bg-brand text-white px-1.5 py-0.5 rounded-pill uppercase tracking-wide shrink-0">You</span>
         )}

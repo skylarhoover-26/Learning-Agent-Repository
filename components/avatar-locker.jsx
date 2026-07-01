@@ -25,12 +25,15 @@ import { Lock, Check, Loader2 } from 'lucide-react';
 export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
   const { profile, updateProfile } = useProfile();
   const prog = useProgression();
-  const { championIds } = useChampions();
+  const { crownTier } = useChampions();
   const controlled = value !== undefined && typeof onChange === 'function';
 
   const level = ctxProp?.level ?? (prog?.levelProgress?.level || 1);
   const badgeIds = ctxProp?.badgeIds ?? new Set((prog?.badgesEarned || []).map((b) => b.badge_id));
-  const isChampion = ctxProp?.isChampion ?? (profile ? championIds.has(resolveLearnerId(profile)) : false);
+  // The learner's crown rank tier (0 none, 1 gold, 2 silver, 3 bronze). Any tier
+  // unlocks the Crown hat and shows the crown in the preview at that rank's color.
+  const myTier = ctxProp?.isChampion ? 1 : (profile ? crownTier(resolveLearnerId(profile)) : 0);
+  const isChampion = myTier > 0;
   const ctx = { level, badgeIds, isChampion };
 
   const [internal, setInternal] = useState(() => normalizeAvatar(profile?.avatar));
@@ -64,7 +67,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
       {/* Live preview */}
       <div className="flex sm:flex-col items-center gap-3">
         <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center ring-1 ring-slate-200 dark:ring-slate-700">
-          <Avatar avatar={avatar} size={96} crown={isChampion} />
+          <Avatar avatar={avatar} size={96} crown={myTier} />
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
           {!controlled && (
@@ -115,7 +118,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
                 <div className="w-12 h-12 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
                   {/* preview the full avatar with just this slot swapped in.
                       Force-show the crown so its tile previews the art. */}
-                  <Avatar avatar={{ ...avatar, [item.slot]: item.id }} size={44} crown={item.id === 'hat_crown' || isChampion} />
+                  <Avatar avatar={{ ...avatar, [item.slot]: item.id }} size={44} crown={item.id === 'hat_crown' ? (myTier || 1) : myTier} />
                 </div>
                 <span className="text-[11px] text-center leading-tight text-ink dark:text-slate-300 line-clamp-1">
                   {item.name}
@@ -142,7 +145,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
 
         {activeSlot === 'hat' && (
           <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
-            👑 The Crown is only yours while you&apos;re #1 on your department leaderboard — it comes off automatically if someone passes your XP.
+            👑 The Crown is only yours while you&apos;re in the top 3 on the leaderboard — gold for #1, silver for #2, bronze for #3. It updates automatically as the rankings change.
           </p>
         )}
       </div>

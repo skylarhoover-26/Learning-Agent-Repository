@@ -7,6 +7,7 @@ import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { Trophy, Sparkles, Users, Crown, Loader2 } from 'lucide-react';
+import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
 
 const MEDAL = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
 
@@ -31,7 +32,9 @@ export default function LeaderboardPage() {
 
   const people = data?.people || [];
   const departments = data?.departments || [];
-  const championSet = new Set(data?.championIds || []);
+  const championIds = data?.championIds || [];
+  const championSet = new Set(championIds);
+  const tierOf = (id) => crownTierFromIds(id, championIds);
 
   // Top 3 go on the podium; everyone from rank 4 down is the "rest" list below.
   const podium = people.slice(0, 3);
@@ -115,7 +118,7 @@ export default function LeaderboardPage() {
                         key={person.learnerId}
                         person={person}
                         rank={rank}
-                        isChampion={championSet.has(person.learnerId)}
+                        crownTier={tierOf(person.learnerId)}
                         isMe={person.learnerId === myId}
                       />
                     ))}
@@ -238,14 +241,14 @@ function Podium({ people, championSet, myId }) {
   );
 }
 
-function PersonRow({ person, rank, isChampion, isMe }) {
+function PersonRow({ person, rank, crownTier = 0, isMe }) {
   return (
     <div className={`flex items-center gap-3 px-4 py-3 ${isMe ? 'bg-brand-50 dark:bg-slate-700/50' : ''}`}>
       <div className="w-8 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
         {MEDAL[rank] || rank}
       </div>
       <div className="relative w-11 h-11 rounded-full bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center shrink-0">
-        <Avatar avatar={person.avatar} size={40} crown={isChampion} title={person.name} />
+        <Avatar avatar={person.avatar} size={40} crown={crownTier} title={person.name} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -253,7 +256,7 @@ function PersonRow({ person, rank, isChampion, isMe }) {
           {isMe && (
             <span className="text-[10px] font-bold bg-brand text-white px-1.5 py-0.5 rounded-pill uppercase tracking-wide">You</span>
           )}
-          {isChampion && <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+          {crownTier > 0 && <Crown className={`w-3.5 h-3.5 shrink-0 ${CROWN_ICON_CLASS[crownTier]}`} />}
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
           {getLevelTitle(person.level)} · Level {person.level} · {person.department}
