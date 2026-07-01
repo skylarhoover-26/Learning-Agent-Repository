@@ -20,7 +20,7 @@ create table if not exists profiles (
   department             text,
   sub_team               text,
   tier                   text,
-  avatar                 text,
+  avatar                 jsonb,                      -- avatar is an object, not text
   title                  text,                       -- Snowflake job title
   manager                text,                       -- Snowflake reporting manager (name)
   hire_date              text,                       -- Snowflake hire date (ISO string)
@@ -54,6 +54,11 @@ alter table profiles add column if not exists manager   text;
 alter table profiles add column if not exists hire_date text;
 -- Full profile object stored verbatim, so per-user reads are lossless (Stage 3).
 alter table profiles add column if not exists raw       jsonb;
+-- avatar is an object; if it was created as text, convert it to jsonb (parses
+-- any existing stringified values). Safe to re-run.
+alter table profiles alter column avatar type jsonb using (
+  case when avatar is null or avatar::text = '' then null else avatar::text::jsonb end
+);
 
 -- Cross-user XP totals for the leaderboard: sum xp_events per email server-side
 -- (one round-trip, scales past the 1000-row select cap). Floored at 0 so a net-
