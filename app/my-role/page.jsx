@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
 import { DEPARTMENTS, SUBTEAMS, getTaskList } from '@/lib/curriculum-data';
@@ -23,6 +24,10 @@ function formatDate(iso) {
 }
 
 export default function MyRolePage() {
+  return <CinematicFrame><MyRolePageInner /></CinematicFrame>;
+}
+
+function MyRolePageInner() {
   const { profile, updateProfile } = useProfile();
   const refreshProgression = useProgression()?.refresh;
 

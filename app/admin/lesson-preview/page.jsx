@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { FormattedContent } from '@/components/lesson-slide';
 import { FlaskConical, Loader2, Zap, BookOpen, Bookmark } from 'lucide-react';
 
@@ -18,6 +19,10 @@ const PHASE_LABELS = {
 };
 
 export default function LessonPreviewPage() {
+  return <CinematicFrame><LessonPreviewPageInner /></CinematicFrame>;
+}
+
+function LessonPreviewPageInner() {
   const router = useRouter();
   const [adminChecked, setAdminChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);

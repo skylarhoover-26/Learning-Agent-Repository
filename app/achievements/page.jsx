@@ -1,5 +1,6 @@
-import AchievementsLive from '@/components/achievements-live';
+import CinematicAchievements from '@/components/cinematic/cinematic-achievements';
 
 export default function AchievementsPage() {
-  return <AchievementsLive />;
+  // Cinematic reskin (staging). Legacy: components/achievements-live.jsx.
+  return <CinematicAchievements />;
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Briefcase, Check, Plus, Save, Loader2, ArrowLeft,
 } from 'lucide-react';
@@ -215,6 +216,10 @@ function MyTasksContent() {
 }
 
 export default function MyTasksPage() {
+  return <CinematicFrame><MyTasksPageInner /></CinematicFrame>;
+}
+
+function MyTasksPageInner() {
   return (
     <Suspense fallback={<div className="max-w-2xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
       <MyTasksContent />

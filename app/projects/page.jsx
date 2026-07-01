@@ -1,11 +1,18 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { Briefcase, ListChecks, ChevronRight } from 'lucide-react';
 import { getCurrentLearner } from '@/lib/data';
 import ProjectsManager from '@/components/projects-manager';
 
 export default async function ProjectsPage() {
+  const guard = await getCurrentLearner();
+  if (!guard) redirect('/onboarding');
+  return <CinematicFrame><ProjectsPageInner /></CinematicFrame>;
+}
+
+async function ProjectsPageInner() {
   const learner = await getCurrentLearner();
   if (!learner) redirect('/onboarding');
 

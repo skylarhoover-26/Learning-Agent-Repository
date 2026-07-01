@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { XP_AMOUNTS, LESSON_MAX_XP, DAILY_CAPS } from '@/lib/progression';
 import { xpForNextLevel } from '@/lib/level-curve';
 import { getLevelTitle } from '@/lib/level-titles';
@@ -16,6 +17,10 @@ function totalXpForLevel(target) {
 }
 
 export default function XpRulesPage() {
+  return <CinematicFrame><XpRulesPageInner /></CinematicFrame>;
+}
+
+function XpRulesPageInner() {
   const [allowed, setAllowed] = useState(null);
 
   useEffect(() => {

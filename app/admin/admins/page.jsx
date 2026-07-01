@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { Shield, Plus, Trash2, Lock } from 'lucide-react';
 
 export default function AdminsPage() {
+  return <CinematicFrame><AdminsPageInner /></CinematicFrame>;
+}
+
+function AdminsPageInner() {
   const [allowed, setAllowed] = useState(null); // null = checking
   const [seed, setSeed] = useState([]);
   const [extra, setExtra] = useState([]);

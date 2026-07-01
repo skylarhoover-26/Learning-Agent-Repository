@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { Bell, Plus, Trash2, Loader2, Send } from 'lucide-react';
 
 export default function NotificationsAdminPage() {
+  return <CinematicFrame><NotificationsAdminPageInner /></CinematicFrame>;
+}
+
+function NotificationsAdminPageInner() {
   const [allowed, setAllowed] = useState(null); // null = checking
   const [emails, setEmails] = useState([]);
   const [input, setInput] = useState('');

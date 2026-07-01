@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Search, CheckCircle2, XCircle, ChevronRight, RotateCcw, Trophy,
 } from 'lucide-react';
@@ -40,7 +41,11 @@ function getSentenceStyle(idx, flagged, revealed, isHallucination) {
   return 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'; // correct skip
 }
 
-export default function HallucinationHunt() {
+export default function HallucinationHuntPage() {
+  return <CinematicFrame><HallucinationHunt /></CinematicFrame>;
+}
+
+function HallucinationHunt() {
   const [roundIdx, setRoundIdx] = useState(0);
   const [flagged, setFlagged] = useState(new Set());
   const [revealed, setRevealed] = useState(false);

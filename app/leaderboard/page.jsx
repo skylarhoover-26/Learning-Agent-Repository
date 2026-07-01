@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
@@ -11,6 +12,10 @@ import { Trophy, Sparkles, Users, Crown, Loader2 } from 'lucide-react';
 const MEDAL = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
 
 export default function LeaderboardPage() {
+  return <CinematicFrame><LeaderboardInner /></CinematicFrame>;
+}
+
+function LeaderboardInner() {
   const { profile } = useProfile();
   const userDept = profile?.department || null;
   const myId = profile ? resolveLearnerId(profile) : null;

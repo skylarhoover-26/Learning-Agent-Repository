@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '../../components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Shield, Activity, Users, Zap, FlaskConical, SlidersHorizontal,
   Wrench, Bell, UserCog, Sparkles, ClipboardCheck, Eye,
@@ -27,6 +28,10 @@ const ADMIN_TOOLS = [
 ];
 
 export default function AdminDashboard() {
+  return <CinematicFrame><AdminDashboardInner /></CinematicFrame>;
+}
+
+function AdminDashboardInner() {
   const router = useRouter();
   const [adminChecked, setAdminChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);

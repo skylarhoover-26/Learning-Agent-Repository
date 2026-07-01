@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import Avatar from '@/components/avatar';
 import {
   AVATAR_SLOTS, SLOT_LABELS, itemsForSlot, DEFAULT_AVATAR, unlockLabel,
@@ -11,6 +12,10 @@ import { Sparkles } from 'lucide-react';
 // Dev/QA contact sheet: every avatar item rendered on a default avatar so we can
 // eyeball the whole catalog at a glance and spot anything that looks rough.
 export default function AvatarPreviewPage() {
+  return <CinematicFrame><AvatarPreviewPageInner /></CinematicFrame>;
+}
+
+function AvatarPreviewPageInner() {
   const [allowed, setAllowed] = useState(null);
 
   useEffect(() => {

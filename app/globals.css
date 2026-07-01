@@ -2,6 +2,155 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Cinematic theme (staging reskin). Everything is scoped under `.cine` so it
+   only affects pages that opt in — other pages keep the current styling while
+   the reskin rolls out screen by screen.
+   ──────────────────────────────────────────────────────────────────────── */
+/* Light cinematic theme (default) — follows the app's existing dark-mode
+   toggle: light palette here, dark palette under `.dark .cine` below. */
+.cine {
+  --accent: #0055FF;
+  --accent2: #3B94FF;
+  --gold: #FFB706;
+  --good: #1AA06A;
+  --ink: #0A2443;
+  --ink-dim: rgba(10, 36, 67, .60);
+  --line: rgba(10, 36, 67, .10);
+  --glass: rgba(255, 255, 255, .72);
+  --card: rgba(255, 255, 255, .70);
+  --navbg: rgba(255, 255, 255, .82);
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1200px 620px at 82% -12%, rgba(0, 85, 255, .10), transparent 60%),
+    radial-gradient(900px 520px at -5% 8%, rgba(255, 183, 6, .10), transparent 55%),
+    linear-gradient(180deg, #EAF0FB 0%, #F4F8FF 100%);
+  background-attachment: fixed;
+}
+.dark .cine {
+  --accent: #3B94FF;
+  --accent2: #6AABFF;
+  --gold: #FFB706;
+  --good: #2BB37A;
+  --ink: #EAF2FF;
+  --ink-dim: rgba(234, 242, 255, .64);
+  --line: rgba(255, 255, 255, .14);
+  --glass: rgba(255, 255, 255, .08);
+  --card: rgba(255, 255, 255, .065);
+  --navbg: rgba(10, 36, 67, .55);
+  background:
+    radial-gradient(1100px 600px at 85% -10%, rgba(59, 148, 255, .26), transparent 60%),
+    radial-gradient(820px 480px at -8% 6%, rgba(255, 183, 6, .12), transparent 55%),
+    linear-gradient(180deg, #050F24 0%, #0A2347 60%, #0C1A38 100%);
+}
+.cine h1, .cine h2, .cine h3, .cine h4, .cine .font-display, .font-display {
+  font-family: 'Plus Jakarta Sans', 'Open Sans', sans-serif;
+}
+.cine ::selection { background: rgba(59, 148, 255, .28); }
+
+/* Inside a cinematic frame, the legacy page header (and its hamburger strip) is
+   replaced by the cinematic top bar — hide the originals. */
+.cine-frame .js-topbar,
+.cine-frame .js-menu-strip { display: none !important; }
+
+/* Cinematic CSS variables WITHOUT the immersive bg/min-height — for chrome
+   (top bar, drawer) that frames an otherwise-unstyled page. Pairs with the
+   CinematicFrame wrapper. */
+.cine-vars {
+  --accent: #0055FF; --accent2: #3B94FF; --gold: #FFB706; --good: #1AA06A;
+  --ink: #0A2443; --ink-dim: rgba(10, 36, 67, .60); --line: rgba(10, 36, 67, .10);
+  --glass: rgba(255, 255, 255, .72); --card: rgba(255, 255, 255, .70); --navbg: rgba(255, 255, 255, .82);
+}
+.dark .cine-vars {
+  --accent: #3B94FF; --accent2: #6AABFF; --gold: #FFB706; --good: #2BB37A;
+  --ink: #EAF2FF; --ink-dim: rgba(234, 242, 255, .64); --line: rgba(255, 255, 255, .14);
+  --glass: rgba(255, 255, 255, .08); --card: rgba(255, 255, 255, .065); --navbg: rgba(10, 36, 67, .55);
+}
+
+.cine-glass {
+  background: var(--card);
+  /* Apple-minimal: a near-invisible hairline + a very soft, low shadow so
+     cards read as quiet planes separated by whitespace, not boxed-in panels. */
+  border: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 24px 48px -36px rgba(0, 0, 0, .38);
+}
+.cine-lift { transition: transform .45s cubic-bezier(.16, 1, .3, 1), box-shadow .45s cubic-bezier(.16, 1, .3, 1), background .3s ease; }
+.cine-lift:hover { transform: translateY(-3px); box-shadow: 0 28px 60px -30px rgba(0, 0, 0, .6); }
+/* A quick "press = jump up" on click/tap — the AI news + action cards pop. */
+.cine-lift:active { transform: translateY(-6px) scale(.995); }
+
+/* A list row that softly highlights on hover (leaderboard, list rows). */
+.cine-row { border-radius: 14px; transition: background .2s ease, transform .2s ease; }
+.cine-row:hover { background: var(--glass); transform: translateX(2px); }
+
+/* Scene-wide pointer tilt (matches the design): every .cine-tilt card tips
+   toward the cursor via shared --tilt-rx/--tilt-ry vars set on <html> by a
+   global mousemove handler, and lifts -8px on hover. Composed in one transform
+   so tilt + lift don't fight. */
+.cine-tilt {
+  transform: perspective(900px) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg)) translateY(var(--tilt-lift, 0px));
+  transform-style: preserve-3d;
+  transition: transform .3s cubic-bezier(.16, 1, .3, 1), box-shadow .4s ease, border-color .3s ease;
+  will-change: transform;
+}
+.cine-tilt:hover { --tilt-lift: -6px; box-shadow: 0 30px 70px -42px var(--accent); border-color: color-mix(in srgb, var(--accent) 38%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .cine-tilt { transform: none; transition: none; }
+  .cine-tilt:hover { --tilt-lift: 0px; }
+}
+
+/* Scroll-reveal: sections rise + fade in as they enter the viewport (the
+   full-scroll lesson). JS adds `.in` via IntersectionObserver. */
+.reveal { opacity: 0; transform: translateY(32px); transition: opacity .7s ease, transform .85s cubic-bezier(.16, 1, .3, 1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+.cine-pill {
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  box-shadow: 0 22px 50px -22px var(--accent);
+}
+.cine-gold {
+  background: linear-gradient(135deg, var(--gold), #ffce4d);
+  color: #0A2443;
+  box-shadow: 0 18px 44px -20px var(--gold);
+}
+/* Static blue→gold gradient for the dashboard name (matches the Claude design —
+   no animation). The animated variant (.cine-grad-flow) is for course titles. */
+.cine-grad-text {
+  background: linear-gradient(100deg, var(--accent) 0%, var(--accent2) 42%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.cine-grad-flow {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 45%, var(--gold) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: cineGradFlow 7s ease infinite;
+}
+
+@keyframes cineGradFlow { 0% { background-position: 0% center; } 50% { background-position: 200% center; } 100% { background-position: 0% center; } }
+@keyframes cineRise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes cineDrift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(55px, -38px) scale(1.12); } }
+@keyframes cineDrift2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-65px, 46px) scale(1.18); } }
+@keyframes cinePulseGlow { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes cineSheen { 0% { transform: translateX(-120%) skewX(-18deg); } 100% { transform: translateX(220%) skewX(-18deg); } }
+@keyframes cineFloatA { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+
+.cine-rise { animation: cineRise .7s cubic-bezier(.16, 1, .3, 1) both; }
+.cine-blob1 { animation: cineDrift1 22s ease-in-out infinite; }
+.cine-blob2 { animation: cineDrift2 26s ease-in-out infinite; }
+
 :root {
   --background: 255 255 255;
   --foreground: 10 36 67;

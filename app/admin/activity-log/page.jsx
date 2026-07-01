@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../../components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Activity,
   ChevronDown,
@@ -273,6 +274,10 @@ function StatsCard({ label, value, sub, icon: Icon }) {
 }
 
 export default function ActivityLogPage() {
+  return <CinematicFrame><ActivityLogPageInner /></CinematicFrame>;
+}
+
+function ActivityLogPageInner() {
   const router = useRouter();
   const [adminChecked, setAdminChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);

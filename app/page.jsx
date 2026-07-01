@@ -8,6 +8,7 @@ import LiveStreakCard from '@/components/live-streak-card';
 import HomeLeaderboard from '@/components/home-leaderboard';
 import LiveSourcesFeed from '@/components/live-sources-feed';
 import UserMenu from '@/components/user-menu';
+import CinematicHome from '@/components/cinematic/cinematic-home';
 import WelcomeGreeting from '@/components/welcome-greeting';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
@@ -86,6 +87,12 @@ export default async function Dashboard() {
     );
   }
 
+  // Cinematic reskin (staging): the dashboard renders in the cinematic style,
+  // wired to live data via the client providers. The legacy layout below is now
+  // unreachable and kept only until the reskin rollout finishes.
+  return <CinematicHome />;
+
+  // eslint-disable-next-line no-unreachable
   const skills = getSkills(learner.id);
   const tier = TIER_LABELS[learner.tier] || TIER_LABELS.beginner;
   const displayName = learner.display_name || 'there';

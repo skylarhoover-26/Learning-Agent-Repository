@@ -7,6 +7,7 @@ import {
   ArrowRight, Clock, TrendingDown,
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
+import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProgression } from '@/components/progression-provider';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
@@ -221,6 +222,10 @@ function EmptyState() {
 }
 
 export default function HeatmapPage() {
+  return <CinematicFrame><HeatmapPageInner /></CinematicFrame>;
+}
+
+function HeatmapPageInner() {
   const [selected, setSelected] = useState(null);
   const prog = useProgression();
 
