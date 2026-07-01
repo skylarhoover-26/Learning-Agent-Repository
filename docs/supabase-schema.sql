@@ -52,6 +52,22 @@ create index if not exists xp_events_source_idx        on xp_events(email, sourc
 alter table profiles add column if not exists title     text;
 alter table profiles add column if not exists manager   text;
 alter table profiles add column if not exists hire_date text;
+-- Full profile object stored verbatim, so per-user reads are lossless (Stage 3).
+alter table profiles add column if not exists raw       jsonb;
+
+-- Cross-user XP totals for the leaderboard: sum xp_events per email server-side
+-- (one round-trip, scales past the 1000-row select cap). Floored at 0 so a net-
+-- negative balance from admin corrections never shows below zero.
+create or replace function leaderboard_totals()
+returns table(email text, total_xp bigint)
+language sql
+stable
+as $$
+  select email, greatest(0, sum(amount))::bigint as total_xp
+  from xp_events
+  group by email
+$$;
+grant execute on function leaderboard_totals() to service_role;
 
 -- ─────────────────────────────────────────────────────────────
 -- TIER 2: DOCUMENT (per-user, read/written whole — the long tail)
