@@ -17,6 +17,8 @@ export default function LeaderboardPage() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Default to the ego-centered "Near me" view; "All" shows the full ranking.
+  const [view, setView] = useState('near');
 
   useEffect(() => {
     let active = true;
@@ -31,10 +33,24 @@ export default function LeaderboardPage() {
   const departments = data?.departments || [];
   const championSet = new Set(data?.championIds || []);
 
-  // Show the top 25, but always include the current user's row.
-  const topPeople = people.slice(0, 25);
+  // Top 3 go on the podium; everyone from rank 4 down is the "rest" list below.
+  const podium = people.slice(0, 3);
+  const rest = people.slice(3);
   const myRankIndex = people.findIndex((p) => p.learnerId === myId);
-  const showMyRow = myRankIndex >= 25;
+
+  // The rows shown under the podium depend on the toggle. In "Near me" we show a
+  // window of ±3 ranks centered on the user (clamped into the rest list); if the
+  // user is on the podium or unranked, we just show the first chunk of the rest.
+  let listRows;
+  if (view === 'all') {
+    listRows = rest.map((p, i) => ({ person: p, rank: i + 4 }));
+  } else if (myRankIndex >= 3) {
+    const start = Math.max(3, myRankIndex - 3);
+    const end = Math.min(people.length, myRankIndex + 4);
+    listRows = people.slice(start, end).map((p, i) => ({ person: p, rank: start + i + 1 }));
+  } else {
+    listRows = rest.slice(0, 7).map((p, i) => ({ person: p, rank: i + 4 }));
+  }
 
   return (
     <div data-tour="page-leaderboard" className="min-h-screen bg-bg-warm dark:bg-slate-900">
@@ -47,7 +63,7 @@ export default function LeaderboardPage() {
             <Crown className="w-5 h-5 text-amber-500" />
             <h2 className="text-lg font-bold text-ink dark:text-slate-200">Top Learners</h2>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              The #1 learner wears the crown 👑 — pass them to take it
+              The top 3 wear crowns 👑 — climb the ranks to take one
             </span>
           </div>
 
@@ -62,25 +78,53 @@ export default function LeaderboardPage() {
               sub="Rankings appear as people complete lessons and earn XP."
             />
           ) : (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
-              {topPeople.map((p, i) => (
-                <PersonRow
-                  key={p.learnerId}
-                  person={p}
-                  rank={i + 1}
-                  isChampion={championSet.has(p.learnerId)}
-                  isMe={p.learnerId === myId}
-                />
-              ))}
-              {showMyRow && (
+            <div className="space-y-4">
+              <Podium people={podium} championSet={championSet} myId={myId} />
+
+              {rest.length > 0 && (
                 <>
-                  <div className="px-4 py-1 text-center text-xs text-slate-400">···</div>
-                  <PersonRow
-                    person={people[myRankIndex]}
-                    rank={myRankIndex + 1}
-                    isChampion={championSet.has(myId)}
-                    isMe
-                  />
+                  {/* Near me / All toggle */}
+                  <div className="flex justify-center">
+                    <div className="inline-flex rounded-pill bg-slate-100 dark:bg-slate-800 p-1">
+                      <button
+                        onClick={() => setView('near')}
+                        className={`px-4 py-1.5 text-sm font-semibold rounded-pill transition-colors ${
+                          view === 'near'
+                            ? 'bg-white dark:bg-slate-700 text-ink dark:text-slate-100 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        Near me
+                      </button>
+                      <button
+                        onClick={() => setView('all')}
+                        className={`px-4 py-1.5 text-sm font-semibold rounded-pill transition-colors ${
+                          view === 'all'
+                            ? 'bg-white dark:bg-slate-700 text-ink dark:text-slate-100 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
+                    {listRows.map(({ person, rank }) => (
+                      <PersonRow
+                        key={person.learnerId}
+                        person={person}
+                        rank={rank}
+                        isChampion={championSet.has(person.learnerId)}
+                        isMe={person.learnerId === myId}
+                      />
+                    ))}
+                    {view === 'near' && myRankIndex === -1 && (
+                      <div className="px-4 py-3 text-center text-xs text-slate-400">
+                        You&rsquo;re not ranked yet — earn XP to join the board.
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -142,6 +186,54 @@ export default function LeaderboardPage() {
           ) : null}
         </section>
       </main>
+    </div>
+  );
+}
+
+// Gold / silver / bronze styling for the three podium spots.
+const PODIUM_STYLE = {
+  1: { crown: 'text-amber-400', ring: 'ring-amber-300 dark:ring-amber-500/60', ped: 'h-24 bg-gradient-to-b from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-slate-800', label: '1st' },
+  2: { crown: 'text-slate-400', ring: 'ring-slate-300 dark:ring-slate-500', ped: 'h-16 bg-gradient-to-b from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800', label: '2nd' },
+  3: { crown: 'text-amber-700', ring: 'ring-orange-300 dark:ring-orange-500/60', ped: 'h-12 bg-gradient-to-b from-orange-100 to-orange-50 dark:from-orange-900/30 dark:to-slate-800', label: '3rd' },
+};
+
+function PodiumSpot({ person, rank, isChampion, isMe }) {
+  if (!person) return <div />;
+  const s = PODIUM_STYLE[rank];
+  return (
+    <div className="flex flex-col items-center justify-end">
+      <Crown className={`w-6 h-6 mb-1 ${s.crown} ${isChampion ? 'fill-current' : ''}`} />
+      <div className={`rounded-full ring-4 ${s.ring} bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800`}>
+        <Avatar avatar={person.avatar} size={rank === 1 ? 64 : 52} title={person.name} />
+      </div>
+      <div className="mt-2 text-center max-w-[130px]">
+        <div className="flex items-center justify-center gap-1">
+          <span className="font-semibold text-ink dark:text-slate-200 truncate text-sm">{person.name?.split(' ')[0]}</span>
+          {isMe && (
+            <span className="text-[9px] font-bold bg-brand text-white px-1 py-0.5 rounded-pill uppercase tracking-wide">You</span>
+          )}
+        </div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">{(person.totalXp || 0).toLocaleString()} XP</div>
+      </div>
+      <div className={`mt-2 w-full ${s.ped} rounded-t-xl flex items-start justify-center pt-2`}>
+        <span className="text-lg font-extrabold text-ink/60 dark:text-slate-300">{s.label}</span>
+      </div>
+    </div>
+  );
+}
+
+// Classic 2–1–3 podium for the top three, tallest in the middle.
+function Podium({ people, championSet, myId }) {
+  const first = people[0];
+  const second = people[1];
+  const third = people[2];
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card p-5">
+      <div className="grid grid-cols-3 gap-3 items-end max-w-md mx-auto">
+        <PodiumSpot person={second} rank={2} isChampion={championSet.has(second?.learnerId)} isMe={second?.learnerId === myId} />
+        <PodiumSpot person={first} rank={1} isChampion={championSet.has(first?.learnerId)} isMe={first?.learnerId === myId} />
+        <PodiumSpot person={third} rank={3} isChampion={championSet.has(third?.learnerId)} isMe={third?.learnerId === myId} />
+      </div>
     </div>
   );
 }
