@@ -40,6 +40,8 @@ export default function OnboardingPage() {
   const [topTasks, setTopTasks] = useState([]);
   const [customTask, setCustomTask] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customGoal, setCustomGoal] = useState('');
+  const [showCustomGoalInput, setShowCustomGoalInput] = useState(false);
   const [tier, setTier] = useState('');
   const [goals, setGoals] = useState([]);
   // No tool is pre-selected — the learner actively picks the one(s) they use
@@ -398,8 +400,19 @@ export default function OnboardingPage() {
             <StepGoal
               selected={goals}
               onToggle={handleGoalToggle}
-              onNext={goNext}
-              canAdvance={goals.length > 0}
+              customGoal={customGoal}
+              onCustomGoalChange={setCustomGoal}
+              showCustomGoalInput={showCustomGoalInput}
+              onAddCustomGoal={() => {
+                const trimmed = customGoal.trim();
+                if (trimmed && !goals.includes(trimmed)) {
+                  handleGoalToggle(trimmed);
+                  setCustomGoal('');
+                  setShowCustomGoalInput(false);
+                }
+              }}
+              onShowCustomGoalInput={() => setShowCustomGoalInput(true)}
+              onHideCustomGoalInput={() => { setShowCustomGoalInput(false); setCustomGoal(''); }}
             />
           )}
           {step === 5 && (
@@ -758,7 +771,7 @@ function StepTier({ selected, onSelect, onNext, canAdvance }) {
   );
 }
 
-function StepGoal({ selected, onToggle, onNext, canAdvance }) {
+function StepGoal({ selected, onToggle, customGoal, onCustomGoalChange, showCustomGoalInput, onAddCustomGoal, onShowCustomGoalInput, onHideCustomGoalInput }) {
   return (
     <div>
       <div className="text-center mb-8">
@@ -797,9 +810,57 @@ function StepGoal({ selected, onToggle, onNext, canAdvance }) {
             </button>
           );
         })}
-      </div>
-      <div className="text-center">
-        {/* Continue moved to the shared bottom nav (StepNav). */}
+
+        {/* Custom goals the user added that aren't in the preset list. */}
+        {selected.filter(g => !GOALS.includes(g)).map(g => (
+          <button
+            key={g}
+            onClick={() => onToggle(g)}
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all bg-brand text-white border-brand shadow-sm"
+          >
+            <div className="w-5 h-5 rounded-md border flex items-center justify-center shrink-0 bg-white/20 border-white/40">
+              <Check className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium">{g}</p>
+            </div>
+          </button>
+        ))}
+
+        {showCustomGoalInput ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={customGoal}
+              onChange={e => onCustomGoalChange(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') onAddCustomGoal(); if (e.key === 'Escape') onHideCustomGoalInput(); }}
+              placeholder="Describe your goal..."
+              autoFocus
+              className="flex-1 px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm"
+            />
+            <button
+              onClick={onAddCustomGoal}
+              disabled={!customGoal.trim()}
+              className="px-4 py-3.5 rounded-xl bg-brand text-white font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:bg-brand/90"
+            >
+              Add
+            </button>
+            <button
+              onClick={onHideCustomGoalInput}
+              className="px-3 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onShowCustomGoalInput}
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 text-left transition-all hover:border-brand-200 hover:text-brand hover:bg-brand-50"
+          >
+            <Plus className="w-5 h-5 shrink-0" />
+            <span className="font-medium text-sm">Something else not listed here</span>
+          </button>
+        )}
       </div>
     </div>
   );
