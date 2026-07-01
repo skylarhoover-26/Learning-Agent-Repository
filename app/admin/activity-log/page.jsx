@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../../components/page-header';
 import {
@@ -277,11 +277,12 @@ export default function ActivityLogPage() {
   const [adminChecked, setAdminChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [entries, setEntries] = useState([]);
-  const [stats, setStats] = useState(null);
   const [dates, setDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
+  // Default to real AI interactions — page visits are navigation noise and are
+  // shown only when explicitly filtered to.
+  const [selectedType, setSelectedType] = useState('ai');
   const [userFilter, setUserFilter] = useState('');
 
   useEffect(() => {
@@ -316,27 +317,41 @@ export default function ActivityLogPage() {
     if (!selectedDate) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ date: selectedDate });
-      if (selectedType !== 'all') params.set('type', selectedType);
+      const params = new URLSearchParams({ date: selectedDate, type: selectedType });
       if (userFilter) params.set('user', userFilter);
 
-      const [entriesRes, statsRes] = await Promise.all([
-        fetch(`/api/audit-log?${params}`),
-        fetch(`/api/audit-log?action=stats&date=${selectedDate}`),
-      ]);
-
+      const entriesRes = await fetch(`/api/audit-log?${params}`);
       const entriesData = await entriesRes.json();
-      const statsData = await statsRes.json();
-
       setEntries(entriesData.entries || []);
-      setStats(statsData.stats || null);
     } catch {
       setEntries([]);
-      setStats(null);
     } finally {
       setLoading(false);
     }
   }, [selectedDate, selectedType, userFilter]);
+
+  // Header stats are computed from exactly what's shown, so the numbers always
+  // match the current filter (rather than the whole day's raw totals).
+  const stats = useMemo(() => {
+    const byType = {};
+    const byUser = {};
+    let totalDuration = 0;
+    let errorCount = 0;
+    for (const e of entries) {
+      byType[e.type] = (byType[e.type] || 0) + 1;
+      const email = e.user?.email || 'unknown';
+      byUser[email] = (byUser[email] || 0) + 1;
+      totalDuration += e.durationMs || 0;
+      if (e.error) errorCount++;
+    }
+    return {
+      total: entries.length,
+      byType,
+      byUser,
+      avgDurationMs: entries.length ? Math.round(totalDuration / entries.length) : 0,
+      errorCount,
+    };
+  }, [entries]);
 
   useEffect(() => {
     if (adminChecked && isAdmin) {
@@ -379,6 +394,14 @@ export default function ActivityLogPage() {
       />
 
       <main className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-card p-4 text-sm text-slate-600 dark:text-slate-300">
+          Every AI interaction in the app — chat, lesson steps, grading, discovery, prompt scoring,
+          and more — is recorded here with the exact input sent to the model and the output it
+          returned, so you can QA what the AI is actually doing. Showing <span className="font-semibold">AI interactions</span> by
+          default; switch the type filter to <span className="font-semibold">Page Visit</span> or{' '}
+          <span className="font-semibold">Everything</span> to include navigation.
+        </div>
+
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <StatsCard label="Total" value={stats.total} icon={Activity} />
@@ -450,7 +473,8 @@ export default function ActivityLogPage() {
                 onChange={(e) => setSelectedType(e.target.value)}
                 className="text-sm text-ink dark:text-slate-200 bg-transparent border-none focus:ring-0 cursor-pointer"
               >
-                <option value="all">All types</option>
+                <option value="ai">AI interactions</option>
+                <option value="all">Everything (incl. page visits)</option>
                 {Object.entries(TYPE_CONFIG).map(([key, conf]) => (
                   <option key={key} value={key}>{conf.label}</option>
                 ))}
@@ -501,7 +525,7 @@ export default function ActivityLogPage() {
           <div className="space-y-2">
             <p className="text-xs text-slate-500 dark:text-slate-400 px-1">
               {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
-              {selectedType !== 'all' ? ` (${getTypeConfig(selectedType).label})` : ''}
+              {selectedType === 'ai' ? ' (AI interactions)' : selectedType !== 'all' ? ` (${getTypeConfig(selectedType).label})` : ''}
             </p>
             {entries.map((entry) => (
               <EntryCard key={entry.id} entry={entry} />
