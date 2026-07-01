@@ -88,14 +88,48 @@ export function ProgressionProvider({ children }) {
     if (bootstrapRef.current === learnerId) return;
     bootstrapRef.current = learnerId;
     (async () => {
+      // 0. Apply any pending admin reset FIRST — before hydrate/backup. This is
+      //    load-bearing: otherwise the backup below re-uploads stale local data to
+      //    the blob before the wipe runs, and the next hydrate restores it, which
+      //    silently undoes the reset (why old badges/XP kept reappearing).
+      let resetApplied = false;
       try {
-        await Promise.all([
-          hydrate(`lp_xp_${learnerId}`),
-          hydrate(`lp_badges_${learnerId}`),
-          hydrate(`lp_lessons_${learnerId}`),
-        ]);
-      } catch {
-        // best-effort — fall through to whatever is in local storage
+        const res = await fetch('/api/xp-reset-epoch', { cache: 'no-store' });
+        const { resetAt } = await res.json();
+        const seen = Number(localStorage.getItem('lp_reset_seen') || 0);
+        if (resetAt && resetAt > seen) {
+          [
+            `lp_xp_${learnerId}`, `lp_badges_${learnerId}`, `lp_lessons_${learnerId}`,
+            'lp_paused_lessons', 'lp_notifications', 'lp_notifications_read_at',
+            'learner_goals', 'learner_game_state', 'learner_chat_history',
+            'learner_library_usage', 'learner_module_state',
+            'calibration_profile', 'ai_impact_scores', 'ai_impact_snooze_until',
+            'curriculum_findings', 'curriculum_proposals', 'curriculum_patches',
+            'learner_lesson_state', 'lp_plan_lesson',
+          ].forEach((k) => localStorage.removeItem(k));
+          localStorage.setItem('lp_reset_seen', String(resetAt));
+          // Force the blob backup empty too, so a blob dirtied by an earlier
+          // pre-fix backup can't re-hydrate the wiped progress.
+          try {
+            saveToBlob(`lp_xp_${learnerId}`, []);
+            saveToBlob(`lp_badges_${learnerId}`, []);
+            saveToBlob(`lp_lessons_${learnerId}`, []);
+          } catch { /* best-effort */ }
+          resetApplied = true;
+        }
+      } catch { /* best-effort */ }
+
+      // 1. Hydrate from the blob — skipped right after a reset (just cleared it).
+      if (!resetApplied) {
+        try {
+          await Promise.all([
+            hydrate(`lp_xp_${learnerId}`),
+            hydrate(`lp_badges_${learnerId}`),
+            hydrate(`lp_lessons_${learnerId}`),
+          ]);
+        } catch {
+          // best-effort — fall through to whatever is in local storage
+        }
       }
       load();
       const result = awardFirstLoginXp(learnerId);
@@ -117,46 +151,8 @@ export function ProgressionProvider({ children }) {
     })();
   }, [profile, load]);
 
-  // Detect an admin "Reset all progress" and apply it locally: clear this
-  // learner's cached XP/badges/lessons so the reset takes effect for them and
-  // one-time XP (the welcome bonus) is re-earned from a clean slate.
-  const resetCheckedRef = useRef(false);
-  useEffect(() => {
-    if (!profile || resetCheckedRef.current) return;
-    resetCheckedRef.current = true;
-    (async () => {
-      try {
-        const res = await fetch('/api/xp-reset-epoch', { cache: 'no-store' });
-        const { resetAt } = await res.json();
-        if (!resetAt) return;
-        const seen = Number(localStorage.getItem('lp_reset_seen') || 0);
-        if (resetAt <= seen) return;
-
-        const lid = resolveLearnerId(profile);
-        // Full fresh-start wipe: clear every learner-scoped key so no stale
-        // local progress re-syncs to the (now empty) server after a reset.
-        [
-          `lp_xp_${lid}`, `lp_badges_${lid}`, `lp_lessons_${lid}`,
-          'lp_paused_lessons', 'lp_notifications', 'lp_notifications_read_at',
-          'learner_goals', 'learner_game_state', 'learner_chat_history',
-          'learner_library_usage', 'learner_module_state',
-          'calibration_profile', 'ai_impact_scores', 'ai_impact_snooze_until',
-          'curriculum_findings', 'curriculum_proposals', 'curriculum_patches',
-          'learner_lesson_state', 'lp_plan_lesson',
-        ].forEach((k) => localStorage.removeItem(k));
-        localStorage.setItem('lp_reset_seen', String(resetAt));
-
-        // Re-grant the one-time welcome bonus from the clean slate. We award it
-        // directly here (rather than re-running the bootstrap effect) so the
-        // just-cleared local data is NOT re-hydrated from the blob backup.
-        const result = awardFirstLoginXp(lid);
-        load();
-        if (result) setWelcomeBonus(result);
-      } catch {
-        // best-effort
-      }
-    })();
-  }, [profile, load]);
+  // (The admin "Reset all progress" is now applied inside the bootstrap effect
+  // above, before hydrate/backup, so a reset can't be undone by a stale backup.)
 
   const clearWelcomeBonus = useCallback(() => setWelcomeBonus(null), []);
 

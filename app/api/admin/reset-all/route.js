@@ -30,6 +30,13 @@ export async function POST() {
       deleted += 1;
     }
 
+    // Clear the cached leaderboard snapshot so it rebuilds from the now-empty
+    // data instead of serving stale pre-reset XP/avatars.
+    try {
+      const { blobs: lbBlobs } = await list({ prefix: 'leaderboard/' });
+      for (const b of lbBlobs) await del(b.url);
+    } catch { /* best-effort */ }
+
     // Wipe the Supabase mirror to match.
     await mirrorWipeAll();
 

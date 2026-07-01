@@ -114,8 +114,8 @@ export default function UserMenu() {
           aria-expanded={open}
         >
           <span className="hidden sm:inline">{displayName}</span>
-          <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center overflow-hidden">
-            <Avatar avatar={profile?.avatar} size={32} crown={myTier} title={displayName} />
+          <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
+            <Avatar avatar={profile?.avatar} size={30} crown={myTier} title={displayName} />
           </div>
           <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
