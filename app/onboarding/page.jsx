@@ -341,7 +341,6 @@ export default function OnboardingPage() {
               department={department}
               subTeam={subTeam}
               onConfirm={handleConfirmDetails}
-              onEdit={() => setPhase('manual')}
             />
           )}
           {step === 1 && !showSubTeams && phase === 'manual' && (
@@ -460,7 +459,7 @@ function OnboardingPrefillLoading() {
   );
 }
 
-function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfirm, onEdit }) {
+function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfirm }) {
   const rows = [
     { label: 'Name', value: prefill?.name },
     { label: 'Title', value: prefill?.title },
@@ -476,10 +475,10 @@ function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfi
           <Sparkles className="w-7 h-7 text-brand" />
         </div>
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
-          Hey {displayName}, does this look right?
+          Welcome, {displayName}!
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
-          We pulled this from your Housecall Pro profile so you don't have to type it.
+          We pulled these details straight from your Housecall Pro profile.
         </p>
       </div>
 
@@ -496,14 +495,8 @@ function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfi
         onClick={onConfirm}
         className="w-full flex items-center justify-center gap-2 bg-brand text-white font-semibold rounded-xl px-6 py-3 hover:bg-brand-600 transition-colors"
       >
-        Yes, that's right
+        Continue
         <ChevronRight className="w-4 h-4" />
-      </button>
-      <button
-        onClick={onEdit}
-        className="w-full mt-3 text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
-      >
-        Something's off — let me update it
       </button>
     </div>
   );
