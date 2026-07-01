@@ -5,7 +5,7 @@ import Avatar from '@/components/avatar';
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
-import { Crown } from 'lucide-react';
+import { Crown, Loader2 } from 'lucide-react';
 
 const MEDAL = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
 
@@ -16,6 +16,7 @@ export default function HomeLeaderboard() {
   const myId = profile ? resolveLearnerId(profile) : null;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -25,6 +26,12 @@ export default function HomeLeaderboard() {
       .catch(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!loading) return;
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [loading]);
 
   const allPeople = data?.people || [];
   const people = allPeople.slice(0, 5);
@@ -37,7 +44,14 @@ export default function HomeLeaderboard() {
   const showMyRow = myRankIndex >= 5;
 
   if (loading) {
-    return <p className="text-sm text-slate-500 dark:text-slate-400 italic">Loading rankings…</p>;
+    return (
+      <div className="text-sm text-slate-500 dark:text-slate-400">
+        <span className="flex items-center gap-2 italic">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading rankings… {elapsed}s
+        </span>
+        <span className="block text-xs text-slate-400 mt-1">Gathering the whole team — usually a few seconds.</span>
+      </div>
+    );
   }
   if (!people.length) {
     return (
