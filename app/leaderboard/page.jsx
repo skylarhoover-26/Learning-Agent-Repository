@@ -11,54 +11,19 @@ import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
 
 const MEDAL = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
 
-// Builds a fake leaderboard with `rank` total learners where "you" sit exactly
-// at that rank — used only by the ?demo=<rank> preview hook (never in normal use).
-const DEMO_FIRST = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie', 'Avery', 'Quinn', 'Drew', 'Sam', 'Cameron', 'Reese', 'Skyler', 'Dana', 'Devon'];
-const DEMO_LAST = ['Nguyen', 'Patel', 'Kim', 'Garcia', 'Chen', 'Lopez', 'Khan', 'Silva', 'Brooks', 'Reyes', 'Owens', 'Ford', 'Vance', 'Doyle'];
-function buildDemoData(rank) {
-  const total = Math.max(rank + 12, 40);
-  const people = Array.from({ length: total }, (_, i) => {
-    const isMe = i === rank - 1;
-    const totalXp = Math.max(0, Math.round(6000 * Math.pow(0.985, i)));
-    return {
-      learnerId: isMe ? 'demo-me' : `demo-${i}`,
-      name: isMe ? 'You' : `${DEMO_FIRST[i % DEMO_FIRST.length]} ${DEMO_LAST[i % DEMO_LAST.length]}`,
-      department: 'Enablement',
-      avatar: null,
-      totalXp,
-      level: Math.max(1, Math.round(totalXp / 220)),
-    };
-  });
-  const championIds = people.slice(0, 3).map((p) => p.learnerId);
-  return { people, departments: [], championIds };
-}
-
 export default function LeaderboardPage() {
   const { profile } = useProfile();
   const userDept = profile?.department || null;
+  const myId = profile ? resolveLearnerId(profile) : null;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   // Default to the ego-centered "Near me" view; "All" shows the full ranking.
   const [view, setView] = useState('near');
   const [search, setSearch] = useState('');
-  // Demo mode (?demo=<rank>) renders mock data with "you" placed at that rank so
-  // we can preview e.g. the 300th-place experience. Off unless the param is set.
-  const [demoMeId, setDemoMeId] = useState(null);
-
-  const myId = demoMeId ?? (profile ? resolveLearnerId(profile) : null);
 
   useEffect(() => {
     let active = true;
-    const demoRank = typeof window !== 'undefined'
-      ? parseInt(new URLSearchParams(window.location.search).get('demo') || '', 10)
-      : NaN;
-    if (Number.isFinite(demoRank) && demoRank > 0) {
-      setData(buildDemoData(demoRank));
-      setDemoMeId('demo-me');
-      setLoading(false);
-      return;
-    }
     fetch('/api/leaderboard', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (active) { setData(d); setLoading(false); } })
