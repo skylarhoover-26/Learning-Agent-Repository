@@ -49,6 +49,49 @@ body {
   animation: heatmap-pulse 1.5s ease-in-out infinite;
 }
 
+/* ── Leaderboard podium flare ─────────────────────────────────────────── */
+@keyframes podium-rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-podium-rise { animation: podium-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Gentle bob + sway for the #1 crown. */
+@keyframes crown-float {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-3px) rotate(4deg); }
+}
+.animate-crown-float { animation: crown-float 2.6s ease-in-out infinite; }
+
+/* Sweeping highlight across the winner's pedestal. Element needs position:relative. */
+@keyframes podium-shine {
+  0%       { transform: translateX(-130%) skewX(-20deg); opacity: 0; }
+  12%      { opacity: 0.7; }
+  55%, 100% { transform: translateX(240%) skewX(-20deg); opacity: 0; }
+}
+.podium-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: translateX(-130%) skewX(-20deg);
+  animation: podium-shine 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sparkle-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50%      { opacity: 1; transform: scale(1); }
+}
+.animate-sparkle { animation: sparkle-twinkle 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-podium-rise,
+  .animate-crown-float,
+  .animate-sparkle,
+  .podium-shine::after { animation: none; }
+}
+
 /* The dark top bar is FIXED to the viewport so it stays put while scrolling and
    is present on every screen. Fixed (not sticky) is immune to the ancestor
    overflow/transform quirks that were letting it scroll away on some pages, and

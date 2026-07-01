@@ -33,7 +33,6 @@ export default function LeaderboardPage() {
   const people = data?.people || [];
   const departments = data?.departments || [];
   const championIds = data?.championIds || [];
-  const championSet = new Set(championIds);
   const tierOf = (id) => crownTierFromIds(id, championIds);
 
   // Top 3 go on the podium; everyone from rank 4 down is the "rest" list below.
@@ -82,7 +81,7 @@ export default function LeaderboardPage() {
             />
           ) : (
             <div className="space-y-4">
-              <Podium people={podium} championSet={championSet} myId={myId} />
+              <Podium people={podium} tierOf={tierOf} myId={myId} />
 
               {rest.length > 0 && (
                 <>
@@ -193,49 +192,98 @@ export default function LeaderboardPage() {
   );
 }
 
-// Gold / silver / bronze styling for the three podium spots.
+// Gold / silver / bronze styling for the three podium spots. `cta` is the app's
+// gold. Heights, ring glow, pedestal gradient and entrance delay scale by rank.
 const PODIUM_STYLE = {
-  1: { crown: 'text-amber-400', ring: 'ring-amber-300 dark:ring-amber-500/60', ped: 'h-24 bg-gradient-to-b from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-slate-800', label: '1st' },
-  2: { crown: 'text-slate-400', ring: 'ring-slate-300 dark:ring-slate-500', ped: 'h-16 bg-gradient-to-b from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800', label: '2nd' },
-  3: { crown: 'text-amber-700', ring: 'ring-orange-300 dark:ring-orange-500/60', ped: 'h-12 bg-gradient-to-b from-orange-100 to-orange-50 dark:from-orange-900/30 dark:to-slate-800', label: '3rd' },
+  1: {
+    crown: 'text-cta-500', medal: '🥇', avatar: 76, delay: '0.12s',
+    ring: 'ring-cta-400 dark:ring-cta-500',
+    glow: 'shadow-[0_0_30px_-4px_rgba(255,183,6,0.75)]',
+    ped: 'h-28 bg-gradient-to-b from-cta-300 to-cta-500', shine: true,
+  },
+  2: {
+    crown: 'text-slate-400', medal: '🥈', avatar: 58, delay: '0s',
+    ring: 'ring-slate-300 dark:ring-slate-400', glow: '',
+    ped: 'h-20 bg-gradient-to-b from-slate-200 to-slate-400', shine: false,
+  },
+  3: {
+    crown: 'text-amber-700', medal: '🥉', avatar: 58, delay: '0.24s',
+    ring: 'ring-orange-400 dark:ring-orange-500', glow: '',
+    ped: 'h-14 bg-gradient-to-b from-orange-300 to-amber-700', shine: false,
+  },
 };
 
-function PodiumSpot({ person, rank, isChampion, isMe }) {
+function PodiumSpot({ person, rank, tier, isMe }) {
   if (!person) return <div />;
   const s = PODIUM_STYLE[rank];
   return (
-    <div className="flex flex-col items-center justify-end">
-      <Crown className={`w-6 h-6 mb-1 ${s.crown} ${isChampion ? 'fill-current' : ''}`} />
-      <div className={`rounded-full ring-4 ${s.ring} bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800`}>
-        <Avatar avatar={person.avatar} size={rank === 1 ? 64 : 52} title={person.name} />
+    <div className="flex flex-col items-center justify-end animate-podium-rise" style={{ animationDelay: s.delay }}>
+      {/* Crown — only when they actually rank (XP > 0). #1 floats + glows. */}
+      <div className="h-7 flex items-end">
+        {tier > 0 && (
+          <Crown
+            className={`w-7 h-7 ${s.crown} fill-current ${rank === 1 ? 'animate-crown-float drop-shadow-[0_2px_6px_rgba(255,183,6,0.6)]' : ''}`}
+          />
+        )}
       </div>
+
+      <div className={`mt-1 rounded-full ring-4 ${s.ring} ${s.glow} bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800`}>
+        <Avatar avatar={person.avatar} size={s.avatar} crown={tier} title={person.name} />
+      </div>
+
       <div className="mt-2 text-center max-w-[130px]">
         <div className="flex items-center justify-center gap-1">
-          <span className="font-semibold text-ink dark:text-slate-200 truncate text-sm">{person.name?.split(' ')[0]}</span>
+          <span className={`font-bold text-ink dark:text-slate-200 truncate ${rank === 1 ? 'text-base' : 'text-sm'}`}>
+            {person.name?.split(' ')[0]}
+          </span>
           {isMe && (
             <span className="text-[9px] font-bold bg-brand text-white px-1 py-0.5 rounded-pill uppercase tracking-wide">You</span>
           )}
         </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400">{(person.totalXp || 0).toLocaleString()} XP</div>
+        <div className={`font-semibold ${rank === 1 ? 'text-cta-700 dark:text-cta-400 text-sm' : 'text-xs text-slate-500 dark:text-slate-400'}`}>
+          {(person.totalXp || 0).toLocaleString()} XP
+        </div>
       </div>
-      <div className={`mt-2 w-full ${s.ped} rounded-t-xl flex items-start justify-center pt-2`}>
-        <span className="text-lg font-extrabold text-ink/60 dark:text-slate-300">{s.label}</span>
+
+      {/* Pedestal: gradient block with a big rank numeral; #1 gets a sweeping sheen. */}
+      <div className={`relative overflow-hidden mt-2 w-full ${s.ped} rounded-t-xl flex items-start justify-center pt-2 shadow-inner ${s.shine ? 'podium-shine' : ''}`}>
+        <span className="text-2xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]">{rank}</span>
       </div>
     </div>
   );
 }
 
-// Classic 2–1–3 podium for the top three, tallest in the middle.
-function Podium({ people, championSet, myId }) {
+// A few decorative sparkles behind the winner.
+function Sparkle({ className, delay }) {
+  return (
+    <span
+      className={`pointer-events-none absolute text-cta-400 animate-sparkle ${className}`}
+      style={{ animationDelay: delay }}
+      aria-hidden
+    >
+      ✦
+    </span>
+  );
+}
+
+// Flashy 2–1–3 podium for the top three, tallest in the middle, on a gradient
+// stage with a spotlight glow behind #1.
+function Podium({ people, tierOf, myId }) {
   const first = people[0];
   const second = people[1];
   const third = people[2];
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card p-5">
-      <div className="grid grid-cols-3 gap-3 items-end max-w-md mx-auto">
-        <PodiumSpot person={second} rank={2} isChampion={championSet.has(second?.learnerId)} isMe={second?.learnerId === myId} />
-        <PodiumSpot person={first} rank={1} isChampion={championSet.has(first?.learnerId)} isMe={first?.learnerId === myId} />
-        <PodiumSpot person={third} rank={3} isChampion={championSet.has(third?.learnerId)} isMe={third?.learnerId === myId} />
+    <div className="relative overflow-hidden rounded-2xl border border-cta-100 dark:border-slate-700 bg-gradient-to-b from-cta-50 via-white to-brand-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 p-5 sm:p-6 shadow-card">
+      {/* Spotlight glow behind the winner */}
+      <div className="pointer-events-none absolute left-1/2 -top-10 -translate-x-1/2 w-64 h-64 rounded-full bg-cta-200/50 dark:bg-cta-500/10 blur-3xl" />
+      <Sparkle className="top-3 left-[30%] text-lg" delay="0s" />
+      <Sparkle className="top-6 right-[28%] text-sm" delay="0.6s" />
+      <Sparkle className="top-2 right-[40%] text-xs" delay="1.1s" />
+
+      <div className="relative grid grid-cols-3 gap-2 sm:gap-5 items-end max-w-lg mx-auto">
+        <PodiumSpot person={second} rank={2} tier={tierOf(second?.learnerId)} isMe={second?.learnerId === myId} />
+        <PodiumSpot person={first} rank={1} tier={tierOf(first?.learnerId)} isMe={first?.learnerId === myId} />
+        <PodiumSpot person={third} rank={3} tier={tierOf(third?.learnerId)} isMe={third?.learnerId === myId} />
       </div>
     </div>
   );
