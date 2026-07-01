@@ -853,8 +853,8 @@ function renderEarrings(id) {
 // Hats — drawn over the top of the head, above hair/face. The Crown is special:
 // it only renders while the wearer is actually the current champion, so losing
 // the top spot takes it off even if it's still "equipped".
-function renderHat(id, isChampion) {
-  if (id === 'hat_crown' && !isChampion) return null;
+function renderHat(id, crownTier) {
+  if (id === 'hat_crown' && !crownTier) return null;
   switch (id) {
     case 'hat_cap':
       return (
@@ -931,14 +931,16 @@ function renderHat(id, isChampion) {
           <circle cx="50" cy="1" r="3" fill="#fde047" />
         </g>
       );
-    case 'hat_crown':
+    case 'hat_crown': {
+      const c = CROWN_TIERS[crownTier] || CROWN_TIERS[1];
       return (
         <g key="hat">
-          <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
-          <rect x="36" y="18" width="28" height="4" rx="1" fill="#f59e0b" />
-          <circle cx="50" cy="6" r="1.8" fill="#fde68a" />
+          <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill={c.points} stroke={c.stroke} strokeWidth="1" />
+          <rect x="36" y="18" width="28" height="4" rx="1" fill={c.band} />
+          <circle cx="50" cy="6" r="1.8" fill={c.gem} />
         </g>
       );
+    }
     case 'hat_none':
     default:
       return null;
@@ -1160,12 +1162,27 @@ function renderPet(id) {
   }
 }
 
-function renderCrown() {
+// Crown colors by rank tier: 1 = gold (#1), 2 = silver (#2), 3 = bronze (#3).
+const CROWN_TIERS = {
+  1: { points: '#fbbf24', stroke: '#d97706', band: '#f59e0b', gem: '#fde68a' },
+  2: { points: '#e2e8f0', stroke: '#94a3b8', band: '#cbd5e1', gem: '#f8fafc' },
+  3: { points: '#d9a066', stroke: '#92400e', band: '#b45309', gem: '#fed7aa' },
+};
+
+// Normalize the `crown` prop (boolean for back-compat, or a 1/2/3 tier) to a
+// tier number; 0 means no crown.
+function crownTierFromProp(crown) {
+  if (crown === 2 || crown === 3) return crown;
+  return crown ? 1 : 0;
+}
+
+function renderCrown(tier = 1) {
+  const c = CROWN_TIERS[tier] || CROWN_TIERS[1];
   return (
     <g key="crown">
-      <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
-      <rect x="36" y="18" width="28" height="4" rx="1" fill="#f59e0b" />
-      <circle cx="50" cy="6" r="1.8" fill="#fde68a" />
+      <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill={c.points} stroke={c.stroke} strokeWidth="1" />
+      <rect x="36" y="18" width="28" height="4" rx="1" fill={c.band} />
+      <circle cx="50" cy="6" r="1.8" fill={c.gem} />
     </g>
   );
 }
@@ -1174,6 +1191,7 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
   const a = normalizeAvatar(avatar);
   const baseItem = getItem(a.base);
   const hairColorItem = getItem(a.haircolor);
+  const crownTier = crownTierFromProp(crown);
   const uid = useId();
   return (
     <svg
@@ -1198,10 +1216,10 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       {renderFace(a.face)}
       {renderEarrings(a.earrings)}
       {renderAccessory(a.accessory)}
-      {renderHat(a.hat, crown)}
+      {renderHat(a.hat, crownTier)}
       {renderPet(a.pet)}
-      {/* Auto champion crown — skip if they've already equipped the Crown hat. */}
-      {crown && a.hat !== 'hat_crown' && renderCrown()}
+      {/* Auto rank crown — skip if they've already equipped the Crown hat. */}
+      {crownTier > 0 && a.hat !== 'hat_crown' && renderCrown(crownTier)}
     </svg>
   );
 }
