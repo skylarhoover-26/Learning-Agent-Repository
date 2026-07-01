@@ -84,7 +84,7 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
     } catch {
       // fall back to just the name
     }
-    toggleTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null });
+    toggleTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null, emoji: extra.emoji || null });
     setAdding(false);
   }
 

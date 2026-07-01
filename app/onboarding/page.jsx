@@ -22,6 +22,10 @@ const SUB_TEAMS = SUBTEAMS;
 
 const TOTAL_STEPS = 6;
 
+// Onboarding auto-save: partial progress is stored here so someone who leaves
+// mid-setup drops back exactly where they were. Cleared when onboarding finishes.
+const DRAFT_KEY = 'onboarding_draft_v1';
+
 // During onboarding everyone is level 1, so only level-1 items are unlockable.
 const ONBOARDING_AVATAR_CTX = { level: 1, badgeIds: new Set() };
 
@@ -63,6 +67,9 @@ export default function OnboardingPage() {
   //   'manual'  → the department picker (not matched, lookup failed, or editing)
   const [phase, setPhase] = useState('loading');
   const prefillFetched = useRef(false);
+  // Gates the auto-save effect so it doesn't overwrite a saved draft with the
+  // default state before the mount effect has restored (or the lookup resolved).
+  const readyRef = useRef(false);
 
   // On mount, look the signed-in user up in the org data and pre-fill what we
   // can. Best-effort: an unlisted email, a failure, or a >15s timeout drops to
@@ -71,6 +78,33 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (prefillFetched.current) return;
     prefillFetched.current = true;
+
+    // Resume a saved draft if one exists for this user — restore everything and
+    // skip the Snowflake lookup (they've already moved past step 1).
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        const sameUser = !d?.email || !session?.user?.email
+          || d.email === session.user.email.toLowerCase();
+        if (d && typeof d === 'object' && sameUser) {
+          if (typeof d.step === 'number') setStep(d.step);
+          if (typeof d.department === 'string') setDepartment(d.department);
+          if ('subTeam' in d) setSubTeam(d.subTeam);
+          if (typeof d.showSubTeams === 'boolean') setShowSubTeams(d.showSubTeams);
+          if (Array.isArray(d.topTasks)) setTopTasks(d.topTasks);
+          if (typeof d.tier === 'string') setTier(d.tier);
+          if (Array.isArray(d.goals)) setGoals(d.goals);
+          if (Array.isArray(d.aiTools)) setAiTools(d.aiTools);
+          if (d.avatar) setAvatar(d.avatar);
+          if (d.prefill) setPrefill(d.prefill);
+          setPhase(d.phase || (d.department ? 'confirm' : 'manual'));
+          readyRef.current = true;
+          return; // resumed — don't re-run the lookup
+        }
+      }
+    } catch { /* ignore a malformed draft */ }
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     (async () => {
@@ -103,6 +137,7 @@ export default function OnboardingPage() {
         setPhase('manual');
       } finally {
         clearTimeout(timer);
+        readyRef.current = true;
       }
     })();
     return () => {
@@ -110,6 +145,17 @@ export default function OnboardingPage() {
       controller.abort();
     };
   }, []);
+
+  // Auto-save the draft on every change, once the initial restore/lookup is done.
+  useEffect(() => {
+    if (!readyRef.current) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        email: session?.user?.email?.toLowerCase() || null,
+        step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, avatar, phase, prefill,
+      }));
+    } catch { /* storage unavailable */ }
+  }, [step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, avatar, phase, prefill, session]);
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -228,7 +274,7 @@ export default function OnboardingPage() {
     } catch {
       // fall back to just the name
     }
-    toggleAiTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null });
+    toggleAiTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null, emoji: extra.emoji || null });
     setAddingTool(false);
   }
 
@@ -274,6 +320,8 @@ export default function OnboardingPage() {
     } catch (error) {
       console.error('Failed to save profile:', error);
     }
+    // Onboarding complete — clear the saved draft so a fresh start next time.
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     // Hard navigate so both the server render and the client profile context
     // re-read the freshly saved profile (tasks, tier, goal) across the board.
     // Land on the dashboard, where the interactive (driver.js) welcome tour

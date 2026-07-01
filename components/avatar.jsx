@@ -224,6 +224,12 @@ function hairShape(id, fill) {
           <rect x="66" y="26" width="6" height="4" rx="2" fill="#00000033" />
         </g>
       );
+    case 'hair_shortfem':
+      // Chin-length layered cut with a soft side sweep.
+      return <path d="M29 58 Q28 18 50 18 Q72 18 71 58 Q66 54 64 44 Q66 30 50 28 Q34 30 36 44 Q34 54 29 58 Z" fill={fill} />;
+    case 'hair_medfem':
+      // Shoulder-length, softly waved.
+      return <path d="M29 72 Q27 20 50 16 Q73 20 71 72 Q65 68 66 54 Q69 38 50 31 Q31 38 34 54 Q35 68 29 72 Z" fill={fill} />;
     case 'hair_curly':
       return (
         <g fill={fill}>
@@ -349,6 +355,23 @@ function renderOutfit(id) {
     case 'outfit_tee_red':    return tee('#ef4444');
     case 'outfit_tee_green':  return tee('#22c55e');
     case 'outfit_tee_yellow': return tee('#facc15');
+
+    // Two neckline "types": a shallow crew (reads more masculine) and a deeper
+    // scoop (reads more feminine). Both the standard blue.
+    case 'outfit_tee_crew':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#3b82f6" />
+          <path d="M43 57 Q50 63 57 57" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" />
+        </g>
+      );
+    case 'outfit_tee_scoop':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#3b82f6" />
+          <path d="M40 57 Q50 71 60 57" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" />
+        </g>
+      );
 
     case 'outfit_hoodie':
       return (
@@ -540,7 +563,7 @@ function renderOutfit(id) {
       );
     case 'outfit_tee':
     default:
-      return tee('#e5e7eb', '#cbd5e1');
+      return tee('#3b82f6', '#2563eb');
   }
 }
 
@@ -660,6 +683,17 @@ function renderAccessory(id) {
           <rect x="35" y="31" width="13" height="9" rx="2.5" fill={INK} />
           <rect x="52" y="31" width="13" height="9" rx="2.5" fill={INK} />
           <line x1="48" y1="34" x2="52" y2="34" stroke={INK} strokeWidth="2" />
+        </g>
+      );
+    case 'acc_hearing_aid':
+      return (
+        <g key="acc">
+          {/* left behind-the-ear aid */}
+          <path d="M31 33 q-4 0 -4 5 q0 4 3 5" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="30.5" cy="32" r="2.2" fill="#94a3b8" />
+          {/* right behind-the-ear aid */}
+          <path d="M69 33 q4 0 4 5 q0 4 -3 5" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="69.5" cy="32" r="2.2" fill="#94a3b8" />
         </g>
       );
     case 'acc_headphones':

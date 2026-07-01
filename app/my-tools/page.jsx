@@ -58,7 +58,7 @@ export default function MyToolsPage() {
     } catch {
       // fall back to just the name
     }
-    toggle({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null });
+    toggle({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null, emoji: extra.emoji || null });
     setAdding(false);
   }
 
