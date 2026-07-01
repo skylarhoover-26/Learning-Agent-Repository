@@ -6,10 +6,29 @@ import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
 import { resolveLearnerId } from '@/lib/learner-id';
-import { Trophy, Sparkles, Users, Crown, Loader2, Search, X } from 'lucide-react';
+import { Trophy, Sparkles, Users, Crown, Loader2, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
 
 const MEDAL = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
+const PER_PAGE = 10;
+
+// Prev / Page X of Y / Next control, shared by the All list and the department
+// table. Renders nothing when there's only one page.
+function Pagination({ page, pageCount, onPage }) {
+  if (pageCount <= 1) return null;
+  const btn = 'inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-pill border border-slate-200 dark:border-slate-700 text-ink dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors';
+  return (
+    <div className="flex items-center justify-center gap-4 pt-3">
+      <button onClick={() => onPage(page - 1)} disabled={page <= 0} className={btn}>
+        <ChevronLeft className="w-4 h-4" /> Prev
+      </button>
+      <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">Page {page + 1} of {pageCount}</span>
+      <button onClick={() => onPage(page + 1)} disabled={page >= pageCount - 1} className={btn}>
+        Next <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
 
 export default function LeaderboardPage() {
   const { profile } = useProfile();
@@ -21,6 +40,9 @@ export default function LeaderboardPage() {
   // Default to the ego-centered "Near me" view; "All" shows the full ranking.
   const [view, setView] = useState('near');
   const [search, setSearch] = useState('');
+  // Pagination (10 per page) for the All list and the department table.
+  const [allPage, setAllPage] = useState(0);
+  const [deptPage, setDeptPage] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -30,6 +52,9 @@ export default function LeaderboardPage() {
       .catch(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
+
+  // Jump back to the first page whenever the All list changes underneath us.
+  useEffect(() => { setAllPage(0); }, [search, view]);
 
   const people = data?.people || [];
   const departments = data?.departments || [];
@@ -57,6 +82,15 @@ export default function LeaderboardPage() {
   } else {
     listRows = myRankIndex >= 3 ? [{ person: people[myRankIndex], rank: myRankIndex + 1 }] : [];
   }
+
+  // Paginate the All list and the department table, 10 per page.
+  const allPageCount = Math.max(1, Math.ceil(listRows.length / PER_PAGE));
+  const allPageSafe = Math.min(allPage, allPageCount - 1);
+  const pagedRows = listRows.slice(allPageSafe * PER_PAGE, allPageSafe * PER_PAGE + PER_PAGE);
+
+  const deptPageCount = Math.max(1, Math.ceil(departments.length / PER_PAGE));
+  const deptPageSafe = Math.min(deptPage, deptPageCount - 1);
+  const pagedDepts = departments.slice(deptPageSafe * PER_PAGE, deptPageSafe * PER_PAGE + PER_PAGE);
 
   return (
     <div data-tour="page-leaderboard" className="min-h-screen bg-bg-warm dark:bg-slate-900">
@@ -139,22 +173,25 @@ export default function LeaderboardPage() {
                   )}
 
                   {view === 'all' ? (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
-                      {listRows.map(({ person, rank }) => (
-                        <PersonRow
-                          key={person.learnerId}
-                          person={person}
-                          rank={rank}
-                          crownTier={tierOf(person.learnerId)}
-                          isMe={person.learnerId === myId}
-                        />
-                      ))}
-                      {q && listRows.length === 0 && (
-                        <div className="px-4 py-6 text-center text-sm text-slate-400">
-                          No one matches “{search.trim()}”.
-                        </div>
-                      )}
-                    </div>
+                    <>
+                      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
+                        {pagedRows.map(({ person, rank }) => (
+                          <PersonRow
+                            key={person.learnerId}
+                            person={person}
+                            rank={rank}
+                            crownTier={tierOf(person.learnerId)}
+                            isMe={person.learnerId === myId}
+                          />
+                        ))}
+                        {q && listRows.length === 0 && (
+                          <div className="px-4 py-6 text-center text-sm text-slate-400">
+                            No one matches “{search.trim()}”.
+                          </div>
+                        )}
+                      </div>
+                      <Pagination page={allPageSafe} pageCount={allPageCount} onPage={setAllPage} />
+                    </>
                   ) : myRankIndex === -1 ? (
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card px-4 py-6 text-center text-sm text-slate-400">
                       You&rsquo;re not ranked yet — earn XP to join the board.
@@ -191,6 +228,7 @@ export default function LeaderboardPage() {
           </div>
 
           {!loading && departments.length > 0 ? (
+            <>
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card overflow-x-auto">
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
@@ -204,7 +242,7 @@ export default function LeaderboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {departments.map((dept) => {
+                  {pagedDepts.map((dept) => {
                     const isUser = dept.name === userDept;
                     const isTop3 = dept.rank <= 3;
                     const rowBg = isUser
@@ -233,6 +271,8 @@ export default function LeaderboardPage() {
                 </tbody>
               </table>
             </div>
+            <Pagination page={deptPageSafe} pageCount={deptPageCount} onPage={setDeptPage} />
+            </>
           ) : !loading ? (
             <EmptyCard icon={Users} title="No department data yet" sub="Departments appear as teammates earn XP." />
           ) : null}
