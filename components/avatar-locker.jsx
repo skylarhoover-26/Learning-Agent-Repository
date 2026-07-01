@@ -12,6 +12,15 @@ import {
 } from '@/lib/avatar-catalog';
 import { Lock, Check, Loader2 } from 'lucide-react';
 
+// The Crown is a single hat that auto-colors to your leaderboard rank. In the
+// locker we surface all three tiers so people can see the designs and exactly
+// what rank earns each — only the tier you currently hold is unlockable.
+const CROWN_DISPLAY = [
+  { tier: 1, name: 'Gold Crown', need: 'Reach #1' },
+  { tier: 2, name: 'Silver Crown', need: 'Reach #2' },
+  { tier: 3, name: 'Bronze Crown', need: 'Reach #3' },
+];
+
 // The avatar locker: pick a piece per slot. Unlocked items can be equipped (and
 // toggled off — e.g. pet/accessory have a "None"); locked items show what earns
 // them.
@@ -98,17 +107,30 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
           ))}
         </div>
 
-        {/* Item grid */}
+        {/* Item grid. The single hat_crown item is expanded into its three rank
+            tiers (gold/silver/bronze) so all crown designs + their rank show. */}
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-          {items.map((item) => {
-            const unlocked = isItemUnlocked(item, ctx);
-            const equipped = avatar[item.slot] === item.id;
+          {items.flatMap((item) => (item.id === 'hat_crown' ? CROWN_DISPLAY : [item])).map((entry) => {
+            const isCrown = 'tier' in entry;
+            const item = isCrown ? { id: 'hat_crown', slot: 'hat', name: entry.name } : entry;
+            // Crown tiles unlock only for the exact rank you currently hold; other
+            // items use the normal unlock rules.
+            const unlocked = isCrown ? myTier === entry.tier : isItemUnlocked(item, ctx);
+            const equipped = isCrown
+              ? (avatar.hat === 'hat_crown' && myTier === entry.tier)
+              : (avatar[item.slot] === item.id);
+            const lockText = isCrown ? entry.need : unlockLabel(item);
+            const key = isCrown ? `crown-${entry.tier}` : item.id;
+            // For crown tiles, always preview the crown in that tier's color so the
+            // design is visible even while locked.
+            const previewCrown = isCrown ? entry.tier : (item.id === 'hat_crown' ? (myTier || 1) : myTier);
+            const previewAvatar = isCrown ? { ...avatar, hat: 'hat_crown' } : { ...avatar, [item.slot]: item.id };
             return (
               <button
-                key={item.id}
+                key={key}
                 onClick={() => unlocked && equip(item.slot, item.id)}
                 disabled={!unlocked}
-                title={unlocked ? item.name : `${item.name} — ${unlockLabel(item)}`}
+                title={unlocked ? item.name : `${item.name} — ${lockText}`}
                 className={`relative rounded-xl border p-2 flex flex-col items-center gap-1 transition-all ${
                   equipped
                     ? 'border-brand ring-2 ring-brand bg-brand-50 dark:bg-slate-700'
@@ -116,9 +138,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
                 } ${!unlocked ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="w-12 h-12 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                  {/* preview the full avatar with just this slot swapped in.
-                      Force-show the crown so its tile previews the art. */}
-                  <Avatar avatar={{ ...avatar, [item.slot]: item.id }} size={44} crown={item.id === 'hat_crown' ? (myTier || 1) : myTier} />
+                  <Avatar avatar={previewAvatar} size={44} crown={previewCrown} />
                 </div>
                 <span className="text-[11px] text-center leading-tight text-ink dark:text-slate-300 line-clamp-1">
                   {item.name}
@@ -128,7 +148,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
                     <div className="flex flex-col items-center gap-0.5">
                       <Lock className="w-4 h-4 text-slate-500 dark:text-slate-300" />
                       <span className="text-[9px] font-medium text-slate-600 dark:text-slate-300 px-1 text-center leading-tight">
-                        {unlockLabel(item)}
+                        {lockText}
                       </span>
                     </div>
                   </div>

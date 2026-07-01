@@ -43,6 +43,14 @@ export default function LeaderboardPage() {
   // Pagination (10 per page) for the All list and the department table.
   const [allPage, setAllPage] = useState(0);
   const [deptPage, setDeptPage] = useState(0);
+  // Seconds spent loading, so we can reassure during the (roster-wide) first load.
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!loading) { setElapsed(0); return; }
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [loading]);
 
   useEffect(() => {
     let active = true;
@@ -108,8 +116,11 @@ export default function LeaderboardPage() {
           </div>
 
           {loading ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card p-10 flex items-center justify-center gap-2 text-slate-500">
-              <Loader2 className="w-4 h-4 animate-spin" /> Loading rankings…
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card p-10 flex flex-col items-center justify-center gap-1 text-slate-500">
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading rankings… {elapsed}s
+              </span>
+              <span className="text-xs text-slate-400">Gathering everyone on the leaderboard — this usually takes a few seconds.</span>
             </div>
           ) : people.length === 0 ? (
             <EmptyCard
