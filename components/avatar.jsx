@@ -225,11 +225,11 @@ function hairShape(id, fill) {
         </g>
       );
     case 'hair_shortfem':
-      // Chin-length layered cut with a soft side sweep.
-      return <path d="M29 58 Q28 18 50 18 Q72 18 71 58 Q66 54 64 44 Q66 30 50 28 Q34 30 36 44 Q34 54 29 58 Z" fill={fill} />;
+      // Chin-length layered cut — solid cap over the crown, framing the face.
+      return <path d="M28 56 Q26 15 50 15 Q74 15 72 56 Q67 52 64 46 Q65 27 50 26 Q35 27 36 46 Q33 52 28 56 Z" fill={fill} />;
     case 'hair_medfem':
-      // Shoulder-length, softly waved.
-      return <path d="M29 72 Q27 20 50 16 Q73 20 71 72 Q65 68 66 54 Q69 38 50 31 Q31 38 34 54 Q35 68 29 72 Z" fill={fill} />;
+      // Shoulder-length — full cap, falling to the shoulders.
+      return <path d="M28 72 Q25 15 50 14 Q75 15 72 72 Q66 66 66 52 Q68 30 50 27 Q32 30 34 52 Q34 66 28 72 Z" fill={fill} />;
     case 'hair_curly':
       return (
         <g fill={fill}>
@@ -252,12 +252,9 @@ function hairShape(id, fill) {
         </g>
       );
     case 'hair_afro':
+      // Full, rounded volume framing the face (was three loose circles).
       return (
-        <g fill={fill}>
-          <circle cx="50" cy="17" r="16" />
-          <circle cx="32" cy="30" r="9" />
-          <circle cx="68" cy="30" r="9" />
-        </g>
+        <path d="M24 44 Q15 22 30 12 Q39 5 50 5 Q61 5 70 12 Q85 22 76 44 Q71 33 61 33 Q63 24 50 23 Q37 24 39 33 Q29 33 24 44 Z" fill={fill} />
       );
     case 'hair_pigtails':
       return (
@@ -1249,7 +1246,9 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       {renderHair(a.hair, hairColorItem, uid)}
       {renderFace(a.face)}
       {renderEarrings(a.earrings)}
-      {renderAccessory(a.accessory)}
+      {(Array.isArray(a.accessory) ? a.accessory : []).map((id) => (
+        <g key={id}>{renderAccessory(id)}</g>
+      ))}
       {renderHat(a.hat, crownTier)}
       {renderPet(a.pet)}
       {/* Auto rank crown — skip if they've already equipped the Crown hat. */}

@@ -8,7 +8,7 @@ import { useChampions } from '@/components/champion-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import {
   AVATAR_SLOTS, SLOT_LABELS, itemsForSlot, isItemUnlocked,
-  unlockLabel, normalizeAvatar, unlockedCount,
+  unlockLabel, normalizeAvatar, unlockedCount, accessoryList,
 } from '@/lib/avatar-catalog';
 import { Lock, Check, Loader2 } from 'lucide-react';
 
@@ -52,7 +52,16 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
   const avatar = controlled ? normalizeAvatar(value) : internal;
 
   async function equip(slot, id) {
-    const next = { ...avatar, [slot]: id };
+    let next;
+    if (slot === 'accessory') {
+      // Gear is stackable — toggle items in/out; "None" clears everything.
+      const cur = accessoryList(avatar.accessory);
+      if (id === 'acc_none') next = { ...avatar, accessory: [] };
+      else if (cur.includes(id)) next = { ...avatar, accessory: cur.filter((x) => x !== id) };
+      else next = { ...avatar, accessory: [...cur, id] };
+    } else {
+      next = { ...avatar, [slot]: id };
+    }
     if (controlled) {
       onChange(next);
       return;
@@ -118,7 +127,11 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
             const unlocked = isCrown ? myTier === entry.tier : isItemUnlocked(item, ctx);
             const equipped = isCrown
               ? (avatar.hat === 'hat_crown' && myTier === entry.tier)
-              : (avatar[item.slot] === item.id);
+              : item.slot === 'accessory'
+                ? (item.id === 'acc_none'
+                    ? accessoryList(avatar.accessory).length === 0
+                    : accessoryList(avatar.accessory).includes(item.id))
+                : (avatar[item.slot] === item.id);
             const lockText = isCrown ? entry.need : unlockLabel(item);
             const key = isCrown ? `crown-${entry.tier}` : item.id;
             // For crown tiles, always preview the crown in that tier's color so the
