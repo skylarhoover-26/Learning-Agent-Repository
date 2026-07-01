@@ -5,10 +5,11 @@ import PageHeader from '@/components/page-header';
 import { useProfile } from '@/components/profile-provider';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { chosenTools, serializeTools, toolKey, normalizeTool } from '@/lib/ai-tools';
-import { PanelsTopLeft, Check, Star, Plus, ExternalLink } from 'lucide-react';
+import { PanelsTopLeft, Check, Plus, ExternalLink } from 'lucide-react';
 
-// Dedicated page to manage the AI tool(s) the learner works in. Multi-select,
-// with one "primary" (the tool the coach opens by default). Saved to the
+// Dedicated page to manage the AI tool(s) the learner works in. Multi-select —
+// pick every tool you have, and the coach picks the best one for each lesson's
+// topic (and flags when a tool you don't have would fit better). Saved to the
 // profile as `preferred_tools`.
 export default function MyToolsPage() {
   const { profile, updateProfile } = useProfile() || {};
@@ -41,14 +42,6 @@ export default function MyToolsPage() {
     });
   }
 
-  function makePrimary(choice) {
-    const t = normalizeTool(choice);
-    const key = toolKey(t);
-    setDirty(true);
-    setSaved(false);
-    setSet((prev) => [t, ...prev.filter((x) => toolKey(x) !== key)]);
-  }
-
   async function addCustom() {
     const label = customLabel.trim();
     if (!label || adding) return;
@@ -76,7 +69,6 @@ export default function MyToolsPage() {
     setTimeout(() => setSaved(false), 2200);
   }
 
-  const primaryKey = set.length ? toolKey(set[0]) : null;
   const customTools = set.filter((t) => t.id === 'other');
 
   return (
@@ -85,27 +77,21 @@ export default function MyToolsPage() {
 
       <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-            Pick every AI tool you use — you can choose more than one. Lessons are tailored to your tools, and
-            we&rsquo;ll flag when one fits a task better than another.
-          </p>
-          <p className="flex items-center gap-1.5 text-sm font-medium text-ink dark:text-slate-200 bg-cta-50 dark:bg-slate-700/60 border border-cta-200 dark:border-slate-600 rounded-lg px-3 py-2 mb-5">
-            <Star className="w-4 h-4 fill-cta text-cta shrink-0" />
-            Tap the star on a tool to make it your <span className="font-semibold">default</span> — it&rsquo;s the one we&rsquo;ll open for you in lessons.
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
+            Pick every AI tool you have — you can choose more than one. For each lesson, the coach
+            automatically picks the best one of your tools for that topic, and flags when a tool you
+            don&rsquo;t have yet would fit even better. No need to set a default.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {catalog.map((t) => {
               const selected = selectedKeys.has(toolKey(t));
-              const isPrimary = toolKey(t) === primaryKey;
               return (
                 <ToolRow
                   key={t.id}
                   tool={t}
                   selected={selected}
-                  isPrimary={isPrimary}
                   onToggle={() => toggle(t.id)}
-                  onMakePrimary={() => makePrimary(t.id)}
                 />
               );
             })}
@@ -118,9 +104,7 @@ export default function MyToolsPage() {
                   key={toolKey(t)}
                   tool={t}
                   selected
-                  isPrimary={toolKey(t) === primaryKey}
                   onToggle={() => toggle(t)}
-                  onMakePrimary={() => makePrimary(t)}
                 />
               ))}
             </div>
@@ -176,7 +160,7 @@ export default function MyToolsPage() {
   );
 }
 
-function ToolRow({ tool, selected, isPrimary, onToggle, onMakePrimary }) {
+function ToolRow({ tool, selected, onToggle }) {
   return (
     <div
       className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
@@ -199,16 +183,6 @@ function ToolRow({ tool, selected, isPrimary, onToggle, onMakePrimary }) {
           )}
         </span>
       </button>
-      {selected && (
-        <button
-          onClick={onMakePrimary}
-          title={isPrimary ? 'Primary tool' : 'Set as primary'}
-          aria-label={isPrimary ? 'Primary tool' : 'Set as primary'}
-          className="shrink-0 p-1.5 rounded-lg hover:bg-white/60 dark:hover:bg-slate-700"
-        >
-          <Star className={`w-4 h-4 ${isPrimary ? 'fill-cta text-cta' : 'text-slate-400'}`} />
-        </button>
-      )}
     </div>
   );
 }

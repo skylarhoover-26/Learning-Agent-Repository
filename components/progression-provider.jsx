@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { getAllData } from '@/lib/learner-store';
-import { getTotalXp, getLevel, getLevelProgress, calculateStreak, awardFirstLoginXp } from '@/lib/progression';
+import { getTotalXp, getLevel, getLevelProgress, calculateStreak, activityTimestamps, awardFirstLoginXp } from '@/lib/progression';
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { onXp } from '@/lib/xp-bus';
@@ -29,7 +29,7 @@ function buildStats(learnerId) {
     totalXp,
     level,
     levelProgress: getLevelProgress(totalXp),
-    streak: calculateStreak(lessonHistory),
+    streak: calculateStreak(activityTimestamps(xpEvents, lessonHistory)),
   };
 }
 

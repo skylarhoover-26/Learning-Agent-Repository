@@ -6,7 +6,7 @@ import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft,
-  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Star, Smile,
+  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Smile,
 } from 'lucide-react';
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
@@ -135,11 +135,6 @@ export default function OnboardingPage() {
       if (exists) return prev.filter(x => toolKey(normalizeTool(x)) !== key);
       return [...prev, choice];
     });
-  }
-
-  function setPrimaryAiTool(choice) {
-    const key = toolKey(normalizeTool(choice));
-    setAiTools(prev => [choice, ...prev.filter(x => toolKey(normalizeTool(x)) !== key)]);
   }
 
   async function addCustomAiTool() {
@@ -326,7 +321,6 @@ export default function OnboardingPage() {
             <StepTool
               selected={aiTools}
               onToggle={toggleAiTool}
-              onSetPrimary={setPrimaryAiTool}
               customTool={customTool}
               onCustomToolChange={setCustomTool}
               onAddCustom={addCustomAiTool}
@@ -635,10 +629,9 @@ function StepGoal({ selected, onToggle, onNext, canAdvance }) {
   );
 }
 
-function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolChange, onAddCustom, adding, onNext, canAdvance }) {
+function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCustom, adding, onNext, canAdvance }) {
   const { catalog } = useToolCatalog();
   const selectedKeys = new Set(selected.map((s) => toolKey(normalizeTool(s))));
-  const primaryKey = selected.length ? toolKey(normalizeTool(selected[0])) : null;
   const customSelected = selected.map(normalizeTool).filter((t) => t.id === 'other');
   const rows = [...catalog, ...customSelected];
 
@@ -652,14 +645,13 @@ function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolCh
           Which AI tools do you use?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
-          Pick all that apply — you might use one or several. We&apos;ll tailor lessons to them and tell you when one fits a task better. Star the one to open by default. You can change this anytime.
+          Pick all that apply — you might use one or several. For each lesson we&apos;ll automatically pick the best one of your tools for the topic, and tell you when a tool you don&apos;t have would fit better. You can change this anytime.
         </p>
       </div>
       <div className="space-y-2 max-w-lg mx-auto mb-4">
         {rows.map((t) => {
           const key = toolKey(t);
           const isSelected = selectedKeys.has(key);
-          const isPrimary = key === primaryKey;
           return (
             <div
               key={key}
@@ -681,16 +673,6 @@ function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolCh
                   )}
                 </span>
               </button>
-              {isSelected && (
-                <button
-                  onClick={() => onSetPrimary(t.id === 'other' ? t : t.id)}
-                  title={isPrimary ? 'Primary tool' : 'Set as primary'}
-                  aria-label={isPrimary ? 'Primary tool' : 'Set as primary'}
-                  className="shrink-0 p-1"
-                >
-                  <Star className={`w-5 h-5 ${isPrimary ? 'fill-cta text-cta' : 'text-white/70'}`} />
-                </button>
-              )}
             </div>
           );
         })}
