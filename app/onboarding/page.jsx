@@ -312,15 +312,6 @@ export default function OnboardingPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Step {step} of {TOTAL_STEPS}
             </p>
-            {(step > 1 || showSubTeams) && (
-              <button
-                onClick={goBack}
-                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
-              >
-                <ChevronLeft className="w-3 h-3" />
-                Back
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -430,8 +421,54 @@ export default function OnboardingPage() {
               onFinish={() => handleFinish(goals)}
             />
           )}
+
+          {/* Shared bottom navigation: Back sits next to the primary action. */}
+          {step >= 2 && step <= 5 && (
+            <div className="mt-8">
+              <StepNav onBack={goBack} onNext={goNext} disabled={!canAdvance()} />
+            </div>
+          )}
+          {step === 6 && (
+            <div className="mt-8">
+              <StepNav onBack={goBack} onNext={() => handleFinish(goals)} label="Start Learning" variant="finish" />
+            </div>
+          )}
+          {step === 1 && showSubTeams && (
+            <div className="mt-8">
+              <StepNav onBack={goBack} />
+            </div>
+          )}
         </div>
       </main>
+    </div>
+  );
+}
+
+// Shared bottom nav: a "Back" button paired with the step's primary action, so
+// Back gets its own button next to Continue instead of a link up in the header.
+// Omit onNext to render a Back-only footer (e.g. the sub-team picker, which
+// advances on selection).
+function StepNav({ onBack, onNext, disabled = false, label = 'Continue', variant = 'default' }) {
+  const primaryClass = variant === 'finish'
+    ? 'inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-green-600 text-white font-semibold shadow-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all'
+    : 'inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all';
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Back
+      </button>
+      {onNext && (
+        <button type="button" onClick={onNext} disabled={disabled} className={primaryClass}>
+          {variant === 'finish' && <Sparkles className="w-4 h-4" />}
+          {label}
+          {variant !== 'finish' && <ChevronRight className="w-4 h-4" />}
+        </button>
+      )}
     </div>
   );
 }
@@ -670,14 +707,7 @@ function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCus
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
           {selected.length} selected{selected.length === 0 ? ' — pick at least 1' : ''}
         </p>
-        <button
-          onClick={onNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          Continue
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Continue moved to the shared bottom nav (StepNav). */}
       </div>
     </div>
   );
@@ -722,14 +752,7 @@ function StepTier({ selected, onSelect, onNext, canAdvance }) {
         ))}
       </div>
       <div className="text-center">
-        <button
-          onClick={onNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          Continue
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Continue moved to the shared bottom nav (StepNav). */}
       </div>
     </div>
   );
@@ -776,14 +799,7 @@ function StepGoal({ selected, onToggle, onNext, canAdvance }) {
         })}
       </div>
       <div className="text-center">
-        <button
-          onClick={onNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          Continue
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Continue moved to the shared bottom nav (StepNav). */}
       </div>
     </div>
   );
@@ -855,14 +871,7 @@ function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCus
         </button>
       </div>
       <div className="text-center">
-        <button
-          onClick={onNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          Continue
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Continue moved to the shared bottom nav (StepNav). */}
       </div>
     </div>
   );
@@ -885,15 +894,7 @@ function StepAvatar({ avatar, onChange, onFinish }) {
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-6">
         <AvatarLocker value={avatar} onChange={onChange} ctx={ONBOARDING_AVATAR_CTX} />
       </div>
-      <div className="text-center">
-        <button
-          onClick={onFinish}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-green-600 text-white font-semibold shadow-sm hover:bg-green-700 transition-all"
-        >
-          <Sparkles className="w-4 h-4" />
-          Start Learning
-        </button>
-      </div>
+      {/* Start Learning moved to the shared bottom nav (StepNav, finish variant). */}
     </div>
   );
 }
