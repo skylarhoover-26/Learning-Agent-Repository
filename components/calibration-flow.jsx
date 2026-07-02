@@ -1,41 +1,32 @@
 'use client';
 
-// The single, unified assessment: skill calibration + AI-impact check-in merged
-// into one flow. Runs intro → skill scenarios → skill self-rating → 4 impact
-// questions → combined results. On finish it writes BOTH the calibration profile
-// (which tunes lesson difficulty) and the ai_impact_scores history (which the
+// The single, unified assessment: skill calibration + AI-impact competencies
+// merged into one flow. Runs intro → skill scenarios → skill self-rating → 4
+// impact questions (each: a self-claim + an optional example) → AI synthesizes
+// the competency scores + "why" → combined results.
+//
+// On finish it writes BOTH the calibration profile (tunes lesson difficulty) and
+// the ai_impact_scores detail (self/measured/why per competency, which the
 // manager dashboard reads), then calls onComplete so the caller can persist a
 // `calibrated_at` flag.
 //
-// Scenarios are role-aware: on mount we ask /api/calibration-scenarios to
-// generate scenarios grounded in the person's role/tasks for the five non-privacy
-// skills. Privacy is always the curated, vetted scenario. Anything that fails to
-// generate falls back to the curated set, so the flow never blocks.
-//
-// Used in two places:
-//   • /calibration page — voluntary retake, inside the normal app chrome.
-//   • CalibrationGate — full-screen required gate on first entry (chrome hidden).
+// Used by the /calibration page (voluntary retake) and CalibrationGate (required
+// first-run, full screen).
 
 import { useState, useMemo, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { saveCalibrationData, calculateSkills } from '@/lib/calibration-store';
 import { CALIBRATION_SKILL_ORDER, SCENARIO_BY_ID } from '@/lib/calibration-scenarios';
-import { saveScores } from '@/lib/scoring-store';
+import { saveImpactDetail } from '@/lib/scoring-store';
 import { IMPACT_QUESTIONS } from '@/lib/impact-questions';
 import {
   IntroStep, ScenarioStep, SelfRateStep,
-  ImpactQuestionCard, ImpactFollowUpCard,
-  SkillResults, ImpactResults,
+  ImpactQuestionCard, SkillResults, ImpactResults,
 } from '@/components/assessment-steps';
 
 const N_IMPACT = IMPACT_QUESTIONS.length;
-// Generation runs on Haiku (fast), but a required gate should never hang — give
-// it a generous window and fall back to the curated set if it's slow.
 const GEN_TIMEOUT_MS = 45000;
 
-// Build the final ordered scenario list: role-generated where available, curated
-// fallback per skill otherwise (including privacy, which is generated but always
-// has a vetted curated fallback).
 function composeScenarios(generated) {
   return CALIBRATION_SKILL_ORDER.map((id) =>
     (generated && generated[id]) ? generated[id] : SCENARIO_BY_ID[id],
@@ -50,15 +41,12 @@ export default function CalibrationFlow({ onComplete, gated = false }) {
   const [selfRating, setSelfRating] = useState({
     privacy: 0.5, prompting: 0.5, comms: 0.5, eval: 0.5, agents: 0.5, data: 0.5,
   });
-  const [impactScores, setImpactScores] = useState({});
-  const [showFollowUp, setShowFollowUp] = useState(false);
-  const [followUpText, setFollowUpText] = useState('');
-  const [isScoring, setIsScoring] = useState(false);
+  // Per competency: { value, self, label, example }
+  const [impactAnswers, setImpactAnswers] = useState({});
+  const [scoring, setScoring] = useState(false);   // AI is synthesizing impact scores
+  const [impactDetail, setImpactDetail] = useState(null);
   const [completed, setCompleted] = useState(false);
 
-  // Kick off role-aware scenario generation on mount (during the intro screen, so
-  // it's usually ready by the time they hit "Let's go"). Fall back to the curated
-  // set on any failure or if it takes too long.
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
@@ -71,8 +59,6 @@ export default function CalibrationFlow({ onComplete, gated = false }) {
     return () => { cancelled = true; clearTimeout(timer); controller.abort(); };
   }, []);
 
-  // If they clicked "Let's go" before scenarios were ready, advance the moment
-  // they land.
   useEffect(() => {
     if (waitingToStart && scenarios) {
       setWaitingToStart(false);
@@ -83,17 +69,19 @@ export default function CalibrationFlow({ onComplete, gated = false }) {
   const nScen = scenarios ? scenarios.length : CALIBRATION_SKILL_ORDER.length;
   const SELF_RATE_STEP = nScen + 1;
   const FIRST_IMPACT_STEP = nScen + 2;
-  const TOTAL_STEPS = 1 + nScen + 1 + N_IMPACT;
+  const LAST_IMPACT_STEP = FIRST_IMPACT_STEP + N_IMPACT - 1;
 
   const skills = useMemo(() => calculateSkills(answers, scenarios || []), [answers, scenarios]);
 
   const isIntro = step === 0;
   const isScenario = step >= 1 && step <= nScen;
   const isSelfRate = step === SELF_RATE_STEP;
-  const isImpact = step >= FIRST_IMPACT_STEP && step < TOTAL_STEPS;
+  const isImpact = step >= FIRST_IMPACT_STEP && step <= LAST_IMPACT_STEP;
+  const isLastImpact = step === LAST_IMPACT_STEP;
   const currentScenario = isScenario && scenarios ? scenarios[step - 1] : null;
   const currentImpact = isImpact ? IMPACT_QUESTIONS[step - FIRST_IMPACT_STEP] : null;
-  const progressPercent = (step / (TOTAL_STEPS - 1)) * 100;
+  const totalSteps = 1 + nScen + 1 + N_IMPACT;
+  const progressPercent = (step / (totalSteps - 1)) * 100;
 
   function handleStart() {
     if (scenarios) setStep(1);
@@ -101,87 +89,81 @@ export default function CalibrationFlow({ onComplete, gated = false }) {
   }
 
   function goBack() {
-    if (showFollowUp) {
-      setShowFollowUp(false);
-      setFollowUpText('');
-      return;
-    }
     if (step > 0) setStep(prev => prev - 1);
   }
 
-  function finish(finalImpact) {
-    // Persist the results immediately. We deliberately do NOT call onComplete
-    // here — that sets `calibrated_at` and (in the gate) dismisses the overlay,
-    // which must wait until the user has actually seen their results and clicked
-    // the finish button below.
+  function selectImpact(dim, option) {
+    setImpactAnswers(prev => ({
+      ...prev,
+      [dim]: { ...prev[dim], value: option.value, self: option.self, label: option.label },
+    }));
+  }
+  function setImpactExample(dim, text) {
+    setImpactAnswers(prev => ({ ...prev, [dim]: { ...prev[dim], example: text } }));
+  }
+
+  // After the last impact question, synthesize the competency scores + why.
+  async function runScoring() {
+    setScoring(true);
+    const entries = IMPACT_QUESTIONS.map(q => {
+      const a = impactAnswers[q.dimension] || {};
+      return { dimension: q.dimension, selfLevel: a.self ?? 3, mcLabel: a.label || '', exampleText: (a.example || '').trim() };
+    });
+    const calibrationSummary = 'calibration skill scores (0-100): ' +
+      Object.entries(skills).map(([k, v]) => `${k} ${Math.round(v * 100)}`).join(', ');
+
+    let detail;
+    try {
+      const res = await fetch('/api/impact-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries, calibrationSummary }),
+      });
+      const data = await res.json();
+      const scores = data?.scores || {};
+      detail = Object.fromEntries(entries.map(e => [
+        e.dimension,
+        { self: e.selfLevel, measured: scores[e.dimension]?.measured ?? e.selfLevel, why: scores[e.dimension]?.why || '' },
+      ]));
+    } catch (error) {
+      console.error('Impact scoring failed, using self-claim:', error);
+      detail = Object.fromEntries(entries.map(e => [e.dimension, { self: e.selfLevel, measured: e.selfLevel, why: '' }]));
+    }
+
     try {
       saveCalibrationData({ skills, selfRating, answers });
-      saveScores(finalImpact);
+      saveImpactDetail(detail);
     } catch (error) {
       console.error('Failed to save assessment:', error);
     }
+    setImpactDetail(detail);
+    setScoring(false);
     setCompleted(true);
-  }
-
-  // Impact questions auto-advance on select; option "D" (when present) opens a
-  // short free-text follow-up that /api/scoring rates.
-  function handleImpactSelect(option) {
-    const { dimension, followUp } = currentImpact;
-    if (followUp && option.value === followUp.trigger) {
-      setShowFollowUp(true);
-      return;
-    }
-    advanceImpact({ ...impactScores, [dimension]: option.score });
-  }
-
-  async function handleFollowUpSubmit() {
-    if (!followUpText.trim()) return;
-    setIsScoring(true);
-    const { dimension, followUp } = currentImpact;
-    let score = 3;
-    try {
-      const res = await fetch('/api/scoring', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dimension: followUp.scoringDimension, text: followUpText.trim() }),
-      });
-      const data = await res.json();
-      score = data.score || 3;
-    } catch (error) {
-      console.error('Scoring error:', error);
-    } finally {
-      setIsScoring(false);
-      setShowFollowUp(false);
-      setFollowUpText('');
-      advanceImpact({ ...impactScores, [dimension]: score });
-    }
-  }
-
-  function advanceImpact(nextScores) {
-    setImpactScores(nextScores);
-    if (step < TOTAL_STEPS - 1) {
-      setStep(prev => prev + 1);
-    } else {
-      finish(nextScores);
-    }
   }
 
   const canAdvance = () => {
     if (isIntro) return true;
     if (isScenario) return currentScenario && answers[currentScenario.id] !== undefined;
     if (isSelfRate) return true;
+    if (isImpact) return !!impactAnswers[currentImpact.dimension]?.value;
     return false;
   };
+
+  function onNext() {
+    if (isSelfRate) { setStep(FIRST_IMPACT_STEP); return; }
+    if (isLastImpact) { runScoring(); return; }
+    setStep(step + 1);
+  }
 
   if (completed) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-10">
         <SkillResults skills={skills} selfRating={selfRating} />
         <div className="mt-6">
-          <ImpactResults scores={impactScores} />
+          <ImpactResults detail={impactDetail} />
         </div>
         <div className="flex justify-center mt-8">
-          <FinishButton gated={gated} onDone={() => onComplete?.({ skills, selfRating, impactScores })} />
+          <FinishButton gated={gated} onDone={() => onComplete?.({ skills, selfRating, impactDetail })} />
         </div>
       </div>
     );
@@ -192,22 +174,13 @@ export default function CalibrationFlow({ onComplete, gated = false }) {
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-2xl mx-auto px-6">
           <div className="h-1 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden my-3">
-            <div
-              className="h-full bg-brand rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progressPercent}%` }}
-            />
+            <div className="h-full bg-brand rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
           </div>
           <div className="flex items-center justify-between pb-3">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Step {step + 1} of {TOTAL_STEPS}
-            </p>
-            {step > 0 && (
-              <button
-                onClick={goBack}
-                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
-              >
-                <ChevronLeft className="w-3 h-3" />
-                Back
+            <p className="text-xs text-slate-500 dark:text-slate-400">Step {step + 1} of {totalSteps}</p>
+            {step > 0 && !scoring && (
+              <button onClick={goBack} className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors">
+                <ChevronLeft className="w-3 h-3" /> Back
               </button>
             )}
           </div>
@@ -215,54 +188,55 @@ export default function CalibrationFlow({ onComplete, gated = false }) {
       </div>
 
       <main className="max-w-2xl mx-auto px-6 py-10">
-        <div key={`${step}-${showFollowUp}-${waitingToStart}`} className="animate-fade-in">
-          {isIntro && !waitingToStart && <IntroStep onNext={handleStart} />}
-          {isIntro && waitingToStart && <PersonalizingStep />}
+        {scoring ? (
+          <ScoringStep />
+        ) : (
+          <>
+            <div key={`${step}-${waitingToStart}`} className="animate-fade-in">
+              {isIntro && !waitingToStart && <IntroStep onNext={handleStart} />}
+              {isIntro && waitingToStart && <PersonalizingStep />}
 
-          {isScenario && currentScenario && (
-            <ScenarioStep
-              scenario={currentScenario}
-              questionNumber={step}
-              totalQuestions={nScen}
-              selectedAnswer={answers[currentScenario.id]}
-              onAnswer={(idx) => setAnswers(prev => ({ ...prev, [currentScenario.id]: idx }))}
-            />
-          )}
+              {isScenario && currentScenario && (
+                <ScenarioStep
+                  scenario={currentScenario}
+                  questionNumber={step}
+                  totalQuestions={nScen}
+                  selectedAnswer={answers[currentScenario.id]}
+                  onAnswer={(idx) => setAnswers(prev => ({ ...prev, [currentScenario.id]: idx }))}
+                />
+              )}
 
-          {isSelfRate && (
-            <SelfRateStep
-              selfRating={selfRating}
-              onRatingChange={(key, value) => setSelfRating(prev => ({ ...prev, [key]: value }))}
-            />
-          )}
+              {isSelfRate && (
+                <SelfRateStep
+                  selfRating={selfRating}
+                  onRatingChange={(key, value) => setSelfRating(prev => ({ ...prev, [key]: value }))}
+                />
+              )}
 
-          {isImpact && !showFollowUp && (
-            <ImpactQuestionCard question={currentImpact} onSelect={handleImpactSelect} />
-          )}
+              {isImpact && (
+                <ImpactQuestionCard
+                  question={currentImpact}
+                  selectedValue={impactAnswers[currentImpact.dimension]?.value}
+                  exampleText={impactAnswers[currentImpact.dimension]?.example}
+                  onSelect={(option) => selectImpact(currentImpact.dimension, option)}
+                  onExampleChange={(text) => setImpactExample(currentImpact.dimension, text)}
+                />
+              )}
+            </div>
 
-          {isImpact && showFollowUp && (
-            <ImpactFollowUpCard
-              question={currentImpact.followUp.question}
-              text={followUpText}
-              onTextChange={setFollowUpText}
-              onSubmit={handleFollowUpSubmit}
-              isScoring={isScoring}
-            />
-          )}
-        </div>
-
-        {/* Impact steps auto-advance on select, so they carry no Next button. */}
-        {step > 0 && !isImpact && (
-          <div className="flex justify-center mt-8">
-            <button
-              onClick={isSelfRate ? () => setStep(FIRST_IMPACT_STEP) : () => setStep(step + 1)}
-              disabled={!canAdvance()}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              {isSelfRate ? 'Continue' : 'Next'}
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+            {step > 0 && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={onNext}
+                  disabled={!canAdvance()}
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  {isLastImpact ? 'See my results' : isSelfRate ? 'Continue' : 'Next'}
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
@@ -274,16 +248,22 @@ function PersonalizingStep() {
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 text-center">
       <Loader2 className="w-8 h-8 text-brand animate-spin mx-auto mb-4" />
       <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">Personalizing your scenarios…</h2>
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        Building a few scenarios around your role. This takes a moment.
-      </p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">Building a few scenarios around your role. This takes a moment.</p>
+    </div>
+  );
+}
+
+function ScoringStep() {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 text-center animate-fade-in">
+      <Loader2 className="w-8 h-8 text-brand animate-spin mx-auto mb-4" />
+      <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">Scoring your AI impact…</h2>
+      <p className="text-sm text-slate-500 dark:text-slate-400">Weighing your answers against the AI competency scale.</p>
     </div>
   );
 }
 
 function FinishButton({ gated, onDone }) {
-  // In the gate, finishing dismisses the overlay (the caller flips calibrated_at
-  // which unmounts the gate). On the standalone page we route home.
   const label = gated ? 'Enter the platform' : 'Back to home';
   function handle() {
     onDone?.();

@@ -2,25 +2,37 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getScores } from '@/lib/scoring-store';
+import { getImpactDetail, getScores } from '@/lib/scoring-store';
 import { ImpactResults } from '@/components/assessment-steps';
 import { Crosshair, RotateCcw } from 'lucide-react';
 
-// "My Impact" is now a read-only view of the AI-impact scores produced by the
-// unified assessment (calibration + impact merged). Taking or refreshing it
-// happens in one place — the calibration flow — so there's a single assessment,
-// not two. This panel just shows the latest result and links back to it.
+// "My Impact" is a read-only view of the AI-impact competency scores produced by
+// the unified assessment (calibration + impact merged). Shows self vs measured
+// and the "why" per competency. Taking/refreshing happens in one place — the
+// calibration flow.
 export default function AiImpactPanel() {
-  const [scores, setScores] = useState(null);
+  const [detail, setDetail] = useState(undefined); // undefined = loading
 
   useEffect(() => {
-    setScores(getScores());
+    const d = getImpactDetail();
+    if (d) { setDetail(d); return; }
+    // Back-compat: older results stored only the flat measured scores.
+    const scores = getScores();
+    if (scores) {
+      setDetail(Object.fromEntries(
+        ['personal', 'team', 'org', 'development'].map(k => [k, { measured: scores[k] || 0 }]),
+      ));
+    } else {
+      setDetail(null);
+    }
   }, []);
 
-  if (scores) {
+  if (detail === undefined) return null;
+
+  if (detail) {
     return (
       <div>
-        <ImpactResults scores={scores} />
+        <ImpactResults detail={detail} />
         <div className="flex justify-center mt-6">
           <Link
             href="/calibration"
@@ -41,7 +53,7 @@ export default function AiImpactPanel() {
       <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">No impact scores yet</h2>
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
         Your AI impact is measured as part of calibration. Take it once and your Personal, Team,
-        Org, and AI Development scores show up here — and in your manager&apos;s team view.
+        Org, and AI Development scores show up here — with the &ldquo;why&rdquo; behind each.
       </p>
       <Link
         href="/calibration"

@@ -4,8 +4,9 @@
 // Kept separate from the coordinator (calibration-flow.jsx) so each file stays
 // small and the same pieces can be reused by the /my-impact results view.
 
+import { useState } from 'react';
 import {
-  Crosshair, ChevronRight, Check, ArrowRight, Loader2,
+  Crosshair, Check, ArrowRight,
   Shield, MessageSquare, Brain, Bot, Database, Wand2,
   Award, TrendingUp, User, Users, Building2,
 } from 'lucide-react';
@@ -165,8 +166,8 @@ export function SelfRateStep({ selfRating, onRatingChange }) {
   );
 }
 
-// --- Impact question (multiple choice, auto-advances) ----------------------
-export function ImpactQuestionCard({ question, onSelect }) {
+// --- Impact question (multiple choice = self-claim, + optional example) ------
+export function ImpactQuestionCard({ question, selectedValue, exampleText, onSelect, onExampleChange }) {
   const Icon = DIMENSION_ICONS[question.dimension];
   const label = DIMENSION_LABELS[question.dimension];
   return (
@@ -178,45 +179,33 @@ export function ImpactQuestionCard({ question, onSelect }) {
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight">{question.question}</h2>
       </div>
       <div className="space-y-3 max-w-lg mx-auto">
-        {question.options.map(option => (
-          <button
-            key={option.value}
-            onClick={() => onSelect(option)}
-            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50"
-          >
-            <span className="w-8 h-8 rounded-lg bg-brand-50 text-brand font-bold text-sm flex items-center justify-center shrink-0">{option.value}</span>
-            <span className="text-sm font-medium">{option.label}</span>
-          </button>
-        ))}
+        {question.options.map(option => {
+          const isSel = selectedValue === option.value;
+          return (
+            <button
+              key={option.value}
+              onClick={() => onSelect(option)}
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all ${
+                isSel
+                  ? 'bg-brand text-white border-brand shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
+              }`}
+            >
+              <span className={`w-8 h-8 rounded-lg font-bold text-sm flex items-center justify-center shrink-0 ${isSel ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand'}`}>{option.value}</span>
+              <span className="text-sm font-medium">{option.label}</span>
+            </button>
+          );
+        })}
       </div>
-    </div>
-  );
-}
-
-// --- Impact follow-up (free text, AI-scored) -------------------------------
-export function ImpactFollowUpCard({ question, text, onTextChange, onSubmit, isScoring }) {
-  return (
-    <div className="max-w-lg mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">{question}</h2>
-        <p className="text-slate-600 dark:text-slate-400 text-sm">The more specific you are, the more accurate your score will be.</p>
-      </div>
-      <textarea
-        value={text}
-        onChange={e => onTextChange(e.target.value)}
-        placeholder="Describe what you've done..."
-        rows={4}
-        autoFocus
-        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none"
-      />
-      <div className="text-center mt-6">
-        <button
-          onClick={onSubmit}
-          disabled={!text.trim() || isScoring}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          {isScoring ? (<><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>) : (<>Continue <ChevronRight className="w-4 h-4" /></>)}
-        </button>
+      <div className="max-w-lg mx-auto mt-5">
+        <label className="block text-sm font-medium text-ink dark:text-slate-200 mb-1.5">{question.example}</label>
+        <textarea
+          value={exampleText || ''}
+          onChange={e => onExampleChange(e.target.value)}
+          rows={3}
+          placeholder="A specific example makes your score more accurate (optional, but it helps)."
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none"
+        />
       </div>
     </div>
   );
@@ -304,52 +293,81 @@ export function SkillResults({ skills, selfRating }) {
   );
 }
 
-// --- Impact results --------------------------------------------------------
-export function ImpactResults({ scores, previousScores = null }) {
-  const overall = getOverallLevel(scores);
+// --- Impact results (self vs measured + why) --------------------------------
+// `detail` = { personal: { self, measured, why }, team, org, development }.
+export function ImpactResults({ detail, previousScores = null }) {
   const dimensions = ['personal', 'team', 'org', 'development'];
+  const measuredMap = Object.fromEntries(dimensions.map(d => [d, detail?.[d]?.measured || 0]));
+  const overall = getOverallLevel(measuredMap);
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
       <div className="h-2 bg-gradient-to-r from-brand via-[#009FDA] to-[#0055FF]" />
       <div className="p-8">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-3">Your AI Impact Profile</h2>
           <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-bold ${overall.color}`}>
             Overall: {overall.level} Impact
           </span>
         </div>
+        <div className="flex justify-end gap-3 text-[10px] text-slate-500 dark:text-slate-400 mb-3">
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand" /> Measured</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand/30" /> You rated yourself</span>
+        </div>
         <div className="space-y-4">
-          {dimensions.map(dim => {
-            const score = scores[dim] || 0;
-            const label = SCORE_LABELS[score] || 'Not Assessed';
-            const Icon = DIMENSION_ICONS[dim];
-            const prev = previousScores?.[dim];
-            const delta = prev ? score - prev : null;
-            return (
-              <div key={dim} className="flex items-center gap-4 p-4 rounded-xl bg-bg-warm dark:bg-slate-900 border border-slate-100">
-                <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-brand" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-ink dark:text-slate-200">{DIMENSION_LABELS[dim]}</span>
-                    {delta !== null && delta !== 0 && (
-                      <span className={`text-xs font-bold ${delta > 0 ? 'text-green-600' : 'text-red-500'}`}>{delta > 0 ? '+' : ''}{delta}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand rounded-full transition-all duration-700" style={{ width: `${(score / 5) * 100}%` }} />
-                    </div>
-                    <span className="text-sm font-bold text-ink dark:text-slate-200 w-6 text-right">{score}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{label}</p>
-                </div>
-              </div>
-            );
-          })}
+          {dimensions.map(dim => (
+            <ImpactRow key={dim} dim={dim} d={detail?.[dim] || {}} prev={previousScores?.[dim]} />
+          ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ImpactRow({ dim, d, prev }) {
+  const [open, setOpen] = useState(false);
+  const Icon = DIMENSION_ICONS[dim];
+  const measured = d.measured || 0;
+  const self = (d.self === 0 || d.self) ? d.self : null;
+  const label = SCORE_LABELS[measured] || 'Not Assessed';
+  const delta = (prev !== undefined && prev !== null) ? measured - prev : null;
+  const gap = self !== null ? measured - self : null;
+
+  return (
+    <div className="p-4 rounded-xl bg-bg-warm dark:bg-slate-900 border border-slate-100 dark:border-slate-700">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+          <Icon className="w-5 h-5 text-brand" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-semibold text-ink dark:text-slate-200">{DIMENSION_LABELS[dim]}</span>
+            {delta !== null && delta !== 0 && (
+              <span className={`text-xs font-bold ${delta > 0 ? 'text-green-600' : 'text-red-500'}`}>{delta > 0 ? '+' : ''}{delta} vs last</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              {self !== null && <div className="absolute h-full bg-brand/30 rounded-full" style={{ width: `${(self / 5) * 100}%` }} />}
+              <div className="absolute h-full bg-brand rounded-full transition-all duration-700" style={{ width: `${(measured / 5) * 100}%` }} />
+            </div>
+            <span className="text-sm font-bold text-ink dark:text-slate-200 w-6 text-right">{measured}</span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {label}
+            {gap !== null && gap !== 0 && (
+              <span className="text-slate-400"> · you rated yourself {self} ({gap > 0 ? `measured ${gap} higher` : `${Math.abs(gap)} higher than measured`})</span>
+            )}
+          </p>
+        </div>
+      </div>
+      {d.why && (
+        <div className="mt-2 pl-14">
+          <button onClick={() => setOpen(o => !o)} className="text-xs font-semibold text-brand hover:underline">
+            {open ? 'Hide why' : 'Why this score?'}
+          </button>
+          {open && <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{d.why}</p>}
+        </div>
+      )}
     </div>
   );
 }
