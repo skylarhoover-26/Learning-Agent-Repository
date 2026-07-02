@@ -29,13 +29,16 @@ import {
 } from '@/components/assessment-steps';
 
 const N_IMPACT = IMPACT_QUESTIONS.length;
-const GEN_TIMEOUT_MS = 18000;
+// Generation runs on Haiku (fast), but a required gate should never hang — give
+// it a generous window and fall back to the curated set if it's slow.
+const GEN_TIMEOUT_MS = 45000;
 
 // Build the final ordered scenario list: role-generated where available, curated
-// fallback otherwise. Privacy is always the curated scenario.
+// fallback per skill otherwise (including privacy, which is generated but always
+// has a vetted curated fallback).
 function composeScenarios(generated) {
   return CALIBRATION_SKILL_ORDER.map((id) =>
-    id !== 'privacy' && generated && generated[id] ? generated[id] : SCENARIO_BY_ID[id],
+    (generated && generated[id]) ? generated[id] : SCENARIO_BY_ID[id],
   );
 }
 
