@@ -250,12 +250,25 @@ function ScorePicker({ value, onChange }) {
 const COMPETENCY_NAMES = { personal: 'Personal Impact', team: 'Team Impact', org: 'Org Impact', development: 'AI Development' };
 const LEVEL_NAMES = { 1: 'Needs Improving', 2: 'Still Developing', 3: 'Fully Successful', 4: 'Often Exceeds', 5: 'Role Model' };
 
-// Expanded per-report panel: the AI "why" behind each competency score + the
-// month-over-month trend from the report's calibration history.
-function WhyTrendPanel({ detail, history }) {
+const CAL_SKILLS = [
+  { key: 'privacy', name: 'Data Privacy' },
+  { key: 'prompting', name: 'Prompting' },
+  { key: 'comms', name: 'Communication' },
+  { key: 'eval', name: 'AI Evaluation' },
+  { key: 'agents', name: 'AI Agents' },
+  { key: 'data', name: 'Data Literacy' },
+];
+
+// Expanded per-report panel: the AI "why" behind each competency score, the
+// month-over-month trend, and the skill-calibration insights (measured mastery
+// vs self-rating) so the manager sees the fuller picture.
+function WhyTrendPanel({ detail, history, calibration }) {
   const dims = ['personal', 'team', 'org', 'development'];
   const prev = Array.isArray(history) && history.length >= 2 ? history[history.length - 2]?.scores : null;
   return (
+    <div className="space-y-4">
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">AI Impact — why &amp; trend</p>
     <div className="grid sm:grid-cols-2 gap-3">
       {dims.map(dim => {
         const d = (detail && detail[dim]) || {};
@@ -285,6 +298,34 @@ function WhyTrendPanel({ detail, history }) {
         );
       })}
     </div>
+    </div>
+
+    {calibration?.skills && (
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">AI Calibration — skills (measured vs self)</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {CAL_SKILLS.map(({ key, name }) => {
+            const measured = Math.round((calibration.skills[key] ?? 0) * 100);
+            const self = calibration.selfRating && calibration.selfRating[key] != null
+              ? Math.round(calibration.selfRating[key] * 100) : null;
+            return (
+              <div key={key} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-ink dark:text-slate-200 truncate">{name}</span>
+                  <span className="text-xs font-bold text-brand">{measured}</span>
+                </div>
+                <div className="relative h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-1">
+                  {self !== null && <div className="absolute h-full bg-brand/30 rounded-full" style={{ width: `${self}%` }} />}
+                  <div className="absolute h-full bg-brand rounded-full" style={{ width: `${measured}%` }} />
+                </div>
+                {self !== null && <p className="text-[10px] text-slate-400 mt-0.5">self {self}</p>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )}
+    </div>
   );
 }
 
@@ -309,6 +350,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
       managerScores: data.managerScores || null,
       detail: data.detail || null,
       history: data.history || [],
+      calibration: data.calibration || null,
       progress: data.progress || 0,
       status: data.status || 'Not Started',
       lastActive: data.lastActive || null,
@@ -432,7 +474,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
             <tbody>
               {rows.map((person, i) => {
                 const pending = pendingScores[person.email] || {};
-                const hasWhy = person.detail && Object.values(person.detail).some(d => d?.why);
+                const hasWhy = (person.detail && Object.values(person.detail).some(d => d?.why)) || !!person.calibration;
                 const isOpen = !!expanded[person.email];
                 return (
                   <Fragment key={person.email}>
@@ -497,7 +539,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                   {isOpen && (
                     <tr className="border-b border-ink/5 dark:border-slate-700 bg-brand-50/30 dark:bg-slate-900/50">
                       <td colSpan={13} className="px-4 py-4">
-                        <WhyTrendPanel detail={person.detail} history={person.history} />
+                        <WhyTrendPanel detail={person.detail} history={person.history} calibration={person.calibration} />
                       </td>
                     </tr>
                   )}

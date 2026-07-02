@@ -23,9 +23,10 @@ async function handleFetchTeamScores(emails) {
 
   const results = await Promise.all(
     emails.map(async (email) => {
-      const [scoringData, managerScores, dataTypes] = await Promise.all([
+      const [scoringData, managerScores, calibrationData, dataTypes] = await Promise.all([
         getUserData(email, 'ai_impact_scores'),
         getUserData(email, 'manager_scores'),
+        getUserData(email, 'calibration_profile'),
         listUserDataTypes(email),
       ]);
 
@@ -113,6 +114,11 @@ async function handleFetchTeamScores(emails) {
         history: Array.isArray(scoringData?.history)
           ? scoringData.history.slice(-6).map(h => ({ scored_at: h.scored_at, scores: h.scores }))
           : [],
+        // Skill calibration insights (measured mastery + self-rating, 0-1) so the
+        // manager sees the fuller picture, not just the 4 impact competencies.
+        calibration: (calibrationData?.skills)
+          ? { skills: calibrationData.skills, selfRating: calibrationData.selfRating || null }
+          : null,
         level,
         progress,
         status,
