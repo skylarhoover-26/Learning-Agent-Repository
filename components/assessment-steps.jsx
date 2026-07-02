@@ -38,20 +38,22 @@ export function IntroStep({ onNext }) {
           Placement &middot; ~5 minutes
         </div>
         <h2 className="text-2xl font-bold tracking-tight mb-2">
-          Let&apos;s figure out where you are with AI — and where to take you next.
+          Get AI training that&apos;s actually worth your time.
         </h2>
       </div>
       <div className="p-8">
         <p className="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-          We use this once, then your home screen, lessons, and updates all adapt to{' '}
-          <strong>your role</strong> and <strong>your gaps</strong>. It&apos;s how we make sure
-          your lessons aren&apos;t too basic or too advanced. No right answers — just honest signal.
+          This is the one step that makes everything after it <strong>yours</strong>. Answer honestly
+          and your lessons, home screen, and daily picks all aim at <strong>your real job</strong>,
+          pitched to <strong>what you already know</strong>, so nothing feels too basic or over your head.
+          A couple minutes now saves you hours of training that doesn&apos;t fit.
         </p>
+        <p className="text-sm font-semibold text-ink dark:text-slate-200 mb-2">What that looks like:</p>
         <ul className="text-sm text-slate-500 dark:text-slate-400 space-y-2 mb-6 list-disc pl-5">
-          <li>A few real Housecall Pro scenarios to see how you actually work with AI</li>
-          <li>A quick self-rating we compare to your measured score</li>
-          <li>A short read on how AI is changing your day-to-day</li>
-          <li>You&apos;ll see your profile and where to grow first</li>
+          <li>A few real Housecall Pro situations from your role, to see how you actually use AI</li>
+          <li>A quick self-rating we check against how you actually did</li>
+          <li>A short read on how AI is changing your day to day</li>
+          <li>Your profile, and the first thing worth learning</li>
         </ul>
         <button
           onClick={onNext}
