@@ -327,7 +327,9 @@ function ImpactRow({ dim, d, prev }) {
   const [open, setOpen] = useState(false);
   const Icon = DIMENSION_ICONS[dim];
   const measured = d.measured || 0;
-  const self = (d.self === 0 || d.self) ? d.self : null;
+  // Self-claim now tops out at 4 (5 is earned via the measured score). Normalize
+  // any legacy self of 5 from pre-fix runs so it never displays as "self-rated 5".
+  const self = (d.self === 0 || d.self) ? Math.min(4, d.self) : null;
   const label = SCORE_LABELS[measured] || 'Not Assessed';
   const delta = (prev !== undefined && prev !== null) ? measured - prev : null;
   const gap = self !== null ? measured - self : null;

@@ -273,7 +273,8 @@ function WhyTrendPanel({ detail, history, calibration }) {
       {dims.map(dim => {
         const d = (detail && detail[dim]) || {};
         const measured = d.measured || 0;
-        const self = (d.self === 0 || d.self) ? d.self : null;
+        // Self-claim tops out at 4 now; normalize legacy 5s from pre-fix runs.
+        const self = (d.self === 0 || d.self) ? Math.min(4, d.self) : null;
         const prevScore = prev ? prev[dim] : null;
         const delta = (prevScore !== null && prevScore !== undefined && measured) ? measured - prevScore : null;
         return (
