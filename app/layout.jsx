@@ -16,6 +16,7 @@ import { TourProvider } from '@/components/guided-tour-provider';
 import HelpWidget from '@/components/help-widget';
 import IdentityGate from '@/components/identity-gate';
 import OnboardingTour from '@/components/onboarding-tour';
+import CalibrationGate from '@/components/calibration-gate';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -61,6 +62,7 @@ export default function RootLayout({ children }) {
                     </SidebarShell>
                     <PreviewModeBanner />
                   </MenuVisibilityProvider>
+                  <CalibrationGate />
                   <OnboardingTour />
                   <GlobalXpPopup />
                 </TourProvider>

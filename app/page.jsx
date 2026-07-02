@@ -11,7 +11,7 @@ import UserMenu from '@/components/user-menu';
 import WelcomeGreeting from '@/components/welcome-greeting';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
-import ImpactAssessmentModal from '@/components/impact-assessment-modal';
+import CalibrationRefreshReminder from '@/components/calibration-refresh-reminder';
 import HomeQuickActions from '@/components/home-quick-action';
 import GatedHomeSection from '@/components/gated-home-section';
 import {
@@ -245,7 +245,7 @@ export default async function Dashboard() {
         {/* AI News Feed */}
         <LiveSourcesFeed />
       </main>
-      <ImpactAssessmentModal />
+      <CalibrationRefreshReminder />
     </div>
   );
 }

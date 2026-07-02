@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, BarChart3 } from 'lucide-react';
+import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, BarChart3, Crosshair } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import PausedLessonsBell from '@/components/paused-lessons-bell';
 import Avatar from '@/components/avatar';
@@ -18,6 +18,7 @@ import { displayNameFromProfile } from '@/lib/display-name';
 // All "My …" for a consistent, personalized feel; kept alphabetical by label.
 const PROFILE_LINKS = [
   { href: '/my-tools', icon: PanelsTopLeft, label: 'My AI Tools', tour: 'nav-my-tools' },
+  { href: '/calibration', icon: Crosshair, label: 'My Calibration', tour: 'nav-my-calibration' },
   { href: '/my-impact', icon: BarChart3, label: 'My Impact' },
   { href: '/profile', icon: User, label: 'My Profile', tour: 'nav-profile' },
   { href: '/projects', icon: FolderKanban, label: 'My Projects', tour: 'nav-projects' },
@@ -30,7 +31,7 @@ const PROFILE_LINKS = [
 export default function UserMenu() {
   const { profile } = useProfile();
   const { crownTier } = useChampions();
-  const { isAdmin, previewAsUser, setPreviewAsUser } = useMenuVisibility();
+  const { isAdmin, previewAsUser, setPreviewAsUser, isProfileItemHidden, isProfileItemComingSoon } = useMenuVisibility();
   const displayName = displayNameFromProfile(profile);
   const myTier = profile ? crownTier(resolveLearnerId(profile)) : 0;
 
@@ -128,19 +129,38 @@ export default function UserMenu() {
             <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
               <p className="text-sm font-semibold text-ink dark:text-slate-200 truncate">{displayName}</p>
             </div>
-            {PROFILE_LINKS.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                role="menuitem"
-                data-tour={link.tour}
-                className="flex items-center gap-3 px-4 py-2 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-              >
-                <link.icon className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
-                {link.label}
-              </Link>
-            ))}
+            {PROFILE_LINKS.map(link => {
+              // Admin "Profile Visibility" can hide an item (dropped) or mark it
+              // "Coming soon" (shown greyed, non-clickable). Admins see all.
+              if (isProfileItemHidden(link.href)) return null;
+              if (isProfileItemComingSoon(link.href)) {
+                return (
+                  <div
+                    key={link.href}
+                    role="menuitem"
+                    aria-disabled="true"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                  >
+                    <link.icon className="w-4 h-4 shrink-0" />
+                    <span className="line-through">{link.label}</span>
+                    <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide text-amber-500">Soon</span>
+                  </div>
+                );
+              }
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  role="menuitem"
+                  data-tour={link.tour}
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <link.icon className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                  {link.label}
+                </Link>
+              );
+            })}
             {isAdmin && (
               <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
                 <button

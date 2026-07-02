@@ -2,6 +2,10 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ITEM_SECTION_BY_HREF, INTERNAL_ITEM_HREFS } from '@/lib/menu-catalog';
+import { PROFILE_ITEM_HREFS } from '@/lib/profile-catalog';
+
+// Profile-menu items that map to a real internal page we can route-guard.
+const PROFILE_INTERNAL_HREFS = PROFILE_ITEM_HREFS.filter((h) => h.startsWith('/'));
 
 // Fetches admin status + the menu-visibility config ONCE and shares it with both
 // the sidebar (which greys out disabled entries) and the route guard (which
@@ -18,6 +22,8 @@ export function MenuVisibilityProvider({ children }) {
   const [disabledItems, setDisabledItems] = useState([]); // "coming soon"
   const [hiddenSections, setHiddenSections] = useState([]); // removed entirely
   const [hiddenItems, setHiddenItems] = useState([]); // removed entirely
+  const [profileComingItems, setProfileComingItems] = useState([]); // "coming soon"
+  const [profileHiddenItems, setProfileHiddenItems] = useState([]); // removed entirely
   const [loaded, setLoaded] = useState(false);
   // Admin-only "view as a regular user" preview. Persisted so it survives
   // navigation while the admin clicks around testing. Never changes the real
@@ -38,10 +44,12 @@ export function MenuVisibilityProvider({ children }) {
     Promise.all([
       fetch('/api/admin-check', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ isAdmin: false })),
       fetch('/api/menu-visibility', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ sections: [], items: [] })),
-    ]).then(([admin, vis]) => {
+      fetch('/api/profile-visibility', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ items: [], hiddenItems: [] })),
+    ]).then(([admin, vis, profileVis]) => {
       if (cancelled) return;
       setIsAdmin(!!admin?.isAdmin);
       applyVisibility(vis);
+      applyProfileVisibility(profileVis);
       setLoaded(true);
     });
 
@@ -63,12 +71,21 @@ export function MenuVisibilityProvider({ children }) {
     setHiddenItems(Array.isArray(vis?.hiddenItems) ? vis.hiddenItems : []);
   }
 
+  function applyProfileVisibility(vis) {
+    setProfileComingItems(Array.isArray(vis?.items) ? vis.items : []);
+    setProfileHiddenItems(Array.isArray(vis?.hiddenItems) ? vis.hiddenItems : []);
+  }
+
   // Re-pull the saved config so the live menu/route gating reflects a just-saved
-  // change without a full page reload. Called by the admin page after a save.
+  // change without a full page reload. Called by the admin pages after a save.
   async function refresh() {
     try {
-      const vis = await fetch('/api/menu-visibility', { cache: 'no-store' }).then(r => r.json());
+      const [vis, profileVis] = await Promise.all([
+        fetch('/api/menu-visibility', { cache: 'no-store' }).then(r => r.json()),
+        fetch('/api/profile-visibility', { cache: 'no-store' }).then(r => r.json()),
+      ]);
       applyVisibility(vis);
+      applyProfileVisibility(profileVis);
     } catch {
       // keep the current config if the refresh fails
     }
@@ -88,6 +105,8 @@ export function MenuVisibilityProvider({ children }) {
   const comingItemSet = new Set(disabledItems);
   const hiddenSectionSet = new Set(hiddenSections);
   const hiddenItemSet = new Set(hiddenItems);
+  const profileComingSet = new Set(profileComingItems);
+  const profileHiddenSet = new Set(profileHiddenItems);
   // Whether the menu/route gating should treat this person as an admin. Real
   // admins previewing as a user are gated like everyone else, but only for the
   // content toggles — their actual admin access is untouched.
@@ -111,23 +130,39 @@ export function MenuVisibilityProvider({ children }) {
     return 'visible';
   }
 
+  // Profile-menu items live in their own config (no sections). Same three-state
+  // model, same admin exemption.
+  function profileItemState(href) {
+    if (actingAsAdmin) return 'visible';
+    if (profileHiddenSet.has(href)) return 'hidden';
+    if (profileComingSet.has(href)) return 'coming_soon';
+    return 'visible';
+  }
+
   const isSectionHidden = (title) => sectionState(title) === 'hidden';
   const isSectionComingSoon = (title) => sectionState(title) === 'coming_soon';
   const isItemHidden = (href) => itemState(href) === 'hidden';
   const isItemComingSoon = (href) => itemState(href) === 'coming_soon';
+  const isProfileItemHidden = (href) => profileItemState(href) === 'hidden';
+  const isProfileItemComingSoon = (href) => profileItemState(href) === 'coming_soon';
   // "Disabled" = not fully visible (either teased or hidden) — used to drop
   // home-page cards/links and gate routes.
   const isSectionDisabled = (title) => sectionState(title) !== 'visible';
   const isItemDisabled = (href) => itemState(href) !== 'visible';
 
   // The state of the current pathname's internal route. Matches the longest
-  // catalog href that prefixes the path (so /lesson/123 resolves to /lesson).
+  // href that prefixes the path (so /lesson/123 resolves to /lesson), across
+  // BOTH the menu catalog and the profile menu, so a hidden profile item's page
+  // is gated just like a hidden menu item's.
   function routeState(pathname) {
     if (actingAsAdmin || !pathname) return 'visible';
-    const match = INTERNAL_ITEM_HREFS
-      .filter(href => pathname === href || pathname.startsWith(href + '/'))
-      .sort((a, b) => b.length - a.length)[0];
-    return match ? itemState(match) : 'visible';
+    const prefixes = (href) => pathname === href || pathname.startsWith(href + '/');
+    const menuMatch = INTERNAL_ITEM_HREFS.filter(prefixes).sort((a, b) => b.length - a.length)[0];
+    const profileMatch = PROFILE_INTERNAL_HREFS.filter(prefixes).sort((a, b) => b.length - a.length)[0];
+    // Prefer the more specific (longer) match if both catalogs have one.
+    if (menuMatch && (!profileMatch || menuMatch.length >= profileMatch.length)) return itemState(menuMatch);
+    if (profileMatch) return profileItemState(profileMatch);
+    return 'visible';
   }
   const isRouteDisabled = (pathname) => routeState(pathname) !== 'visible';
 
@@ -135,8 +170,9 @@ export function MenuVisibilityProvider({ children }) {
     <MenuVisibilityContext.Provider
       value={{
         isAdmin, actingAsAdmin, isManager, loaded, previewAsUser, setPreviewAsUser, refresh,
-        sectionState, itemState, routeState,
+        sectionState, itemState, routeState, profileItemState,
         isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon,
+        isProfileItemHidden, isProfileItemComingSoon,
         isSectionDisabled, isItemDisabled, isRouteDisabled,
       }}
     >
@@ -157,10 +193,13 @@ export function useMenuVisibility() {
     sectionState: () => 'visible',
     itemState: () => 'visible',
     routeState: () => 'visible',
+    profileItemState: () => 'visible',
     isSectionHidden: () => false,
     isSectionComingSoon: () => false,
     isItemHidden: () => false,
     isItemComingSoon: () => false,
+    isProfileItemHidden: () => false,
+    isProfileItemComingSoon: () => false,
     isSectionDisabled: () => false,
     isItemDisabled: () => false,
     isRouteDisabled: () => false,

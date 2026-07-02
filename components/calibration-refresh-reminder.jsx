@@ -2,33 +2,34 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BarChart3, X } from 'lucide-react';
+import { Crosshair, X } from 'lucide-react';
+import { useProfile } from '@/components/profile-provider';
 import {
-  isImpactAssessmentDue,
+  IMPACT_ASSESSMENT_INTERVAL_WEEKS,
   isImpactAssessmentSnoozed,
   snoozeImpactAssessment,
-  getLastAssessmentAt,
 } from '@/lib/scoring-store';
 
-/**
- * Shown on the dashboard a moment after load when the AI Impact Assessment is
- * due (never taken, or >= 6 weeks since the last one) and not snoozed.
- * "Remind me later" snoozes for 3 days so it doesn't nag on every visit.
- */
-export default function ImpactAssessmentModal() {
+// Non-blocking nudge to refresh calibration. The first run is forced by
+// CalibrationGate; this only appears AFTER calibration is done and it's been
+// ~6 weeks since the last one, so a learner's lessons and impact stay in step
+// with how they've actually grown. "Remind me later" snoozes for 3 days.
+const INTERVAL_MS = IMPACT_ASSESSMENT_INTERVAL_WEEKS * 7 * 24 * 60 * 60 * 1000;
+
+export default function CalibrationRefreshReminder() {
   const router = useRouter();
+  const { profile } = useProfile();
   const [show, setShow] = useState(false);
-  const [firstTime, setFirstTime] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isImpactAssessmentDue() && !isImpactAssessmentSnoozed()) {
-        setFirstTime(!getLastAssessmentAt());
-        setShow(true);
-      }
-    }, 800);
+    // Only for already-calibrated users (the gate handles first-timers).
+    const last = profile?.calibrated_at;
+    if (!last) return;
+    const due = Date.now() - new Date(last).getTime() >= INTERVAL_MS;
+    if (!due || isImpactAssessmentSnoozed()) return;
+    const timer = setTimeout(() => setShow(true), 800);
     return () => clearTimeout(timer);
-  }, []);
+  }, [profile]);
 
   if (!show) return null;
 
@@ -39,7 +40,7 @@ export default function ImpactAssessmentModal() {
 
   function start() {
     setShow(false);
-    router.push('/my-impact');
+    router.push('/calibration');
   }
 
   return (
@@ -49,7 +50,7 @@ export default function ImpactAssessmentModal() {
         <div className="p-6">
           <div className="flex items-start justify-between gap-4 mb-3">
             <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-brand" />
+              <Crosshair className="w-6 h-6 text-brand" />
             </div>
             <button
               onClick={later}
@@ -60,19 +61,18 @@ export default function ImpactAssessmentModal() {
             </button>
           </div>
           <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-1">
-            {firstTime ? 'Set your AI impact baseline' : 'Time for your AI impact check-in'}
+            Time to refresh your calibration
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
-            {firstTime
-              ? 'Take a quick 4-question assessment so we can track how AI is changing your work over time.'
-              : "It's been about 6 weeks. Take a quick 4-question pulse to see how your AI impact has grown."}
+            It&apos;s been about {IMPACT_ASSESSMENT_INTERVAL_WEEKS} weeks. Take it again so your
+            lessons and impact stay matched to how you&apos;ve grown.
           </p>
           <div className="flex items-center gap-3">
             <button
               onClick={start}
               className="flex-1 px-4 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all"
             >
-              Start assessment
+              Refresh now
             </button>
             <button
               onClick={later}
