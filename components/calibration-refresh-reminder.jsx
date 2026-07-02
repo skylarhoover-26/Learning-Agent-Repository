@@ -5,16 +5,16 @@ import { useRouter } from 'next/navigation';
 import { Crosshair, X } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import {
-  IMPACT_ASSESSMENT_INTERVAL_WEEKS,
+  getLastAssessmentAt,
   isImpactAssessmentSnoozed,
   snoozeImpactAssessment,
 } from '@/lib/scoring-store';
 
-// Non-blocking nudge to refresh calibration. The first run is forced by
-// CalibrationGate; this only appears AFTER calibration is done and it's been
-// ~6 weeks since the last one, so a learner's lessons and impact stay in step
-// with how they've actually grown. "Remind me later" snoozes for 3 days.
-const INTERVAL_MS = IMPACT_ASSESSMENT_INTERVAL_WEEKS * 7 * 24 * 60 * 60 * 1000;
+// Non-blocking monthly nudge to re-grade the AI competencies. The first run is
+// forced by CalibrationGate; this only appears AFTER calibration is done and it's
+// been ~a month since the last grade, so scores stay current with how someone
+// has grown. "Remind me later" snoozes for 3 days.
+const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
 export default function CalibrationRefreshReminder() {
   const router = useRouter();
@@ -23,9 +23,10 @@ export default function CalibrationRefreshReminder() {
 
   useEffect(() => {
     // Only for already-calibrated users (the gate handles first-timers).
-    const last = profile?.calibrated_at;
-    if (!last) return;
-    const due = Date.now() - new Date(last).getTime() >= INTERVAL_MS;
+    if (!profile?.calibrated_at) return;
+    // Base "due" on the last time impact was graded; fall back to first calibration.
+    const last = getLastAssessmentAt() || profile.calibrated_at;
+    const due = Date.now() - new Date(last).getTime() >= MONTH_MS;
     if (!due || isImpactAssessmentSnoozed()) return;
     const timer = setTimeout(() => setShow(true), 800);
     return () => clearTimeout(timer);
@@ -61,18 +62,18 @@ export default function CalibrationRefreshReminder() {
             </button>
           </div>
           <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-1">
-            Time to refresh your calibration
+            Time to re-grade your AI competencies
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
-            It&apos;s been about {IMPACT_ASSESSMENT_INTERVAL_WEEKS} weeks. Take it again so your
-            lessons and impact stay matched to how you&apos;ve grown.
+            It&apos;s been about a month. Take a few minutes so your impact scores and lessons stay
+            matched to how you&apos;ve grown.
           </p>
           <div className="flex items-center gap-3">
             <button
               onClick={start}
               className="flex-1 px-4 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all"
             >
-              Refresh now
+              Re-grade now
             </button>
             <button
               onClick={later}

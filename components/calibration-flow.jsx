@@ -15,7 +15,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, ArrowRight, Loader2 } from 'lucide-react';
-import { saveCalibrationData, calculateSkills } from '@/lib/calibration-store';
+import { saveCalibrationData, calculateSkills, appendCalibrationRun } from '@/lib/calibration-store';
 import { CALIBRATION_SKILL_ORDER, SCENARIO_BY_ID } from '@/lib/calibration-scenarios';
 import { saveImpactDetail } from '@/lib/scoring-store';
 import { IMPACT_QUESTIONS } from '@/lib/impact-questions';
@@ -33,7 +33,7 @@ function composeScenarios(generated) {
   );
 }
 
-export default function CalibrationFlow({ onComplete, gated = false }) {
+export default function CalibrationFlow({ onComplete, gated = false, homeOnFinish = true }) {
   const [scenarios, setScenarios] = useState(null); // null = still generating
   const [waitingToStart, setWaitingToStart] = useState(false);
   const [step, setStep] = useState(0);
@@ -133,6 +133,7 @@ export default function CalibrationFlow({ onComplete, gated = false }) {
     try {
       saveCalibrationData({ skills, selfRating, answers });
       saveImpactDetail(detail);
+      appendCalibrationRun({ skills, selfRating, impact: detail });
     } catch (error) {
       console.error('Failed to save assessment:', error);
     }
@@ -163,7 +164,7 @@ export default function CalibrationFlow({ onComplete, gated = false }) {
           <ImpactResults detail={impactDetail} />
         </div>
         <div className="flex justify-center mt-8">
-          <FinishButton gated={gated} onDone={() => onComplete?.({ skills, selfRating, impactDetail })} />
+          <FinishButton gated={gated} homeOnFinish={homeOnFinish} onDone={() => onComplete?.({ skills, selfRating, impactDetail })} />
         </div>
       </div>
     );
@@ -263,11 +264,11 @@ function ScoringStep() {
   );
 }
 
-function FinishButton({ gated, onDone }) {
-  const label = gated ? 'Enter the platform' : 'Back to home';
+function FinishButton({ gated, homeOnFinish = true, onDone }) {
+  const label = gated ? 'Enter the platform' : (homeOnFinish ? 'Back to home' : 'Done');
   function handle() {
     onDone?.();
-    if (!gated) {
+    if (!gated && homeOnFinish) {
       try { window.location.assign('/'); } catch { /* no-op */ }
     }
   }

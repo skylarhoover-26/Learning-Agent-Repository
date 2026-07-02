@@ -107,6 +107,12 @@ async function handleFetchTeamScores(emails) {
         email,
         selfScores,
         managerScores: mgrScores,
+        // Per-competency detail { self, measured, why } and a trimmed dated
+        // history so the manager view can show the "why" and month-over-month trend.
+        detail: scoringData?.detail || null,
+        history: Array.isArray(scoringData?.history)
+          ? scoringData.history.slice(-6).map(h => ({ scored_at: h.scored_at, scores: h.scores }))
+          : [],
         level,
         progress,
         status,
