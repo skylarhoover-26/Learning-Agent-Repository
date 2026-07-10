@@ -283,7 +283,11 @@ export default function ActivityLogPage() {
   // Default to real AI interactions — page visits are navigation noise and are
   // shown only when explicitly filtered to.
   const [selectedType, setSelectedType] = useState('ai');
-  const [userFilter, setUserFilter] = useState('');
+  // Prefill from ?user=<email> so a link from Reporting can deep-link straight
+  // to one person's activity, without needing a Suspense-wrapped searchParams hook.
+  const [userFilter, setUserFilter] = useState(() =>
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('user') || '' : ''
+  );
 
   useEffect(() => {
     async function checkAdmin() {

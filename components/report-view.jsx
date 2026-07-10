@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Users, Activity, BookOpen, Zap, ArrowUpDown, Search, ChevronLeft, ChevronRight, TrendingUp, Lightbulb } from 'lucide-react';
+import Link from 'next/link';
+import { Users, Activity, BookOpen, Zap, ArrowUpDown, Search, ChevronLeft, ChevronRight, TrendingUp, Lightbulb, ExternalLink } from 'lucide-react';
 
 const truncate = (s, n) => (s && s.length > n ? `${s.slice(0, n - 1)}…` : (s || ''));
 const TONE = { amber: 'text-amber-500', emerald: 'text-emerald-500', blue: 'text-brand', slate: 'text-slate-400' };
@@ -381,7 +382,18 @@ export default function ReportView({
               ) : paged.map((p) => (
                 <tr key={p.learnerId} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/40">
                   <td className="py-2.5 px-4">
-                    <span className="font-medium text-ink dark:text-slate-200">{p.name}</span>
+                    {p.email ? (
+                      <Link
+                        href={`/admin/activity-log?user=${encodeURIComponent(p.email)}`}
+                        className="font-medium text-ink dark:text-slate-200 hover:text-brand inline-flex items-center gap-1 group"
+                        title="View this person's activity log"
+                      >
+                        {p.name}
+                        <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-brand" />
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-ink dark:text-slate-200">{p.name}</span>
+                    )}
                     {p.title && <span className="block text-xs text-slate-400">{p.title}</span>}
                   </td>
                   <td className="py-2.5 px-4 text-slate-600 dark:text-slate-300">{p.department}{p.subTeam && p.subTeam !== p.department ? ` · ${p.subTeam}` : ''}</td>
