@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '../../components/page-header';
@@ -9,6 +9,7 @@ import {
   Wrench, Bell, UserCog, Sparkles, ClipboardCheck, Eye,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
+import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
 // The Admin Dashboard is the single hub for every admin tool — each lives behind
 // a card here, so the sidebar only needs one "Admin Dashboard" entry.
@@ -30,18 +31,16 @@ const ADMIN_TOOLS = [
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [adminChecked, setAdminChecked] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Admin status is already fetched once, app-wide, by MenuVisibilityProvider —
+  // reuse it instead of re-checking on every visit to this page (that redundant
+  // fetch used to show a headerless loading screen each time).
+  const { isAdmin, loaded } = useMenuVisibility();
 
   useEffect(() => {
-    fetch('/api/admin-check')
-      .then((r) => r.json())
-      .then((d) => setIsAdmin(!!d.isAdmin))
-      .catch(() => setIsAdmin(false))
-      .finally(() => setAdminChecked(true));
-  }, []);
+    if (loaded && !isAdmin) router.replace('/');
+  }, [loaded, isAdmin, router]);
 
-  if (!adminChecked) {
+  if (!loaded) {
     return (
       <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex items-center justify-center">
         <BookLoader message="Checking admin access..." size="sm" />
@@ -50,7 +49,6 @@ export default function AdminDashboard() {
   }
 
   if (!isAdmin) {
-    router.replace('/');
     return null;
   }
 

@@ -1,31 +1,32 @@
-import BackButton from '@/components/back-button';
-import UserMenu from '@/components/user-menu';
+'use client';
+
+import { useLayoutEffect } from 'react';
+import { useHeaderContext } from '@/components/header-context';
 
 // `iconButton` lets a page swap the static icon for an interactive client
 // button (e.g. the Tour's play button). When omitted, the icon is decorative.
 // `actions` renders optional controls in the right cluster, just before the
 // user menu (e.g. a "Clear chat" button).
-export default function PageHeader({ icon: Icon, title, subtitle, iconButton, actions }) {
-  return (
-    <header className="js-topbar bg-ink sticky top-0 z-50 text-white">
-      <div className="px-4 py-4 flex items-center gap-3">
-        <BackButton />
-        <div className="flex items-center gap-3">
-          {iconButton ? iconButton : (
-            <div className="w-9 h-9 rounded-md bg-brand flex items-center justify-center">
-              <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
-          )}
-          <div>
-            <h1 className="font-bold tracking-tight text-[17px] leading-tight">{title}</h1>
-            {subtitle && <p className="text-xs text-white/60">{subtitle}</p>}
-          </div>
-        </div>
-        <div className="ml-auto flex items-center gap-1.5">
-          {actions}
-          <UserMenu />
-        </div>
-      </div>
-    </header>
-  );
+//
+// This doesn't render a <header> itself — it registers its content with the
+// shared bar in the root layout (see header-bar.jsx) so the bar stays mounted
+// across navigation instead of being torn down and rebuilt on every page,
+// which used to cause it to flash between pages.
+export default function PageHeader({ icon, title, subtitle, iconButton, actions }) {
+  const ctx = useHeaderContext();
+
+  // Re-sync on every render so prop changes (e.g. a page swapping `actions`)
+  // show up immediately.
+  useLayoutEffect(() => {
+    ctx?.setHeader({ icon, title, subtitle, iconButton, actions });
+  });
+
+  // Clear only when this instance actually unmounts — not on every re-render —
+  // so navigating straight to another page with its own <PageHeader> never
+  // has to paint a blank bar in between.
+  useLayoutEffect(() => {
+    return () => ctx?.setHeader(null);
+  }, [ctx]);
+
+  return null;
 }

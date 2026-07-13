@@ -1,3 +1,5 @@
+'use client';
+
 import PageHeader from '@/components/page-header';
 import UseCaseLibrary from '@/components/use-case-library';
 import { Library } from 'lucide-react';

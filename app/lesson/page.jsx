@@ -1364,6 +1364,11 @@ function LessonContent() {
 export default function LessonPage() {
   return (
     <div className="min-h-screen">
+      {/* Lives outside the Suspense boundary (LessonContent needs one for
+          useSearchParams) so the bar shows immediately on navigation instead of
+          going blank until LessonContent resolves. LessonContent's own
+          <PageHeader> takes over with the specific title once it mounts. */}
+      <PageHeader icon={BookOpen} title="Lesson" />
       <Suspense fallback={<div className="max-w-4xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
         <LessonContent />
       </Suspense>
