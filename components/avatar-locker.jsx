@@ -136,41 +136,52 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
               {saving ? 'Saving…' : 'Saved'}
             </span>
           )}
-          <div className="mt-1">{unlockedCount(ctx)} / {totalItems} unlocked</div>
+          {/* Unlock progress only matters for the character; hide it on the photo. */}
+          {!usingSlackPhoto && (
+            <div className="mt-1">{unlockedCount(ctx)} / {totalItems} unlocked</div>
+          )}
         </div>
 
-        {!controlled && (
-          <div className="w-full sm:w-28 flex flex-col gap-1.5">
-            <div className="flex rounded-pill bg-slate-100 dark:bg-slate-700 p-0.5">
-              <button
-                onClick={useCharacter}
-                className={`flex-1 px-2 py-1 rounded-pill text-xs font-medium transition-all ${
-                  !usingSlackPhoto ? 'bg-white dark:bg-slate-800 shadow-sm text-ink dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                Character
-              </button>
-              <button
-                onClick={useSlackPhoto}
-                disabled={slackStatus === 'loading'}
-                className={`flex-1 px-2 py-1 rounded-pill text-xs font-medium transition-all flex items-center justify-center gap-1 ${
-                  usingSlackPhoto ? 'bg-white dark:bg-slate-800 shadow-sm text-ink dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                {slackStatus === 'loading' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Slack className="w-3 h-3" />}
-                Slack
-              </button>
-            </div>
-            {slackStatus === 'error' && slackError && (
-              <p className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
-                {slackError}
-              </p>
-            )}
+        {/* Slack photo is the default for everyone; "Character" is the opt-in.
+            Shown in onboarding (controlled) and the profile locker alike. */}
+        <div className="w-full sm:w-28 flex flex-col gap-1.5">
+          <div className="flex rounded-pill bg-slate-100 dark:bg-slate-700 p-0.5">
+            <button
+              onClick={useSlackPhoto}
+              disabled={slackStatus === 'loading'}
+              className={`flex-1 px-2 py-1 rounded-pill text-xs font-medium transition-all flex items-center justify-center gap-1 ${
+                usingSlackPhoto ? 'bg-white dark:bg-slate-800 shadow-sm text-ink dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {slackStatus === 'loading' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Slack className="w-3 h-3" />}
+              Photo
+            </button>
+            <button
+              onClick={useCharacter}
+              className={`flex-1 px-2 py-1 rounded-pill text-xs font-medium transition-all ${
+                !usingSlackPhoto ? 'bg-white dark:bg-slate-800 shadow-sm text-ink dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              Character
+            </button>
           </div>
-        )}
+          {slackStatus === 'error' && slackError && (
+            <p className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+              <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+              {slackError}
+            </p>
+          )}
+        </div>
       </div>
 
+      {usingSlackPhoto ? (
+      <div className="flex items-center">
+        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+          You&apos;re using your <span className="font-semibold text-ink dark:text-slate-200">Slack profile photo</span> — the default for everyone.
+          {' '}Want a custom look instead? Tap <span className="font-semibold text-ink dark:text-slate-200">Character</span> to build one from unlocked outfits, hats, and sidekicks.
+        </p>
+      </div>
+      ) : (
       <div>
         {/* Slot tabs */}
         <div className="flex flex-wrap gap-2 mb-4">
@@ -255,6 +266,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
           </p>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -54,6 +54,9 @@ export default function OnboardingPage() {
   const [customTool, setCustomTool] = useState('');
   const [addingTool, setAddingTool] = useState(false);
   const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
+  // A restored draft's avatar is an explicit prior choice — don't override it
+  // with the Slack-photo default below.
+  const draftHadAvatarRef = useRef(false);
 
   // Snowflake-sourced prefill (title/manager/hireDate carried onto the saved
   // profile; department/sub-team pre-select the step-1 choices when valid).
@@ -96,7 +99,7 @@ export default function OnboardingPage() {
           if (typeof d.tier === 'string') setTier(d.tier);
           if (Array.isArray(d.goals)) setGoals(d.goals);
           if (Array.isArray(d.aiTools)) setAiTools(d.aiTools);
-          if (d.avatar) setAvatar(d.avatar);
+          if (d.avatar) { setAvatar(d.avatar); draftHadAvatarRef.current = true; }
           if (d.prefill) setPrefill(d.prefill);
           setPhase(d.phase || (d.department ? 'confirm' : 'manual'));
           readyRef.current = true;
@@ -156,6 +159,28 @@ export default function OnboardingPage() {
       }));
     } catch { /* storage unavailable */ }
   }, [step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, avatar, phase, prefill, session]);
+
+  // Everyone's default avatar is their Slack profile photo. Fetch it once on
+  // mount and switch the avatar into photo mode — UNLESS a restored draft
+  // already carries an explicit choice (a photo they kept, or a character they
+  // started building). If they have no custom Slack photo, we quietly leave the
+  // cartoon default in place. They can still flip to Character on the avatar step.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/slack-photo')
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !data?.ok || !data.imageUrl) return;
+        if (draftHadAvatarRef.current) return;
+        setAvatar((prev) => (
+          // Only default it while still pristine — never clobber a character the
+          // user has already started customizing.
+          prev === DEFAULT_AVATAR ? { mode: 'photo', photo_url: data.imageUrl } : prev
+        ));
+      })
+      .catch(() => { /* no Slack photo — keep the cartoon default */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -994,10 +1019,10 @@ function StepAvatar({ avatar, onChange, onFinish }) {
           <Smile className="w-7 h-7 text-cta-700" />
         </div>
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
-          Make your avatar
+          Your profile picture
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
-          Pick a look to start with. You&apos;ll unlock loads more — outfits, hats, hairstyles, sidekicks — as you level up. Tweak it anytime in your profile.
+          By default we use your Slack photo. Prefer a custom character? Switch to <span className="font-semibold">Character</span> to build one — you&apos;ll unlock more looks (outfits, hats, sidekicks) as you level up. Change it anytime in your profile.
         </p>
       </div>
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-6">
