@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Play, ArrowRight } from 'lucide-react';
+import { Bell, Play, ArrowRight, X } from 'lucide-react';
 import { listPausedLessons, relativeAccessTime, absoluteAccessDate } from '@/lib/paused-lessons';
 import {
   listNotifications, markNotificationsRead, unreadNotificationCount,
+  dismissNotification, clearNotifications,
 } from '@/lib/notifications-store';
 
 const FORMAT_LABEL = {
@@ -92,6 +93,17 @@ export default function PausedLessonsBell() {
     if (n.href) router.push(n.href);
   }
 
+  // Dismiss one notification without navigating (the bell has already marked
+  // it read at this point, since opening it does that).
+  function dismiss(e, id) {
+    e.stopPropagation();
+    dismissNotification(id);
+  }
+
+  function clearAll() {
+    clearNotifications();
+  }
+
   const label = badgeCount > 0
     ? `${badgeCount} notification${badgeCount === 1 ? '' : 's'}`
     : 'Notifications';
@@ -119,9 +131,19 @@ export default function PausedLessonsBell() {
           role="menu"
           className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-50 overflow-hidden"
         >
-          <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
-            <p className="text-sm font-bold text-ink dark:text-slate-200">Notifications</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">XP, badges &amp; lessons to pick back up</p>
+          <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-ink dark:text-slate-200">Notifications</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">XP, badges &amp; lessons to pick back up</p>
+            </div>
+            {notifications.length > 0 && (
+              <button
+                onClick={clearAll}
+                className="shrink-0 text-xs font-medium text-slate-400 hover:text-brand dark:text-slate-500 dark:hover:text-brand-300 transition-colors"
+              >
+                Clear all
+              </button>
+            )}
           </div>
 
           <ul className="max-h-96 overflow-y-auto py-1">
@@ -152,7 +174,7 @@ export default function PausedLessonsBell() {
                   <div
                     role={item.data.href ? 'menuitem' : undefined}
                     onClick={item.data.href ? () => openNotification(item.data) : undefined}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${item.data.href ? 'cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-700' : ''}`}
+                    className={`group w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${item.data.href ? 'cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-700' : 'hover:bg-slate-50 dark:hover:bg-slate-700/60'}`}
                   >
                     <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 dark:bg-slate-700 text-base shrink-0">
                       {item.data.emoji || '✨'}
@@ -165,6 +187,13 @@ export default function PausedLessonsBell() {
                         {item.data.detail ? `${item.data.detail} · ` : ''}{relativeAccessTime(item.data.ts)}
                       </span>
                     </span>
+                    <button
+                      onClick={(e) => dismiss(e, item.data.id)}
+                      aria-label="Dismiss notification"
+                      className="shrink-0 p-1 rounded-md text-slate-300 opacity-0 group-hover:opacity-100 hover:text-slate-500 hover:bg-slate-200/70 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-600 transition-all"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </li>
               )
