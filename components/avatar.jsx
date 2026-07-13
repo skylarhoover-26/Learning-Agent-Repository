@@ -1220,10 +1220,39 @@ function renderCrown(tier = 1) {
 
 export default function Avatar({ avatar, size = 64, crown = false, className = '', title }) {
   const a = normalizeAvatar(avatar);
-  const baseItem = getItem(a.base);
-  const hairColorItem = getItem(a.haircolor);
   const crownTier = crownTierFromProp(crown);
   const uid = useId();
+
+  // Photo mode: `mode`/`photo_url` ride along on the same avatar object (set by
+  // the Avatar Locker's "Use my Slack photo" toggle) rather than needing a
+  // schema change — every screen that already renders `<Avatar avatar={...}>`
+  // picks this up automatically. The rank crown still overlays on top so
+  // leaderboard photos get the same treatment as cartoon avatars.
+  if (a.mode === 'photo' && a.photo_url) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        className={className}
+        role="img"
+        aria-label={title || 'Avatar'}
+      >
+        <defs>
+          <clipPath id={`${uid}-bgclip`}>
+            <circle cx="50" cy="50" r="50" />
+          </clipPath>
+        </defs>
+        <g clipPath={`url(#${uid}-bgclip)`}>
+          <image href={a.photo_url} x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid slice" />
+        </g>
+        {crownTier > 0 && renderCrown(crownTier)}
+      </svg>
+    );
+  }
+
+  const baseItem = getItem(a.base);
+  const hairColorItem = getItem(a.haircolor);
   return (
     <svg
       width={size}

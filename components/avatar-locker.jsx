@@ -10,7 +10,7 @@ import {
   AVATAR_SLOTS, SLOT_LABELS, itemsForSlot, isItemUnlocked,
   unlockLabel, normalizeAvatar, unlockedCount, accessoryList,
 } from '@/lib/avatar-catalog';
-import { Lock, Check, Loader2 } from 'lucide-react';
+import { Lock, Check, Loader2, Slack, AlertCircle } from 'lucide-react';
 
 // The Crown is a single hat that auto-colors to your leaderboard rank. In the
 // locker we surface all three tiers so people can see the designs and exactly
@@ -48,20 +48,13 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
   const [internal, setInternal] = useState(() => normalizeAvatar(profile?.avatar));
   const [activeSlot, setActiveSlot] = useState('base');
   const [saving, setSaving] = useState(false);
+  const [slackStatus, setSlackStatus] = useState('idle'); // idle | loading | error
+  const [slackError, setSlackError] = useState(null);
 
   const avatar = controlled ? normalizeAvatar(value) : internal;
+  const usingSlackPhoto = avatar.mode === 'photo' && !!avatar.photo_url;
 
-  async function equip(slot, id) {
-    let next;
-    if (slot === 'accessory') {
-      // Gear is stackable — toggle items in/out; "None" clears everything.
-      const cur = accessoryList(avatar.accessory);
-      if (id === 'acc_none') next = { ...avatar, accessory: [] };
-      else if (cur.includes(id)) next = { ...avatar, accessory: cur.filter((x) => x !== id) };
-      else next = { ...avatar, accessory: [...cur, id] };
-    } else {
-      next = { ...avatar, [slot]: id };
-    }
+  async function save(next) {
     if (controlled) {
       onChange(next);
       return;
@@ -75,6 +68,55 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function equip(slot, id) {
+    let next;
+    if (slot === 'accessory') {
+      // Gear is stackable — toggle items in/out; "None" clears everything.
+      const cur = accessoryList(avatar.accessory);
+      if (id === 'acc_none') next = { ...avatar, accessory: [] };
+      else if (cur.includes(id)) next = { ...avatar, accessory: cur.filter((x) => x !== id) };
+      else next = { ...avatar, accessory: [...cur, id] };
+    } else {
+      next = { ...avatar, [slot]: id };
+    }
+    // Picking a piece is a clear signal they want the cartoon character back.
+    next.mode = 'cartoon';
+    await save(next);
+  }
+
+  // Looks up the learner's own Slack profile photo (server resolves the email
+  // from their session — see app/api/slack-photo) and switches the avatar into
+  // photo mode. Falls back with an inline message if they have no custom Slack
+  // photo set, or the lookup otherwise fails.
+  async function useSlackPhoto() {
+    setSlackStatus('loading');
+    setSlackError(null);
+    try {
+      const res = await fetch('/api/slack-photo');
+      const data = await res.json();
+      if (!data.ok || !data.imageUrl) {
+        setSlackStatus('error');
+        setSlackError(
+          data.error === 'no_custom_photo'
+            ? "Your Slack profile doesn't have a photo set yet."
+            : "Couldn't find your Slack photo right now."
+        );
+        return;
+      }
+      await save({ ...avatar, mode: 'photo', photo_url: data.imageUrl });
+      setSlackStatus('idle');
+    } catch {
+      setSlackStatus('error');
+      setSlackError("Couldn't find your Slack photo right now.");
+    }
+  }
+
+  function useCharacter() {
+    setSlackStatus('idle');
+    setSlackError(null);
+    save({ ...avatar, mode: 'cartoon', photo_url: null });
   }
 
   const items = itemsForSlot(activeSlot);
@@ -96,6 +138,37 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
           )}
           <div className="mt-1">{unlockedCount(ctx)} / {totalItems} unlocked</div>
         </div>
+
+        {!controlled && (
+          <div className="w-full sm:w-28 flex flex-col gap-1.5">
+            <div className="flex rounded-pill bg-slate-100 dark:bg-slate-700 p-0.5">
+              <button
+                onClick={useCharacter}
+                className={`flex-1 px-2 py-1 rounded-pill text-xs font-medium transition-all ${
+                  !usingSlackPhoto ? 'bg-white dark:bg-slate-800 shadow-sm text-ink dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                Character
+              </button>
+              <button
+                onClick={useSlackPhoto}
+                disabled={slackStatus === 'loading'}
+                className={`flex-1 px-2 py-1 rounded-pill text-xs font-medium transition-all flex items-center justify-center gap-1 ${
+                  usingSlackPhoto ? 'bg-white dark:bg-slate-800 shadow-sm text-ink dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                {slackStatus === 'loading' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Slack className="w-3 h-3" />}
+                Slack
+              </button>
+            </div>
+            {slackStatus === 'error' && slackError && (
+              <p className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+                {slackError}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div>
