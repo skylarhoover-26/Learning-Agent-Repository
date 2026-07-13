@@ -14,19 +14,25 @@ import { useHeaderContext } from '@/components/header-context';
 // which used to cause it to flash between pages.
 export default function PageHeader({ icon, title, subtitle, iconButton, actions }) {
   const ctx = useHeaderContext();
+  // `setHeader` (a useState setter) has a stable identity for the lifetime of
+  // the provider — unlike `ctx` itself, which is a new object whenever the
+  // provider re-renders. Depending on `ctx` here previously retriggered these
+  // effects on every one of the provider's own re-renders, which this effect
+  // itself was causing — an infinite loop.
+  const setHeader = ctx?.setHeader;
 
-  // Re-sync on every render so prop changes (e.g. a page swapping `actions`)
-  // show up immediately.
+  // Re-sync only when the actual content changes, so prop changes (e.g. a
+  // page swapping `actions`) show up immediately without looping.
   useLayoutEffect(() => {
-    ctx?.setHeader({ icon, title, subtitle, iconButton, actions });
-  });
+    setHeader?.({ icon, title, subtitle, iconButton, actions });
+  }, [setHeader, icon, title, subtitle, iconButton, actions]);
 
   // Clear only when this instance actually unmounts — not on every re-render —
   // so navigating straight to another page with its own <PageHeader> never
   // has to paint a blank bar in between.
   useLayoutEffect(() => {
-    return () => ctx?.setHeader(null);
-  }, [ctx]);
+    return () => setHeader?.(null);
+  }, [setHeader]);
 
   return null;
 }
