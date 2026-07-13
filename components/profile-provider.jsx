@@ -128,6 +128,36 @@ export function ProfileProvider({ children }) {
     updateProfile({ preferred_tools: [legacy], preferred_tool: null }).catch(() => {});
   }, [profile, updateProfile]);
 
+  // Lazily default legacy profiles to the person's Slack photo — the app-wide
+  // default — so existing users see their photo without re-onboarding. A profile
+  // with no explicit avatar `mode` has never decided; we resolve it once on the
+  // next load: use the Slack photo if there is one, otherwise mark it 'cartoon'
+  // so we don't re-check every load. The existing character config is preserved
+  // underneath (we only add mode/photo_url), so tapping "Character" restores
+  // their old look exactly. Only ever writes the current user's own profile.
+  const avatarDefaultedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || avatarDefaultedRef.current) return;
+    if (profile.avatar?.mode) return; // already decided (photo or cartoon)
+    avatarDefaultedRef.current = true;
+    let cancelled = false;
+    fetch('/api/slack-photo')
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const base = profile.avatar || {};
+        const next = data?.ok && data.imageUrl
+          ? { ...base, mode: 'photo', photo_url: data.imageUrl }
+          : { ...base, mode: 'cartoon' };
+        updateProfile({ avatar: next }).catch(() => {});
+      })
+      .catch(() => {
+        // Network hiccup — leave the profile untouched and retry on next load.
+        avatarDefaultedRef.current = false;
+      });
+    return () => { cancelled = true; };
+  }, [profile, updateProfile]);
+
   const value = { profile, isLoading, updateProfile, refreshProfile, session };
 
   // While the profile is still resolving on a gated app route, show a splash
