@@ -1226,8 +1226,10 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
   // Photo mode: `mode`/`photo_url` ride along on the same avatar object (set by
   // the Avatar Locker's "Use my Slack photo" toggle) rather than needing a
   // schema change — every screen that already renders `<Avatar avatar={...}>`
-  // picks this up automatically. The rank crown still overlays on top so
-  // leaderboard photos get the same treatment as cartoon avatars.
+  // picks this up automatically. We deliberately do NOT draw the rank crown on
+  // top of a real photo — it looks odd sitting on someone's face. Rank is still
+  // shown via the leaderboard podium's own crown that floats ABOVE the avatar;
+  // the crown only ever renders inside cartoon avatars.
   if (a.mode === 'photo' && a.photo_url) {
     return (
       <svg
@@ -1246,7 +1248,6 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
         <g clipPath={`url(#${uid}-bgclip)`}>
           <image href={a.photo_url} x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid slice" />
         </g>
-        {crownTier > 0 && renderCrown(crownTier)}
       </svg>
     );
   }
