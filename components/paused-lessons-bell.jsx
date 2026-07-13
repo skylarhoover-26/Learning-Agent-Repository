@@ -19,8 +19,9 @@ const FORMAT_LABEL = {
 // Header bell / notification center. Shows a single chronological feed of
 // everything worth surfacing — XP earned, badges, level-ups and streaks — woven
 // in with unfinished ("paused") lessons you can resume in one click. The badge
-// counts unseen notifications plus any unfinished lessons. Hidden only when
-// there's truly nothing to show.
+// counts only unseen notifications — an unfinished lesson can sit there
+// indefinitely without making the badge look permanently "unread". Hidden only
+// when there's truly nothing to show.
 export default function PausedLessonsBell() {
   const router = useRouter();
   const [lessons, setLessons] = useState([]);
@@ -75,7 +76,7 @@ export default function PausedLessonsBell() {
     ...notifications.map((n) => ({ kind: 'notification', sortTs: n.ts || '', data: n })),
   ].sort((a, b) => String(b.sortTs).localeCompare(String(a.sortTs)));
 
-  const badgeCount = unread + lessons.length;
+  const badgeCount = unread;
   if (feed.length === 0) return null;
 
   function resume(entry) {
