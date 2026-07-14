@@ -37,7 +37,7 @@ const COLUMNS = [
 
 function StatCard({ icon: Icon, label, value, sub }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-5">
+    <div className="cine-glass rounded-2xl p-5">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
         <span className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-slate-700 flex items-center justify-center text-brand"><Icon className="w-4 h-4" /></span>
@@ -92,7 +92,7 @@ function EngagementChart({ engagement, rangeLabel }) {
   }, [selected]);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+    <div className="cine-glass rounded-2xl p-6 mb-8">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-base font-bold text-ink dark:text-slate-200">Engagement</h2>
         <span className="text-xs text-slate-400">{rangeLabel || 'last 14 days'}</span>
@@ -321,7 +321,7 @@ export default function ReportView({
       {/* People table — moved above the engagement chart so the names are the
           first thing you see. When a date range is active it also carries the
           Active/Inactive status column + toggle. */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden mb-8">
+      <div className="cine-glass rounded-2xl overflow-hidden mb-8">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
@@ -353,7 +353,7 @@ export default function ReportView({
                   className={`px-3 py-1.5 transition-colors ${
                     statusFilter === opt.key
                       ? 'bg-brand text-white'
-                      : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      : 'bg-transparent text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5'
                   }`}
                 >
                   {opt.label}
@@ -469,7 +469,7 @@ export default function ReportView({
       {engagement?.length > 0 && <EngagementChart engagement={engagement} rangeLabel={rangeLabel} />}
 
       {!hideTeamChart && teamStats.length > 1 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+        <div className="cine-glass rounded-2xl p-6 mb-8">
           <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Signed-up learners by team</h2>
           <p className="text-xs text-slate-400 mb-1">people who&apos;ve signed in, by department</p>
           {insights.teamCaption && <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">{insights.teamCaption}</p>}
@@ -478,7 +478,7 @@ export default function ReportView({
       )}
 
       {activityByType?.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-8">
+        <div className="cine-glass rounded-2xl p-6 mb-8">
           <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">What people are doing</h2>
           <p className="text-xs text-slate-400 mb-1">actions{rangeLabel ? ` · ${rangeLabel}` : ''}</p>
           {insights.activityCaption && <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">{insights.activityCaption}</p>}
@@ -487,7 +487,7 @@ export default function ReportView({
       )}
 
       {topTopics.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
+        <div className="cine-glass rounded-2xl p-6">
           <h2 className="text-base font-bold text-ink dark:text-slate-200 mb-1">Most-taken topics</h2>
           <p className="text-xs text-slate-400 mb-1">top 8 by learners who took them</p>
           {insights.topicCaption && <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{insights.topicCaption}</p>}

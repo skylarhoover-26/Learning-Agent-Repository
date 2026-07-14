@@ -271,7 +271,7 @@ function LeaderboardInner() {
                     const isTop3 = dept.rank <= 3;
                     const rowBg = isUser
                       ? 'bg-brand-50 dark:bg-slate-700/50 border-l-4 border-brand'
-                      : dept.rank % 2 === 0 ? 'bg-bg-warm dark:bg-slate-900' : 'bg-white dark:bg-slate-800';
+                      : dept.rank % 2 === 0 ? 'bg-black/[0.025] dark:bg-white/[0.04]' : '';
                     return (
                       <tr key={dept.name} className={`${rowBg} transition-colors`}>
                         <td className="px-4 py-3 text-center text-base">{isTop3 ? MEDAL[dept.rank] : dept.rank}</td>

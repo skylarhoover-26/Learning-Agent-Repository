@@ -120,7 +120,7 @@ function TeamTable({ reports }) {
           {reports.map((person, i) => (
             <tr
               key={person.email || i}
-              className={`border-b border-ink/5 dark:border-slate-700 ${i % 2 === 0 ? 'bg-bg-warm dark:bg-slate-900' : 'bg-white dark:bg-slate-800'}`}
+              className={`border-b border-ink/5 dark:border-slate-700 ${i % 2 === 0 ? 'bg-black/[0.025] dark:bg-white/[0.04]' : ''}`}
             >
               <td className="py-3 pr-4">
                 <div className="flex items-center gap-2">
@@ -482,7 +482,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                 return (
                   <Fragment key={person.email}>
                   <tr
-                    className={`border-b border-ink/5 dark:border-slate-700 ${i % 2 === 0 ? 'bg-bg-warm dark:bg-slate-900' : ''}`}
+                    className={`border-b border-ink/5 dark:border-slate-700 ${i % 2 === 0 ? 'bg-black/[0.025] dark:bg-white/[0.04]' : ''}`}
                   >
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-2">

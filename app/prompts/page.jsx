@@ -10,6 +10,14 @@ import { PROMPTS, CATEGORIES, DEPARTMENTS } from '@/lib/prompts-data';
 import { useProfile } from '@/components/profile-provider';
 import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
 
+// Per-category accent (drives the card's colored outline + hover glow), matching
+// the category pill colors: analysis purple, planning orange, writing blue, etc.
+const CAT_GLOW = {
+  writing: '#3B82F6', analysis: '#A855F7', communication: '#22C55E',
+  meetings: '#EAB308', planning: '#F97316', creative: '#EC4899',
+};
+const glowFor = (cat) => CAT_GLOW[cat] || '#3B94FF';
+
 export default function PromptsPage() {
   return <CinematicFrame><PromptsPageInner /></CinematicFrame>;
 }
@@ -232,7 +240,7 @@ function DailyPromptCard({ prompt }) {
   }
 
   return (
-    <div className="cine-glass rounded-2xl overflow-hidden">
+    <div className="cine-glass cine-tilt rounded-2xl overflow-hidden" style={{ '--accent': glowFor(prompt.category), border: '1px solid color-mix(in srgb, var(--accent) 42%, transparent)' }}>
       <div className="p-5">
         <div className="flex items-center gap-2 mb-1.5">
           <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${cat.color}`}>{cat.label}</span>
@@ -277,7 +285,7 @@ function PromptCard({ prompt }) {
   }
 
   return (
-    <div className="cine-glass rounded-2xl transition-all overflow-hidden">
+    <div className="cine-glass cine-tilt rounded-2xl transition-all overflow-hidden" style={{ '--accent': glowFor(prompt.category), border: '1px solid color-mix(in srgb, var(--accent) 42%, transparent)' }}>
       <div className="p-5">
         <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1.5">{prompt.title}</h3>
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{prompt.description}</p>
