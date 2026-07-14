@@ -18,6 +18,7 @@ import BookLoader from '@/components/book-loader';
 import {
   BookOpen, ChevronRight, Zap, BookMarked, Trophy,
   Loader2, Send, Mic, MicOff, MessageSquare, HelpCircle, PlayCircle, Sparkles,
+  Target, BarChart3, Bot, CheckCircle2, MessagesSquare, Lightbulb, Search, Mail, PenLine, Brain, Rocket,
 } from 'lucide-react';
 import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
@@ -65,6 +66,20 @@ const SUGGESTED_TOPICS = [
   { emoji: '✅', label: 'Verifying AI Output', topic: 'How to fact-check and validate AI-generated content before using it' },
   { emoji: '💬', label: 'Better Conversations', topic: 'How to have productive back-and-forth conversations with AI assistants' },
 ];
+
+// Monochrome line-icon (stencil) equivalents for topic emojis — the app-wide
+// preference is lucide line icons, not colorful iOS emojis. Covers the static
+// topics + common emojis the personalized-suggestion API returns; anything else
+// falls back to a neutral Lightbulb so it's never a color emoji.
+const TOPIC_ICON = {
+  '🎯': Target, '🧵': MessageSquare, '📊': BarChart3, '🤖': Bot, '✅': CheckCircle2,
+  '💬': MessagesSquare, '📧': Mail, '✉️': Mail, '🔍': Search, '📝': PenLine,
+  '🧠': Brain, '🚀': Rocket, '⚡': Zap, '💡': Lightbulb, '📈': BarChart3, '📚': BookOpen,
+};
+function TopicIcon({ emoji }) {
+  const Ic = TOPIC_ICON[emoji] || Lightbulb;
+  return <Ic className="w-5 h-5" style={{ color: 'var(--accent2)' }} />;
+}
 
 function LessonContent() {
   const searchParams = useSearchParams();
@@ -844,7 +859,11 @@ function LessonContent() {
       <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
       <main data-tour="lesson-main" className="max-w-4xl mx-auto px-6 pt-6 pb-10">
         <div className="text-center mb-10">
-          <div className="text-5xl mb-4">📚</div>
+          <div className="flex justify-center mb-4">
+            <span className="w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>
+              <BookOpen className="w-7 h-7" style={{ color: 'var(--accent2)' }} />
+            </span>
+          </div>
           <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight mb-2 cine-grad-flow inline-block">What do you want to learn?</h2>
           <p className="text-slate-600 dark:text-slate-400">Pick from popular topics or type your own.</p>
         </div>
@@ -946,7 +965,9 @@ function LessonContent() {
                 onClick={() => chooseTopic(s.topic)}
                 className="group flex items-center gap-3 p-4 cine-glass cine-lift rounded-2xl transition-all text-left"
               >
-                <span className="shrink-0 w-11 h-11 rounded-xl grid place-items-center text-2xl leading-none" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>{s.emoji || '💡'}</span>
+                <span className="shrink-0 w-11 h-11 rounded-xl grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>
+                  <TopicIcon emoji={s.emoji} />
+                </span>
                 <div className="flex-1">
                   <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label}</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.topic}</div>
@@ -1054,7 +1075,7 @@ function LessonContent() {
         </div>
 
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-4">
-          ✨ Suggested topics are personalized to your role and tasks · {REFRESH_LABEL}
+          Suggested topics are personalized to your role and tasks · {REFRESH_LABEL}
         </p>
 
         {/* Unfinished lessons live at the bottom so the picker leads with new topics.

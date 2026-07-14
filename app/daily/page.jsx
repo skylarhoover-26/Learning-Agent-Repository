@@ -24,8 +24,8 @@ export default function TodaysPickRedirect() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={Sparkles} title="Today's Pick" subtitle="Your personalized lesson for today" />
-      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-500 dark:text-slate-400">
-        <div className="w-12 h-12 rounded-2xl bg-cta-50 dark:bg-slate-800 ring-1 ring-cta-200 dark:ring-slate-700 flex items-center justify-center text-cta-600">
+      <div className="flex flex-col items-center justify-center gap-3 py-24" style={{ color: 'var(--ink-dim)' }}>
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, var(--accent), var(--gold))', boxShadow: '0 10px 26px -8px var(--accent)' }}>
           <Sparkles className="w-6 h-6 animate-pulse" />
         </div>
         <p className="text-sm">Finding today&rsquo;s pick for you…</p>

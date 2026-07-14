@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
@@ -106,10 +107,17 @@ function LeaderboardInner() {
   const pagedDepts = departments.slice(deptPageSafe * PER_PAGE, deptPageSafe * PER_PAGE + PER_PAGE);
 
   return (
-    <div data-tour="page-leaderboard" className="min-h-screen bg-bg-warm dark:bg-slate-900">
+    <div data-tour="page-leaderboard" className="min-h-screen">
       <PageHeader icon={Trophy} title="Leaderboard" subtitle="Who's leveling up — and who wears the crown" />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-12 space-y-10">
+        <CinematicPageHero
+          eyebrow="Leaderboard"
+          title="Who's leveling up"
+          subtitle="See how you rank across your team — climb the board and take one of the three crowns."
+          icon={Trophy}
+          gradient
+        />
         {/* ── Individual leaderboard ── */}
         <section>
           <div className="flex items-center gap-2 mb-4">
@@ -121,7 +129,7 @@ function LeaderboardInner() {
           </div>
 
           {loading ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card p-10 flex flex-col items-center justify-center gap-1 text-slate-500">
+            <div className="cine-glass rounded-2xl p-10 flex flex-col items-center justify-center gap-1 text-slate-500">
               <span className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" /> Loading rankings… {elapsed}s
               </span>
@@ -141,7 +149,7 @@ function LeaderboardInner() {
                 <>
                   {/* Near me / All toggle */}
                   <div className="flex justify-center">
-                    <div className="inline-flex rounded-pill bg-slate-100 dark:bg-slate-800 p-1">
+                    <div className="inline-flex rounded-pill cine-glass p-1">
                       <button
                         onClick={() => { setView('near'); setSearch(''); }}
                         className={`px-4 py-1.5 text-sm font-semibold rounded-pill transition-colors ${
@@ -190,7 +198,7 @@ function LeaderboardInner() {
 
                   {view === 'all' ? (
                     <>
-                      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card divide-y divide-slate-100 dark:divide-slate-700">
+                      <div className="cine-glass rounded-2xl divide-y divide-slate-100 dark:divide-slate-700">
                         {pagedRows.map(({ person, rank }) => (
                           <PersonRow
                             key={person.learnerId}
@@ -209,17 +217,17 @@ function LeaderboardInner() {
                       <Pagination page={allPageSafe} pageCount={allPageCount} onPage={setAllPage} />
                     </>
                   ) : myRankIndex === -1 ? (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card px-4 py-6 text-center text-sm text-slate-400">
+                    <div className="cine-glass rounded-2xl px-4 py-6 text-center text-sm text-slate-400">
                       You&rsquo;re not ranked yet — earn XP to join the board.
                     </div>
                   ) : myRankIndex < 3 ? (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                      🎉 You&rsquo;re in the top 3 — you&rsquo;re up on the podium!
+                    <div className="cine-glass rounded-2xl px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                      You&rsquo;re in the top 3 — you&rsquo;re up on the podium!
                     </div>
                   ) : (
                     // Just you, with everyone else fogged out above and below so it's
                     // clear where you sit in the crowd without exposing other people.
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card overflow-hidden">
+                    <div className="cine-glass rounded-2xl overflow-hidden">
                       <FogStack side="top" count={myRankIndex - 3} />
                       <PersonRow
                         person={people[myRankIndex]}
@@ -245,7 +253,7 @@ function LeaderboardInner() {
 
           {!loading && departments.length > 0 ? (
             <>
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card overflow-x-auto">
+            <div className="cine-glass rounded-2xl overflow-x-auto">
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="border-b border-bg-subtle text-left text-xs text-ink/50 dark:text-slate-300/50 uppercase tracking-wide">
@@ -455,7 +463,7 @@ function PersonRow({ person, rank, crownTier = 0, isMe }) {
 
 function EmptyCard({ icon: Icon, title, sub }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-card p-10 text-center">
+    <div className="cine-glass rounded-2xl p-10 text-center">
       <Icon className="w-10 h-10 text-slate-300 mx-auto mb-3" />
       <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">{title}</p>
       <p className="text-xs text-slate-500 dark:text-slate-400">{sub}</p>

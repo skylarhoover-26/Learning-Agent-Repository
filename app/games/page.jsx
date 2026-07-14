@@ -12,6 +12,14 @@ import { getGameStats } from '@/lib/game-store';
 import { maxGameXp } from '@/lib/progression';
 import { sortByDifficulty } from '@/lib/difficulty';
 
+// Difficulty → glow (card hover, matches Library) + badge, on the green/orange/
+// red scale: easy green, medium orange, hard red.
+const DIFF = {
+  Easy: { glow: '#22C55E', badge: 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-900/20 dark:text-green-400' },
+  Medium: { glow: '#F59E0B', badge: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-400' },
+  Hard: { glow: '#EF4444', badge: 'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400' },
+};
+
 const GAMES = [
   {
     slug: 'prompt-battle',
@@ -81,7 +89,7 @@ function GamesHubInner() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-bg-subtle dark:bg-slate-900">
+    <div className="min-h-screen">
       <PageHeader
         icon={Gamepad2}
         title="Learning Games"
@@ -92,27 +100,30 @@ function GamesHubInner() {
         <CinematicPageHero
           eyebrow="Games"
           title="Learning Games"
-          subtitle="Practice AI skills the fun way"
+          subtitle="Sharpen your AI skills with quick interactive challenges — pick a game and start playing."
           icon={Gamepad2}
+          gradient
         />
-        <p className="text-slate-600 dark:text-slate-400 mb-2 text-lg">
-          Sharpen your AI skills with interactive challenges. Pick a game and start playing.
-        </p>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mb-8">
-          🔀 Questions are fresh every play — and Hallucination Hunt mixes up its order daily at 8 AM PT.
+        <p className="text-xs mb-8" style={{ color: 'var(--ink-dim)' }}>
+          Questions are fresh every play — and Hallucination Hunt mixes up its order daily at 8 AM PT.
         </p>
 
         <div data-tour="page-games" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {ORDERED_GAMES.map((game, i) => {
             const gameStats = allStats[game.slug];
+            const diff = DIFF[game.difficulty] || DIFF.Medium;
             return (
               <Link
                 key={game.slug}
                 data-tour={i === 0 ? 'game-card' : undefined}
                 href={`/games/${game.slug}`}
                 className="group cine-glass cine-tilt rounded-2xl p-6 transition-all flex flex-col"
+                style={{ '--accent': diff.glow }}
               >
-                <div className="w-14 h-14 rounded-xl bg-brand-50 dark:bg-slate-700 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4 group-hover:bg-brand group-hover:text-white transition-all">
+                <div
+                  className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-all"
+                  style={{ background: 'color-mix(in srgb, var(--accent) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 32%, transparent)', color: 'var(--accent)' }}
+                >
                   <game.icon className="w-7 h-7" />
                 </div>
 
@@ -128,7 +139,7 @@ function GamesHubInner() {
 
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${game.difficultyColor}`}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${diff.badge}`}
                   >
                     <BarChart3 className="w-3 h-3" />
                     {game.difficulty}

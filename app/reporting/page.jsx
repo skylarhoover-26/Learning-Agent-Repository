@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { BarChart3, Loader2, RefreshCw, X } from 'lucide-react';
 import ReportView from '@/components/report-view';
 import SearchableSelect from '@/components/searchable-select';
@@ -201,11 +202,18 @@ export default function ReportingPage() {
     <div className="min-h-screen">
       <PageHeader icon={BarChart3} title="Reporting" subtitle="Team learning activity and progress" />
       <main className="max-w-6xl mx-auto px-6 pt-6 pb-10">
+        <CinematicPageHero
+          eyebrow="Reporting"
+          title="Org-wide learning activity"
+          subtitle="Track AI learning activity and progress across teams, managers, and people."
+          icon={BarChart3}
+          gradient
+        />
         {state.status === 'loading' && (
           <div className="flex items-center justify-center py-20 text-slate-500 dark:text-slate-400 gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Loading the report…</div>
         )}
         {state.status === 'forbidden' && (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 text-center max-w-md mx-auto">
+          <div className="cine-glass rounded-2xl p-10 text-center max-w-md mx-auto">
             <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
             <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">Reporting is for admins &amp; managers</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">Ask an admin if you think you should have access.</p>

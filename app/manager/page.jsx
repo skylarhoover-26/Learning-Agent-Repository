@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Fragment } from 'react';
 import PageHeader from '../../components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
   BarChart3, Users, BookOpen, TrendingUp, Award, Activity,
   Search, Loader2, Mail, Building2, XCircle, Check, X,
@@ -21,7 +22,7 @@ function ManagerSearch({ loading, onSubmit }) {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8">
+    <div className="cine-glass rounded-2xl p-8">
       <div className="max-w-lg mx-auto text-center">
         <div className="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center mx-auto mb-4">
           <Search className="w-7 h-7 text-brand" />
@@ -87,14 +88,14 @@ function ManagerCard({ manager }) {
 function TeamTable({ reports }) {
   if (!reports || reports.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 text-center">
+      <div className="cine-glass rounded-2xl p-6 text-center">
         <p className="text-sm text-slate-500 dark:text-slate-400">No direct reports found.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 overflow-x-auto">
+    <div className="cine-glass rounded-2xl p-6 overflow-x-auto">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-bold text-ink dark:text-slate-200">Direct Reports</h2>
@@ -154,7 +155,7 @@ function OverviewCards({ teamSize, overview }) {
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <div key={card.label} className="bg-white dark:bg-slate-800 rounded-2xl shadow-card p-5 flex flex-col gap-3">
+          <div key={card.label} className="cine-glass rounded-2xl p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-ink/60 dark:text-slate-400 font-medium">{card.label}</span>
               <div className={`w-8 h-8 rounded-lg ${card.color} flex items-center justify-center`}>
@@ -279,7 +280,7 @@ function WhyTrendPanel({ detail, history, calibration }) {
         const prevScore = prev ? prev[dim] : null;
         const delta = (prevScore !== null && prevScore !== undefined && measured) ? measured - prevScore : null;
         return (
-          <div key={dim} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+          <div key={dim} className="cine-glass rounded-xl p-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-ink dark:text-slate-200">{COMPETENCY_NAMES[dim]}</span>
               <span className="flex items-center gap-1.5">
@@ -311,7 +312,7 @@ function WhyTrendPanel({ detail, history, calibration }) {
             const self = calibration.selfRating && calibration.selfRating[key] != null
               ? Math.round(calibration.selfRating[key] * 100) : null;
             return (
-              <div key={key} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2">
+              <div key={key} className="cine-glass rounded-lg px-3 py-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-medium text-ink dark:text-slate-200 truncate">{name}</span>
                   <span className="text-xs font-bold text-brand">{measured}</span>
@@ -404,7 +405,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
   );
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 overflow-x-auto">
+    <div className="cine-glass rounded-2xl p-6 overflow-x-auto">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-bold text-ink dark:text-slate-200">AI Impact Competencies</h2>
@@ -668,7 +669,7 @@ function ManagerDashboardInner() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
+    <div className="min-h-screen">
       <PageHeader
         icon={BarChart3}
         title="Manager Dashboard"
@@ -676,11 +677,18 @@ function ManagerDashboardInner() {
       />
 
       <main className="max-w-6xl mx-auto px-6 pt-6 pb-8 space-y-8">
+        <CinematicPageHero
+          eyebrow="Manager"
+          title="Team Dashboard"
+          subtitle="Look up your team and track how AI learning is landing across your org."
+          icon={BarChart3}
+          gradient
+        />
         {!teamData ? (
           <>
             <ManagerSearch loading={loading} onSubmit={handleLookup} />
             {loading && (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8">
+              <div className="cine-glass rounded-2xl p-8">
                 <BookLoader message="Looking up your team in Snowflake..." />
               </div>
             )}
@@ -714,7 +722,7 @@ function ManagerDashboardInner() {
             <TeamTable reports={teamData.directReports} />
 
             {scoresLoading ? (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8">
+              <div className="cine-glass rounded-2xl p-8">
                 <BookLoader message="Loading competency scores..." size="sm" />
               </div>
             ) : (

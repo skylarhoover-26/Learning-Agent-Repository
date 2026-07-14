@@ -5,6 +5,7 @@ import { useProgression } from '@/components/progression-provider';
 import { getLevelTitle } from '@/lib/level-titles';
 import { Award, Flame, Sparkles, Lock } from 'lucide-react';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
+import EmojiIcon from '@/components/emoji-icon';
 
 const XP_SOURCE_LABELS = {
   first_login: 'Welcome bonus',
@@ -81,7 +82,7 @@ function BadgeTile({ badge, earned, tint }) {
         {/* Always show the emoji (like the Library) — desaturated + a small lock
             corner when the badge is still locked, so the gallery has personality
             instead of a wall of padlocks. */}
-        <span style={earned ? undefined : { filter: 'grayscale(1)', opacity: 0.55 }}>{badge.emoji}</span>
+        <EmojiIcon emoji={badge.emoji} className="w-6 h-6" style={{ color: earned ? '#fff' : 'var(--ink-dim)', opacity: earned ? 1 : 0.6 }} />
         {!earned && (
           <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full grid place-items-center" style={{ background: 'var(--navbg)', border: '1px solid var(--line)' }}>
             <Lock className="w-2.5 h-2.5" style={{ color: 'var(--ink-dim)' }} />

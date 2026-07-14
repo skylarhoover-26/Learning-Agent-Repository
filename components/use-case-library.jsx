@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Library, Search, Clock, ChevronRight, ChevronDown, Copy, Check, X, TrendingUp, History } from 'lucide-react';
 import { trackUseCaseTry, trackUseCaseCopy, getMostUsedIds, getRecentlyUsedIds } from '@/lib/library-store';
 import { sortByDifficulty } from '@/lib/difficulty';
+import EmojiIcon from '@/components/emoji-icon';
 
 const USE_CASES = [
   { id: 1, icon: '📧', title: 'Draft customer emails', description: 'Generate professional email responses to common customer inquiries.', difficulty: 'easy', category: 'communication', roles: ['cs', 'sales'], timeSaved: '10 min/email', starterPrompt: 'You are a customer success professional at a home services software company. Draft a warm, professional response to this customer inquiry: [paste inquiry]' },
@@ -262,10 +263,10 @@ function UseCaseCard({ uc, isPopular, isRecent }) {
         <div className="flex items-start gap-3 mb-3">
           {uc.icon && (
             <span
-              className="shrink-0 w-11 h-11 rounded-xl grid place-items-center text-2xl leading-none"
+              className="shrink-0 w-11 h-11 rounded-xl grid place-items-center"
               style={{ background: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)' }}
             >
-              {uc.icon}
+              <EmojiIcon emoji={uc.icon} className="w-5 h-5" style={{ color: 'var(--accent)' }} />
             </span>
           )}
           <div className="min-w-0">
