@@ -15,7 +15,7 @@ function LibraryPageInner() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={Library} title="Library" subtitle="Browse what AI can actually do for your work" />
-      <main className="max-w-5xl mx-auto px-6 py-12 sm:py-16">
+      <main className="max-w-5xl mx-auto px-6 pt-6 pb-12 sm:pb-16">
         <CinematicPageHero
           eyebrow="Library"
           title="Browse what AI can do for your work"

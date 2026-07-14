@@ -102,7 +102,7 @@ function DiscoverContent() {
     <div className="min-h-screen">
       <PageHeader icon={Search} title="Discovery" subtitle="Find AI opportunities for your actual work" />
 
-      <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 py-12 sm:py-16">
+      <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 pt-6 pb-12 sm:pb-16">
         <CinematicPageHero
           eyebrow="Discover"
           title="Find AI for your actual work"

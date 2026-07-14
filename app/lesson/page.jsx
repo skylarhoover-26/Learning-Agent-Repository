@@ -807,7 +807,7 @@ function LessonContent() {
       return (
         <>
           <PageHeader icon={Zap} title="Quick Tip" subtitle="One thing you can do with AI right now" />
-          <main className="max-w-3xl mx-auto px-6 py-10">
+          <main className="max-w-3xl mx-auto px-6 pt-6 pb-10">
             <button
               onClick={() => { surpriseStartedRef.current = false; setSurpriseError(null); setSurpriseMode(false); }}
               className="inline-flex items-center gap-1.5 mb-6 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
@@ -842,7 +842,7 @@ function LessonContent() {
     return (
       <>
       <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
-      <main data-tour="lesson-main" className="max-w-4xl mx-auto px-6 py-10">
+      <main data-tour="lesson-main" className="max-w-4xl mx-auto px-6 pt-6 pb-10">
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">📚</div>
           <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight mb-2 cine-grad-flow inline-block">What do you want to learn?</h2>
@@ -1209,7 +1209,7 @@ function LessonContent() {
     return (
       <>
         <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
-        <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
+        <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 pt-6 pb-10">
           <PlanLessonPlayer key={`${format}__${topic}`} topic={topic} format={format} onExit={resetToPickerView} />
         </main>
       </>
@@ -1219,7 +1219,7 @@ function LessonContent() {
   return (
     <>
     <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
-    <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 py-10">
+    <main data-tour="lesson-main" className="max-w-3xl mx-auto px-6 pt-6 pb-10">
 
       {/* Progress bar + voice mode toggle */}
       {slides.length > 0 && (
@@ -1375,7 +1375,7 @@ export default function LessonPage() {
   return (
     <CinematicFrame>
       <div className="min-h-screen">
-        <Suspense fallback={<div className="max-w-4xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
+        <Suspense fallback={<div className="max-w-4xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
           <LessonContent />
         </Suspense>
       </div>

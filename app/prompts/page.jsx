@@ -82,7 +82,7 @@ function PromptsPageInner() {
         subtitle={`${PROMPTS.length} ready-to-use prompts across departments`}
       />
 
-      <main className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
+      <main className="max-w-6xl mx-auto px-6 pt-6 pb-12 sm:pb-16">
         <CinematicPageHero
           eyebrow="Prompts"
           title="Shared Prompts Library"

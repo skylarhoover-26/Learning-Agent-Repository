@@ -280,7 +280,7 @@ export function CinematicChrome({ children }) {
 // layout-level CinematicChrome, so this only owns content spacing.
 export default function CinematicShell({ children }) {
   return (
-    <main className="relative max-w-5xl mx-auto px-6 py-16 space-y-20 sm:space-y-24">
+    <main className="relative max-w-5xl mx-auto px-6 pt-6 pb-16 space-y-12 sm:space-y-16">
       {children}
     </main>
   );
