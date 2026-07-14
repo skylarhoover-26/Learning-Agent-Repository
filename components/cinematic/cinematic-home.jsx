@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Sparkles, Flame, Trophy, Award, Compass, Gamepad2, MessageCircle,
   BookOpen, PenTool, ArrowRight, Play, Crown, Check, RefreshCw,
-  TrendingUp, GitBranch, Rss,
+  TrendingUp, GitBranch, Rss, HelpCircle, X,
 } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
@@ -34,6 +34,16 @@ const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 function initials(name) {
   if (!name) return 'YOU';
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('') || 'YOU';
+}
+
+// One row of the "how levels work" popover legend: a mini swatch + label.
+function LegendRow({ swatch, label }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="shrink-0">{swatch}</span>
+      <span className="text-xs" style={{ color: 'var(--ink-dim)' }}>{label}</span>
+    </div>
+  );
 }
 
 function StatCard({ icon: Icon, value, label, tint }) {
@@ -133,6 +143,8 @@ export default function CinematicHome() {
   // A 5-level "journey" window centered near the current level.
   const journeyStart = Math.max(1, level - 1);
   const journey = [0, 1, 2, 3, 4].map((i) => journeyStart + i);
+  // Toggles the "how levels work" explainer popover on the journey widget.
+  const [showLevelInfo, setShowLevelInfo] = useState(false);
 
   const skillGroups = useMemo(() => {
     const s = skills || [];
@@ -189,7 +201,51 @@ export default function CinematicHome() {
         {/* Right: level-journey staircase + stat tiles */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="font-display font-bold">Your level journey</p>
+            <div className="flex items-center gap-2 relative">
+              <p className="font-display font-bold">Your level journey</p>
+              <button
+                onClick={() => setShowLevelInfo((v) => !v)}
+                aria-label="How levels work"
+                aria-expanded={showLevelInfo}
+                className="cine-lift w-5 h-5 rounded-full grid place-items-center shrink-0"
+                style={{ color: 'var(--ink-dim)', border: '1px solid var(--line)' }}
+              >
+                <HelpCircle className="w-3 h-3" />
+              </button>
+              {showLevelInfo && (
+                <>
+                  {/* click-away layer */}
+                  <div className="fixed inset-0 z-40" onClick={() => setShowLevelInfo(false)} aria-hidden="true" />
+                  <div
+                    role="dialog"
+                    className="absolute left-0 top-8 z-50 w-[19rem] max-w-[80vw] rounded-2xl p-4"
+                    style={{ background: 'var(--navbg)', border: '1px solid var(--line)', backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)', boxShadow: '0 24px 60px -24px rgba(6,20,45,.5)' }}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="font-display font-bold text-sm" style={{ color: 'var(--ink)' }}>How your level journey works</p>
+                      <button onClick={() => setShowLevelInfo(false)} aria-label="Close" className="shrink-0 -mr-1 -mt-1 p-1 rounded-md" style={{ color: 'var(--ink-dim)' }}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--ink-dim)' }}>
+                      Each bar is a level. You climb by earning <strong style={{ color: 'var(--ink)' }}>XP</strong> — right now you&apos;re <strong style={{ color: 'var(--ink)' }}>{title}</strong> (Level {level}), {lp.xpToNext ? <>{lp.xpToNext} XP from Level {level + 1}.</> : <>at the top level.</>}
+                    </p>
+                    {/* Legend — mirrors the staircase states */}
+                    <div className="space-y-2 mb-3">
+                      <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ background: 'linear-gradient(180deg,var(--accent),var(--accent2))' }}><Play className="w-2 h-2 text-white" /></span>} label="Where you are now" />
+                      <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ border: '1.5px dashed var(--gold)' }}><Sparkles className="w-2 h-2" style={{ color: 'var(--gold)' }} /></span>} label="Your next level — the one to aim for" />
+                      <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}><Check className="w-2 h-2" style={{ color: 'var(--good)' }} /></span>} label="Levels you've already cleared" />
+                    </div>
+                    <p className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--ink-dim)' }}>Earn XP by</p>
+                    <ul className="text-xs space-y-1" style={{ color: 'var(--ink-dim)' }}>
+                      <li className="flex items-center gap-2"><BookOpen className="w-3 h-3 shrink-0" style={{ color: 'var(--accent2)' }} /> Finishing lessons &amp; Today&apos;s Pick</li>
+                      <li className="flex items-center gap-2"><Gamepad2 className="w-3 h-3 shrink-0" style={{ color: 'var(--accent2)' }} /> Playing games &amp; answering quizzes</li>
+                      <li className="flex items-center gap-2"><Flame className="w-3 h-3 shrink-0" style={{ color: 'var(--accent2)' }} /> Keeping a daily streak going</li>
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
             <span className="text-xs" style={{ color: 'var(--ink-dim)' }}>Level {level} · {title}</span>
           </div>
           <div className="flex items-end justify-between gap-2 sm:gap-3 h-56">
