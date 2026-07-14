@@ -177,6 +177,11 @@
   --foreground: 226 232 240;
 }
 
+html, body {
+  /* Stop the rubber-band overscroll that revealed an empty band above the
+     sticky top bar when scrolling up. */
+  overscroll-behavior-y: none;
+}
 body {
   background: rgb(var(--background));
   color: rgb(var(--foreground));

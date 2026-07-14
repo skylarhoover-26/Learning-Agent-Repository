@@ -83,7 +83,7 @@ function NotificationsAdminPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Bell} title="Notifications" subtitle="Who receives Slack notifications" />
-        <main className="max-w-3xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Checking…</main>
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">Checking…</main>
       </div>
     );
   }
@@ -92,7 +92,7 @@ function NotificationsAdminPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Bell} title="Notifications" subtitle="Who receives Slack notifications" />
-        <main className="max-w-3xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">
           Admins only.
         </main>
       </div>
@@ -102,7 +102,7 @@ function NotificationsAdminPageInner() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={Bell} title="Notifications" subtitle="Who receives Slack notifications" />
-      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Only people on this list receive the daily Slack push. Add or remove by email anytime —

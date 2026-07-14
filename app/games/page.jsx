@@ -88,7 +88,7 @@ function GamesHubInner() {
         subtitle="Practice AI skills the fun way"
       />
 
-      <main className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
+      <main className="max-w-6xl mx-auto px-6 pt-6 pb-12 sm:pb-16">
         <CinematicPageHero
           eyebrow="Games"
           title="Learning Games"

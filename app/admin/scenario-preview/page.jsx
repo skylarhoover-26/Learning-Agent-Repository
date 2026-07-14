@@ -69,7 +69,7 @@ export default function ScenarioPreviewPage() {
 
   return (
     <Wrap>
-      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 space-y-4">
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Enter a role and generate the calibration scenarios exactly as a learner would get them. Prefilled from your profile.

@@ -194,7 +194,7 @@ function ProfilePageInner() {
     return (
       <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader icon={User} title="Profile" subtitle="Loading..." />
-        <div className="max-w-3xl mx-auto px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+        <div className="max-w-3xl mx-auto px-6 pt-6 pb-12 text-center text-slate-500 dark:text-slate-400">
           Loading profile...
         </div>
       </div>
@@ -208,7 +208,7 @@ function ProfilePageInner() {
     <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
       <PageHeader icon={User} title="Profile & Settings" subtitle="Manage your learning profile" />
 
-      <main className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-8 space-y-6">
         {/* A. Profile Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800 mb-4 ring-1 ring-slate-200 dark:ring-slate-700">

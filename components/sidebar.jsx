@@ -150,7 +150,7 @@ export function SidebarProvider({ children }) {
   // doesn't compete for attention. Starts closed for SSR so the first client
   // render matches the server; the effects below settle the real state right
   // after mount (the panel slides in via its transform transition).
-  const [open, setOpenState] = useState(false);
+  const [open, setOpenState] = useState(true);
   const pathname = usePathname();
   const profileCtx = useProfile();
   const profile = profileCtx?.profile;

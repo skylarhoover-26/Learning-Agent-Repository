@@ -135,7 +135,7 @@ function MenuVisibilityAdminPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Eye} title="Menu Visibility" subtitle="Control what regular users can see" />
-        <main className="max-w-3xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Checking…</main>
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">Checking…</main>
       </div>
     );
   }
@@ -144,7 +144,7 @@ function MenuVisibilityAdminPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Eye} title="Menu Visibility" subtitle="Control what regular users can see" />
-        <main className="max-w-3xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Admins only.</main>
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">Admins only.</main>
       </div>
     );
   }
@@ -152,7 +152,7 @@ function MenuVisibilityAdminPageInner() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={Eye} title="Menu Visibility" subtitle="Control what regular users can see" />
-      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <p className="text-sm font-semibold text-ink dark:text-slate-200 mb-1">View the app as</p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">

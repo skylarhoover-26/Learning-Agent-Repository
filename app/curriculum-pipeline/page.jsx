@@ -209,7 +209,7 @@ function CurriculumPipelinePageInner() {
         subtitle="AI news sources are scanned daily — review and approve proposals"
       />
 
-      <main className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+      <main className="max-w-4xl mx-auto px-6 pt-6 pb-10 space-y-8">
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start gap-3">
           <Rss className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
           <div>

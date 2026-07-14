@@ -107,7 +107,7 @@ function AiToolsAdminPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Wrench} title="AI Tools" subtitle="Edit what each AI tool is good for" />
-        <main className="max-w-3xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">
           {allowed === null ? 'Checking…' : 'Admins only.'}
         </main>
       </div>
@@ -117,7 +117,7 @@ function AiToolsAdminPageInner() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={Wrench} title="AI Tools" subtitle="Edit what each AI tool is good for" />
-      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-start justify-between gap-4 mb-5">
             <p className="text-sm text-slate-600 dark:text-slate-400">

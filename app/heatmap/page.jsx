@@ -251,7 +251,7 @@ function HeatmapPageInner() {
     return (
       <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader icon={Grid3X3} title="Knowledge Heatmap" subtitle="Mastery x Freshness — find your blind spots" />
-        <div className="max-w-5xl mx-auto px-6 py-10">
+        <div className="max-w-5xl mx-auto px-6 pt-6 pb-10">
           <div className="animate-pulse space-y-6">
             <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded-2xl" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -273,7 +273,7 @@ function HeatmapPageInner() {
         subtitle="Mastery x Freshness — find your blind spots"
       />
 
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+      <main className="max-w-5xl mx-auto px-6 pt-6 pb-8 space-y-8">
         {!hasAnyActivity ? (
           <EmptyState />
         ) : (

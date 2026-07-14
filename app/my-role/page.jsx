@@ -48,7 +48,7 @@ function MyRolePageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={UserCog} title="My Role" subtitle="Update your role and tailor your experience" />
-        <main className="max-w-3xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading…</main>
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">Loading…</main>
       </div>
     );
   }
@@ -162,7 +162,7 @@ function MyRolePageInner() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={UserCog} title="My Role" subtitle="Update your role and tailor your experience" />
-      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
         {status === 'error' && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 text-sm text-red-700 dark:text-red-400">
             Something went wrong. Please try again.

@@ -85,7 +85,7 @@ function MyTasksContent() {
     <div className="min-h-screen">
       <PageHeader icon={Briefcase} title="My Tasks" subtitle="What you do day-to-day" />
 
-      <main className="max-w-2xl mx-auto px-6 py-10">
+      <main className="max-w-2xl mx-auto px-6 pt-6 pb-10">
         {fromDiscover && (
           <Link
             href="/discover"
@@ -221,7 +221,7 @@ export default function MyTasksPage() {
 
 function MyTasksPageInner() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
+    <Suspense fallback={<div className="max-w-2xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">Loading...</div>}>
       <MyTasksContent />
     </Suspense>
   );

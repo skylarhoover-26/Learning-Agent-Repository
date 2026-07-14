@@ -69,7 +69,7 @@ function SkillLevelsAdminPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={SlidersHorizontal} title="Skill Levels" subtitle="Set the difficulty level of each AI skill" />
-        <main className="max-w-3xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Checking…</main>
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">Checking…</main>
       </div>
     );
   }
@@ -78,7 +78,7 @@ function SkillLevelsAdminPageInner() {
     return (
       <div className="min-h-screen">
         <PageHeader icon={SlidersHorizontal} title="Skill Levels" subtitle="Set the difficulty level of each AI skill" />
-        <main className="max-w-3xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">Admins only.</main>
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">Admins only.</main>
       </div>
     );
   }
@@ -97,7 +97,7 @@ function SkillLevelsAdminPageInner() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={SlidersHorizontal} title="Skill Levels" subtitle="Set the difficulty level of each AI skill" />
-      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
             These levels decide who gets recommended each topic. Beginners only see

@@ -200,7 +200,7 @@ export default function ReportingPage() {
   return (
     <div className="min-h-screen">
       <PageHeader icon={BarChart3} title="Reporting" subtitle="Team learning activity and progress" />
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      <main className="max-w-6xl mx-auto px-6 pt-6 pb-10">
         {state.status === 'loading' && (
           <div className="flex items-center justify-center py-20 text-slate-500 dark:text-slate-400 gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Loading the report…</div>
         )}

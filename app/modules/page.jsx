@@ -55,7 +55,7 @@ function ModulesPageInner() {
     return (
       <div className="min-h-screen bg-bg-warm dark:bg-slate-900">
         <PageHeader icon={GraduationCap} title="Learning Path" subtitle="Loading your personalized modules..." />
-        <main className="max-w-3xl mx-auto px-6 py-10">
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10">
           <BookLoader message="Loading your personalized modules..." />
         </main>
       </div>
@@ -76,7 +76,7 @@ function ModulesPageInner() {
           title={`Module ${displayNum}: ${mod.title}`}
           subtitle={getPersonalizedSubtitle(mod.num, topTasks) || mod.subtitle}
         />
-        <main className="max-w-3xl mx-auto px-6 py-10">
+        <main className="max-w-3xl mx-auto px-6 pt-6 pb-10">
           <button
             onClick={() => { setSelectedModule(null); setExpandedSection(0); }}
             className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-brand transition-colors mb-6"
@@ -111,7 +111,7 @@ function ModulesPageInner() {
         subtitle={`${modules.length} modules tailored for ${tierLabel} level`}
       />
 
-      <main className="max-w-3xl mx-auto px-6 py-10">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-10">
         <div className="space-y-4">
           {modules.map((mod, i) => {
             const Icon = MODULE_ICONS[mod.num] || BookOpen;

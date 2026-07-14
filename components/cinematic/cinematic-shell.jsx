@@ -82,7 +82,7 @@ function TopNav({ onMenu }) {
 }
 
 function SectionLabel({ children }) {
-  return <p className="px-4 pt-5 pb-1 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--ink-dim)' }}>{children}</p>;
+  return <p className="px-4 pt-3 pb-0.5 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--ink-dim)' }}>{children}</p>;
 }
 
 // Hover description for a drawer nav row — mirrors prod's ItemDescPopup so each
@@ -121,7 +121,7 @@ function Drawer({ open, onClose }) {
         onClick={soon ? (e) => e.preventDefault() : undefined}
         aria-disabled={soon}
         aria-current={active ? 'page' : undefined}
-        className="cine-lift group relative flex items-center gap-3 mx-2 px-3 py-2 rounded-xl"
+        className="cine-lift group relative flex items-center gap-3 mx-2 px-3 py-1.5 rounded-xl"
         style={{
           background: active ? 'linear-gradient(135deg,rgba(59,148,255,.18),rgba(59,148,255,.06))' : 'transparent',
           color: soon ? 'var(--ink-dim)' : 'var(--ink)',
@@ -143,17 +143,17 @@ function Drawer({ open, onClose }) {
       <div
         onClick={onClose}
         aria-hidden="true"
-        className="fixed inset-0 z-[39] transition-opacity duration-300 lg:hidden"
+        className="fixed inset-0 z-[39] transition-opacity duration-300 md:hidden"
         style={{ background: 'rgba(3,10,24,.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' }}
       />
       {/* Panel — docked below the top bar (z-40 < bar's z-50), slides in/out.
           `will-change: transform` promotes it to its own layer so the slide
           composites on the GPU instead of repainting each frame. */}
       <aside
-        className="cine fixed top-16 left-0 z-40 h-[calc(100dvh-4rem)] min-h-0 w-80 max-w-[86vw] overflow-y-auto overscroll-contain transition-transform duration-300"
-        style={{ transform: open ? 'translateX(0)' : 'translateX(-104%)', willChange: 'transform', boxShadow: '0 0 60px -10px rgba(0,0,0,.5)', backgroundAttachment: 'scroll' }}
+        className="fixed top-16 left-0 z-40 h-[calc(100dvh-4rem)] w-80 max-w-[86vw] overflow-y-auto overscroll-contain transition-transform duration-300"
+        style={{ transform: open ? 'translateX(0)' : 'translateX(-104%)', willChange: 'transform', background: 'var(--navbg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRight: '1px solid var(--line)', boxShadow: '0 0 60px -10px rgba(0,0,0,.35)' }}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 cine-glass" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, borderTop: 0 }}>
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3" style={{ background: 'var(--navbg)', borderBottom: '1px solid var(--line)' }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'linear-gradient(135deg,var(--accent),var(--gold))' }}>
               <Sparkles className="w-4 h-4 text-white" strokeWidth={2.4} />
@@ -165,8 +165,8 @@ function Drawer({ open, onClose }) {
           </button>
         </div>
 
-        <nav className="pb-28">
-          <div className="pt-2">
+        <nav className="pb-6">
+          <div className="pt-1">
             <NavRow item={{ href: '/', icon: Home, label: 'Home' }} />
           </div>
 
@@ -191,7 +191,7 @@ function Drawer({ open, onClose }) {
                     <button
                       key="tour"
                       onClick={() => { onClose(); startTour(); }}
-                      className="cine-lift w-full flex items-center gap-3 mx-2 px-3 py-2 rounded-xl text-left"
+                      className="cine-lift w-full flex items-center gap-3 mx-2 px-3 py-1.5 rounded-xl text-left"
                       style={{ color: 'var(--ink)' }}
                     >
                       <Play className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-dim)' }} />
@@ -213,7 +213,7 @@ function Drawer({ open, onClose }) {
                           href={link.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="cine-lift flex items-center gap-3 mx-2 px-3 py-2 rounded-xl"
+                          className="cine-lift flex items-center gap-3 mx-2 px-3 py-1.5 rounded-xl"
                           style={{ color: 'var(--ink)' }}
                         >
                           <ExternalLink className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-dim)' }} />
@@ -267,7 +267,7 @@ export function CinematicChrome({ children }) {
       <div className="cine-frame cine">
         <TopNav onMenu={toggle} />
         <Drawer open={open} onClose={() => setOpen(false)} />
-        <div className={`transition-[padding] duration-300 ${open ? 'lg:pl-80' : ''}`}>
+        <div className={`transition-[padding] duration-300 ${open ? 'md:pl-80' : ''}`}>
           {children}
         </div>
       </div>

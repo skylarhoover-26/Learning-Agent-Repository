@@ -125,7 +125,7 @@ function AiOrHuman() {
           title="AI or Human?"
           subtitle="Results"
         />
-        <main className="max-w-2xl mx-auto px-6 py-8">
+        <main className="max-w-2xl mx-auto px-6 pt-6 pb-8">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
             <div className="w-16 h-16 rounded-2xl bg-cta-50 flex items-center justify-center mx-auto mb-4">
               <Trophy className="w-8 h-8 text-cta-600" />
@@ -222,7 +222,7 @@ function AiOrHuman() {
         subtitle={`Item ${contentIdx + 1} of ${content.length}`}
       />
 
-      <main className="max-w-2xl mx-auto px-6 py-8">
+      <main className="max-w-2xl mx-auto px-6 pt-6 pb-8">
         {/* Start screen */}
         {!started ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">

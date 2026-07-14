@@ -675,7 +675,7 @@ function ManagerDashboardInner() {
         subtitle="Look up your team and track AI learning adoption"
       />
 
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+      <main className="max-w-6xl mx-auto px-6 pt-6 pb-8 space-y-8">
         {!teamData ? (
           <>
             <ManagerSearch loading={loading} onSubmit={handleLookup} />

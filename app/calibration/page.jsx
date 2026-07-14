@@ -74,7 +74,7 @@ function CalibrationPageInner() {
       )}
 
       {mode === 'view' && latest && (
-        <main className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+        <main className="max-w-2xl mx-auto px-6 pt-6 pb-10 space-y-6">
           <div className="flex justify-end">
             <button
               onClick={() => setMode('run')}
@@ -93,7 +93,7 @@ function CalibrationPageInner() {
       )}
 
       {mode === 'view' && !latest && (
-        <main className="max-w-2xl mx-auto px-6 py-10 text-center text-slate-500 dark:text-slate-400">
+        <main className="max-w-2xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">
           No calibration yet. <button className="text-brand font-semibold" onClick={() => setMode('run')}>Start now</button>.
         </main>
       )}

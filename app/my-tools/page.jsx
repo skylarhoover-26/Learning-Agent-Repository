@@ -80,7 +80,7 @@ function MyToolsPageInner() {
     <div className="min-h-screen">
       <PageHeader icon={PanelsTopLeft} title="My AI Tools" subtitle="The AI tools you work in, alongside the coach" />
 
-      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
             Pick every AI tool you have — you can choose more than one. For each lesson, the coach
