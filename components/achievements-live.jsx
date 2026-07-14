@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useProgression } from './progression-provider';
 import { getLevelTitle } from '@/lib/level-titles';
-import { ArrowLeft, Award, Sparkles, TrendingUp } from 'lucide-react';
+import { Award, Sparkles, TrendingUp } from 'lucide-react';
+import PageHeader from '@/components/page-header';
 
 const XP_SOURCE_LABELS = {
   first_login: 'Welcome bonus',
@@ -83,22 +84,7 @@ export default function AchievementsLive() {
 
   return (
     <div data-tour="page-achievements" className="min-h-screen">
-      <header className="js-topbar bg-ink sticky top-0 z-50 text-white">
-        <div className="px-4 py-4 flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-lg hover:bg-white/10" aria-label="Back to home">
-            <ArrowLeft className="w-5 h-5 text-white" />
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-brand flex items-center justify-center">
-              <Award className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="font-bold tracking-tight text-[17px] leading-tight">Achievements</h1>
-              <p className="text-xs text-white/60">Your progress and badges</p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader icon={Award} title="Achievements" subtitle="Your progress and badges" />
 
       <main className="max-w-4xl mx-auto px-6 py-10">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8 mb-8 text-center">

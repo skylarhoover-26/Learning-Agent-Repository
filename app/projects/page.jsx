@@ -18,7 +18,15 @@ async function ProjectsPageInner() {
 
   return (
     <div className="min-h-screen">
-      <PageHeader icon={Briefcase} title="Your Projects" subtitle="What you're working on" />
+      <PageHeader
+        iconButton={(
+          <div className="w-9 h-9 rounded-md bg-brand flex items-center justify-center">
+            <Briefcase className="w-5 h-5 text-white" strokeWidth={2.5} />
+          </div>
+        )}
+        title="Your Projects"
+        subtitle="What you're working on"
+      />
 
       <main className="max-w-4xl mx-auto px-6 py-10">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">

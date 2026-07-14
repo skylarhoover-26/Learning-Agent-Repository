@@ -8,9 +8,18 @@ import { useChampions } from '@/components/champion-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import {
   AVATAR_SLOTS, SLOT_LABELS, itemsForSlot, isItemUnlocked,
-  unlockLabel, normalizeAvatar, unlockedCount,
+  unlockLabel, normalizeAvatar, unlockedCount, accessoryList,
 } from '@/lib/avatar-catalog';
-import { Lock, Check, Loader2 } from 'lucide-react';
+import { Lock, Check, Loader2, Slack, AlertCircle } from 'lucide-react';
+
+// The Crown is a single hat that auto-colors to your leaderboard rank. In the
+// locker we surface all three tiers so people can see the designs and exactly
+// what rank earns each — only the tier you currently hold is unlockable.
+const CROWN_DISPLAY = [
+  { tier: 1, name: 'Gold Crown', need: 'Reach #1' },
+  { tier: 2, name: 'Silver Crown', need: 'Reach #2' },
+  { tier: 3, name: 'Bronze Crown', need: 'Reach #3' },
+];
 
 // The avatar locker: pick a piece per slot. Unlocked items can be equipped (and
 // toggled off — e.g. pet/accessory have a "None"); locked items show what earns
@@ -25,22 +34,27 @@ import { Lock, Check, Loader2 } from 'lucide-react';
 export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
   const { profile, updateProfile } = useProfile();
   const prog = useProgression();
-  const { championIds } = useChampions();
+  const { crownTier } = useChampions();
   const controlled = value !== undefined && typeof onChange === 'function';
 
   const level = ctxProp?.level ?? (prog?.levelProgress?.level || 1);
   const badgeIds = ctxProp?.badgeIds ?? new Set((prog?.badgesEarned || []).map((b) => b.badge_id));
-  const isChampion = ctxProp?.isChampion ?? (profile ? championIds.has(resolveLearnerId(profile)) : false);
+  // The learner's crown rank tier (0 none, 1 gold, 2 silver, 3 bronze). Any tier
+  // unlocks the Crown hat and shows the crown in the preview at that rank's color.
+  const myTier = ctxProp?.isChampion ? 1 : (profile ? crownTier(resolveLearnerId(profile)) : 0);
+  const isChampion = myTier > 0;
   const ctx = { level, badgeIds, isChampion };
 
   const [internal, setInternal] = useState(() => normalizeAvatar(profile?.avatar));
   const [activeSlot, setActiveSlot] = useState('base');
   const [saving, setSaving] = useState(false);
+  const [slackStatus, setSlackStatus] = useState('idle'); // idle | loading | error
+  const [slackError, setSlackError] = useState(null);
 
   const avatar = controlled ? normalizeAvatar(value) : internal;
+  const usingSlackPhoto = avatar.mode === 'photo' && !!avatar.photo_url;
 
-  async function equip(slot, id) {
-    const next = { ...avatar, [slot]: id };
+  async function save(next) {
     if (controlled) {
       onChange(next);
       return;
@@ -56,6 +70,55 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
     }
   }
 
+  async function equip(slot, id) {
+    let next;
+    if (slot === 'accessory') {
+      // Gear is stackable — toggle items in/out; "None" clears everything.
+      const cur = accessoryList(avatar.accessory);
+      if (id === 'acc_none') next = { ...avatar, accessory: [] };
+      else if (cur.includes(id)) next = { ...avatar, accessory: cur.filter((x) => x !== id) };
+      else next = { ...avatar, accessory: [...cur, id] };
+    } else {
+      next = { ...avatar, [slot]: id };
+    }
+    // Picking a piece is a clear signal they want the cartoon character back.
+    next.mode = 'cartoon';
+    await save(next);
+  }
+
+  // Looks up the learner's own Slack profile photo (server resolves the email
+  // from their session — see app/api/slack-photo) and switches the avatar into
+  // photo mode. Falls back with an inline message if they have no custom Slack
+  // photo set, or the lookup otherwise fails.
+  async function useSlackPhoto() {
+    setSlackStatus('loading');
+    setSlackError(null);
+    try {
+      const res = await fetch('/api/slack-photo');
+      const data = await res.json();
+      if (!data.ok || !data.imageUrl) {
+        setSlackStatus('error');
+        setSlackError(
+          data.error === 'no_custom_photo'
+            ? "Your Slack profile doesn't have a photo set yet."
+            : "Couldn't find your Slack photo right now."
+        );
+        return;
+      }
+      await save({ ...avatar, mode: 'photo', photo_url: data.imageUrl });
+      setSlackStatus('idle');
+    } catch {
+      setSlackStatus('error');
+      setSlackError("Couldn't find your Slack photo right now.");
+    }
+  }
+
+  function useCharacter() {
+    setSlackStatus('idle');
+    setSlackError(null);
+    save({ ...avatar, mode: 'cartoon', photo_url: null });
+  }
+
   const items = itemsForSlot(activeSlot);
   const totalItems = AVATAR_SLOTS.reduce((n, s) => n + itemsForSlot(s).length, 0);
 
@@ -64,7 +127,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
       {/* Live preview */}
       <div className="flex sm:flex-col items-center gap-3">
         <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center ring-1 ring-slate-200 dark:ring-slate-700">
-          <Avatar avatar={avatar} size={96} crown={isChampion} />
+          <Avatar avatar={avatar} size={96} crown={myTier} />
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
           {!controlled && (
@@ -73,10 +136,52 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
               {saving ? 'Saving…' : 'Saved'}
             </span>
           )}
-          <div className="mt-1">{unlockedCount(ctx)} / {totalItems} unlocked</div>
+          {/* Unlock progress only matters for the character; hide it on the photo. */}
+          {!usingSlackPhoto && (
+            <div className="mt-1">{unlockedCount(ctx)} / {totalItems} unlocked</div>
+          )}
+        </div>
+
+        {/* Slack photo is the default for everyone; "Character" is the opt-in.
+            Shown in onboarding (controlled) and the profile locker alike. */}
+        <div className="w-full sm:w-28 flex flex-col gap-1.5">
+          <div className="flex rounded-pill bg-slate-100 dark:bg-slate-700 p-0.5">
+            <button
+              onClick={useSlackPhoto}
+              disabled={slackStatus === 'loading'}
+              className={`flex-1 px-2 py-1 rounded-pill text-xs font-medium transition-all flex items-center justify-center gap-1 ${
+                usingSlackPhoto ? 'bg-white dark:bg-slate-800 shadow-sm text-ink dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {slackStatus === 'loading' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Slack className="w-3 h-3" />}
+              Photo
+            </button>
+            <button
+              onClick={useCharacter}
+              className={`flex-1 px-2 py-1 rounded-pill text-xs font-medium transition-all ${
+                !usingSlackPhoto ? 'bg-white dark:bg-slate-800 shadow-sm text-ink dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              Character
+            </button>
+          </div>
+          {slackStatus === 'error' && slackError && (
+            <p className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+              <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+              {slackError}
+            </p>
+          )}
         </div>
       </div>
 
+      {usingSlackPhoto ? (
+      <div className="flex items-center">
+        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+          You&apos;re using your <span className="font-semibold text-ink dark:text-slate-200">Slack profile photo</span> — the default for everyone.
+          {' '}Want a custom look instead? Tap <span className="font-semibold text-ink dark:text-slate-200">Character</span> to build one from unlocked outfits, hats, and sidekicks.
+        </p>
+      </div>
+      ) : (
       <div>
         {/* Slot tabs */}
         <div className="flex flex-wrap gap-2 mb-4">
@@ -95,17 +200,34 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
           ))}
         </div>
 
-        {/* Item grid */}
+        {/* Item grid. The single hat_crown item is expanded into its three rank
+            tiers (gold/silver/bronze) so all crown designs + their rank show. */}
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-          {items.map((item) => {
-            const unlocked = isItemUnlocked(item, ctx);
-            const equipped = avatar[item.slot] === item.id;
+          {items.flatMap((item) => (item.id === 'hat_crown' ? CROWN_DISPLAY : [item])).map((entry) => {
+            const isCrown = 'tier' in entry;
+            const item = isCrown ? { id: 'hat_crown', slot: 'hat', name: entry.name } : entry;
+            // Crown tiles unlock only for the exact rank you currently hold; other
+            // items use the normal unlock rules.
+            const unlocked = isCrown ? myTier === entry.tier : isItemUnlocked(item, ctx);
+            const equipped = isCrown
+              ? (avatar.hat === 'hat_crown' && myTier === entry.tier)
+              : item.slot === 'accessory'
+                ? (item.id === 'acc_none'
+                    ? accessoryList(avatar.accessory).length === 0
+                    : accessoryList(avatar.accessory).includes(item.id))
+                : (avatar[item.slot] === item.id);
+            const lockText = isCrown ? entry.need : unlockLabel(item);
+            const key = isCrown ? `crown-${entry.tier}` : item.id;
+            // For crown tiles, always preview the crown in that tier's color so the
+            // design is visible even while locked.
+            const previewCrown = isCrown ? entry.tier : (item.id === 'hat_crown' ? (myTier || 1) : myTier);
+            const previewAvatar = isCrown ? { ...avatar, hat: 'hat_crown' } : { ...avatar, [item.slot]: item.id };
             return (
               <button
-                key={item.id}
+                key={key}
                 onClick={() => unlocked && equip(item.slot, item.id)}
                 disabled={!unlocked}
-                title={unlocked ? item.name : `${item.name} — ${unlockLabel(item)}`}
+                title={unlocked ? item.name : `${item.name} — ${lockText}`}
                 className={`relative rounded-xl border p-2 flex flex-col items-center gap-1 transition-all ${
                   equipped
                     ? 'border-brand ring-2 ring-brand bg-brand-50 dark:bg-slate-700'
@@ -113,9 +235,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
                 } ${!unlocked ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="w-12 h-12 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                  {/* preview the full avatar with just this slot swapped in.
-                      Force-show the crown so its tile previews the art. */}
-                  <Avatar avatar={{ ...avatar, [item.slot]: item.id }} size={44} crown={item.id === 'hat_crown' || isChampion} />
+                  <Avatar avatar={previewAvatar} size={44} crown={previewCrown} />
                 </div>
                 <span className="text-[11px] text-center leading-tight text-ink dark:text-slate-300 line-clamp-1">
                   {item.name}
@@ -125,7 +245,7 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
                     <div className="flex flex-col items-center gap-0.5">
                       <Lock className="w-4 h-4 text-slate-500 dark:text-slate-300" />
                       <span className="text-[9px] font-medium text-slate-600 dark:text-slate-300 px-1 text-center leading-tight">
-                        {unlockLabel(item)}
+                        {lockText}
                       </span>
                     </div>
                   </div>
@@ -142,10 +262,11 @@ export default function AvatarLocker({ value, onChange, ctx: ctxProp }) {
 
         {activeSlot === 'hat' && (
           <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
-            👑 The Crown is only yours while you&apos;re #1 on your department leaderboard — it comes off automatically if someone passes your XP.
+            👑 The Crown is only yours while you&apos;re in the top 3 on the leaderboard — gold for #1, silver for #2, bronze for #3. It updates automatically as the rankings change.
           </p>
         )}
       </div>
+      )}
     </div>
   );
 }

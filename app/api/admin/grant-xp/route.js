@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { getUserData, saveUserData } from '@/lib/blob-store';
+import { mirrorSave } from '@/lib/supabase-store';
 import { getLevel } from '@/lib/level-curve';
 
 // Admin-only, server-side XP grant. Because the write happens here (not in the
@@ -54,6 +55,8 @@ export async function POST(request) {
       });
     }
     await saveUserData(learnerId, xpKey, events);
+    // Stage-2 dual-write: mirror the updated XP ledger into Supabase (never throws).
+    await mirrorSave(learnerId, xpKey, events);
 
     const totalXp = Math.max(0, base + applied);
     return NextResponse.json({ ok: true, totalXp, level: getLevel(totalXp), amount: applied });

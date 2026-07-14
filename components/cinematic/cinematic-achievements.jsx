@@ -71,14 +71,22 @@ const TOTAL_BADGES = BADGE_CATEGORIES.reduce((n, c) => n + c.badges.length, 0);
 
 function BadgeTile({ badge, earned, tint }) {
   return (
-    <div className="cine-glass cine-lift rounded-2xl p-4 flex flex-col items-center text-center" style={{ opacity: earned ? 1 : 0.55 }} title={badge.description}>
+    <div className="cine-glass cine-lift rounded-2xl p-4 flex flex-col items-center text-center" style={{ opacity: earned ? 1 : 0.9 }} title={badge.description}>
       <div
         className="relative w-14 h-14 rounded-full grid place-items-center text-2xl mb-2"
         style={earned
           ? { background: `radial-gradient(circle at 35% 30%, #fff6, ${tint}), ${tint}`, boxShadow: `0 0 22px -4px ${tint}` }
           : { background: 'var(--glass)', border: '1px solid var(--line)' }}
       >
-        {earned ? badge.emoji : <Lock className="w-5 h-5" style={{ color: 'var(--ink-dim)' }} />}
+        {/* Always show the emoji (like the Library) — desaturated + a small lock
+            corner when the badge is still locked, so the gallery has personality
+            instead of a wall of padlocks. */}
+        <span style={earned ? undefined : { filter: 'grayscale(1)', opacity: 0.55 }}>{badge.emoji}</span>
+        {!earned && (
+          <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full grid place-items-center" style={{ background: 'var(--navbg)', border: '1px solid var(--line)' }}>
+            <Lock className="w-2.5 h-2.5" style={{ color: 'var(--ink-dim)' }} />
+          </span>
+        )}
       </div>
       <p className="font-display font-bold text-sm leading-tight">{badge.name}</p>
       <p className="text-[11px] mt-0.5" style={{ color: 'var(--ink-dim)' }}>{badge.description}</p>
@@ -120,6 +128,9 @@ export default function CinematicAchievements() {
 
   return (
     <CinematicShell>
+      {/* Tighter internal spacing than the shell's default (space-y-20) so the
+          badge categories sit close together, like the heatmap. */}
+      <div className="space-y-10 sm:space-y-12">
       {/* LEVEL HERO */}
       <section className="cine-rise cine-glass rounded-3xl p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center gap-6">
@@ -199,6 +210,7 @@ export default function CinematicAchievements() {
         </section>
       )}
 
+      </div>
       <div className="pb-6" />
     </CinematicShell>
   );

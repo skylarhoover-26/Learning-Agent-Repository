@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { list, put } from '@vercel/blob';
+import { list, put, del } from '@vercel/blob';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
+import { mirrorResetAllProgress } from '@/lib/supabase-store';
 
 // Admin-only: wipe everyone's XP (and admin grants) back to 0 by emptying each
 // user's XP blob. Used to clear out test/demo data for a clean slate.
@@ -38,6 +39,16 @@ export async function POST() {
       allowOverwrite: true,
       cacheControlMaxAge: 0,
     });
+
+    // Stage-2 dual-write: mirror the reset into Supabase (never throws).
+    await mirrorResetAllProgress();
+
+    // Clear the cached leaderboard so it rebuilds from the now-empty data
+    // instead of serving a stale (e.g. doubled) snapshot.
+    try {
+      const { blobs: lbBlobs } = await list({ prefix: 'leaderboard/' });
+      for (const b of lbBlobs) await del(b.url);
+    } catch { /* best-effort */ }
 
     return NextResponse.json({ ok: true, reset });
   } catch (error) {

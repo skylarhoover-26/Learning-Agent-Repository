@@ -18,9 +18,11 @@ export default function OnboardingTour() {
   const [phase, setPhase] = useState('hidden');
 
   // Show on the dashboard, once a profile exists (so it never fires
-  // mid-onboarding), and only if it's never been offered before.
+  // mid-onboarding), only if it's never been offered before, and only AFTER the
+  // required calibration is done — otherwise it would collide with the gate.
   useEffect(() => {
     if (pathname !== '/' || !profile) return;
+    if (!profile.calibrated_at) return;
     if (!profile.tour_offered) setPhase('welcome');
   }, [pathname, profile]);
 

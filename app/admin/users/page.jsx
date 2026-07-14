@@ -5,6 +5,7 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
+import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
 import { Users, Search, Zap, Loader2, Crown, Award, BookOpen, Check, RotateCcw } from 'lucide-react';
 
 const BADGE_META = {
@@ -54,7 +55,8 @@ export default function AdminUsersPage() {
 function AdminUsersPageInner() {
   const [allowed, setAllowed] = useState(null);
   const [people, setPeople] = useState([]);
-  const [championSet, setChampionSet] = useState(new Set());
+  const [championIds, setChampionIds] = useState([]);
+  const tierOf = (id) => crownTierFromIds(id, championIds);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -78,7 +80,7 @@ function AdminUsersPageInner() {
       .then((d) => {
         if (!d) return;
         setPeople(d.people || []);
-        setChampionSet(new Set(d.championIds || []));
+        setChampionIds(d.championIds || []);
       })
       .catch(() => {});
   }, []);
@@ -244,7 +246,7 @@ function AdminUsersPageInner() {
                     selected === p.learnerId ? 'bg-brand-50 dark:bg-slate-700' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
                   }`}
                 >
-                  <Avatar avatar={p.avatar} size={34} crown={championSet.has(p.learnerId)} />
+                  <Avatar avatar={p.avatar} size={34} crown={tierOf(p.learnerId)} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-ink dark:text-slate-200 truncate">{p.name}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{p.department || '—'} · L{p.level}</p>
@@ -271,12 +273,12 @@ function AdminUsersPageInner() {
                 {/* Header */}
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-100 to-cta-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center">
-                    <Avatar avatar={detail.profile.avatar} size={56} crown={championSet.has(detail.learnerId)} />
+                    <Avatar avatar={detail.profile.avatar} size={56} crown={tierOf(detail.learnerId)} />
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-xl font-bold text-ink dark:text-slate-200 flex items-center gap-2">
                       {detail.profile.display_name}
-                      {championSet.has(detail.learnerId) && <Crown className="w-4 h-4 text-amber-500" />}
+                      {tierOf(detail.learnerId) > 0 && <Crown className={`w-4 h-4 ${CROWN_ICON_CLASS[tierOf(detail.learnerId)]}`} />}
                     </h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       {getLevelTitle(detail.level)} · Level {detail.level} · {detail.totalXp.toLocaleString()} XP

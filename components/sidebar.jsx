@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import {
-  Menu, X, Crosshair, BarChart3,
+  Menu, X, BarChart3,
   CalendarDays, Play, GraduationCap,
   Grid3X3, Gamepad2, Award, MessageCircle,
   Compass, Trophy, BookOpen, Terminal, Home, Library,
@@ -76,7 +76,6 @@ export const NAV_SECTIONS = [
     tour: 'section-progress',
     items: [
       { href: '/achievements', icon: Award, label: 'Achievements', desc: 'Badges and milestones you have earned' },
-      { href: '/calibration', icon: Crosshair, label: 'Calibrate', desc: 'Tune lessons to your current level' },
       { href: '/heatmap', icon: Grid3X3, label: 'Knowledge Heatmap', desc: 'Where you are strong and where to grow' },
       { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', desc: 'See how you rank across your team' },
     ],
@@ -256,7 +255,8 @@ export function SidebarShell({ children }) {
   const pathname = usePathname();
   // No nav on onboarding/auth — don't shift content or show the backdrop there.
   const chromeHidden = isChromeHiddenRoute(pathname);
-  const showNav = open && !chromeHidden && !isCinematicRoute(pathname);
+  const cinematic = isCinematicRoute(pathname);
+  const showNav = open && !chromeHidden && !cinematic;
   return (
     <>
       {/* Small screens only: dim + tap-to-close (the panel overlays content). */}
@@ -269,8 +269,12 @@ export function SidebarShell({ children }) {
       )}
       {/* pt-16 clears the fixed top bar (it no longer occupies flow space like
           the old sticky header did). Skipped on chrome-hidden full-screen flows
-          (onboarding/auth) that have no top bar. */}
-      <div className={`${chromeHidden ? '' : 'pt-16'} ${showNav ? 'lg:pl-80' : ''}`}>
+          (onboarding/auth) that have no top bar — and on cinematic routes, which
+          render their own in-flow top bar inside the cinematic shell. Applying
+          pt-16 there pushed the whole cinematic frame down 64px, leaving a white
+          strip up top and letting the fixed drawer (top-16) overlap the pushed-
+          down cinematic top bar. */}
+      <div className={`${chromeHidden || cinematic ? '' : 'pt-16'} ${showNav ? 'lg:pl-80' : ''}`}>
         {children}
       </div>
     </>

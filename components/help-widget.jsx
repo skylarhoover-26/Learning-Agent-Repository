@@ -91,7 +91,8 @@ export default function HelpWidget() {
       <button
         onClick={() => setOpen(true)}
         data-tour="help"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-pill bg-brand text-white shadow-card hover:bg-brand-700 hover:shadow-card-hover transition-all"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full text-white transition-all hover:brightness-110"
+        style={{ background: 'linear-gradient(135deg,#3B94FF,#0055FF)', boxShadow: '0 18px 40px -14px rgba(59,148,255,.75), inset 0 1px 0 rgba(255,255,255,.25)' }}
         aria-label="Open help chat"
       >
         <MessageCircleQuestion className="w-5 h-5" />
@@ -101,11 +102,16 @@ export default function HelpWidget() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-3rem)] h-[480px] max-h-[calc(100vh-6rem)] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-ink text-white shrink-0">
+    <div
+      className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-3rem)] h-[480px] max-h-[calc(100vh-6rem)] flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/70 dark:border-slate-700 overflow-hidden"
+      style={{ boxShadow: '0 30px 80px -30px rgba(6,20,45,.55), 0 0 44px -22px rgba(59,148,255,.5)' }}
+    >
+      {/* Header — cinematic navy gradient with the sparkle chip, matching the top bar */}
+      <div className="flex items-center justify-between px-4 py-3 text-white shrink-0" style={{ background: 'linear-gradient(90deg, rgba(7,17,40,.98), rgba(12,38,74,.94))' }}>
         <div className="flex items-center gap-2">
-          <MessageCircleQuestion className="w-5 h-5" />
+          <span className="w-7 h-7 rounded-lg grid place-items-center shrink-0" style={{ background: 'linear-gradient(135deg,#3B94FF,#FFB706)' }}>
+            <MessageCircleQuestion className="w-4 h-4 text-white" />
+          </span>
           <span className="text-sm font-semibold">Help</span>
         </div>
         <button onClick={() => setOpen(false)} className="p-1 rounded-md hover:bg-white/10" aria-label="Close help chat">
@@ -123,9 +129,10 @@ export default function HelpWidget() {
             <div
               className={`max-w-[90%] rounded-2xl px-3 py-2 text-sm ${
                 m.role === 'user'
-                  ? 'bg-brand text-white'
+                  ? 'text-white'
                   : 'bg-white dark:bg-slate-700 text-ink dark:text-slate-200 border border-slate-200 dark:border-slate-600'
               }`}
+              style={m.role === 'user' ? { background: 'linear-gradient(135deg,#3B94FF,#0055FF)' } : undefined}
             >
               {m.role === 'assistant' ? <FormattedContent text={m.content} /> : <p className="whitespace-pre-wrap">{m.content}</p>}
             </div>
@@ -174,7 +181,8 @@ export default function HelpWidget() {
           <button
             onClick={send}
             disabled={loading || !input.trim()}
-            className="p-2 rounded-xl bg-brand text-white disabled:opacity-50 hover:bg-brand-700 transition-all"
+            className="p-2 rounded-xl text-white disabled:opacity-50 hover:brightness-110 transition-all"
+            style={{ background: 'linear-gradient(135deg,#3B94FF,#0055FF)' }}
             aria-label="Send"
           >
             <Send className="w-4 h-4" />

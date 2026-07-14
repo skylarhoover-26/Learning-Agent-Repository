@@ -224,6 +224,12 @@ function hairShape(id, fill) {
           <rect x="66" y="26" width="6" height="4" rx="2" fill="#00000033" />
         </g>
       );
+    case 'hair_shortfem':
+      // Chin-length layered cut — solid cap over the crown, framing the face.
+      return <path d="M28 56 Q26 15 50 15 Q74 15 72 56 Q67 52 64 46 Q65 27 50 26 Q35 27 36 46 Q33 52 28 56 Z" fill={fill} />;
+    case 'hair_medfem':
+      // Shoulder-length — full cap, falling to the shoulders.
+      return <path d="M28 72 Q25 15 50 14 Q75 15 72 72 Q66 66 66 52 Q68 30 50 27 Q32 30 34 52 Q34 66 28 72 Z" fill={fill} />;
     case 'hair_curly':
       return (
         <g fill={fill}>
@@ -246,12 +252,9 @@ function hairShape(id, fill) {
         </g>
       );
     case 'hair_afro':
+      // Full, rounded volume framing the face (was three loose circles).
       return (
-        <g fill={fill}>
-          <circle cx="50" cy="17" r="16" />
-          <circle cx="32" cy="30" r="9" />
-          <circle cx="68" cy="30" r="9" />
-        </g>
+        <path d="M24 44 Q15 22 30 12 Q39 5 50 5 Q61 5 70 12 Q85 22 76 44 Q71 33 61 33 Q63 24 50 23 Q37 24 39 33 Q29 33 24 44 Z" fill={fill} />
       );
     case 'hair_pigtails':
       return (
@@ -349,6 +352,23 @@ function renderOutfit(id) {
     case 'outfit_tee_red':    return tee('#ef4444');
     case 'outfit_tee_green':  return tee('#22c55e');
     case 'outfit_tee_yellow': return tee('#facc15');
+
+    // Two neckline "types": a shallow crew (reads more masculine) and a deeper
+    // scoop (reads more feminine). Both the standard blue.
+    case 'outfit_tee_crew':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#3b82f6" />
+          <path d="M43 57 Q50 63 57 57" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" />
+        </g>
+      );
+    case 'outfit_tee_scoop':
+      return (
+        <g key="outfit">
+          <path d={TORSO} fill="#3b82f6" />
+          <path d="M40 57 Q50 71 60 57" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" />
+        </g>
+      );
 
     case 'outfit_hoodie':
       return (
@@ -540,7 +560,7 @@ function renderOutfit(id) {
       );
     case 'outfit_tee':
     default:
-      return tee('#e5e7eb', '#cbd5e1');
+      return tee('#3b82f6', '#2563eb');
   }
 }
 
@@ -660,6 +680,17 @@ function renderAccessory(id) {
           <rect x="35" y="31" width="13" height="9" rx="2.5" fill={INK} />
           <rect x="52" y="31" width="13" height="9" rx="2.5" fill={INK} />
           <line x1="48" y1="34" x2="52" y2="34" stroke={INK} strokeWidth="2" />
+        </g>
+      );
+    case 'acc_hearing_aid':
+      return (
+        <g key="acc">
+          {/* left behind-the-ear aid */}
+          <path d="M31 33 q-4 0 -4 5 q0 4 3 5" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="30.5" cy="32" r="2.2" fill="#94a3b8" />
+          {/* right behind-the-ear aid */}
+          <path d="M69 33 q4 0 4 5 q0 4 -3 5" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="69.5" cy="32" r="2.2" fill="#94a3b8" />
         </g>
       );
     case 'acc_headphones':
@@ -853,8 +884,8 @@ function renderEarrings(id) {
 // Hats — drawn over the top of the head, above hair/face. The Crown is special:
 // it only renders while the wearer is actually the current champion, so losing
 // the top spot takes it off even if it's still "equipped".
-function renderHat(id, isChampion) {
-  if (id === 'hat_crown' && !isChampion) return null;
+function renderHat(id, crownTier) {
+  if (id === 'hat_crown' && !crownTier) return null;
   switch (id) {
     case 'hat_cap':
       return (
@@ -931,14 +962,16 @@ function renderHat(id, isChampion) {
           <circle cx="50" cy="1" r="3" fill="#fde047" />
         </g>
       );
-    case 'hat_crown':
+    case 'hat_crown': {
+      const c = CROWN_TIERS[crownTier] || CROWN_TIERS[1];
       return (
         <g key="hat">
-          <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
-          <rect x="36" y="18" width="28" height="4" rx="1" fill="#f59e0b" />
-          <circle cx="50" cy="6" r="1.8" fill="#fde68a" />
+          <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill={c.points} stroke={c.stroke} strokeWidth="1" />
+          <rect x="36" y="18" width="28" height="4" rx="1" fill={c.band} />
+          <circle cx="50" cy="6" r="1.8" fill={c.gem} />
         </g>
       );
+    }
     case 'hat_none':
     default:
       return null;
@@ -1160,21 +1193,67 @@ function renderPet(id) {
   }
 }
 
-function renderCrown() {
+// Crown colors by rank tier: 1 = gold (#1), 2 = silver (#2), 3 = bronze (#3).
+const CROWN_TIERS = {
+  1: { points: '#fbbf24', stroke: '#d97706', band: '#f59e0b', gem: '#fde68a' },
+  2: { points: '#e2e8f0', stroke: '#94a3b8', band: '#cbd5e1', gem: '#f8fafc' },
+  3: { points: '#d9a066', stroke: '#92400e', band: '#b45309', gem: '#fed7aa' },
+};
+
+// Normalize the `crown` prop (boolean for back-compat, or a 1/2/3 tier) to a
+// tier number; 0 means no crown.
+function crownTierFromProp(crown) {
+  if (crown === 2 || crown === 3) return crown;
+  return crown ? 1 : 0;
+}
+
+function renderCrown(tier = 1) {
+  const c = CROWN_TIERS[tier] || CROWN_TIERS[1];
   return (
     <g key="crown">
-      <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
-      <rect x="36" y="18" width="28" height="4" rx="1" fill="#f59e0b" />
-      <circle cx="50" cy="6" r="1.8" fill="#fde68a" />
+      <path d="M36 18 L40 8 L46 15 L50 5 L54 15 L60 8 L64 18 Z" fill={c.points} stroke={c.stroke} strokeWidth="1" />
+      <rect x="36" y="18" width="28" height="4" rx="1" fill={c.band} />
+      <circle cx="50" cy="6" r="1.8" fill={c.gem} />
     </g>
   );
 }
 
 export default function Avatar({ avatar, size = 64, crown = false, className = '', title }) {
   const a = normalizeAvatar(avatar);
+  const crownTier = crownTierFromProp(crown);
+  const uid = useId();
+
+  // Photo mode: `mode`/`photo_url` ride along on the same avatar object (set by
+  // the Avatar Locker's "Use my Slack photo" toggle) rather than needing a
+  // schema change — every screen that already renders `<Avatar avatar={...}>`
+  // picks this up automatically. We deliberately do NOT draw the rank crown on
+  // top of a real photo — it looks odd sitting on someone's face. Rank is still
+  // shown via the leaderboard podium's own crown that floats ABOVE the avatar;
+  // the crown only ever renders inside cartoon avatars.
+  if (a.mode === 'photo' && a.photo_url) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        className={className}
+        role="img"
+        aria-label={title || 'Avatar'}
+      >
+        <defs>
+          <clipPath id={`${uid}-bgclip`}>
+            <circle cx="50" cy="50" r="50" />
+          </clipPath>
+        </defs>
+        <g clipPath={`url(#${uid}-bgclip)`}>
+          <image href={a.photo_url} x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid slice" />
+        </g>
+      </svg>
+    );
+  }
+
   const baseItem = getItem(a.base);
   const hairColorItem = getItem(a.haircolor);
-  const uid = useId();
   return (
     <svg
       width={size}
@@ -1197,11 +1276,13 @@ export default function Avatar({ avatar, size = 64, crown = false, className = '
       {renderHair(a.hair, hairColorItem, uid)}
       {renderFace(a.face)}
       {renderEarrings(a.earrings)}
-      {renderAccessory(a.accessory)}
-      {renderHat(a.hat, crown)}
+      {(Array.isArray(a.accessory) ? a.accessory : []).map((id) => (
+        <g key={id}>{renderAccessory(id)}</g>
+      ))}
+      {renderHat(a.hat, crownTier)}
       {renderPet(a.pet)}
-      {/* Auto champion crown — skip if they've already equipped the Crown hat. */}
-      {crown && a.hat !== 'hat_crown' && renderCrown()}
+      {/* Auto rank crown — skip if they've already equipped the Crown hat. */}
+      {crownTier > 0 && a.hat !== 'hat_crown' && renderCrown(crownTier)}
     </svg>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserData, saveUserData, deleteUserData } from '@/lib/blob-store';
+import { mirrorSave, mirrorDelete, readDoc } from '@/lib/supabase-store';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 
 export async function GET(request) {
@@ -15,7 +16,12 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Missing type parameter' }, { status: 400 });
     }
 
-    let data = await getUserData(user.email, dataType);
+    // Read from Supabase first; fall back to the blob store when Supabase has
+    // no record (not configured, pre-migration data, or a transient miss).
+    let data = await readDoc(user.email, dataType);
+    if (data === null || data === undefined) {
+      data = await getUserData(user.email, dataType);
+    }
     // The profile blob is keyed by email and doesn't store the email as a
     // field — attach it so the client can derive a display name from it.
     if (dataType === 'profile' && data && typeof data === 'object') {
@@ -43,6 +49,9 @@ export async function POST(request) {
     }
 
     await saveUserData(user.email, type, data);
+    // Stage-2 dual-write: shadow into Supabase. Blob is authoritative; this
+    // never throws (failures are logged inside mirrorSave).
+    await mirrorSave(user.email, type, data);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('POST /api/user-data error:', error);
@@ -64,6 +73,8 @@ export async function DELETE(request) {
     }
 
     await deleteUserData(user.email, dataType);
+    // Stage-2 dual-write: mirror the delete into Supabase (never throws).
+    await mirrorDelete(user.email, dataType);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('DELETE /api/user-data error:', error);

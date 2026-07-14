@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ExternalLink, X, PanelsTopLeft, Check, Star } from 'lucide-react';
+import { ExternalLink, X, PanelsTopLeft, Check } from 'lucide-react';
 import { toolKey } from '@/lib/ai-tools';
 import { openLlmWindow } from '@/lib/open-llm-window';
 import { useActiveTool } from './active-tool-provider';
@@ -9,10 +9,10 @@ import { useToolCatalog } from './tool-catalog-provider';
 
 // A dismissible header callout that reminds the learner to keep their AI tool(s)
 // open in a separate window so they can follow along beside the coach. It also
-// lets them adjust their tools for this session — toggle which tools they use
-// and pick a primary — and optionally save the set as their default.
+// surfaces the best tool for THIS lesson's topic, and lets them adjust which
+// tools they have (the set saves back to their profile automatically).
 export default function LlmWindowCallout({ storageKey = 'default', className = '', recommendation = null, showOpen = true }) {
-  const { tools, primaryTool, hasPreference, toggleTool, setPrimary } = useActiveTool();
+  const { tools, primaryTool, hasPreference, toggleTool } = useActiveTool();
   const { catalog } = useToolCatalog();
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid a flash before we read sessionStorage
   const [switching, setSwitching] = useState(false);
@@ -84,7 +84,7 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
     } catch {
       // fall back to just the name
     }
-    toggleTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null });
+    toggleTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null, emoji: extra.emoji || null });
     setAdding(false);
   }
 
@@ -92,7 +92,6 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
 
   const selectedKeys = new Set(tools.map(toolKey));
   const extras = tools.length - 1;
-  const primaryKey = primaryTool ? toolKey(primaryTool) : null;
 
   return (
     <div
@@ -201,39 +200,24 @@ export default function LlmWindowCallout({ storageKey = 'default', className = '
           {switching && (
             <div className="mt-3 pt-3 border-t border-brand-200/70 dark:border-slate-600 space-y-3">
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Pick every tool you use. Tap the star to set the one we&rsquo;ll open by default. Changes save automatically.
+                Pick every tool you have — the coach picks the best one for each lesson&rsquo;s topic. Changes save automatically.
               </p>
               <div className="flex flex-wrap gap-2">
                 {catalog.map((t) => {
                   const selected = selectedKeys.has(toolKey(t));
-                  const isPrimary = toolKey(t) === primaryKey;
                   return (
-                    <div
+                    <button
                       key={t.id}
-                      className={`inline-flex items-center rounded-pill border transition-colors ${
+                      onClick={() => toggleTool(t.id)}
+                      className={`inline-flex items-center rounded-pill border px-3 py-1.5 text-sm transition-colors hover:opacity-90 ${
                         selected
                           ? 'border-brand bg-brand text-white'
                           : 'border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200'
                       }`}
                     >
-                      <button
-                        onClick={() => toggleTool(t.id)}
-                        className="pl-3 pr-2 py-1.5 text-sm hover:opacity-90"
-                      >
-                        {selected && <Check className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />}
-                        {t.emoji} {t.label}
-                      </button>
-                      {selected && (
-                        <button
-                          onClick={() => setPrimary(t.id)}
-                          title={isPrimary ? 'Primary tool' : 'Set as primary'}
-                          className="pr-2.5 pl-1 py-1.5"
-                          aria-label={isPrimary ? 'Primary tool' : 'Set as primary'}
-                        >
-                          <Star className={`w-3.5 h-3.5 ${isPrimary ? 'fill-cta text-cta' : 'text-white/70'}`} />
-                        </button>
-                      )}
-                    </div>
+                      {selected && <Check className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />}
+                      {t.emoji} {t.label}
+                    </button>
                   );
                 })}
               </div>

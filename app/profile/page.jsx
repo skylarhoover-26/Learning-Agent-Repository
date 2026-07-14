@@ -43,7 +43,7 @@ export default function ProfilePage() {
 function ProfilePageInner() {
   const router = useRouter();
   const { profile: ctxProfile, updateProfile, isLoading: profileLoading } = useProfile();
-  const { championIds } = useChampions();
+  const { crownTier } = useChampions();
   const [profile, setProfile] = useState(null);
   const [editName, setEditName] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
@@ -215,7 +215,7 @@ function ProfilePageInner() {
             <Avatar
               avatar={profile.avatar}
               size={80}
-              crown={championIds.has(resolveLearnerId(profile))}
+              crown={crownTier(resolveLearnerId(profile))}
               title={profile.display_name}
             />
           </div>

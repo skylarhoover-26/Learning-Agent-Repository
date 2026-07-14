@@ -79,6 +79,9 @@ const DIFFICULTY_STYLES = {
   medium: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
   advanced: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
 };
+// The card's hover glow (`.cine-tilt:hover` reads `--accent`) is recolored per
+// difficulty so the "pop" matches the level: green=easy, orange=medium, red=hard.
+const DIFFICULTY_GLOW = { easy: '#22C55E', medium: '#F59E0B', advanced: '#EF4444' };
 const difficultyPill = 'inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-bold uppercase tracking-wide border';
 
 function DifficultyBadge({ difficulty }) {
@@ -128,7 +131,7 @@ export default function UseCaseLibrary() {
     <div>
       <div className="cine-glass rounded-2xl p-6 mb-6">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-brand-50 ring-1 ring-brand-100 flex items-center justify-center text-brand shrink-0">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', boxShadow: '0 8px 20px -8px var(--accent)' }}>
             <Library className="w-5 h-5" />
           </div>
           <div className="flex-1">
@@ -252,24 +255,35 @@ function UseCaseCard({ uc, isPopular, isRecent }) {
     trackUseCaseTry(uc.id);
   }
 
+  const diffKey = DIFFICULTY_LABELS[uc.difficulty] ? uc.difficulty : 'medium';
   return (
-    <div className="cine-glass cine-tilt rounded-2xl transition-all overflow-hidden">
+    <div className="cine-glass cine-tilt rounded-2xl transition-all overflow-hidden" style={{ '--accent': DIFFICULTY_GLOW[diffKey] }}>
       <div className="p-5">
-        <div className="mb-3">
-          <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1.5">{uc.title}</h3>
-          <div className="flex items-center gap-2 flex-wrap">
-            <DifficultyBadge difficulty={uc.difficulty} />
-            {cat.label && <span className="text-xs text-slate-500 dark:text-slate-400">{cat.label}</span>}
-            {isPopular && (
-              <span className="text-xs text-amber-700 dark:text-amber-400 inline-flex items-center gap-0.5">
-                <TrendingUp className="w-3 h-3" /> Popular
-              </span>
-            )}
-            {isRecent && !isPopular && (
-              <span className="text-xs text-blue-600 dark:text-blue-400 inline-flex items-center gap-0.5">
-                <History className="w-3 h-3" /> Recent
-              </span>
-            )}
+        <div className="flex items-start gap-3 mb-3">
+          {uc.icon && (
+            <span
+              className="shrink-0 w-11 h-11 rounded-xl grid place-items-center text-2xl leading-none"
+              style={{ background: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)' }}
+            >
+              {uc.icon}
+            </span>
+          )}
+          <div className="min-w-0">
+            <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1.5">{uc.title}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <DifficultyBadge difficulty={uc.difficulty} />
+              {cat.label && <span className="text-xs text-slate-500 dark:text-slate-400">{cat.label}</span>}
+              {isPopular && (
+                <span className="text-xs text-amber-700 dark:text-amber-400 inline-flex items-center gap-0.5">
+                  <TrendingUp className="w-3 h-3" /> Popular
+                </span>
+              )}
+              {isRecent && !isPopular && (
+                <span className="text-xs text-blue-600 dark:text-blue-400 inline-flex items-center gap-0.5">
+                  <History className="w-3 h-3" /> Recent
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{uc.description}</p>

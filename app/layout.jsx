@@ -10,12 +10,16 @@ import PageTracker from '@/components/page-tracker';
 import GlobalXpPopup from '@/components/global-xp-popup';
 import { SidebarProvider, SideNav, SidebarShell, MenuStrip } from '@/components/sidebar';
 import { MenuVisibilityProvider } from '@/components/menu-visibility-provider';
+import { HeaderProvider } from '@/components/header-context';
+import HeaderBar from '@/components/header-bar';
 import FeatureGuard from '@/components/feature-guard';
 import PreviewModeBanner from '@/components/preview-mode-banner';
 import { TourProvider } from '@/components/guided-tour-provider';
 import HelpWidget from '@/components/help-widget';
 import IdentityGate from '@/components/identity-gate';
 import OnboardingTour from '@/components/onboarding-tour';
+import CalibrationGate from '@/components/calibration-gate';
+import { CinematicChrome } from '@/components/cinematic/cinematic-shell';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -59,15 +63,25 @@ export default function RootLayout({ children }) {
               <SidebarProvider>
                 <TourProvider>
                   <MenuVisibilityProvider>
-                    <SideNav />
-                    <MenuStrip />
-                    <SidebarShell>
-                      <FeatureGuard>
-                        {children}
-                      </FeatureGuard>
-                    </SidebarShell>
-                    <PreviewModeBanner />
+                    <HeaderProvider>
+                      <HeaderBar />
+                      <SideNav />
+                      <MenuStrip />
+                      <SidebarShell>
+                        {/* Persistent cinematic chrome (top bar + drawer + living
+                            background) for cinematic routes — mounted once here so
+                            it never remounts on navigation. Passes children through
+                            untouched on non-cinematic routes. */}
+                        <CinematicChrome>
+                          <FeatureGuard>
+                            {children}
+                          </FeatureGuard>
+                        </CinematicChrome>
+                      </SidebarShell>
+                      <PreviewModeBanner />
+                    </HeaderProvider>
                   </MenuVisibilityProvider>
+                  <CalibrationGate />
                   <OnboardingTour />
                   <GlobalXpPopup />
                 </TourProvider>

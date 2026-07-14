@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, BarChart3 } from 'lucide-react';
+import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, BarChart3, Crosshair } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import PausedLessonsBell from '@/components/paused-lessons-bell';
 import Avatar from '@/components/avatar';
@@ -18,6 +18,7 @@ import { displayNameFromProfile } from '@/lib/display-name';
 // All "My …" for a consistent, personalized feel; kept alphabetical by label.
 const PROFILE_LINKS = [
   { href: '/my-tools', icon: PanelsTopLeft, label: 'My AI Tools', tour: 'nav-my-tools' },
+  { href: '/calibration', icon: Crosshair, label: 'My Calibration', tour: 'nav-my-calibration' },
   { href: '/my-impact', icon: BarChart3, label: 'My Impact' },
   { href: '/profile', icon: User, label: 'My Profile', tour: 'nav-profile' },
   { href: '/projects', icon: FolderKanban, label: 'My Projects', tour: 'nav-projects' },
@@ -29,10 +30,10 @@ const PROFILE_LINKS = [
 // opening the menu) + a name dropdown with profile items and session actions.
 export default function UserMenu() {
   const { profile } = useProfile();
-  const { championIds } = useChampions();
-  const { isAdmin, previewAsUser, setPreviewAsUser } = useMenuVisibility();
+  const { crownTier } = useChampions();
+  const { isAdmin, previewAsUser, setPreviewAsUser, isProfileItemHidden, isProfileItemComingSoon } = useMenuVisibility();
   const displayName = displayNameFromProfile(profile);
-  const isChampion = profile ? championIds.has(resolveLearnerId(profile)) : false;
+  const myTier = profile ? crownTier(resolveLearnerId(profile)) : 0;
 
   // Okta drives identity once it's configured; until then the "session" is the
   // IdentityGate soft-login cookie, which NextAuth's signOut doesn't touch.
@@ -114,8 +115,8 @@ export default function UserMenu() {
           aria-expanded={open}
         >
           <span className="hidden sm:inline">{displayName}</span>
-          <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center overflow-hidden">
-            <Avatar avatar={profile?.avatar} size={32} crown={isChampion} title={displayName} />
+          <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
+            <Avatar avatar={profile?.avatar} size={30} crown={myTier} title={displayName} />
           </div>
           <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
@@ -123,30 +124,58 @@ export default function UserMenu() {
         {open && (
           <div
             role="menu"
-            className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl py-1 z-50"
+            className="absolute right-0 mt-2 w-60 rounded-2xl shadow-2xl py-1.5 z-[60] overflow-hidden"
+            style={{
+              background: 'var(--navbg, #fff)',
+              border: '1px solid var(--line, rgba(10,36,67,.1))',
+              backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
+              color: 'var(--ink, #0A2443)',
+            }}
           >
-            <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
-              <p className="text-sm font-semibold text-ink dark:text-slate-200 truncate">{displayName}</p>
+            <div className="px-4 py-2.5 mb-1" style={{ borderBottom: '1px solid var(--line, rgba(10,36,67,.1))' }}>
+              <p className="text-sm font-semibold truncate" style={{ color: 'var(--ink, #0A2443)' }}>{displayName}</p>
             </div>
-            {PROFILE_LINKS.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                role="menuitem"
-                data-tour={link.tour}
-                className="flex items-center gap-3 px-4 py-2 text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-              >
-                <link.icon className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
-                {link.label}
-              </Link>
-            ))}
+            {PROFILE_LINKS.map(link => {
+              // Admin "Profile Visibility" can hide an item (dropped) or mark it
+              // "Coming soon" (shown greyed, non-clickable). Admins see all.
+              if (isProfileItemHidden(link.href)) return null;
+              if (isProfileItemComingSoon(link.href)) {
+                return (
+                  <div
+                    key={link.href}
+                    role="menuitem"
+                    aria-disabled="true"
+                    className="flex items-center gap-3 mx-1.5 px-3 py-2 text-sm cursor-not-allowed"
+                    style={{ color: 'var(--ink-dim, rgba(10,36,67,.6))' }}
+                  >
+                    <link.icon className="w-4 h-4 shrink-0" />
+                    <span className="line-through">{link.label}</span>
+                    <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide text-amber-500">Soon</span>
+                  </div>
+                );
+              }
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  role="menuitem"
+                  data-tour={link.tour}
+                  className="flex items-center gap-3 mx-1.5 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--glass)]"
+                  style={{ color: 'var(--ink, #0A2443)' }}
+                >
+                  <link.icon className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-dim, rgba(10,36,67,.6))' }} />
+                  {link.label}
+                </Link>
+              );
+            })}
             {isAdmin && (
-              <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
+              <div className="mt-1 pt-1" style={{ borderTop: '1px solid var(--line, rgba(10,36,67,.1))' }}>
                 <button
                   onClick={() => { setPreviewAsUser(!previewAsUser); setOpen(false); }}
                   role="menuitem"
-                  className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="w-full flex items-center gap-3 mx-1.5 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[var(--glass)]"
+                  style={{ color: 'var(--ink, #0A2443)', width: 'calc(100% - 0.75rem)' }}
                 >
                   {previewAsUser ? (
                     <>
@@ -155,18 +184,19 @@ export default function UserMenu() {
                     </>
                   ) : (
                     <>
-                      <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                      <Eye className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-dim, rgba(10,36,67,.6))' }} />
                       Preview as user
                     </>
                   )}
                 </button>
               </div>
             )}
-            <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
+            <div className="mt-1 pt-1" style={{ borderTop: '1px solid var(--line, rgba(10,36,67,.1))' }}>
               <button
                 onClick={handleLogout}
                 role="menuitem"
-                className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                className="w-full flex items-center gap-3 mx-1.5 px-3 py-2 rounded-lg text-left text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                style={{ width: 'calc(100% - 0.75rem)' }}
               >
                 <LogOut className="w-4 h-4 shrink-0" />
                 Log out

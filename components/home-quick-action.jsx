@@ -19,7 +19,7 @@ export default function HomeQuickActions() {
   const { loaded, isItemHidden, isItemComingSoon } = useMenuVisibility();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+    <div className="grid grid-cols-3 gap-3 sm:gap-4">
       {TILES.map(({ href, icon: Icon, label, tour }) => {
         // Hidden tiles disappear entirely; "coming soon" tiles grey out.
         if (loaded && isItemHidden(href)) return null;

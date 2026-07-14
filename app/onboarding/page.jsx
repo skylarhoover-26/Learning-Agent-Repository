@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft,
-  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Star, Smile,
+  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Smile,
 } from 'lucide-react';
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
@@ -21,6 +21,10 @@ import { DEFAULT_AVATAR } from '@/lib/avatar-catalog';
 const SUB_TEAMS = SUBTEAMS;
 
 const TOTAL_STEPS = 6;
+
+// Onboarding auto-save: partial progress is stored here so someone who leaves
+// mid-setup drops back exactly where they were. Cleared when onboarding finishes.
+const DRAFT_KEY = 'onboarding_draft_v1';
 
 // During onboarding everyone is level 1, so only level-1 items are unlockable.
 const ONBOARDING_AVATAR_CTX = { level: 1, badgeIds: new Set() };
@@ -40,6 +44,8 @@ export default function OnboardingPage() {
   const [topTasks, setTopTasks] = useState([]);
   const [customTask, setCustomTask] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customGoal, setCustomGoal] = useState('');
+  const [showCustomGoalInput, setShowCustomGoalInput] = useState(false);
   const [tier, setTier] = useState('');
   const [goals, setGoals] = useState([]);
   // No tool is pre-selected — the learner actively picks the one(s) they use
@@ -48,6 +54,133 @@ export default function OnboardingPage() {
   const [customTool, setCustomTool] = useState('');
   const [addingTool, setAddingTool] = useState(false);
   const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
+  // A restored draft's avatar is an explicit prior choice — don't override it
+  // with the Slack-photo default below.
+  const draftHadAvatarRef = useRef(false);
+
+  // Snowflake-sourced prefill (title/manager/hireDate carried onto the saved
+  // profile; department/sub-team pre-select the step-1 choices when valid).
+  const [prefill, setPrefill] = useState(null);
+  // Single source of truth for step 1's view so the department picker can ONLY
+  // appear as a final decision — never mid-flight (that was the flash: a timer
+  // dropped the loader while the lookup was still running, briefly showing the
+  // picker before the confirm card).
+  //   'loading' → spinner while we look you up
+  //   'confirm' → the "does this look right?" card (Snowflake matched)
+  //   'manual'  → the department picker (not matched, lookup failed, or editing)
+  const [phase, setPhase] = useState('loading');
+  const prefillFetched = useRef(false);
+  // Gates the auto-save effect so it doesn't overwrite a saved draft with the
+  // default state before the mount effect has restored (or the lookup resolved).
+  const readyRef = useRef(false);
+
+  // On mount, look the signed-in user up in the org data and pre-fill what we
+  // can. Best-effort: an unlisted email, a failure, or a >15s timeout drops to
+  // the manual flow. We never leave 'loading' until the lookup truly resolves,
+  // so the picker can't flash before the card.
+  useEffect(() => {
+    if (prefillFetched.current) return;
+    prefillFetched.current = true;
+
+    // Resume a saved draft if one exists for this user — restore everything and
+    // skip the Snowflake lookup (they've already moved past step 1).
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        const sameUser = !d?.email || !session?.user?.email
+          || d.email === session.user.email.toLowerCase();
+        if (d && typeof d === 'object' && sameUser) {
+          if (typeof d.step === 'number') setStep(d.step);
+          if (typeof d.department === 'string') setDepartment(d.department);
+          if ('subTeam' in d) setSubTeam(d.subTeam);
+          if (typeof d.showSubTeams === 'boolean') setShowSubTeams(d.showSubTeams);
+          if (Array.isArray(d.topTasks)) setTopTasks(d.topTasks);
+          if (typeof d.tier === 'string') setTier(d.tier);
+          if (Array.isArray(d.goals)) setGoals(d.goals);
+          if (Array.isArray(d.aiTools)) setAiTools(d.aiTools);
+          if (d.avatar) { setAvatar(d.avatar); draftHadAvatarRef.current = true; }
+          if (d.prefill) setPrefill(d.prefill);
+          setPhase(d.phase || (d.department ? 'confirm' : 'manual'));
+          readyRef.current = true;
+          return; // resumed — don't re-run the lookup
+        }
+      }
+    } catch { /* ignore a malformed draft */ }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    (async () => {
+      try {
+        const res = await fetch('/api/me/profile-prefill', { signal: controller.signal });
+        const p = res.ok ? await res.json() : null;
+        if (p?.found) {
+          setPrefill({
+            name: p.name || null,
+            title: p.title || null,
+            manager: p.manager || null,
+            hireDate: p.hireDate || null,
+            department: p.department || null, // raw Snowflake value (for display)
+            subTeam: p.subTeam || null,
+          });
+          if (p.department && DEPARTMENTS.includes(p.department)) {
+            setDepartment(p.department);
+            // Pre-fill the sub-team when valid, but DON'T jump to the sub-team
+            // picker — the confirm card shows it, and handleConfirmDetails routes
+            // to the picker only if it's missing.
+            if (SUB_TEAMS[p.department] && p.subTeam && SUB_TEAMS[p.department].includes(p.subTeam)) {
+              setSubTeam(p.subTeam);
+            }
+            setPhase('confirm');
+            return;
+          }
+        }
+        setPhase('manual');
+      } catch {
+        setPhase('manual');
+      } finally {
+        clearTimeout(timer);
+        readyRef.current = true;
+      }
+    })();
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, []);
+
+  // Auto-save the draft on every change, once the initial restore/lookup is done.
+  useEffect(() => {
+    if (!readyRef.current) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        email: session?.user?.email?.toLowerCase() || null,
+        step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, avatar, phase, prefill,
+      }));
+    } catch { /* storage unavailable */ }
+  }, [step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, avatar, phase, prefill, session]);
+
+  // Everyone's default avatar is their Slack profile photo. Fetch it once on
+  // mount and switch the avatar into photo mode — UNLESS a restored draft
+  // already carries an explicit choice (a photo they kept, or a character they
+  // started building). If they have no custom Slack photo, we quietly leave the
+  // cartoon default in place. They can still flip to Character on the avatar step.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/slack-photo')
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !data?.ok || !data.imageUrl) return;
+        if (draftHadAvatarRef.current) return;
+        setAvatar((prev) => (
+          // Only default it while still pristine — never clobber a character the
+          // user has already started customizing.
+          prev === DEFAULT_AVATAR ? { mode: 'photo', photo_url: data.imageUrl } : prev
+        ));
+      })
+      .catch(() => { /* no Slack photo — keep the cartoon default */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -96,6 +229,19 @@ export default function OnboardingPage() {
     }
   }
 
+  // Confirm the Snowflake-detected details from step 1's summary card. If their
+  // department needs a sub-team and we didn't pre-fill one, send them to pick it;
+  // otherwise jump straight to top tasks.
+  function handleConfirmDetails() {
+    if (SUB_TEAMS[department] && !subTeam) {
+      setDirection('forward');
+      setShowSubTeams(true);
+    } else {
+      setDirection('forward');
+      setStep(2);
+    }
+  }
+
   function handleSubTeamSelect(team) {
     setSubTeam(team);
     setTopTasks([]);
@@ -137,11 +283,6 @@ export default function OnboardingPage() {
     });
   }
 
-  function setPrimaryAiTool(choice) {
-    const key = toolKey(normalizeTool(choice));
-    setAiTools(prev => [choice, ...prev.filter(x => toolKey(normalizeTool(x)) !== key)]);
-  }
-
   async function addCustomAiTool() {
     const label = customTool.trim();
     if (!label || addingTool) return;
@@ -158,7 +299,7 @@ export default function OnboardingPage() {
     } catch {
       // fall back to just the name
     }
-    toggleAiTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null });
+    toggleAiTool({ id: 'other', label, strengths: extra.strengths || null, url: extra.url || null, emoji: extra.emoji || null });
     setAddingTool(false);
   }
 
@@ -185,6 +326,10 @@ export default function OnboardingPage() {
       goal: chosenGoals.join('; '),
       preferred_tools: serializeTools(aiTools),
       avatar,
+      // Snowflake-sourced context (kept for the manager dashboard / compare).
+      title: prefill?.title || existingProfile?.title || null,
+      manager: prefill?.manager || existingProfile?.manager || null,
+      hire_date: prefill?.hireDate || existingProfile?.hire_date || null,
       onboarded_at: new Date().toISOString(),
     };
     try {
@@ -200,6 +345,8 @@ export default function OnboardingPage() {
     } catch (error) {
       console.error('Failed to save profile:', error);
     }
+    // Onboarding complete — clear the saved draft so a fresh start next time.
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     // Hard navigate so both the server render and the client profile context
     // re-read the freshly saved profile (tasks, tier, goal) across the board.
     // Land on the dashboard, where the interactive (driver.js) welcome tour
@@ -240,15 +387,6 @@ export default function OnboardingPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Step {step} of {TOTAL_STEPS}
             </p>
-            {(step > 1 || showSubTeams) && (
-              <button
-                onClick={goBack}
-                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
-              >
-                <ChevronLeft className="w-3 h-3" />
-                Back
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -259,7 +397,19 @@ export default function OnboardingPage() {
           key={`${step}-${showSubTeams}`}
           className="w-full max-w-2xl animate-fade-in"
         >
-          {step === 1 && !showSubTeams && (
+          {step === 1 && !showSubTeams && phase === 'loading' && (
+            <OnboardingPrefillLoading />
+          )}
+          {step === 1 && !showSubTeams && phase === 'confirm' && (
+            <StepConfirmDetails
+              displayName={displayName}
+              prefill={prefill}
+              department={department}
+              subTeam={subTeam}
+              onConfirm={handleConfirmDetails}
+            />
+          )}
+          {step === 1 && !showSubTeams && phase === 'manual' && (
             <>
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight">
@@ -276,12 +426,17 @@ export default function OnboardingPage() {
             </>
           )}
           {step === 1 && showSubTeams && (
-            <StepSubTeam
-              department={department}
-              teams={SUB_TEAMS[department] || []}
-              selected={subTeam}
-              onSelect={handleSubTeamSelect}
-            />
+            <>
+              {prefill && (
+                <PrefillBanner prefill={prefill} />
+              )}
+              <StepSubTeam
+                department={department}
+                teams={SUB_TEAMS[department] || []}
+                selected={subTeam}
+                onSelect={handleSubTeamSelect}
+              />
+            </>
           )}
           {step === 2 && (
             <StepTopTasks
@@ -318,15 +473,25 @@ export default function OnboardingPage() {
             <StepGoal
               selected={goals}
               onToggle={handleGoalToggle}
-              onNext={goNext}
-              canAdvance={goals.length > 0}
+              customGoal={customGoal}
+              onCustomGoalChange={setCustomGoal}
+              showCustomGoalInput={showCustomGoalInput}
+              onAddCustomGoal={() => {
+                const trimmed = customGoal.trim();
+                if (trimmed && !goals.includes(trimmed)) {
+                  handleGoalToggle(trimmed);
+                  setCustomGoal('');
+                  setShowCustomGoalInput(false);
+                }
+              }}
+              onShowCustomGoalInput={() => setShowCustomGoalInput(true)}
+              onHideCustomGoalInput={() => { setShowCustomGoalInput(false); setCustomGoal(''); }}
             />
           )}
           {step === 5 && (
             <StepTool
               selected={aiTools}
               onToggle={toggleAiTool}
-              onSetPrimary={setPrimaryAiTool}
               customTool={customTool}
               onCustomToolChange={setCustomTool}
               onAddCustom={addCustomAiTool}
@@ -342,8 +507,120 @@ export default function OnboardingPage() {
               onFinish={() => handleFinish(goals)}
             />
           )}
+
+          {/* Shared bottom navigation: Back sits next to the primary action. */}
+          {step >= 2 && step <= 5 && (
+            <div className="mt-8">
+              <StepNav onBack={goBack} onNext={goNext} disabled={!canAdvance()} />
+            </div>
+          )}
+          {step === 6 && (
+            <div className="mt-8">
+              <StepNav onBack={goBack} onNext={() => handleFinish(goals)} label="Start Learning" variant="finish" />
+            </div>
+          )}
+          {step === 1 && showSubTeams && (
+            <div className="mt-8">
+              <StepNav onBack={goBack} />
+            </div>
+          )}
         </div>
       </main>
+    </div>
+  );
+}
+
+// Shared bottom nav: a "Back" button paired with the step's primary action, so
+// Back gets its own button next to Continue instead of a link up in the header.
+// Omit onNext to render a Back-only footer (e.g. the sub-team picker, which
+// advances on selection).
+function StepNav({ onBack, onNext, disabled = false, label = 'Continue', variant = 'default' }) {
+  const primaryClass = variant === 'finish'
+    ? 'inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-green-600 text-white font-semibold shadow-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all'
+    : 'inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all';
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Back
+      </button>
+      {onNext && (
+        <button type="button" onClick={onNext} disabled={disabled} className={primaryClass}>
+          {variant === 'finish' && <Sparkles className="w-4 h-4" />}
+          {label}
+          {variant !== 'finish' && <ChevronRight className="w-4 h-4" />}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PrefillBanner({ prefill }) {
+  return (
+    <div className="mb-5 flex items-start gap-3 rounded-xl border border-brand-100 bg-brand-50 dark:border-slate-700 dark:bg-slate-800 px-4 py-3">
+      <Sparkles className="w-5 h-5 text-brand shrink-0 mt-0.5" />
+      <p className="text-sm text-slate-700 dark:text-slate-300 leading-snug">
+        We pulled your details from your Housecall Pro profile
+        {prefill?.title ? <> — <span className="font-semibold">{prefill.title}</span></> : ''}
+        {prefill?.manager ? <>, reporting to <span className="font-semibold">{prefill.manager}</span></> : ''}.
+        {' '}Confirm the department below or pick another if it's not right.
+      </p>
+    </div>
+  );
+}
+
+function OnboardingPrefillLoading() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <div className="w-10 h-10 rounded-md bg-brand animate-pulse" />
+      <p className="text-sm text-slate-500 dark:text-slate-400">Getting your details…</p>
+    </div>
+  );
+}
+
+function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfirm }) {
+  const rows = [
+    { label: 'Name', value: prefill?.name },
+    { label: 'Title', value: prefill?.title },
+    { label: 'Department', value: department },
+    { label: 'Team', value: subTeam },
+    { label: 'Manager', value: prefill?.manager },
+  ].filter((r) => r.value);
+
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-brand-50 mb-4">
+          <Sparkles className="w-7 h-7 text-brand" />
+        </div>
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
+          Welcome, {displayName}!
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+          We pulled these details straight from your Housecall Pro profile.
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700 mb-6">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-slate-500 dark:text-slate-400">{r.label}</span>
+            <span className="text-sm font-semibold text-ink dark:text-slate-200 text-right">{r.value}</span>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={onConfirm}
+        className="w-full flex items-center justify-center gap-2 bg-brand text-white font-semibold rounded-xl px-6 py-3 hover:bg-brand-600 transition-colors"
+      >
+        Continue
+        <ChevronRight className="w-4 h-4" />
+      </button>
     </div>
   );
 }
@@ -516,14 +793,7 @@ function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCus
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
           {selected.length} selected{selected.length === 0 ? ' — pick at least 1' : ''}
         </p>
-        <button
-          onClick={onNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          Continue
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Continue moved to the shared bottom nav (StepNav). */}
       </div>
     </div>
   );
@@ -568,20 +838,13 @@ function StepTier({ selected, onSelect, onNext, canAdvance }) {
         ))}
       </div>
       <div className="text-center">
-        <button
-          onClick={onNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          Continue
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Continue moved to the shared bottom nav (StepNav). */}
       </div>
     </div>
   );
 }
 
-function StepGoal({ selected, onToggle, onNext, canAdvance }) {
+function StepGoal({ selected, onToggle, customGoal, onCustomGoalChange, showCustomGoalInput, onAddCustomGoal, onShowCustomGoalInput, onHideCustomGoalInput }) {
   return (
     <div>
       <div className="text-center mb-8">
@@ -620,25 +883,65 @@ function StepGoal({ selected, onToggle, onNext, canAdvance }) {
             </button>
           );
         })}
-      </div>
-      <div className="text-center">
-        <button
-          onClick={onNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          Continue
-          <ChevronRight className="w-4 h-4" />
-        </button>
+
+        {/* Custom goals the user added that aren't in the preset list. */}
+        {selected.filter(g => !GOALS.includes(g)).map(g => (
+          <button
+            key={g}
+            onClick={() => onToggle(g)}
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all bg-brand text-white border-brand shadow-sm"
+          >
+            <div className="w-5 h-5 rounded-md border flex items-center justify-center shrink-0 bg-white/20 border-white/40">
+              <Check className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium">{g}</p>
+            </div>
+          </button>
+        ))}
+
+        {showCustomGoalInput ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={customGoal}
+              onChange={e => onCustomGoalChange(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') onAddCustomGoal(); if (e.key === 'Escape') onHideCustomGoalInput(); }}
+              placeholder="Describe your goal..."
+              autoFocus
+              className="flex-1 px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm"
+            />
+            <button
+              onClick={onAddCustomGoal}
+              disabled={!customGoal.trim()}
+              className="px-4 py-3.5 rounded-xl bg-brand text-white font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:bg-brand/90"
+            >
+              Add
+            </button>
+            <button
+              onClick={onHideCustomGoalInput}
+              className="px-3 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onShowCustomGoalInput}
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 text-left transition-all hover:border-brand-200 hover:text-brand hover:bg-brand-50"
+          >
+            <Plus className="w-5 h-5 shrink-0" />
+            <span className="font-medium text-sm">Something else not listed here</span>
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolChange, onAddCustom, adding, onNext, canAdvance }) {
+function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCustom, adding, onNext, canAdvance }) {
   const { catalog } = useToolCatalog();
   const selectedKeys = new Set(selected.map((s) => toolKey(normalizeTool(s))));
-  const primaryKey = selected.length ? toolKey(normalizeTool(selected[0])) : null;
   const customSelected = selected.map(normalizeTool).filter((t) => t.id === 'other');
   const rows = [...catalog, ...customSelected];
 
@@ -652,14 +955,13 @@ function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolCh
           Which AI tools do you use?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
-          Pick all that apply — you might use one or several. We&apos;ll tailor lessons to them and tell you when one fits a task better. Star the one to open by default. You can change this anytime.
+          Pick all that apply — you might use one or several. For each lesson we&apos;ll automatically pick the best one of your tools for the topic, and tell you when a tool you don&apos;t have would fit better. You can change this anytime.
         </p>
       </div>
       <div className="space-y-2 max-w-lg mx-auto mb-4">
         {rows.map((t) => {
           const key = toolKey(t);
           const isSelected = selectedKeys.has(key);
-          const isPrimary = key === primaryKey;
           return (
             <div
               key={key}
@@ -681,16 +983,6 @@ function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolCh
                   )}
                 </span>
               </button>
-              {isSelected && (
-                <button
-                  onClick={() => onSetPrimary(t.id === 'other' ? t : t.id)}
-                  title={isPrimary ? 'Primary tool' : 'Set as primary'}
-                  aria-label={isPrimary ? 'Primary tool' : 'Set as primary'}
-                  className="shrink-0 p-1"
-                >
-                  <Star className={`w-5 h-5 ${isPrimary ? 'fill-cta text-cta' : 'text-white/70'}`} />
-                </button>
-              )}
             </div>
           );
         })}
@@ -713,14 +1005,7 @@ function StepTool({ selected, onToggle, onSetPrimary, customTool, onCustomToolCh
         </button>
       </div>
       <div className="text-center">
-        <button
-          onClick={onNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          Continue
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Continue moved to the shared bottom nav (StepNav). */}
       </div>
     </div>
   );
@@ -734,24 +1019,16 @@ function StepAvatar({ avatar, onChange, onFinish }) {
           <Smile className="w-7 h-7 text-cta-700" />
         </div>
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
-          Make your avatar
+          Your profile picture
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
-          Pick a look to start with. You&apos;ll unlock loads more — outfits, hats, hairstyles, sidekicks — as you level up. Tweak it anytime in your profile.
+          By default we use your Slack photo. Prefer a custom character? Switch to <span className="font-semibold">Character</span> to build one — you&apos;ll unlock more looks (outfits, hats, sidekicks) as you level up. Change it anytime in your profile.
         </p>
       </div>
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 mb-6">
         <AvatarLocker value={avatar} onChange={onChange} ctx={ONBOARDING_AVATAR_CTX} />
       </div>
-      <div className="text-center">
-        <button
-          onClick={onFinish}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-green-600 text-white font-semibold shadow-sm hover:bg-green-700 transition-all"
-        >
-          <Sparkles className="w-4 h-4" />
-          Start Learning
-        </button>
-      </div>
+      {/* Start Learning moved to the shared bottom nav (StepNav, finish variant). */}
     </div>
   );
 }

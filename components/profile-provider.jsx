@@ -128,11 +128,68 @@ export function ProfileProvider({ children }) {
     updateProfile({ preferred_tools: [legacy], preferred_tool: null }).catch(() => {});
   }, [profile, updateProfile]);
 
+  // Lazily default legacy profiles to the person's Slack photo — the app-wide
+  // default — so existing users see their photo without re-onboarding. A profile
+  // with no explicit avatar `mode` has never decided; we resolve it once on the
+  // next load: use the Slack photo if there is one, otherwise mark it 'cartoon'
+  // so we don't re-check every load. The existing character config is preserved
+  // underneath (we only add mode/photo_url), so tapping "Character" restores
+  // their old look exactly. Only ever writes the current user's own profile.
+  const avatarDefaultedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || avatarDefaultedRef.current) return;
+    if (profile.avatar?.mode) return; // already decided (photo or cartoon)
+    avatarDefaultedRef.current = true;
+    let cancelled = false;
+    fetch('/api/slack-photo')
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const base = profile.avatar || {};
+        const next = data?.ok && data.imageUrl
+          ? { ...base, mode: 'photo', photo_url: data.imageUrl }
+          : { ...base, mode: 'cartoon' };
+        updateProfile({ avatar: next }).catch(() => {});
+      })
+      .catch(() => {
+        // Network hiccup — leave the profile untouched and retry on next load.
+        avatarDefaultedRef.current = false;
+      });
+    return () => { cancelled = true; };
+  }, [profile, updateProfile]);
+
   const value = { profile, isLoading, updateProfile, refreshProfile, session };
+
+  // While the profile is still resolving on a gated app route, show a splash
+  // instead of the children. This prevents the "flash of stale dashboard" a
+  // returning user would otherwise see right before being redirected to
+  // onboarding (their browser still holds old localStorage after a reset).
+  // Onboarding / auth / shared-report routes render normally — they don't need
+  // a profile. This only fires on a hard load (the provider isn't remounted on
+  // client-side navigation), so it's a sub-second splash at most.
+  const skipGate =
+    pathname === '/onboarding' || pathname.startsWith('/auth') || pathname.startsWith('/reporting/shared');
+  // Hold the splash on gated routes whenever we're still loading OR have no
+  // profile. The second case is the real flash: once loading ends with a null
+  // profile, the dashboard would paint one frame before the redirect effect
+  // pushes to /onboarding. Keeping the splash until we actually have a profile
+  // (or navigate to a skip route) removes that frame entirely.
+  const showSplash = !skipGate && (isLoading || !profile);
 
   return (
     <ProfileContext.Provider value={value}>
-      {children}
+      {showSplash ? <ProfileLoadingSplash /> : children}
     </ProfileContext.Provider>
+  );
+}
+
+function ProfileLoadingSplash() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-bg-warm dark:bg-slate-900">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 rounded-md bg-brand animate-pulse" />
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading your workspace…</p>
+      </div>
+    </div>
   );
 }

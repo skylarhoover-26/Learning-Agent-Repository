@@ -105,25 +105,13 @@ function DiscoverContent() {
       <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 py-12 sm:py-16">
         <CinematicPageHero
           eyebrow="Discover"
-          title="Find AI opportunities for your actual work"
-          subtitle="Find AI opportunities for your actual work"
+          title="Find AI for your actual work"
+          subtitle="Describe your typical day, a task, or something on your plate right now — I'll surface specific AI opportunities you can try today, tied to your real work."
           icon={Search}
+          gradient
         />
         {!hasSearched && (
           <div>
-            <div className="text-center mb-10">
-              <div className="w-16 h-16 rounded-2xl bg-brand-50 ring-1 ring-brand-100 mx-auto mb-4 flex items-center justify-center">
-                <Search className="w-8 h-8 text-brand" strokeWidth={1.5} />
-              </div>
-              <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-3 tracking-tight">
-                Tell me about your work
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                Describe your typical day, a specific task, or something on your plate right now.
-                I'll find specific AI opportunities you can try today.
-              </p>
-            </div>
-
             <div data-tour="page-discover" className="cine-glass rounded-2xl p-6 mb-6">
               <textarea
                 data-tour="discover-input"
@@ -190,15 +178,16 @@ function DiscoverContent() {
 
         {hasSearched && (
           <div data-tour="discover-results">
-            <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-              <Lightbulb className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
+            <div className="cine-glass rounded-2xl p-4 mb-6 flex items-start gap-3">
+              <Lightbulb className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
               <div className="flex-1 min-w-0">
-                <p className="text-xs uppercase tracking-wide text-brand-700 font-semibold mb-1">Your work</p>
-                <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">{workDescription}</p>
+                <p className="text-xs uppercase tracking-wide font-semibold mb-1" style={{ color: 'var(--accent)' }}>Your work</p>
+                <p className="text-sm line-clamp-2" style={{ color: 'var(--ink-dim)' }}>{workDescription}</p>
               </div>
               <button
                 onClick={reset}
-                className="text-sm text-brand-700 hover:text-brand-900 inline-flex items-center gap-1 shrink-0"
+                className="text-sm inline-flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity"
+                style={{ color: 'var(--accent)' }}
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 Try another
@@ -206,10 +195,10 @@ function DiscoverContent() {
             </div>
 
             <div className="mb-5">
-              <h2 className="text-2xl font-bold text-ink dark:text-slate-200">
+              <h2 className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
                 Found {opportunities.length} ways AI can help your work
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+              <p className="text-sm mt-1" style={{ color: 'var(--ink-dim)' }}>
                 Pick one to try — each opens a hands-on lesson tied to YOUR actual work.
               </p>
             </div>

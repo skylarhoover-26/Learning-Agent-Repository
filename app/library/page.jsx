@@ -19,8 +19,9 @@ function LibraryPageInner() {
         <CinematicPageHero
           eyebrow="Library"
           title="Browse what AI can do for your work"
-          subtitle="Browse what AI can actually do for your work"
+          subtitle="Real, ready-to-use AI use cases grouped by category — each with a copy-paste prompt you can use right now, or try as a guided lesson."
           icon={Library}
+          gradient
         />
         <UseCaseLibrary />
       </main>

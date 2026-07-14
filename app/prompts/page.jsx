@@ -86,12 +86,13 @@ function PromptsPageInner() {
         <CinematicPageHero
           eyebrow="Prompts"
           title="Shared Prompts Library"
-          subtitle={`${PROMPTS.length} ready-to-use prompts across departments`}
+          subtitle={`${PROMPTS.length} curated, ready-to-use prompts across every department — copy one, or try it as a guided lesson.`}
           icon={FileText}
+          gradient
         />
         <div className="cine-glass rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-brand-50 ring-1 ring-brand-100 flex items-center justify-center text-brand shrink-0">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', boxShadow: '0 8px 20px -8px var(--accent)' }}>
               <FileText className="w-5 h-5" />
             </div>
             <div className="flex-1">

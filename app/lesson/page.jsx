@@ -845,7 +845,7 @@ function LessonContent() {
       <main data-tour="lesson-main" className="max-w-4xl mx-auto px-6 py-10">
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">📚</div>
-          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-2">What do you want to learn?</h2>
+          <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight mb-2 cine-grad-flow inline-block">What do you want to learn?</h2>
           <p className="text-slate-600 dark:text-slate-400">Pick from popular topics or type your own.</p>
         </div>
 
@@ -862,10 +862,8 @@ function LessonContent() {
               <button
                 key={f.key}
                 onClick={() => selectFormat(f.key)}
-                className={`group p-4 rounded-xl border text-left transition-all ${
-                  format === f.key
-                    ? 'bg-brand-50 dark:bg-brand-900/30 border-brand-300 ring-2 ring-brand-100 shadow-sm'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:shadow-card'
+                className={`group p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
+                  format === f.key ? 'ring-2 ring-[var(--accent)]' : ''
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
@@ -884,10 +882,8 @@ function LessonContent() {
                 quests right here instead of jumping to another page. */}
             <button
               onClick={() => selectFormat('project_quest')}
-              className={`group p-4 rounded-xl border text-left transition-all ${
-                format === 'project_quest'
-                  ? 'bg-cta-50 dark:bg-slate-700 border-cta-300 ring-2 ring-cta-100 shadow-sm'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card'
+              className={`group p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
+                format === 'project_quest' ? 'ring-2 ring-[var(--gold)]' : ''
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
@@ -906,7 +902,7 @@ function LessonContent() {
           <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             <StepNum n={2} /> How do you want to learn?
           </h3>
-          <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
+          <div className="inline-flex rounded-xl cine-glass p-1">
             {[
               format === 'project_quest'
                 ? { key: 'read', icon: BookOpen, label: 'Read & build', desc: 'Interactive, step by step' }
@@ -948,9 +944,9 @@ function LessonContent() {
               <button
                 key={i}
                 onClick={() => chooseTopic(s.topic)}
-                className="group flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:shadow-md transition-all text-left"
+                className="group flex items-center gap-3 p-4 cine-glass cine-lift rounded-2xl transition-all text-left"
               >
-                <span className="text-2xl">{s.emoji || '💡'}</span>
+                <span className="shrink-0 w-11 h-11 rounded-xl grid place-items-center text-2xl leading-none" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>{s.emoji || '💡'}</span>
                 <div className="flex-1">
                   <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label}</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.topic}</div>
@@ -970,7 +966,7 @@ function LessonContent() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+        <div className="cine-glass rounded-2xl p-6">
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             Or type your own
           </h3>
@@ -1373,6 +1369,9 @@ function LessonContent() {
 }
 
 export default function LessonPage() {
+  // Cinematic frame provides the top bar synchronously, so prod's
+  // outside-Suspense <PageHeader> anti-flash trick isn't needed here — the
+  // cinematic TopNav never goes blank on navigation.
   return (
     <CinematicFrame>
       <div className="min-h-screen">
