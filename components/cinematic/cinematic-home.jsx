@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   Sparkles, Flame, Trophy, Award, Compass, Gamepad2, MessageCircle,
@@ -144,7 +145,10 @@ export default function CinematicHome() {
   const journeyStart = Math.max(1, level - 1);
   const journey = [0, 1, 2, 3, 4].map((i) => journeyStart + i);
   // Toggles the "how levels work" explainer popover on the journey widget.
+  // `mounted` gates the portal so it only renders client-side (needs document).
   const [showLevelInfo, setShowLevelInfo] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const skillGroups = useMemo(() => {
     const s = skills || [];
@@ -201,53 +205,58 @@ export default function CinematicHome() {
         {/* Right: level-journey staircase + stat tiles */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 relative">
+            <div className="flex items-center gap-2">
               <p className="font-display font-bold">Your level journey</p>
               <button
-                onClick={() => setShowLevelInfo((v) => !v)}
+                onClick={() => setShowLevelInfo(true)}
                 aria-label="How levels work"
-                aria-expanded={showLevelInfo}
                 className="cine-lift w-5 h-5 rounded-full grid place-items-center shrink-0"
-                style={{ color: 'var(--ink-dim)', border: '1px solid var(--line)' }}
+                style={{ color: 'var(--accent2)', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)' }}
               >
                 <HelpCircle className="w-3 h-3" />
               </button>
-              {showLevelInfo && (
-                <>
-                  {/* click-away layer */}
-                  <div className="fixed inset-0 z-40" onClick={() => setShowLevelInfo(false)} aria-hidden="true" />
-                  <div
-                    role="dialog"
-                    className="absolute left-0 top-8 z-50 w-[19rem] max-w-[80vw] rounded-2xl p-4"
-                    style={{ background: 'var(--navbg)', border: '1px solid var(--line)', backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)', boxShadow: '0 24px 60px -24px rgba(6,20,45,.5)' }}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="font-display font-bold text-sm" style={{ color: 'var(--ink)' }}>How your level journey works</p>
-                      <button onClick={() => setShowLevelInfo(false)} aria-label="Close" className="shrink-0 -mr-1 -mt-1 p-1 rounded-md" style={{ color: 'var(--ink-dim)' }}>
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--ink-dim)' }}>
-                      Each bar is a level. You climb by earning <strong style={{ color: 'var(--ink)' }}>XP</strong> — right now you&apos;re <strong style={{ color: 'var(--ink)' }}>{title}</strong> (Level {level}), {lp.xpToNext ? <>{lp.xpToNext} XP from Level {level + 1}.</> : <>at the top level.</>}
-                    </p>
-                    {/* Legend — mirrors the staircase states */}
-                    <div className="space-y-2 mb-3">
-                      <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ background: 'linear-gradient(180deg,var(--accent),var(--accent2))' }}><Play className="w-2 h-2 text-white" /></span>} label="Where you are now" />
-                      <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ border: '1.5px dashed var(--gold)' }}><Sparkles className="w-2 h-2" style={{ color: 'var(--gold)' }} /></span>} label="Your next level — the one to aim for" />
-                      <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}><Check className="w-2 h-2" style={{ color: 'var(--good)' }} /></span>} label="Levels you've already cleared" />
-                    </div>
-                    <p className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--ink-dim)' }}>Earn XP by</p>
-                    <ul className="text-xs space-y-1" style={{ color: 'var(--ink-dim)' }}>
-                      <li className="flex items-center gap-2"><BookOpen className="w-3 h-3 shrink-0" style={{ color: 'var(--accent2)' }} /> Finishing lessons &amp; Today&apos;s Pick</li>
-                      <li className="flex items-center gap-2"><Gamepad2 className="w-3 h-3 shrink-0" style={{ color: 'var(--accent2)' }} /> Playing games &amp; answering quizzes</li>
-                      <li className="flex items-center gap-2"><Flame className="w-3 h-3 shrink-0" style={{ color: 'var(--accent2)' }} /> Keeping a daily streak going</li>
-                    </ul>
-                  </div>
-                </>
-              )}
             </div>
             <span className="text-xs" style={{ color: 'var(--ink-dim)' }}>Level {level} · {title}</span>
           </div>
+          {/* Explainer rendered via a portal to <body> so no ancestor transform
+              (the cine-rise sections) can trap or clip it. Centered modal. */}
+          {showLevelInfo && mounted && createPortal(
+            <div
+              className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+              onClick={() => setShowLevelInfo(false)}
+              role="dialog"
+              aria-modal="true"
+            >
+              <div className="absolute inset-0" style={{ background: 'rgba(3,10,24,.5)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }} />
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="cine-vars relative w-[22rem] max-w-full rounded-2xl p-5"
+                style={{ background: 'var(--navbg)', border: '1px solid var(--line)', backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)', boxShadow: '0 30px 80px -28px rgba(0,0,0,.6)' }}
+              >
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <p className="font-display font-bold" style={{ color: 'var(--ink)' }}>How your level journey works</p>
+                  <button onClick={() => setShowLevelInfo(false)} aria-label="Close" className="shrink-0 -mr-1 -mt-1 p-1 rounded-md cine-lift" style={{ color: 'var(--ink-dim)' }}>
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--ink-dim)' }}>
+                  Each bar is a level. You climb by earning <strong style={{ color: 'var(--ink)' }}>XP</strong> — right now you&apos;re <strong style={{ color: 'var(--ink)' }}>{title}</strong> (Level {level}), {lp.xpToNext ? <>{lp.xpToNext} XP from Level {level + 1}.</> : <>at the top level.</>}
+                </p>
+                <div className="space-y-2.5 mb-4">
+                  <LegendRow swatch={<span className="w-5 h-5 rounded-md grid place-items-center" style={{ background: 'linear-gradient(180deg,var(--accent),var(--accent2))' }}><Play className="w-2.5 h-2.5 text-white" /></span>} label="Where you are now" />
+                  <LegendRow swatch={<span className="w-5 h-5 rounded-md grid place-items-center" style={{ border: '1.5px dashed var(--gold)' }}><Sparkles className="w-2.5 h-2.5" style={{ color: 'var(--gold)' }} /></span>} label="Your next level — the one to aim for" />
+                  <LegendRow swatch={<span className="w-5 h-5 rounded-md grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}><Check className="w-2.5 h-2.5" style={{ color: 'var(--good)' }} /></span>} label="Levels you've already cleared" />
+                </div>
+                <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--ink-dim)' }}>Earn XP by</p>
+                <ul className="text-sm space-y-1.5" style={{ color: 'var(--ink-dim)' }}>
+                  <li className="flex items-center gap-2.5"><BookOpen className="w-4 h-4 shrink-0" style={{ color: 'var(--accent2)' }} /> Finishing lessons &amp; Today&apos;s Pick</li>
+                  <li className="flex items-center gap-2.5"><Gamepad2 className="w-4 h-4 shrink-0" style={{ color: 'var(--accent2)' }} /> Playing games &amp; answering quizzes</li>
+                  <li className="flex items-center gap-2.5"><Flame className="w-4 h-4 shrink-0" style={{ color: 'var(--accent2)' }} /> Keeping a daily streak going</li>
+                </ul>
+              </div>
+            </div>,
+            document.body,
+          )}
           <div className="flex items-end justify-between gap-2 sm:gap-3 h-56">
             {journey.map((lvl, i) => {
               const state = lvl < level ? 'done' : lvl === level ? 'current' : lvl === level + 1 ? 'next' : 'upcoming';
