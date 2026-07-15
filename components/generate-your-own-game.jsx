@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Zap, Search, Swords, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid, Disc3,
+  Zap, Search, Swords, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid, Disc3, Users,
 } from 'lucide-react';
 
 // The game types that can be generated from a custom topic, listed
@@ -11,6 +11,8 @@ import {
 // rest still preview the flow until their generators ship. AI or Human? isn't
 // listed — it needs genuine human-written samples, so it can't be generated.
 const GAME_TYPES = [
+  { id: 'feud', title: 'Family Feud', tint: '#E5484D', diff: 'Easy', diffTint: '#1AA06A', live: true, slug: 'family-feud',
+    desc: 'Guess the top survey answers before three strikes.', icon: Users },
   { id: 'halluc', title: 'Hallucination Hunt', tint: '#B4531F', diff: 'Medium', diffTint: '#C98A00', live: true, slug: 'hallucination-hunt',
     desc: 'Spot the planted factual errors in an AI answer.', icon: Search },
   { id: 'jeopardy', title: 'Jeopardy', tint: '#0055FF', diff: 'Medium', diffTint: '#C98A00', live: true, slug: 'jeopardy',

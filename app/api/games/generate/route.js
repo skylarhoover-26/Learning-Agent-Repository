@@ -20,6 +20,7 @@ const SPEED_COUNT = 10;
 const HALLUC_ROUNDS = 3;
 const PROMPT_COUNT = 4;
 const WHEEL_COUNT = 4;
+const FEUD_ROUNDS = 4;
 
 const GENERATORS = {
   speed: {
@@ -130,6 +131,40 @@ Return ONLY valid JSON (no markdown fences):
       })).filter((p) => p.phrase.replace(/ /g, '').length >= 3)
         .slice(0, WHEEL_COUNT);
       return clean.length >= 2 ? { puzzles: clean } : null;
+    },
+  },
+
+  feud: {
+    maxTokens: 3000,
+    system: `You are writing "Family Feud"-style survey rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${FEUD_ROUNDS} rounds. Each round is a survey-style question about how people use or think about AI (relevant to the topic), with the top answers a group of professionals might give.
+
+Rules per round:
+- "question": a survey prompt, e.g. "Name a task people use AI for when handling customer emails."
+- "answers": 5–6 plausible top answers, RANKED by how common they'd be. Each answer has:
+  - "text": the answer (a few words).
+  - "points": popularity points; the answers' points should sum to about 100, with the most common answer highest.
+  - "keywords": 1–3 lowercase words/phrases that a player's guess might contain if they mean this answer (for lenient matching).
+- Answers must be genuinely useful/plausible and teach good AI practice.
+
+Return ONLY valid JSON (no markdown fences):
+{ "rounds": [ { "question": "<survey question>", "answers": [ { "text": "<answer>", "points": <number>, "keywords": ["...","..."] } ] } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.rounds) ? parsed.rounds : null;
+      if (!arr) return null;
+      const clean = arr.map((r) => {
+        const answers = (Array.isArray(r?.answers) ? r.answers : [])
+          .filter((a) => a && a.text)
+          .map((a) => ({
+            text: String(a.text).trim(),
+            points: Math.max(1, Math.round(Number(a.points) || 0)) || 10,
+            keywords: (Array.isArray(a.keywords) ? a.keywords : []).map((k) => String(k).toLowerCase().trim()).filter(Boolean),
+          }))
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 6);
+        return { question: String(r?.question || '').trim(), answers };
+      }).filter((r) => r.question && r.answers.length >= 3)
+        .slice(0, FEUD_ROUNDS);
+      return clean.length >= 2 ? { rounds: clean } : null;
     },
   },
 };
