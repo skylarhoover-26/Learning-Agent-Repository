@@ -1,14 +1,18 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  Zap, Search, Swords, Users, ChevronDown, ArrowRight, Sparkles, Wand2,
+  Zap, Search, Swords, Users, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid,
 } from 'lucide-react';
 
-// The game types that can be generated from a custom topic. AI or Human? needs
-// genuine human-written samples, so it can't be generated per topic — shown here
-// disabled so the picker explains why rather than hiding the option silently.
+// The game types that can be generated from a custom topic. Jeopardy is live;
+// the rest still preview the flow. AI or Human? needs genuine human-written
+// samples, so it can't be generated per topic — shown disabled so the picker
+// explains why rather than hiding the option silently.
 const GAME_TYPES = [
+  { id: 'jeopardy', title: 'Jeopardy', tint: '#0055FF', diff: 'Medium', diffTint: '#C98A00', live: true,
+    desc: 'A 5-category board of AI clues — answer in the form of a question.', icon: LayoutGrid },
   { id: 'speed', title: 'Speed Round', tint: '#3B94FF', diff: 'Easy', diffTint: '#1AA06A',
     desc: 'Rapid-fire questions on your topic — beat the clock.', icon: Zap },
   { id: 'halluc', title: 'Hallucination Hunt', tint: '#B4531F', diff: 'Medium', diffTint: '#C98A00',
@@ -37,6 +41,7 @@ export default function GenerateYourOwnGame() {
   const [launched, setLaunched] = useState(null);
   const [sampleIdx, setSampleIdx] = useState(0);
   const ddRef = useRef(null);
+  const router = useRouter();
 
   useEffect(() => {
     function onClick(e) { if (ddRef.current && !ddRef.current.contains(e.target)) setOpen(false); }
@@ -56,6 +61,12 @@ export default function GenerateYourOwnGame() {
   }
   function generate() {
     if (!canGenerate) return;
+    // Jeopardy is wired for real — generate + launch the board. Others still
+    // preview the flow until their generators are built.
+    if (selected.live && selected.id === 'jeopardy') {
+      router.push(`/games/jeopardy?topic=${encodeURIComponent(topic.trim())}`);
+      return;
+    }
     setLaunched({ game: selected, topic: topic.trim() });
   }
 
