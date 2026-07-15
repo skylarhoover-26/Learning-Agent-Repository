@@ -19,7 +19,7 @@ import BookLoader from '@/components/book-loader';
 import {
   BookOpen, ChevronRight, Zap, BookMarked, Trophy,
   Loader2, Send, Mic, MicOff, MessageSquare, HelpCircle, PlayCircle, Sparkles,
-  Target, BarChart3, Bot, CheckCircle2, MessagesSquare, Lightbulb, Search, Mail, PenLine, Brain, Rocket,
+  Target, BarChart3, Bot, CheckCircle2, MessagesSquare, Lightbulb, Search, Mail, PenLine, Brain, Rocket, Check,
 } from 'lucide-react';
 import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
@@ -36,9 +36,48 @@ import { useActiveTool } from '@/components/active-tool-provider';
 const SCENARIO_PROMPT = "I'd like to try a scenario based on my work.";
 
 // Small numbered badge for the picker's step headers.
-function StepNum({ n }) {
+// The lesson picker is a 3-step wizard: choose depth → choose format → pick a
+// topic (picking the topic launches the lesson). This renders the progress rail
+// at the top; completed steps are clickable to jump back.
+const WIZARD_STEPS = [
+  { n: 1, label: 'Depth' },
+  { n: 2, label: 'Format' },
+  { n: 3, label: 'Topic' },
+];
+
+function WizardProgress({ step, onJump }) {
+  const total = WIZARD_STEPS.length;
   return (
-    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand text-white text-[11px] font-bold shrink-0">{n}</span>
+    <div className="max-w-md mx-auto mb-8">
+      <div className="flex items-center justify-between mb-2">
+        {WIZARD_STEPS.map((s) => {
+          const done = s.n < step;
+          const active = s.n === step;
+          return (
+            <button
+              key={s.n}
+              type="button"
+              onClick={() => done && onJump(s.n)}
+              disabled={!done}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                done ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
+              } ${active ? 'text-brand' : done ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}
+            >
+              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold shrink-0 ${
+                active || done ? 'bg-brand text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+              }`}>
+                {done ? <Check className="w-3.5 h-3.5" /> : s.n}
+              </span>
+              <span className="hidden sm:inline">{s.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+        <div className="h-full bg-brand transition-all duration-300" style={{ width: `${(step / total) * 100}%` }} />
+      </div>
+      <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-2">Step {step} of {total}</p>
+    </div>
   );
 }
 
@@ -110,6 +149,10 @@ function LessonContent() {
   // Learning mode: 'read' = interactive chat-driven lesson; 'watch' = narrated
   // video. In watch mode, selecting a topic opens the VideoLessonPlayer instead.
   const [learnMode, setLearnMode] = useState(initialMode);
+  // Step in the 3-step picker wizard (1 = depth, 2 = format, 3 = topic). Depth
+  // and format both have defaults, so Next is never a dead end; picking a topic
+  // on step 3 launches the lesson.
+  const [wizardStep, setWizardStep] = useState(1);
   const [videoTopic, setVideoTopic] = useState(null);
   // When the narrated player is showing a Project Quest, this holds the quest id so
   // the script is sourced from the quest's curated steps.
@@ -879,9 +922,12 @@ function LessonContent() {
           <p className="text-slate-600 dark:text-slate-400">Pick from popular topics or type your own.</p>
         </div>
 
+        <WizardProgress step={wizardStep} onJump={setWizardStep} />
+
+        {wizardStep === 1 && (
         <div data-tour="page-lesson" className="mb-8">
-          <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-            <StepNum n={1} /> How deep do you want to go?
+          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
+            How deep do you want to go?
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
@@ -892,45 +938,71 @@ function LessonContent() {
               <button
                 key={f.key}
                 onClick={() => selectFormat(f.key)}
-                className={`group p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
+                className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
                   format === f.key ? 'ring-2 ring-[var(--accent)]' : ''
                 }`}
+                style={format === f.key ? { boxShadow: '0 0 30px -6px var(--accent)' } : undefined}
+                aria-pressed={format === f.key}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    format === f.key ? 'bg-brand text-white' : 'bg-bg-subtle dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}>
-                    <f.icon className="w-4 h-4" />
+                {format === f.key && (
+                  <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: 'var(--accent)' }} />
+                )}
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      format === f.key ? 'bg-brand text-white' : 'bg-bg-subtle dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}>
+                      <f.icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{f.duration}</span>
                   </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{f.duration}</span>
+                  <div className="font-bold text-ink dark:text-slate-200">{f.label}</div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{f.desc}</p>
                 </div>
-                <div className="font-bold text-ink dark:text-slate-200">{f.label}</div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{f.desc}</p>
               </button>
             ))}
             {/* Project Quest is a depth too — selecting it shows the curated
                 quests right here instead of jumping to another page. */}
             <button
               onClick={() => selectFormat('project_quest')}
-              className={`group p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
+              className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
                 format === 'project_quest' ? 'ring-2 ring-[var(--gold)]' : ''
               }`}
+              style={format === 'project_quest' ? { boxShadow: '0 0 30px -6px var(--gold)' } : undefined}
+              aria-pressed={format === 'project_quest'}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${format === 'project_quest' ? 'bg-cta text-ink' : 'bg-cta-50 text-cta-700 dark:bg-slate-700 dark:text-cta-400'}`}>
-                  <Trophy className="w-4 h-4" />
+              {format === 'project_quest' && (
+                <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: 'var(--gold)' }} />
+              )}
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${format === 'project_quest' ? 'bg-cta text-ink' : 'bg-cta-50 text-cta-700 dark:bg-slate-700 dark:text-cta-400'}`}>
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">20-60 min</span>
                 </div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">20-60 min</span>
+                <div className="font-bold text-ink dark:text-slate-200">Project Quest</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Build something real start to finish, guided the whole way.</p>
               </div>
-              <div className="font-bold text-ink dark:text-slate-200">Project Quest</div>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Build something real start to finish, guided the whole way.</p>
+            </button>
+          </div>
+          <div className="flex justify-end mt-6">
+            <button
+              type="button"
+              onClick={() => setWizardStep(2)}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 shadow-sm transition-all active:scale-[0.98]"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
+        )}
 
+        {wizardStep === 2 && (
         <div data-tour="lesson-mode" className="mb-8">
-          <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-            <StepNum n={2} /> How do you want to learn?
+          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
+            How do you want to learn?
           </h3>
           <div className="inline-flex rounded-xl cine-glass p-1">
             {[
@@ -963,12 +1035,43 @@ function LessonContent() {
                   ? 'Pick a topic below and we’ll generate a short narrated lesson — slides read aloud to you (it’s not a video).'
                   : 'Pick a topic below for a hands-on lesson you work through step by step.')}
           </p>
+          <div className="flex justify-between mt-6">
+            <button
+              type="button"
+              onClick={() => setWizardStep(1)}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill cine-glass text-slate-600 dark:text-slate-300 font-semibold text-sm hover:opacity-80 transition-all"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" />
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={() => setWizardStep(3)}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 shadow-sm transition-all active:scale-[0.98]"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+        )}
 
+        {wizardStep === 3 && (
+        <>
         <div data-tour="lesson-topics" className="mb-8">
-          <h3 className="flex items-center gap-2 text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
-            <StepNum n={3} /> Pick a topic
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">
+              Pick a topic
+            </h3>
+            <button
+              type="button"
+              onClick={() => setWizardStep(2)}
+              className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" />
+              Back
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => (
               <button
@@ -1088,6 +1191,8 @@ function LessonContent() {
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-4">
           Suggested topics are personalized to your role and tasks · {REFRESH_LABEL}
         </p>
+        </>
+        )}
 
         {/* Unfinished lessons live at the bottom so the picker leads with new topics.
             The header bell / menu link to #paused-lessons, which scrolls here. */}
