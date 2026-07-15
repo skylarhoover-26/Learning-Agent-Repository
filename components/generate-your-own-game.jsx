@@ -3,23 +3,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Zap, Search, Swords, Users, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid,
+  Zap, Search, Swords, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid,
 } from 'lucide-react';
 
 // The game types that can be generated from a custom topic, listed
-// alphabetically. Jeopardy is live; the rest still preview the flow. AI or
-// Human? needs genuine human-written samples, so it can't be generated per
-// topic — shown disabled so the picker explains why rather than hiding it.
+// alphabetically. `live` games generate + launch for real (via `slug`); the
+// rest still preview the flow until their generators ship. AI or Human? isn't
+// listed — it needs genuine human-written samples, so it can't be generated.
 const GAME_TYPES = [
-  { id: 'aihuman', title: 'AI or Human?', tint: '#8A93A6', disabled: true,
-    desc: 'Needs real human writing — not available for custom topics.', icon: Users },
   { id: 'halluc', title: 'Hallucination Hunt', tint: '#B4531F', diff: 'Medium', diffTint: '#C98A00',
     desc: 'Spot the planted factual errors in an AI answer.', icon: Search },
-  { id: 'jeopardy', title: 'Jeopardy', tint: '#0055FF', diff: 'Medium', diffTint: '#C98A00', live: true,
+  { id: 'jeopardy', title: 'Jeopardy', tint: '#0055FF', diff: 'Medium', diffTint: '#C98A00', live: true, slug: 'jeopardy',
     desc: 'A 5-category board of AI clues — answer in the form of a question.', icon: LayoutGrid },
   { id: 'prompt', title: 'Prompt Battle', tint: '#A06AFF', diff: 'Hard', diffTint: '#B4531F',
     desc: 'Write the sharpest prompt for a scenario in your topic.', icon: Swords },
-  { id: 'speed', title: 'Speed Round', tint: '#3B94FF', diff: 'Easy', diffTint: '#1AA06A',
+  { id: 'speed', title: 'Speed Round', tint: '#3B94FF', diff: 'Easy', diffTint: '#1AA06A', live: true, slug: 'speed-round',
     desc: 'Rapid-fire questions on your topic — beat the clock.', icon: Zap },
 ];
 
@@ -61,10 +59,10 @@ export default function GenerateYourOwnGame() {
   }
   function generate() {
     if (!canGenerate) return;
-    // Jeopardy is wired for real — generate + launch the board. Others still
-    // preview the flow until their generators are built.
-    if (selected.live && selected.id === 'jeopardy') {
-      router.push(`/games/jeopardy?topic=${encodeURIComponent(topic.trim())}`);
+    // Live games generate + launch for real; the rest still preview the flow
+    // until their generators ship.
+    if (selected.live && selected.slug) {
+      router.push(`/games/${selected.slug}?topic=${encodeURIComponent(topic.trim())}`);
       return;
     }
     setLaunched({ game: selected, topic: topic.trim() });

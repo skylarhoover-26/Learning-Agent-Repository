@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
@@ -10,6 +11,7 @@ import {
 import ALL_QUESTIONS from './questions';
 import { saveGameResult, getGameStats } from '@/lib/game-store';
 import GameInstructions from '@/components/game-instructions';
+import GameGenLoading from '@/components/game-gen-loading';
 
 const TIMER_SECONDS = 15;
 const QUESTIONS_PER_GAME = 10;
@@ -62,13 +64,25 @@ function TimerRing({ secondsLeft, total }) {
 }
 
 export default function SpeedRoundPage() {
-  return <CinematicFrame><SpeedRound /></CinematicFrame>;
+  return (
+    <CinematicFrame>
+      <Suspense fallback={<main className="max-w-2xl mx-auto px-6 pt-6"><GameGenLoading label="Loading…" /></main>}>
+        <SpeedRound />
+      </Suspense>
+    </CinematicFrame>
+  );
 }
 
 function SpeedRound() {
+  // A `?topic=` turns this into a custom, AI-generated round; otherwise the
+  // built-in question bank is used exactly as before.
+  const params = useSearchParams();
+  const topic = params.get('topic') || '';
   const [questions, setQuestions] = useState(() =>
-    shuffleAndPick(ALL_QUESTIONS, QUESTIONS_PER_GAME)
+    topic ? [] : shuffleAndPick(ALL_QUESTIONS, QUESTIONS_PER_GAME)
   );
+  const [genLoading, setGenLoading] = useState(!!topic);
+  const [genError, setGenError] = useState(null);
   const [started, setStarted] = useState(false);
   const [qIdx, setQIdx] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -81,6 +95,22 @@ function SpeedRound() {
   const savedRef = useRef(false);
 
   const currentQ = questions[qIdx];
+
+  // Custom topic → generate a fresh question set from the LLM.
+  useEffect(() => {
+    if (!topic) return;
+    let live = true;
+    setGenLoading(true); setGenError(null);
+    fetch('/api/games/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'speed', topic }),
+    })
+      .then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Failed'); return d; })
+      .then((d) => { if (live) { setQuestions(d.questions); setGenLoading(false); } })
+      .catch((e) => { if (live) { setGenError(e.message); setGenLoading(false); } });
+    return () => { live = false; };
+  }, [topic]);
 
   // Load stats on mount
   useEffect(() => {
@@ -270,6 +300,30 @@ function SpeedRound() {
               </Link>
             </div>
           </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (genLoading) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Timer} title="Speed Round" subtitle="Building your custom round" />
+        <main className="max-w-2xl mx-auto px-6 pt-6">
+          <GameGenLoading label={`Building a Speed Round on ${topic}…`} estimateSeconds={14} />
+        </main>
+      </div>
+    );
+  }
+
+  if (genError) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Timer} title="Speed Round" />
+        <main className="max-w-lg mx-auto px-6 py-20 text-center">
+          <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">Couldn&rsquo;t build that round</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{genError} Try a different topic.</p>
+          <Link href="/games" className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm">Back to games</Link>
         </main>
       </div>
     );

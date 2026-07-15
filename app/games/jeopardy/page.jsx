@@ -7,6 +7,7 @@ import { ArrowLeft, Check, X, Trophy, Sparkles, RotateCcw } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import BookLoader from '@/components/book-loader';
+import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
 import { saveGameResult } from '@/lib/game-store';
 
@@ -114,7 +115,7 @@ function JeopardyGame() {
     );
   }
   if (loading) {
-    return <main className="max-w-2xl mx-auto px-6 py-24"><BookLoader message={`Building your Jeopardy board on ${topic}…`} size="lg" /></main>;
+    return <main className="max-w-2xl mx-auto px-6 pt-10"><GameGenLoading label={`Building your Jeopardy board on ${topic}…`} estimateSeconds={25} /></main>;
   }
   if (error || !board) {
     return (
