@@ -43,19 +43,12 @@ export function IntroStep({ onNext }) {
         </h2>
       </div>
       <div className="p-8">
-        <p className="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-          This is the one step that makes everything after it <strong>yours</strong>. Answer honestly
-          and your lessons, home screen, and daily picks all aim at <strong>your real job</strong>,
-          pitched to <strong>what you already know</strong>, so nothing feels too basic or over your head.
-          A couple minutes now saves you hours of training that doesn&apos;t fit.
+        <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+          This is the one step that makes everything after it <strong>yours</strong>.
+          {' '}<strong>Answer honestly</strong> and your lessons, home screen, and daily picks
+          all aim at your real job — pitched to what you already know, so nothing feels
+          too basic or over your head.
         </p>
-        <p className="text-sm font-semibold text-ink dark:text-slate-200 mb-2">What that looks like:</p>
-        <ul className="text-sm text-slate-500 dark:text-slate-400 space-y-2 mb-6 list-disc pl-5">
-          <li>A few real Housecall Pro situations from your role, to see how you actually use AI</li>
-          <li>A quick self-rating we check against how you actually did</li>
-          <li>A short read on how AI is changing your day to day</li>
-          <li>Your profile, and the first thing worth learning</li>
-        </ul>
         <button
           onClick={onNext}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-bold text-lg hover:bg-cta-600 transition-all shadow-md"

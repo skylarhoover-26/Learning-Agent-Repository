@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { FlaskConical, Loader2, Clock } from 'lucide-react';
+import { CALIBRATION_SKILL_ORDER, SCENARIO_BY_ID } from '@/lib/calibration-scenarios';
 
 // Admin-only: preview what the calibration generator produces for a given role,
 // so we can tune the prompt against real output without retaking the gate.
@@ -65,14 +66,36 @@ export default function ScenarioPreviewPage() {
     return <Wrap><p className="text-center text-slate-500 dark:text-slate-400 py-10">Admins only.</p></Wrap>;
   }
 
-  const order = ['privacy', 'prompting', 'comms', 'eval', 'agents', 'data'];
+  // Show the COMPLETE set a learner would actually see: generated where it came
+  // back cleanly, curated fallback for any skill that didn't — the same merge the
+  // real calibration flow does. Without this, a slow/partial generation shows a
+  // blank result and you "can't see anything."
+  const merged = result
+    ? CALIBRATION_SKILL_ORDER.map((id) => {
+        const gen = result.scenarios?.[id];
+        return gen
+          ? { ...gen, _source: 'generated' }
+          : (SCENARIO_BY_ID[id] ? { ...SCENARIO_BY_ID[id], _source: 'curated' } : null);
+      }).filter(Boolean)
+    : [];
 
   return (
     <Wrap>
       <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
+        <div className="rounded-2xl border border-brand-200 dark:border-slate-600 bg-brand-50/60 dark:bg-slate-800/60 p-5">
+          <p className="text-sm font-semibold text-ink dark:text-slate-200 mb-1">What this is</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            These are the <strong>placement questions</strong> a learner sees in the onboarding
+            calibration gate — the same scenarios you can normally only see by resetting your own
+            calibration. The role below is <strong>prefilled from your profile</strong>, so hit
+            Generate to preview your own set (no reset needed). AI tailors each scenario to the role;
+            any skill that doesn&apos;t generate shows the <strong>curated fallback</strong> instead, and
+            every card below is tagged so you know which is which.
+          </p>
+        </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 space-y-4">
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Enter a role and generate the calibration scenarios exactly as a learner would get them. Prefilled from your profile.
+            Role to preview <span className="text-slate-400">(edit to try any other role)</span>:
           </p>
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Title" value={form.title} onChange={set('title')} placeholder="Senior Associate, AI Solutions" />
@@ -106,14 +129,24 @@ export default function ScenarioPreviewPage() {
                 <Clock className="w-3.5 h-3.5" /> {(result.durationMs / 1000).toFixed(1)}s on {result.model}
               </span>
               <span className={`px-3 py-1 rounded-pill ${result.generatedSkills.length === 6 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                {result.generatedSkills.length}/6 skills generated{result.generatedSkills.length < 6 ? ' (rest fall back to curated)' : ''}
+                {result.generatedSkills.length}/6 skills generated{result.generatedSkills.length < 6 ? ' — rest shown from curated fallback below' : ''}
               </span>
             </div>
-            {order.filter((k) => result.scenarios[k]).map((k) => {
-              const s = result.scenarios[k];
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              This is the full set a learner in this role would see, in order. Cards are tagged by source.
+            </p>
+            {merged.map((s) => {
+              const isGen = s._source === 'generated';
               return (
-                <div key={k} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-brand mb-2">{s.primary}</p>
+                <div key={s.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wide text-brand">{s.primary}</span>
+                    <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-pill ${
+                      isGen ? 'bg-brand-50 text-brand-700 dark:bg-slate-700 dark:text-brand-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'
+                    }`}>
+                      {isGen ? 'AI-generated' : 'Curated fallback'}
+                    </span>
+                  </div>
                   <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">{s.setup}</p>
                   <p className="text-sm font-semibold text-ink dark:text-slate-200 mb-3">{s.prompt}</p>
                   <ul className="space-y-2">
@@ -149,7 +182,7 @@ function Field({ label, value, onChange, placeholder }) {
 function Wrap({ children }) {
   return (
     <div className="min-h-screen">
-      <PageHeader icon={FlaskConical} title="Scenario Preview" subtitle="Preview role-aware calibration scenarios (admin)" />
+      <PageHeader icon={FlaskConical} title="Calibration Scenario Preview" subtitle="See the onboarding placement questions a learner gets — admin only" />
       {children}
     </div>
   );
