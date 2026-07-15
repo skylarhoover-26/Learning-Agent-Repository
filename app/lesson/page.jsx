@@ -1004,27 +1004,39 @@ function LessonContent() {
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             How do you want to learn?
           </h3>
-          <div className="inline-flex rounded-xl cine-glass p-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
             {[
               format === 'project_quest'
-                ? { key: 'read', icon: BookOpen, label: 'Read & build', desc: 'Interactive, step by step' }
-                : { key: 'read', icon: BookOpen, label: 'Read & practice', desc: 'Interactive, chat-driven' },
-              { key: 'watch', icon: PlayCircle, label: 'Narrated lesson', desc: 'Sit back & listen' },
-            ].map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setLearnMode(m.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  learnMode === m.key
-                    ? 'bg-brand text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                }`}
-                aria-pressed={learnMode === m.key}
-              >
-                <m.icon className="w-4 h-4" />
-                <span>{m.label}</span>
-              </button>
-            ))}
+                ? { key: 'read', icon: BookOpen, label: 'Read & build', desc: 'Interactive lesson you work through step by step.' }
+                : { key: 'read', icon: BookOpen, label: 'Read & practice', desc: 'Interactive, chat-driven lesson you work through.' },
+              { key: 'watch', icon: PlayCircle, label: 'Narrated lesson', desc: 'Sit back and listen — slides read aloud to you.' },
+            ].map((m) => {
+              const selected = learnMode === m.key;
+              return (
+                <button
+                  key={m.key}
+                  onClick={() => setLearnMode(m.key)}
+                  aria-pressed={selected}
+                  className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
+                    selected ? 'ring-2 ring-[var(--accent)]' : ''
+                  }`}
+                  style={selected ? { boxShadow: '0 0 30px -6px var(--accent)' } : undefined}
+                >
+                  {selected && (
+                    <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: 'var(--accent)' }} />
+                  )}
+                  <div className="relative">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
+                      selected ? 'bg-brand text-white' : 'bg-bg-subtle dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}>
+                      <m.icon className="w-4 h-4" />
+                    </div>
+                    <div className="font-bold text-ink dark:text-slate-200">{m.label}</div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{m.desc}</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
             {format === 'project_quest'
