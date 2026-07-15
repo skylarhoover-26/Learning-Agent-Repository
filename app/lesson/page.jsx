@@ -150,9 +150,14 @@ function LessonContent() {
   // video. In watch mode, selecting a topic opens the VideoLessonPlayer instead.
   const [learnMode, setLearnMode] = useState(initialMode);
   // Step in the 3-step picker wizard (1 = depth, 2 = format, 3 = topic). Depth
-  // and format both have defaults, so Next is never a dead end; picking a topic
-  // on step 3 launches the lesson.
+  // and format both have defaults, so Next is never a dead end. On step 3 the
+  // learner selects a topic (which just highlights it) and then presses
+  // "Generate lesson" to actually build it — clicking a card no longer launches
+  // straight away, which was jarring.
   const [wizardStep, setWizardStep] = useState(1);
+  // The suggested topic highlighted on step 3, and whether generation is firing.
+  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [generating, setGenerating] = useState(false);
   const [videoTopic, setVideoTopic] = useState(null);
   // When the narrated player is showing a Project Quest, this holds the quest id so
   // the script is sourced from the quest's curated steps.
@@ -500,6 +505,16 @@ function LessonContent() {
     } else {
       startLesson(t);
     }
+  }
+
+  // Step 3 "Generate lesson": build the highlighted suggested topic. The
+  // generating flag drives the button spinner; for read lessons the view flips
+  // to the plan player (its own loader takes over), for narrated the video
+  // player overlay mounts on top.
+  function generateSelected() {
+    if (!selectedTopic || generating) return;
+    setGenerating(true);
+    chooseTopic(selectedTopic);
   }
 
   // Typed topics get a quick vagueness check first: if the topic is too broad,
@@ -1041,10 +1056,10 @@ function LessonContent() {
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
             {format === 'project_quest'
               ? (learnMode === 'watch'
-                  ? 'Pick or type a project and we’ll generate a narrated walkthrough — read aloud to you (it’s not a video).'
+                  ? 'Pick or type a project and we’ll generate a narrated walkthrough, read aloud to you.'
                   : 'Pick or type a project and we’ll build it with you for real, guided step by step.')
               : (learnMode === 'watch'
-                  ? 'Pick a topic below and we’ll generate a short narrated lesson — slides read aloud to you (it’s not a video).'
+                  ? 'Pick a topic below and we’ll generate a short narrated lesson, read aloud to you.'
                   : 'Pick a topic below for a hands-on lesson you work through step by step.')}
           </p>
           <div className="flex justify-between mt-6">
@@ -1085,30 +1100,53 @@ function LessonContent() {
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(suggested || SUGGESTED_TOPICS).map((s, i) => (
-              <button
-                key={i}
-                onClick={() => chooseTopic(s.topic)}
-                className="group flex items-center gap-3 p-4 cine-glass cine-lift rounded-2xl transition-all text-left"
-              >
-                <span className="shrink-0 w-11 h-11 rounded-xl grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>
-                  <TopicIcon emoji={s.emoji} />
-                </span>
-                <div className="flex-1">
-                  <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.topic}</div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />
-              </button>
-            ))}
+            {(suggested || SUGGESTED_TOPICS).map((s, i) => {
+              const selected = selectedTopic === s.topic;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setSelectedTopic(s.topic)}
+                  aria-pressed={selected}
+                  className={`group relative overflow-hidden flex items-center gap-3 p-4 cine-glass cine-lift rounded-2xl transition-all text-left ${
+                    selected ? 'ring-2 ring-[var(--accent)]' : ''
+                  }`}
+                  style={selected ? { boxShadow: '0 0 30px -6px var(--accent)' } : undefined}
+                >
+                  {selected && (
+                    <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: 'var(--accent)' }} />
+                  )}
+                  <span className="relative shrink-0 w-11 h-11 rounded-xl grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>
+                    <TopicIcon emoji={s.emoji} />
+                  </span>
+                  <div className="relative flex-1">
+                    <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.topic}</div>
+                  </div>
+                  {selected
+                    ? <Check className="relative w-5 h-5 text-brand" />
+                    : <ChevronRight className="relative w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />}
+                </button>
+              );
+            })}
           </div>
-          <div className="flex justify-center mt-4">
+          <div className="flex flex-col items-center gap-3 mt-6">
+            <button
+              onClick={generateSelected}
+              disabled={!selectedTopic || generating}
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-pill bg-brand text-white font-semibold hover:bg-brand-600 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {generating ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Generating your lesson…</>
+              ) : (
+                <><Sparkles className="w-4 h-4" /> {learnMode === 'watch' ? 'Generate narrated lesson' : 'Generate lesson'}</>
+              )}
+            </button>
             <button
               onClick={() => setSurpriseMode(true)}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold text-sm hover:bg-cta-600 shadow-sm transition-all active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
             >
               <Zap className="w-4 h-4" />
-              Surprise me
+              Or surprise me
             </button>
           </div>
         </div>
@@ -1219,7 +1257,7 @@ function LessonContent() {
           tools={tools}
           questId={videoQuestId}
           onComplete={handleVideoComplete}
-          onClose={() => { setVideoTopic(null); setVideoQuestId(null); }}
+          onClose={() => { setVideoTopic(null); setVideoQuestId(null); setGenerating(false); }}
         />
       )}
       </>
