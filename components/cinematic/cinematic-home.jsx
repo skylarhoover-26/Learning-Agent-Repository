@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   Sparkles, Flame, Trophy, Award, Compass, Gamepad2, MessageCircle,
-  BookOpen, PenTool, ArrowRight, Play, Crown, Check, RefreshCw,
+  BookOpen, PenTool, ArrowRight, Play, Crown, Check,
   TrendingUp, GitBranch, Rss, HelpCircle, X, BarChart3, Lock,
 } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
@@ -27,7 +27,6 @@ const WAYS = [
   { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask the coach anything, anytime.', tint: '#3B94FF' },
   { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Guided, immersive deep dives.', tint: '#1AA06A' },
   { href: '/discover', icon: PenTool, label: 'Practice', desc: 'Apply AI to your real work.', tint: '#FFB706' },
-  { href: '/daily', icon: RefreshCw, label: "Today's Pick", desc: 'A fresh lesson picked for you.', tint: '#6AABFF' },
 ];
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -308,7 +307,7 @@ export default function CinematicHome() {
       {/* WAYS TO LEARN */}
       <section className="cine-rise">
         <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight mb-7">Ways to learn</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {WAYS.map((w) => (
             <Link key={w.href} href={w.href} className="cine-glass cine-tilt group relative overflow-hidden rounded-2xl p-5 flex flex-col gap-3">
               <span aria-hidden className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-40 transition-opacity group-hover:opacity-70" style={{ background: w.tint }} />
