@@ -6,21 +6,21 @@ import {
   Zap, Search, Swords, Users, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid,
 } from 'lucide-react';
 
-// The game types that can be generated from a custom topic. Jeopardy is live;
-// the rest still preview the flow. AI or Human? needs genuine human-written
-// samples, so it can't be generated per topic — shown disabled so the picker
-// explains why rather than hiding the option silently.
+// The game types that can be generated from a custom topic, listed
+// alphabetically. Jeopardy is live; the rest still preview the flow. AI or
+// Human? needs genuine human-written samples, so it can't be generated per
+// topic — shown disabled so the picker explains why rather than hiding it.
 const GAME_TYPES = [
-  { id: 'jeopardy', title: 'Jeopardy', tint: '#0055FF', diff: 'Medium', diffTint: '#C98A00', live: true,
-    desc: 'A 5-category board of AI clues — answer in the form of a question.', icon: LayoutGrid },
-  { id: 'speed', title: 'Speed Round', tint: '#3B94FF', diff: 'Easy', diffTint: '#1AA06A',
-    desc: 'Rapid-fire questions on your topic — beat the clock.', icon: Zap },
-  { id: 'halluc', title: 'Hallucination Hunt', tint: '#B4531F', diff: 'Medium', diffTint: '#C98A00',
-    desc: 'Spot the planted factual errors in an AI answer.', icon: Search },
-  { id: 'prompt', title: 'Prompt Battle', tint: '#A06AFF', diff: 'Hard', diffTint: '#B4531F',
-    desc: 'Write the sharpest prompt for a scenario in your topic.', icon: Swords },
   { id: 'aihuman', title: 'AI or Human?', tint: '#8A93A6', disabled: true,
     desc: 'Needs real human writing — not available for custom topics.', icon: Users },
+  { id: 'halluc', title: 'Hallucination Hunt', tint: '#B4531F', diff: 'Medium', diffTint: '#C98A00',
+    desc: 'Spot the planted factual errors in an AI answer.', icon: Search },
+  { id: 'jeopardy', title: 'Jeopardy', tint: '#0055FF', diff: 'Medium', diffTint: '#C98A00', live: true,
+    desc: 'A 5-category board of AI clues — answer in the form of a question.', icon: LayoutGrid },
+  { id: 'prompt', title: 'Prompt Battle', tint: '#A06AFF', diff: 'Hard', diffTint: '#B4531F',
+    desc: 'Write the sharpest prompt for a scenario in your topic.', icon: Swords },
+  { id: 'speed', title: 'Speed Round', tint: '#3B94FF', diff: 'Easy', diffTint: '#1AA06A',
+    desc: 'Rapid-fire questions on your topic — beat the clock.', icon: Zap },
 ];
 
 const SAMPLES = [
@@ -57,7 +57,7 @@ export default function GenerateYourOwnGame() {
   function surprise() {
     setTopic(SAMPLES[sampleIdx % SAMPLES.length]);
     setSampleIdx((i) => i + 1);
-    if (!selected) setSelected(GAME_TYPES[0]);
+    if (!selected) setSelected(GAME_TYPES.find((g) => !g.disabled));
   }
   function generate() {
     if (!canGenerate) return;
