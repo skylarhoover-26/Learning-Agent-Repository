@@ -31,7 +31,22 @@ export default function HelpWidget() {
   const [messages, setMessages] = useState([]); // real convo (greeting is UI-only)
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  // Auto-hide the launcher whenever an overlay (dropdown menu, dialog, modal) is
+  // open, so it never covers the content the user is interacting with. Detected
+  // generically from the DOM — no per-component wiring needed.
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const endRef = useRef(null);
+
+  useEffect(() => {
+    const check = () => {
+      const present = !!document.querySelector('[role="listbox"], [role="dialog"], [aria-modal="true"]');
+      setOverlayOpen((prev) => (prev === present ? prev : present));
+    };
+    check();
+    const mo = new MutationObserver(check);
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['role', 'aria-modal'] });
+    return () => mo.disconnect();
+  }, []);
 
   // Hydrate from sessionStorage on mount (after mount to avoid SSR mismatch).
   useEffect(() => {
@@ -87,6 +102,8 @@ export default function HelpWidget() {
   }
 
   if (!open) {
+    // While an overlay is up, get out of the way entirely.
+    if (overlayOpen) return null;
     return (
       <button
         onClick={() => setOpen(true)}
