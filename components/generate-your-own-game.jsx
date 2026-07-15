@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Zap, Search, Swords, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid, Disc3, Users,
+  Zap, Search, Swords, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid, Disc3, Users, ScanSearch,
 } from 'lucide-react';
 
 // The game types that can be generated from a custom topic, listed
@@ -21,7 +21,9 @@ const GAME_TYPES = [
     desc: 'Write the sharpest prompt for a scenario in your topic.', icon: Swords },
   { id: 'speed', title: 'Speed Round', tint: '#3B94FF', diff: 'Easy', diffTint: '#1AA06A', live: true, slug: 'speed-round',
     desc: 'Rapid-fire questions on your topic — beat the clock.', icon: Zap },
-  { id: 'wheel', title: 'Wheel of Fortune', tint: '#1AA06A', diff: 'Medium', diffTint: '#C98A00', live: true, slug: 'wheel-of-fortune',
+  { id: 'twotruths', title: 'Two Truths & a Lie', tint: '#1AA06A', diff: 'Easy', diffTint: '#1AA06A', live: true, slug: 'two-truths',
+    desc: 'Spot the false claim among three about your topic.', icon: ScanSearch },
+  { id: 'wheel', title: 'Wheel of Fortune', tint: '#6AABFF', diff: 'Medium', diffTint: '#C98A00', live: true, slug: 'wheel-of-fortune',
     desc: 'Spin and guess letters to uncover an AI phrase.', icon: Disc3 },
 ];
 

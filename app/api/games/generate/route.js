@@ -21,6 +21,8 @@ const HALLUC_ROUNDS = 3;
 const PROMPT_COUNT = 4;
 const WHEEL_COUNT = 4;
 const FEUD_ROUNDS = 4;
+const TRUTHS_ROUNDS = 5;
+const MILLIONAIRE_COUNT = 10;
 
 const GENERATORS = {
   speed: {
@@ -165,6 +167,62 @@ Return ONLY valid JSON (no markdown fences):
       }).filter((r) => r.question && r.answers.length >= 3)
         .slice(0, FEUD_ROUNDS);
       return clean.length >= 2 ? { rounds: clean } : null;
+    },
+  },
+
+  twotruths: {
+    maxTokens: 3000,
+    system: `You are writing "Two Truths and a Lie" rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${TRUTHS_ROUNDS} rounds. Each round has 3 statements about the topic: exactly 2 are TRUE and 1 is a believable but FALSE "lie".
+
+Rules per round:
+- "statements": an array of 3 statements, similar in length and style so the lie isn't obvious.
+- "lie": the 0-based index (0–2) of the FALSE statement.
+- "explanation": one sentence explaining why the lie is false (and ideally what's actually true).
+- The two true statements must be genuinely accurate and teach something useful.
+
+Return ONLY valid JSON (no markdown fences):
+{ "rounds": [ { "statements": ["...","...","..."], "lie": <0-2>, "explanation": "<why it's false>" } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.rounds) ? parsed.rounds : null;
+      if (!arr) return null;
+      const clean = arr
+        .filter((r) => Array.isArray(r?.statements) && r.statements.length === 3 && Number.isInteger(r.lie) && r.lie >= 0 && r.lie <= 2)
+        .map((r) => ({
+          statements: r.statements.map((s) => String(s).trim()),
+          lie: r.lie,
+          explanation: String(r.explanation || '').trim(),
+        }))
+        .slice(0, TRUTHS_ROUNDS);
+      return clean.length >= 3 ? { rounds: clean } : null;
+    },
+  },
+
+  millionaire: {
+    maxTokens: 3500,
+    system: `You are writing a "Who Wants to Be a Millionaire"-style question ladder for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${MILLIONAIRE_COUNT} multiple-choice questions, ORDERED from easiest (question 1) to hardest (question ${MILLIONAIRE_COUNT}).
+
+Rules:
+- Each question has EXACTLY 4 options with ONE correct answer.
+- "correct" is the 0-based index (0–3).
+- Difficulty must clearly rise down the ladder: early questions foundational, later ones nuanced/expert.
+- "explanation" is one sentence on why the answer is right.
+- Accurate and genuinely useful for the topic. No trick questions.
+
+Return ONLY valid JSON (no markdown fences):
+{ "questions": [ { "q": "<question>", "options": ["a","b","c","d"], "correct": <0-3>, "explanation": "<one sentence>" } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.questions) ? parsed.questions : null;
+      if (!arr) return null;
+      const clean = arr
+        .filter((x) => x && typeof x.q === 'string' && Array.isArray(x.options) && x.options.length === 4 && Number.isInteger(x.correct) && x.correct >= 0 && x.correct <= 3)
+        .map((x) => ({
+          q: String(x.q).trim(),
+          options: x.options.map((o) => String(o).trim()),
+          correct: x.correct,
+          explanation: String(x.explanation || '').trim(),
+        }))
+        .slice(0, MILLIONAIRE_COUNT);
+      return clean.length >= 5 ? { questions: clean } : null;
     },
   },
 };
