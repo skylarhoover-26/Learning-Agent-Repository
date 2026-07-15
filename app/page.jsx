@@ -47,49 +47,16 @@ function getSkills(learnerId) {
 }
 
 export default async function Dashboard() {
-  const learner = await getCurrentLearner();
-
-  if (!learner) {
-    return (
-      <div className="min-h-screen">
-        <header className="js-topbar bg-ink sticky top-0 z-50 text-white">
-          <div className="px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-md bg-brand flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
-              </div>
-              <div>
-                <h1 className="font-bold tracking-tight text-[17px] leading-tight">AI Learning Coach</h1>
-                <p className="text-xs text-white/60 leading-tight">By Housecall Pro</p>
-              </div>
-            </div>
-          </div>
-        </header>
-        <main className="max-w-2xl mx-auto px-6 py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-brand-50 ring-1 ring-brand-200 mx-auto mb-6 flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-brand" />
-          </div>
-          <h2 className="text-3xl font-bold text-ink dark:text-slate-200 mb-3">Welcome to AI Learning Coach</h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
-            Set up your profile in under 2 minutes and get a personalized AI learning experience.
-          </p>
-          <div className="flex items-center justify-center gap-4">
-            <Link
-              href="/onboarding"
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold text-base hover:bg-cta-600 transition-all shadow-sm"
-            >
-              Get Started
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  // Cinematic reskin (staging): the dashboard renders in the cinematic style,
-  // wired to live data via the client providers. The legacy layout below is now
-  // unreachable and kept only until the reskin rollout finishes.
+  // Always render the home. SSO middleware guarantees an authenticated session
+  // before this page loads, and CinematicHome takes no server data — it loads
+  // the learner's profile client-side (Supabase-backed) and routes a genuinely
+  // new user to onboarding itself (see profile-provider).
+  //
+  // We intentionally removed the old `if (!getCurrentLearner()) → Welcome` gate:
+  // in some server-component render contexts `auth()` failed to resolve an
+  // otherwise-valid session, so the gate wrongly treated real, logged-in users
+  // as brand-new and dropped them on the "set up your profile" screen. Letting
+  // CinematicHome own its data loading is both correct and more robust.
   return <CinematicHome />;
 
   // eslint-disable-next-line no-unreachable
