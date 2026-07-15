@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
@@ -11,6 +12,7 @@ import {
   saveGameResult, getGameStats, getInProgress, saveInProgress, clearInProgress,
 } from '@/lib/game-store';
 import GameInstructions from '@/components/game-instructions';
+import GameGenLoading from '@/components/game-gen-loading';
 import SCENARIOS from './scenarios';
 
 const HOW_TO_PLAY = [
@@ -42,10 +44,23 @@ function ScoreBar({ label, score, feedback, animate }) {
 }
 
 export default function PromptBattlePage() {
-  return <CinematicFrame><PromptBattle /></CinematicFrame>;
+  return (
+    <CinematicFrame>
+      <Suspense fallback={<main className="max-w-2xl mx-auto px-6 pt-6"><GameGenLoading label="Loading…" /></main>}>
+        <PromptBattle />
+      </Suspense>
+    </CinematicFrame>
+  );
 }
 
 function PromptBattle() {
+  // A `?topic=` turns this into a custom, AI-generated round; otherwise the
+  // built-in scenarios are used exactly as before.
+  const params = useSearchParams();
+  const topic = params.get('topic') || '';
+  const [genScenarios, setGenScenarios] = useState(null);
+  const [genLoading, setGenLoading] = useState(!!topic);
+  const [genError, setGenError] = useState(null);
   const [started, setStarted] = useState(false);
   const [scenarioIdx, setScenarioIdx] = useState(0);
   const [prompt, setPrompt] = useState('');
@@ -58,6 +73,26 @@ function PromptBattle() {
   const [stats, setStats] = useState(null);
   const [showResume, setShowResume] = useState(false);
 
+  // Content source: custom (generated) scenarios when a topic is set, else the
+  // built-in bank.
+  const scenarios = topic ? (genScenarios || []) : SCENARIOS;
+
+  // Custom topic → generate fresh scenarios from the LLM.
+  useEffect(() => {
+    if (!topic) return;
+    let live = true;
+    setGenLoading(true); setGenError(null);
+    fetch('/api/games/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'prompt', topic }),
+    })
+      .then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Failed'); return d; })
+      .then((d) => { if (live) { setGenScenarios(d.scenarios); setStarted(true); setGenLoading(false); } })
+      .catch((e) => { if (live) { setGenError(e.message); setGenLoading(false); } });
+    return () => { live = false; };
+  }, [topic]);
+
   // Check for in-progress state and load stats on mount
   useEffect(() => {
     try {
@@ -65,14 +100,17 @@ function PromptBattle() {
       if (s && s.gamesPlayed > 0) {
         setStats(s);
       }
-      const progress = getInProgress('prompt-battle');
-      if (progress && progress.scenarioIdx !== undefined) {
-        setShowResume(true);
+      // Custom (topic) rounds are ephemeral — no resume of the fixed game.
+      if (!topic) {
+        const progress = getInProgress('prompt-battle');
+        if (progress && progress.scenarioIdx !== undefined) {
+          setShowResume(true);
+        }
       }
     } catch {
       // localStorage unavailable
     }
-  }, []);
+  }, [topic]);
 
   function handleResume() {
     try {
@@ -107,7 +145,7 @@ function PromptBattle() {
     setScores(null);
     setAnimate(false);
 
-    const scenario = SCENARIOS[scenarioIdx];
+    const scenario = scenarios[scenarioIdx];
 
     try {
       const res = await fetch('/api/games/score-prompt', {
@@ -143,14 +181,16 @@ function PromptBattle() {
       ];
       setCompletedScenarios(updatedCompleted);
 
-      // Save in-progress
-      try {
-        saveInProgress('prompt-battle', {
-          scenarioIdx,
-          completedScenarios: updatedCompleted,
-        });
-      } catch {
-        // localStorage unavailable
+      // Save in-progress (built-in game only — custom rounds are ephemeral)
+      if (!topic) {
+        try {
+          saveInProgress('prompt-battle', {
+            scenarioIdx,
+            completedScenarios: updatedCompleted,
+          });
+        } catch {
+          // localStorage unavailable
+        }
       }
 
       // trigger bar animation after a small delay
@@ -171,7 +211,7 @@ function PromptBattle() {
 
   function handleNextScenario() {
     const nextIdx = scenarioIdx + 1;
-    if (nextIdx >= SCENARIOS.length) {
+    if (nextIdx >= scenarios.length) {
       // All scenarios completed
       setGameOver(true);
       const totalScore = completedScenarios.reduce((sum, s) => sum + s.score, 0);
@@ -274,7 +314,31 @@ function PromptBattle() {
     );
   }
 
-  const scenario = SCENARIOS[scenarioIdx];
+  if (genLoading) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Swords} title="Prompt Battle" subtitle="Building your custom round" />
+        <main className="max-w-2xl mx-auto px-6 pt-6">
+          <GameGenLoading label={`Building a Prompt Battle on ${topic}…`} estimateSeconds={14} />
+        </main>
+      </div>
+    );
+  }
+
+  if (genError || (topic && !scenarios[scenarioIdx])) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Swords} title="Prompt Battle" />
+        <main className="max-w-lg mx-auto px-6 py-20 text-center">
+          <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">Couldn&rsquo;t build that round</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{genError || 'Try a different topic.'}</p>
+          <Link href="/games" className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm">Back to games</Link>
+        </main>
+      </div>
+    );
+  }
+
+  const scenario = scenarios[scenarioIdx];
 
   return (
     <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
@@ -329,7 +393,7 @@ function PromptBattle() {
 
         {/* Progress indicator */}
         <div className="flex items-center gap-1 mb-6">
-          {SCENARIOS.map((_, i) => (
+          {scenarios.map((_, i) => (
             <div
               key={i}
               className={`flex-1 h-1.5 rounded-full transition-all ${
@@ -350,7 +414,7 @@ function PromptBattle() {
               {scenario.department}
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              Scenario {scenarioIdx + 1} of {SCENARIOS.length}
+              Scenario {scenarioIdx + 1} of {scenarios.length}
             </span>
           </div>
           <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">{scenario.title}</h2>
@@ -443,7 +507,7 @@ function PromptBattle() {
                 onClick={handleNextScenario}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
               >
-                {scenarioIdx + 1 >= SCENARIOS.length ? 'See Results' : 'Next Scenario'}
+                {scenarioIdx + 1 >= scenarios.length ? 'See Results' : 'Next Scenario'}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

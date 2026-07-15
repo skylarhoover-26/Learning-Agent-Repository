@@ -15,7 +15,7 @@ const GAME_TYPES = [
     desc: 'Spot the planted factual errors in an AI answer.', icon: Search },
   { id: 'jeopardy', title: 'Jeopardy', tint: '#0055FF', diff: 'Medium', diffTint: '#C98A00', live: true, slug: 'jeopardy',
     desc: 'A 5-category board of AI clues — answer in the form of a question.', icon: LayoutGrid },
-  { id: 'prompt', title: 'Prompt Battle', tint: '#A06AFF', diff: 'Hard', diffTint: '#B4531F',
+  { id: 'prompt', title: 'Prompt Battle', tint: '#A06AFF', diff: 'Hard', diffTint: '#B4531F', live: true, slug: 'prompt-battle',
     desc: 'Write the sharpest prompt for a scenario in your topic.', icon: Swords },
   { id: 'speed', title: 'Speed Round', tint: '#3B94FF', diff: 'Easy', diffTint: '#1AA06A', live: true, slug: 'speed-round',
     desc: 'Rapid-fire questions on your topic — beat the clock.', icon: Zap },

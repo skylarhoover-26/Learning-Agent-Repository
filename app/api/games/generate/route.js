@@ -18,6 +18,7 @@ function getClient() {
 // output into the exact shape that game expects (dropping malformed items).
 const SPEED_COUNT = 10;
 const HALLUC_ROUNDS = 3;
+const PROMPT_COUNT = 4;
 
 const GENERATORS = {
   speed: {
@@ -75,6 +76,36 @@ Return ONLY valid JSON (no markdown fences):
       }).filter((r) => r.context && r.sentences.length >= 4 && r.hallucinations.length >= 1)
         .slice(0, HALLUC_ROUNDS);
       return clean.length >= 2 ? { rounds: clean } : null;
+    },
+  },
+
+  prompt: {
+    maxTokens: 2500,
+    system: `You are writing "Prompt Battle" scenarios for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${PROMPT_COUNT} realistic workplace scenarios where the player must write a good prompt for an AI tool, all connected to the topic.
+
+Rules per scenario:
+- "department": the team this fits (e.g. "Sales", "Operations", "Customer Success").
+- "title": a short task name.
+- "context": 1–2 sentences of realistic situation/background.
+- "task": one sentence telling the player what prompt to write (e.g. "Write a prompt that would get an AI to draft ...").
+- Make each scenario distinct and genuinely useful for the topic.
+
+Return ONLY valid JSON (no markdown fences):
+{ "scenarios": [ { "department": "<team>", "title": "<short title>", "context": "<1-2 sentences>", "task": "<what prompt to write>" } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.scenarios) ? parsed.scenarios : null;
+      if (!arr) return null;
+      const clean = arr
+        .filter((x) => x && x.title && x.context && x.task)
+        .map((x, i) => ({
+          id: i + 1,
+          department: String(x.department || 'Your work').trim(),
+          title: String(x.title).trim(),
+          context: String(x.context).trim(),
+          task: String(x.task).trim(),
+        }))
+        .slice(0, PROMPT_COUNT);
+      return clean.length >= 2 ? { scenarios: clean } : null;
     },
   },
 };
