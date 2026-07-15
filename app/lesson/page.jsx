@@ -158,6 +158,9 @@ function LessonContent() {
   // The suggested topic highlighted on step 3, and whether generation is firing.
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [generating, setGenerating] = useState(false);
+  // Short beat between pressing "Generate lesson" and the lesson opening, so the
+  // generating popup is actually visible and "Go back" can cancel before launch.
+  const generateTimerRef = useRef(null);
   const [videoTopic, setVideoTopic] = useState(null);
   // When the narrated player is showing a Project Quest, this holds the quest id so
   // the script is sourced from the quest's curated steps.
@@ -507,15 +510,30 @@ function LessonContent() {
     }
   }
 
-  // Step 3 "Generate lesson": build the highlighted suggested topic. The
-  // generating flag drives the button spinner; for read lessons the view flips
-  // to the plan player (its own loader takes over), for narrated the video
-  // player overlay mounts on top.
+  // Step 3 "Generate lesson": build the highlighted suggested topic. Shows a
+  // generating popup with a "Go back", then opens the lesson after a short beat
+  // (the destination's own loader — plan player / narrated player — continues
+  // from there). Go back cancels before the launch fires, so nothing is built.
   function generateSelected() {
     if (!selectedTopic || generating) return;
     setGenerating(true);
-    chooseTopic(selectedTopic);
+    generateTimerRef.current = setTimeout(() => {
+      generateTimerRef.current = null;
+      chooseTopic(selectedTopic);
+    }, 550);
   }
+
+  function cancelGenerate() {
+    if (generateTimerRef.current) {
+      clearTimeout(generateTimerRef.current);
+      generateTimerRef.current = null;
+    }
+    setGenerating(false);
+  }
+
+  useEffect(() => () => {
+    if (generateTimerRef.current) clearTimeout(generateTimerRef.current);
+  }, []);
 
   // Typed topics get a quick vagueness check first: if the topic is too broad,
   // show a clarify card so the learner can pick a sharper direction (which makes
@@ -675,6 +693,7 @@ function LessonContent() {
   function resetToPickerView() {
     clearSavedLesson(topic, format);
     setView('picker');
+    setGenerating(false);
     setClarify(null);
     setTopic('');
     setSlides([]);
@@ -1250,6 +1269,29 @@ function LessonContent() {
           <PausedLessonsBox onResume={resumeEntry} />
         </div>
       </main>
+      {/* Generating popup: shown after "Generate lesson" until the lesson opens.
+          Hidden once the narrated player mounts (videoTopic set) so it doesn't
+          stack under it; read lessons flip the whole view and unmount this. */}
+      {generating && !videoTopic && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-6" style={{ background: 'rgba(10,20,40,0.55)', backdropFilter: 'blur(4px)' }}>
+          <div className="cine-glass rounded-3xl p-8 max-w-md w-full text-center" style={{ background: 'var(--card)', boxShadow: '0 40px 90px -60px var(--accent)' }}>
+            <BookLoader message={`Generating your ${learnMode === 'watch' ? 'narrated ' : ''}lesson…`} size="lg" />
+            {selectedTopic && (
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">
+                {(suggested || SUGGESTED_TOPICS).find((s) => s.topic === selectedTopic)?.label || selectedTopic}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={cancelGenerate}
+              className="mt-6 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill cine-glass text-slate-600 dark:text-slate-300 font-semibold text-sm hover:opacity-80 transition-all"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" />
+              Go back
+            </button>
+          </div>
+        </div>
+      )}
       {videoTopic && (
         <VideoLessonPlayer
           topic={videoTopic}
