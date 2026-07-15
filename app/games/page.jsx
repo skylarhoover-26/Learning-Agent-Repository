@@ -11,6 +11,8 @@ import {
 import { getGameStats } from '@/lib/game-store';
 import { maxGameXp } from '@/lib/progression';
 import { sortByDifficulty } from '@/lib/difficulty';
+import { useMenuVisibility } from '@/components/menu-visibility-provider';
+import GenerateYourOwnGame from '@/components/generate-your-own-game';
 
 // Difficulty → glow (card hover, matches Library) + badge, on the green/orange/
 // red scale: easy green, medium orange, hard red.
@@ -72,6 +74,7 @@ export default function GamesHub() {
 
 function GamesHubInner() {
   const [allStats, setAllStats] = useState({});
+  const { actingAsAdmin } = useMenuVisibility();
 
   useEffect(() => {
     try {
@@ -163,6 +166,9 @@ function GamesHubInner() {
             );
           })}
         </div>
+
+        {/* Admin-only preview of the "generate your own game" flow (no backend yet). */}
+        {actingAsAdmin && <GenerateYourOwnGame />}
       </main>
     </div>
   );
