@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Sparkles, Flame, Trophy, Award, Compass, Gamepad2, MessageCircle,
   BookOpen, PenTool, ArrowRight, Play, Crown, Check, RefreshCw,
-  TrendingUp, GitBranch, Rss, HelpCircle, X,
+  TrendingUp, GitBranch, Rss, HelpCircle, X, BarChart3, Lock,
 } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
@@ -133,11 +133,6 @@ export default function CinematicHome() {
   const totalXp = prog?.totalXp ?? 0;
   const streak = prog?.streak ?? 0;
   const badgeCount = prog?.badgesEarned?.length ?? 0;
-  const lastTopic = prog?.lessonHistory?.[0]?.topic || null;
-  const resumeHref = lastTopic ? `/lesson?topic=${encodeURIComponent(lastTopic)}` : '/lesson';
-  // A topic can be a long sentence — keep the button to one short line.
-  const shortTopic = lastTopic && lastTopic.length > 26 ? `${lastTopic.slice(0, 24).trimEnd()}…` : lastTopic;
-  const resumeLabel = shortTopic ? `Resume — ${shortTopic}` : 'Resume learning';
   const people = (board?.people || []).slice(0, 5);
   const champ = new Set(board?.championIds || []);
   const firstName = (name || 'there').split(' ')[0];
@@ -194,11 +189,11 @@ export default function CinematicHome() {
               : <>You&apos;re at the top level — keep the streak alive.</>}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href={resumeHref} className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-6 font-semibold max-w-full overflow-hidden">
-              <span className="truncate">{resumeLabel}</span> <ArrowRight className="w-4 h-4 shrink-0" />
+            <Link href="/chat" className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-6 font-semibold">
+              <MessageCircle className="w-4 h-4 shrink-0" /> Chat with your coach <ArrowRight className="w-4 h-4 shrink-0" />
             </Link>
-            <Link href="/discover" className="cine-glass cine-lift inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold" style={{ color: 'var(--ink)' }}>
-              Explore courses
+            <Link href="/heatmap" className="cine-glass cine-lift inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold" style={{ color: 'var(--ink)' }}>
+              <BarChart3 className="w-4 h-4 shrink-0" /> See your progress
             </Link>
           </div>
         </div>
@@ -216,10 +211,10 @@ export default function CinematicHome() {
                 }}
                 aria-label="How levels work"
                 aria-expanded={!!infoAnchor}
-                className="cine-lift w-5 h-5 rounded-full grid place-items-center shrink-0"
-                style={{ color: 'var(--accent2)', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)' }}
+                className="cine-lift w-6 h-6 rounded-full grid place-items-center shrink-0"
+                style={{ color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 22%, transparent)', border: '1.5px solid color-mix(in srgb, var(--accent) 55%, transparent)' }}
               >
-                <HelpCircle className="w-3 h-3" />
+                <HelpCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
               </button>
             </div>
             <span className="text-xs" style={{ color: 'var(--ink-dim)' }}>Level {level} · {title}</span>
@@ -248,6 +243,7 @@ export default function CinematicHome() {
                   <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ background: 'linear-gradient(180deg,var(--accent),var(--accent2))' }}><Play className="w-2 h-2 text-white" /></span>} label="Where you are now" />
                   <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ border: '1.5px dashed var(--gold)' }}><Sparkles className="w-2 h-2" style={{ color: 'var(--gold)' }} /></span>} label="Your next level — the one to aim for" />
                   <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}><Check className="w-2 h-2" style={{ color: 'var(--good)' }} /></span>} label="Levels you've already cleared" />
+                  <LegendRow swatch={<span className="w-4 h-4 rounded-md grid place-items-center" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}><Lock className="w-2 h-2" style={{ color: 'var(--ink-dim)' }} /></span>} label="Levels still to unlock" />
                 </div>
                 <p className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--ink-dim)' }}>Earn XP by</p>
                 <ul className="text-xs space-y-1" style={{ color: 'var(--ink-dim)' }}>
@@ -283,6 +279,7 @@ export default function CinematicHome() {
                     {state === 'done' && <Check className="w-4 h-4" style={{ color: 'var(--good)' }} />}
                     {state === 'current' && <Play className="w-3.5 h-3.5" />}
                     {state === 'next' && <Sparkles className="w-3.5 h-3.5" />}
+                    {state === 'upcoming' && <Lock className="w-3.5 h-3.5" style={{ color: 'var(--ink-dim)' }} />}
                   </div>
                 </div>
               );
