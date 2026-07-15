@@ -19,6 +19,7 @@ function getClient() {
 const SPEED_COUNT = 10;
 const HALLUC_ROUNDS = 3;
 const PROMPT_COUNT = 4;
+const WHEEL_COUNT = 4;
 
 const GENERATORS = {
   speed: {
@@ -106,6 +107,29 @@ Return ONLY valid JSON (no markdown fences):
         }))
         .slice(0, PROMPT_COUNT);
       return clean.length >= 2 ? { scenarios: clean } : null;
+    },
+  },
+
+  wheel: {
+    maxTokens: 1500,
+    system: `You are writing "Wheel of Fortune" puzzles for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${WHEEL_COUNT} puzzles. Each puzzle is a short phrase the player uncovers letter by letter.
+
+Rules per puzzle:
+- "phrase": an AI concept, tool, technique, or best-practice phrase relevant to the topic. 2–4 words. Use ONLY letters A–Z and single spaces — NO punctuation, numbers, hyphens, or symbols.
+- "category": a short uppercase hint for what kind of thing it is (e.g. "AI TECHNIQUE", "TOOL", "BEST PRACTICE", "CONCEPT").
+- Keep phrases recognizable and genuinely educational for the topic. Vary length.
+
+Return ONLY valid JSON (no markdown fences):
+{ "puzzles": [ { "category": "<UPPERCASE HINT>", "phrase": "<TWO TO FOUR WORDS>" } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.puzzles) ? parsed.puzzles : null;
+      if (!arr) return null;
+      const clean = arr.map((p) => ({
+        category: String(p?.category || 'PHRASE').toUpperCase().replace(/[^A-Z \-&]/g, '').trim() || 'PHRASE',
+        phrase: String(p?.phrase || '').toUpperCase().replace(/[^A-Z ]/g, ' ').replace(/\s+/g, ' ').trim(),
+      })).filter((p) => p.phrase.replace(/ /g, '').length >= 3)
+        .slice(0, WHEEL_COUNT);
+      return clean.length >= 2 ? { puzzles: clean } : null;
     },
   },
 };
