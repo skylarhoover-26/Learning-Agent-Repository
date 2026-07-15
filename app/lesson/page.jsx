@@ -6,6 +6,7 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicCourse from '@/components/cinematic/cinematic-course';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
+import CompletionFeedback from '@/components/completion-feedback';
 import LessonQuiz from '@/components/lesson-quiz';
 import PlanLessonPlayer from '@/components/plan-lesson-player';
 import { emitXp } from '@/lib/xp-bus';
@@ -517,6 +518,16 @@ function LessonContent() {
     if (!trimmed) return;
     setClarify(null);
     chooseTopic(trimmed);
+  }
+
+  // "Take a more focused lesson" from the end-of-lesson feedback: start a sharper
+  // lesson anchored to the current topic and seeded with what the learner said
+  // they still wanted. Starts directly (no vagueness re-check) so it's one click;
+  // changing the topic remounts the lesson player via its key.
+  function startFocusedLesson(note) {
+    const refined = note ? `${topic} — specifically, ${note}` : topic;
+    chooseTopic(refined);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function continueLesson(input, displayLabel) {
@@ -1221,7 +1232,15 @@ function LessonContent() {
   // reader — the cinematic "chapter" experience. Same plan/teach APIs, grading,
   // and XP as the step player; only the presentation is the scroll.
   if (view === 'lesson' && learnMode === 'read' && (format === 'standard' || format === 'deep_dive')) {
-    return <CinematicCourse key={`${format}__${topic}`} topic={topic} format={format} onExit={resetToPickerView} />;
+    return (
+      <CinematicCourse
+        key={`${format}__${topic}`}
+        topic={topic}
+        format={format}
+        onExit={resetToPickerView}
+        onFocusedLesson={startFocusedLesson}
+      />
+    );
   }
 
   // Project Quests (read mode) keep the step-driven build player (build engine,
@@ -1309,12 +1328,21 @@ function LessonContent() {
 
               {/* AI slide */}
               {slideIsComplete && isLast ? (
-                <RecapCard
-                  recap={slide.recap}
-                  format={format}
-                  onPickAnother={resetToPickerView}
-                  onDashboard={() => router.push('/')}
-                />
+                <>
+                  <RecapCard
+                    recap={slide.recap}
+                    format={format}
+                    onPickAnother={resetToPickerView}
+                    onDashboard={() => router.push('/')}
+                  />
+                  <CompletionFeedback
+                    kind="lesson"
+                    topic={topic}
+                    format={format}
+                    objectives={slide.recap?.keyPoints || []}
+                    onFocusedLesson={startFocusedLesson}
+                  />
+                </>
               ) : (
                 <>
                   <div className="flex items-center gap-2 mb-1.5">

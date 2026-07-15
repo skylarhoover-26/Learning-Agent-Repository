@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Play, ArrowRight, X } from 'lucide-react';
+import { Bell, Play, ArrowRight, X, Sparkles } from 'lucide-react';
 import { listPausedLessons, relativeAccessTime, absoluteAccessDate } from '@/lib/paused-lessons';
 import {
   listNotifications, markNotificationsRead, unreadNotificationCount,
@@ -77,7 +77,6 @@ export default function PausedLessonsBell() {
   ].sort((a, b) => String(b.sortTs).localeCompare(String(a.sortTs)));
 
   const badgeCount = unread;
-  if (feed.length === 0) return null;
 
   function resume(entry) {
     setOpen(false);
@@ -148,6 +147,15 @@ export default function PausedLessonsBell() {
           </div>
 
           <ul className="max-h-96 overflow-y-auto py-1">
+            {feed.length === 0 && (
+              <li className="px-4 py-8 text-center">
+                <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-brand-50 dark:bg-slate-700 text-brand mb-3">
+                  <Sparkles className="w-5 h-5" />
+                </span>
+                <p className="text-sm font-semibold text-ink dark:text-slate-200">You&rsquo;re all caught up</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">XP, badges &amp; unfinished lessons will show up here.</p>
+              </li>
+            )}
             {feed.map((item) => (
               item.kind === 'lesson' ? (
                 <li key={`l_${item.data.key}`}>

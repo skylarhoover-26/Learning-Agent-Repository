@@ -7,6 +7,7 @@ import LessonInteractive from '@/components/lesson-interactive';
 import LessonActivity from '@/components/lesson-activity';
 import ConfettiBurst from '@/components/confetti-burst';
 import BookLoader from '@/components/book-loader';
+import CompletionFeedback from '@/components/completion-feedback';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
@@ -23,7 +24,7 @@ const FORMAT_META = {
 // scroll-driven progress bar + side rail, and a celebratory completion. It
 // reuses the same APIs and activity/teach components as the step player, so the
 // content + grading + XP are identical — only the presentation is the scroll.
-export default function CinematicCourse({ topic, format = 'standard', onExit }) {
+export default function CinematicCourse({ topic, format = 'standard', onExit, onFocusedLesson }) {
   const { profile } = useProfile();
   const { tools, primaryTool } = useActiveTool();
   const meta = FORMAT_META[format] || FORMAT_META.standard;
@@ -332,6 +333,15 @@ export default function CinematicCourse({ topic, format = 'standard', onExit }) 
                 <button onClick={() => { setCompleted(false); setResolved({}); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="cine-glass cine-lift inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold" style={{ color: 'var(--ink)' }}>
                   <RotateCcw className="w-4 h-4" /> Replay
                 </button>
+              </div>
+              <div className="w-full max-w-md mt-8 text-left">
+                <CompletionFeedback
+                  kind="lesson"
+                  topic={topic}
+                  format={format}
+                  objectives={objectives}
+                  onFocusedLesson={onFocusedLesson}
+                />
               </div>
             </div>
           )}
