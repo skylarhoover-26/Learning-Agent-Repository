@@ -89,6 +89,13 @@ function JeopardyGame() {
     if (correct) setScore((s) => s + active.clue.value);
   }
 
+  // Skipping still reveals the answer (so it's a learning moment) — it just
+  // doesn't score. Continue then closes and marks the clue used.
+  function skip() {
+    if (!active || revealed) return;
+    setRevealed({ correct: false, skipped: true });
+  }
+
   function closeClue() {
     if (active) setUsed((prev) => new Set(prev).add(`${active.c}-${active.i}`));
     setActive(null);
@@ -205,14 +212,18 @@ function JeopardyGame() {
                   style={{ border: '1px solid var(--line)', '--tw-ring-color': 'color-mix(in srgb, var(--accent) 18%, transparent)' }}
                 />
                 <div className="flex justify-end gap-2">
-                  <button onClick={closeClue} className="px-4 py-2.5 rounded-full text-sm font-medium" style={{ color: 'var(--ink-dim)' }}>Skip</button>
+                  <button onClick={skip} className="px-4 py-2.5 rounded-full text-sm font-medium" style={{ color: 'var(--ink-dim)' }}>Skip</button>
                   <button onClick={submit} className="cine-pill cine-lift inline-flex items-center gap-2 h-11 px-6 font-semibold">Submit</button>
                 </div>
               </>
             ) : (
               <div>
-                <div className="flex items-center gap-2 mb-3 font-bold" style={{ color: revealed.correct ? 'var(--good)' : '#E5484D' }}>
-                  {revealed.correct ? <><Check className="w-5 h-5" /> Correct — +${active.clue.value}</> : <><X className="w-5 h-5" /> Not quite</>}
+                <div className="flex items-center gap-2 mb-3 font-bold" style={{ color: revealed.skipped ? 'var(--ink-dim)' : (revealed.correct ? 'var(--good)' : '#E5484D') }}>
+                  {revealed.skipped
+                    ? <>Skipped — here&rsquo;s the answer</>
+                    : revealed.correct
+                      ? <><Check className="w-5 h-5" /> Correct — +${active.clue.value}</>
+                      : <><X className="w-5 h-5" /> Not quite</>}
                 </div>
                 <p className="text-sm mb-1" style={{ color: 'var(--ink-dim)' }}>The answer:</p>
                 <p className="font-semibold text-lg text-ink dark:text-slate-100 mb-5">{active.clue.answer}</p>
