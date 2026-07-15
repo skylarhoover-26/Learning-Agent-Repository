@@ -309,7 +309,7 @@ export default function CinematicHome() {
         <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight mb-7">Ways to learn</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {WAYS.map((w) => (
-            <Link key={w.href} href={w.href} className="cine-glass cine-tilt group relative overflow-hidden rounded-2xl p-5 flex flex-col gap-3">
+            <Link key={w.href} href={w.href} className="cine-glass cine-tilt group relative overflow-hidden rounded-2xl p-5 flex flex-col gap-3" style={{ '--accent': w.tint }}>
               <span aria-hidden className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-40 transition-opacity group-hover:opacity-70" style={{ background: w.tint }} />
               <span className="w-11 h-11 rounded-xl grid place-items-center relative" style={{ background: `linear-gradient(135deg, ${w.tint}, ${w.tint}99)`, color: '#fff', boxShadow: `0 0 20px -6px ${w.tint}` }}>
                 <w.icon className="w-5 h-5" />
@@ -324,7 +324,7 @@ export default function CinematicHome() {
       </section>
 
       {/* TODAY'S PICK */}
-      <Link href={todaysPick?.href || '/daily'} className="cine-tilt group block cine-glass rounded-3xl p-6 flex items-center gap-5">
+      <Link href={todaysPick?.href || '/daily'} className="cine-tilt group block cine-glass rounded-3xl p-6 flex items-center gap-5" style={{ '--accent': 'var(--gold)' }}>
         <span className="w-14 h-14 rounded-2xl grid place-items-center shrink-0" style={{ background: 'linear-gradient(135deg,var(--gold),#ffce4d)', boxShadow: '0 0 24px -6px var(--gold)' }}>
           <Sparkles className="w-7 h-7" style={{ color: '#0A2443' }} />
         </span>
