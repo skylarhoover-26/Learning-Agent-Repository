@@ -11,7 +11,7 @@ import {
 // rest still preview the flow until their generators ship. AI or Human? isn't
 // listed — it needs genuine human-written samples, so it can't be generated.
 const GAME_TYPES = [
-  { id: 'halluc', title: 'Hallucination Hunt', tint: '#B4531F', diff: 'Medium', diffTint: '#C98A00',
+  { id: 'halluc', title: 'Hallucination Hunt', tint: '#B4531F', diff: 'Medium', diffTint: '#C98A00', live: true, slug: 'hallucination-hunt',
     desc: 'Spot the planted factual errors in an AI answer.', icon: Search },
   { id: 'jeopardy', title: 'Jeopardy', tint: '#0055FF', diff: 'Medium', diffTint: '#C98A00', live: true, slug: 'jeopardy',
     desc: 'A 5-category board of AI clues — answer in the form of a question.', icon: LayoutGrid },

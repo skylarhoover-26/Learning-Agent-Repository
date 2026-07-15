@@ -17,6 +17,7 @@ function getClient() {
 // Per game-type: the system prompt and a normalizer that coerces the model
 // output into the exact shape that game expects (dropping malformed items).
 const SPEED_COUNT = 10;
+const HALLUC_ROUNDS = 3;
 
 const GENERATORS = {
   speed: {
@@ -45,6 +46,35 @@ Return ONLY valid JSON (no markdown fences):
         }))
         .slice(0, SPEED_COUNT);
       return clean.length >= 5 ? { questions: clean } : null;
+    },
+  },
+
+  halluc: {
+    maxTokens: 4000,
+    system: `You are writing "Hallucination Hunt" rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${HALLUC_ROUNDS} rounds. Each round is a realistic AI-generated answer about the topic that contains a few PLANTED factual errors ("hallucinations") the player must spot.
+
+Rules per round:
+- "context": one sentence framing what was asked (e.g. 'You asked an AI: "..."'), related to the topic.
+- "sentences": 6–8 short, standalone sentences forming the AI's answer.
+- "hallucinations": array of the 0-based indices of the sentences that are factually WRONG. Include 1–2 per round (never 0). The rest must be TRUE and plausible.
+- "explanations": an object keyed by each hallucination index, each a one-sentence explanation of what's actually correct.
+- Errors must be genuinely wrong but believable — not obvious. Everything else must be accurate.
+
+Return ONLY valid JSON (no markdown fences):
+{ "rounds": [ { "context": "<...>", "sentences": ["...","..."], "hallucinations": [3], "explanations": { "3": "<why it's wrong>" } } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.rounds) ? parsed.rounds : null;
+      if (!arr) return null;
+      const clean = arr.map((r, i) => {
+        const sentences = Array.isArray(r?.sentences) ? r.sentences.map((s) => String(s).trim()).filter(Boolean) : [];
+        const hallucinations = (Array.isArray(r?.hallucinations) ? r.hallucinations : [])
+          .map((n) => Number(n)).filter((n) => Number.isInteger(n) && n >= 0 && n < sentences.length);
+        const explanations = {};
+        hallucinations.forEach((n) => { explanations[n] = String(r?.explanations?.[n] || r?.explanations?.[String(n)] || 'This claim is not accurate.').trim(); });
+        return { id: i + 1, context: String(r?.context || '').trim(), sentences, hallucinations, explanations };
+      }).filter((r) => r.context && r.sentences.length >= 4 && r.hallucinations.length >= 1)
+        .slice(0, HALLUC_ROUNDS);
+      return clean.length >= 2 ? { rounds: clean } : null;
     },
   },
 };

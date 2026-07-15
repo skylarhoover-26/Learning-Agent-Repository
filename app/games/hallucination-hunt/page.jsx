@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { Suspense, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import ROUNDS from './rounds';
 import GameInstructions from '@/components/game-instructions';
+import GameGenLoading from '@/components/game-gen-loading';
 import { dailyPick } from '@/lib/content-day';
 
 const HOW_TO_PLAY = [
@@ -42,10 +44,23 @@ function getSentenceStyle(idx, flagged, revealed, isHallucination) {
 }
 
 export default function HallucinationHuntPage() {
-  return <CinematicFrame><HallucinationHunt /></CinematicFrame>;
+  return (
+    <CinematicFrame>
+      <Suspense fallback={<main className="max-w-2xl mx-auto px-6 pt-6"><GameGenLoading label="Loading…" /></main>}>
+        <HallucinationHunt />
+      </Suspense>
+    </CinematicFrame>
+  );
 }
 
 function HallucinationHunt() {
+  // A `?topic=` turns this into a custom, AI-generated round; otherwise the
+  // built-in rounds are used exactly as before.
+  const params = useSearchParams();
+  const topic = params.get('topic') || '';
+  const [genRounds, setGenRounds] = useState(null);
+  const [genLoading, setGenLoading] = useState(!!topic);
+  const [genError, setGenError] = useState(null);
   const [roundIdx, setRoundIdx] = useState(0);
   const [flagged, setFlagged] = useState(new Set());
   const [revealed, setRevealed] = useState(false);
@@ -59,24 +74,47 @@ function HallucinationHunt() {
 
   // Day-stable round order that rotates at 8 AM PT, so returning players get a
   // fresh sequence each day instead of the same fixed order.
-  const rounds = useMemo(() => dailyPick(ROUNDS, ROUNDS.length, 'hallucination-hunt'), []);
+  const rounds = useMemo(
+    () => (topic ? (genRounds || []) : dailyPick(ROUNDS, ROUNDS.length, 'hallucination-hunt')),
+    [topic, genRounds],
+  );
 
   const round = rounds[roundIdx];
-  const hallucinationSet = new Set(round.hallucinations);
+  const hallucinationSet = new Set(round?.hallucinations || []);
+
+  // Custom topic → generate fresh rounds from the LLM.
+  useEffect(() => {
+    if (!topic) return;
+    let live = true;
+    setGenLoading(true); setGenError(null);
+    fetch('/api/games/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'halluc', topic }),
+    })
+      .then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Failed'); return d; })
+      .then((d) => { if (live) { setGenRounds(d.rounds); setStarted(true); setGenLoading(false); } })
+      .catch((e) => { if (live) { setGenError(e.message); setGenLoading(false); } });
+    return () => { live = false; };
+  }, [topic]);
 
   // Load stats and check for in-progress on mount
   useEffect(() => {
     try {
       setStats(getGameStats('hallucination-hunt'));
-      const progress = getInProgress('hallucination-hunt');
-      if (progress) {
-        setSavedProgress(progress);
-        setResumeAvailable(true);
+      // Custom (topic) rounds are ephemeral — don't resume/save the fixed
+      // game's in-progress state for them.
+      if (!topic) {
+        const progress = getInProgress('hallucination-hunt');
+        if (progress) {
+          setSavedProgress(progress);
+          setResumeAvailable(true);
+        }
       }
     } catch {
       // localStorage not available
     }
-  }, []);
+  }, [topic]);
 
   function handleResume() {
     if (!savedProgress) return;
@@ -142,15 +180,17 @@ function HallucinationHunt() {
     const updatedCompleted = [...completedRounds, roundResult];
     setCompletedRounds(updatedCompleted);
 
-    // Save in-progress state
-    try {
-      saveInProgress('hallucination-hunt', {
-        roundIdx,
-        completedRounds: updatedCompleted,
-        currentFlagged: [...flagged],
-      });
-    } catch {
-      // localStorage not available
+    // Save in-progress state (only for the built-in game, not custom rounds).
+    if (!topic) {
+      try {
+        saveInProgress('hallucination-hunt', {
+          roundIdx,
+          completedRounds: updatedCompleted,
+          currentFlagged: [...flagged],
+        });
+      } catch {
+        // localStorage not available
+      }
     }
   }
 
@@ -167,7 +207,8 @@ function HallucinationHunt() {
     setFlagged(new Set());
     setRevealed(false);
 
-    // Update in-progress
+    // Update in-progress (built-in game only)
+    if (topic) return;
     try {
       saveInProgress('hallucination-hunt', {
         roundIdx: nextIdx,
@@ -215,6 +256,30 @@ function HallucinationHunt() {
     } catch {
       // localStorage not available
     }
+  }
+
+  if (genLoading) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Search} title="Hallucination Hunt" subtitle="Building your custom round" />
+        <main className="max-w-2xl mx-auto px-6 pt-6">
+          <GameGenLoading label={`Building a Hallucination Hunt on ${topic}…`} estimateSeconds={18} />
+        </main>
+      </div>
+    );
+  }
+
+  if (genError || (topic && !round)) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Search} title="Hallucination Hunt" />
+        <main className="max-w-lg mx-auto px-6 py-20 text-center">
+          <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">Couldn&rsquo;t build that round</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{genError || 'Try a different topic.'}</p>
+          <Link href="/games" className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm">Back to games</Link>
+        </main>
+      </div>
+    );
   }
 
   // score calculation for current round
