@@ -29,11 +29,13 @@ function isToolUrl(url) {
  * A fenced code block with a copy-to-clipboard button. Used for prompts and
  * snippets in chat and lessons so people can grab the text in one tap.
  */
-function CodeBlock({ code }) {
+function CodeBlock({ code, tool }) {
   const [copied, setCopied] = useState(false);
   // These blocks are almost always ready-to-paste prompts, so offer a one-tap way
-  // to open the learner's own AI tool alongside Copy.
+  // to open the right AI tool alongside Copy. Prefer the tool THIS lesson was
+  // built around (passed in); otherwise fall back to the learner's first tool.
   const { primaryTool } = useActiveTool();
+  const openTool = tool || primaryTool;
 
   async function copy() {
     try {
@@ -49,13 +51,13 @@ function CodeBlock({ code }) {
     <div className="my-3 rounded-xl overflow-hidden bg-slate-900">
       {/* Copy + open-tool live in a header bar so they never overlap code lines. */}
       <div className="flex justify-end items-center gap-1 px-2 py-1.5 border-b border-slate-700/60">
-        {primaryTool?.url && (
+        {openTool?.url && (
           <button
-            onClick={() => openLlmWindow(primaryTool.url)}
-            aria-label={`Open ${primaryTool.label}`}
+            onClick={() => openLlmWindow(openTool.url)}
+            aria-label={`Open ${openTool.label}`}
             className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
           >
-            <ExternalLink className="w-3.5 h-3.5" /> Open {primaryTool.label}
+            <ExternalLink className="w-3.5 h-3.5" /> Open {openTool.label}
           </button>
         )}
         <button
@@ -79,7 +81,7 @@ function CodeBlock({ code }) {
  * Renders a markdown-ish string into React elements.
  * Handles: **bold**, `inline code`, ```code blocks```, bullet/numbered lists.
  */
-export function FormattedContent({ text }) {
+export function FormattedContent({ text, tool }) {
   if (!text) return null;
 
   const lines = normaliseToMarkdown(text).split('\n');
@@ -105,7 +107,7 @@ export function FormattedContent({ text }) {
         );
       } else {
         elements.push(
-          <CodeBlock key={`code-${elements.length}`} code={codeLines.join('\n')} />
+          <CodeBlock key={`code-${elements.length}`} code={codeLines.join('\n')} tool={tool} />
         );
       }
       continue;

@@ -36,6 +36,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
   const [loading, setLoading] = useState(true);
   const [teachTotal, setTeachTotal] = useState(0); // teach sections to write (for the loader progress)
   const [teachDone, setTeachDone] = useState(0);   // teach sections finished so far
+  const [lessonTool, setLessonTool] = useState(null); // best-of-their-tools this lesson is built around
   const [error, setError] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [award, setAward] = useState(null);
@@ -68,6 +69,15 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
       if (!active || !planData) return;
       setPlan(planData);
 
+      // The plan picks the best of the learner's tools for this topic and returns
+      // it as primaryTool. Reorder our tools to match so teach content is written
+      // around the same tool, and point the "Open" button at it.
+      const orderedTools = (() => {
+        const idx = tools.findIndex((t) => t.id === planData.primaryTool);
+        return idx > 0 ? [tools[idx], ...tools.slice(0, idx), ...tools.slice(idx + 1)] : tools;
+      })();
+      if (active) setLessonTool(orderedTools[0] || primaryTool);
+
       // Write ALL teach content before revealing the reader, so the lesson is
       // complete the moment it opens (no half-empty "Preparing…" sections). Teach
       // steps still run in parallel — we just wait for the whole set. A step that
@@ -89,7 +99,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
             try {
               const res = await fetch('/api/lesson/teach', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, objectives: planData.objectives, step, priorTitles, priorContent: '', upcoming, tools }),
+                body: JSON.stringify({ topic, objectives: planData.objectives, step, priorTitles, priorContent: '', upcoming, tools: orderedTools }),
                 signal: controller.signal,
               });
               clearTimeout(timer);
@@ -259,7 +269,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
                 )}
                 {t && (
                   <div className="cine-prose text-[17px] leading-relaxed">
-                    <FormattedContent text={t.message || ''} />
+                    <FormattedContent text={t.message || ''} tool={lessonTool} />
                     {t.blocks?.length > 0 && (
                       <div className="mt-6"><LessonInteractive blocks={t.blocks} /></div>
                     )}
@@ -296,7 +306,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
                   resolved={step.id in resolved}
                   passed={resolved[step.id] === true}
                   onResolve={(p) => resolveActivity(step.id, p)}
-                  toolLabel={primaryTool?.label}
+                  toolLabel={(lessonTool || primaryTool)?.label}
                   onAskCoach={() => {}}
                 />
               </section>
