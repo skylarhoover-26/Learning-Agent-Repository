@@ -34,6 +34,8 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
   const [teachErr, setTeachErr] = useState({});      // stepId -> true
   const [resolved, setResolved] = useState({});      // activity stepId -> passed(bool)
   const [loading, setLoading] = useState(true);
+  const [teachTotal, setTeachTotal] = useState(0); // teach sections to write (for the loader progress)
+  const [teachDone, setTeachDone] = useState(0);   // teach sections finished so far
   const [error, setError] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [award, setAward] = useState(null);
@@ -65,17 +67,22 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
       }
       if (!active || !planData) return;
       setPlan(planData);
-      setLoading(false);
 
-      // Fetch teach content for every teach/qa step in parallel. Each call gets
-      // the titles of prior teach steps for light continuity.
+      // Write ALL teach content before revealing the reader, so the lesson is
+      // complete the moment it opens (no half-empty "Preparing…" sections). Teach
+      // steps still run in parallel — we just wait for the whole set. A step that
+      // fails after retries resolves into teachErr so the gate can never hang.
       const steps = planData.steps || [];
       const teachSteps = steps.filter((s) => s.kind === 'teach' || s.kind === 'qa');
-      teachSteps.forEach((step) => {
+      setTeachTotal(teachSteps.length);
+      setTeachDone(0);
+      let finished = 0;
+
+      await Promise.all(teachSteps.map((step) => {
         const idx = steps.findIndex((s) => s.id === step.id);
         const priorTitles = steps.slice(0, idx).filter((s) => s.kind === 'teach').map((s) => s.title);
         const upcoming = steps[idx + 1]?.title || '';
-        (async () => {
+        return (async () => {
           for (let attempt = 1; attempt <= 3 && active; attempt++) {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 30000);
@@ -91,7 +98,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
               if (!d?.message) throw new Error('empty');
               if (!active) return;
               setTeach((prev) => ({ ...prev, [step.id]: { message: d.message, blocks: d.blocks || [], keyPoints: d.keyPoints || [] } }));
-              return;
+              break;
             } catch {
               clearTimeout(timer);
               if (!active) return;
@@ -99,8 +106,12 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
               setTeachErr((prev) => ({ ...prev, [step.id]: true }));
             }
           }
+          finished += 1;
+          if (active) setTeachDone(finished);
         })();
-      });
+      }));
+
+      if (active) setLoading(false);
     })();
     return () => { active = false; };
   }, [topic, format]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -158,9 +169,14 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
 
   // ---- Loading / error ----------------------------------------------------
   if (loading) {
+    // First "Designing…" while the plan is generated, then a live section count
+    // while the full lesson is written (we hold the reader until it's complete).
+    const loaderMsg = teachTotal > 0
+      ? `Writing your lesson… (${teachDone} of ${teachTotal} sections)`
+      : `Designing your lesson on ${topic}…`;
     return (
       <div className="min-h-[70vh] grid place-items-center">
-        <BookLoader message={`Designing your lesson on ${topic}…`} size="lg" />
+        <BookLoader message={loaderMsg} size="lg" />
       </div>
     );
   }

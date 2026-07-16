@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2, Copy, Check, Rocket } from 'lucide-react';
+import { CheckCircle, Lightbulb, Volume2, Pause, Square, Loader2, Copy, Check, Rocket, ExternalLink } from 'lucide-react';
 import { useTts } from '@/lib/use-tts';
 import MermaidDiagram from '@/components/mermaid-diagram';
 import { openLlmWindow } from '@/lib/open-llm-window';
 import { AI_TOOLS } from '@/lib/ai-tools';
+import { useActiveTool } from '@/components/active-tool-provider';
 
 // Hostnames of known AI tools, so a tool link in lesson prose opens (and reuses)
 // the tool window via openLlmWindow instead of spawning a fresh tab each time.
@@ -30,6 +31,9 @@ function isToolUrl(url) {
  */
 function CodeBlock({ code }) {
   const [copied, setCopied] = useState(false);
+  // These blocks are almost always ready-to-paste prompts, so offer a one-tap way
+  // to open the learner's own AI tool alongside Copy.
+  const { primaryTool } = useActiveTool();
 
   async function copy() {
     try {
@@ -43,8 +47,17 @@ function CodeBlock({ code }) {
 
   return (
     <div className="my-3 rounded-xl overflow-hidden bg-slate-900">
-      {/* Copy lives in a header bar so it never overlaps long code lines. */}
-      <div className="flex justify-end px-2 py-1.5 border-b border-slate-700/60">
+      {/* Copy + open-tool live in a header bar so they never overlap code lines. */}
+      <div className="flex justify-end items-center gap-1 px-2 py-1.5 border-b border-slate-700/60">
+        {primaryTool?.url && (
+          <button
+            onClick={() => openLlmWindow(primaryTool.url)}
+            aria-label={`Open ${primaryTool.label}`}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
+          >
+            <ExternalLink className="w-3.5 h-3.5" /> Open {primaryTool.label}
+          </button>
+        )}
         <button
           onClick={copy}
           aria-label={copied ? 'Copied' : 'Copy code'}
