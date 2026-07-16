@@ -4,11 +4,12 @@ import { createContext, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Menu, X, Home, Sparkles, ExternalLink, Play,
+  Menu, X, Home, Sparkles, ExternalLink, Play, MessageSquarePlus,
 } from 'lucide-react';
 import UserMenu from '@/components/user-menu';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { useTour } from '@/components/guided-tour-provider';
+import { useFeedback } from '@/components/feedback-provider';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
 import { NAV_SECTIONS, SKILL_SHOP_LINKS, ADMIN_ITEMS, useSidebar } from '@/components/sidebar';
@@ -104,6 +105,7 @@ function NavDescTip({ text }) {
 function Drawer({ open, onClose }) {
   const pathname = usePathname();
   const { startTour } = useTour();
+  const { openFeedback } = useFeedback();
   const { isAdmin, actingAsAdmin, isManager, isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon } = useMenuVisibility();
 
   function isActive(href) {
@@ -195,6 +197,16 @@ function Drawer({ open, onClose }) {
                       style={{ color: 'var(--ink)' }}
                     >
                       <Play className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-dim)' }} />
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </button>
+                  ) : item.feedback ? (
+                    <button
+                      key="feedback"
+                      onClick={() => { onClose(); openFeedback(); }}
+                      className="cine-lift w-full flex items-center gap-3 mx-2 px-3 py-1.5 rounded-xl text-left"
+                      style={{ color: 'var(--ink)' }}
+                    >
+                      <MessageSquarePlus className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-dim)' }} />
                       <span className="text-sm font-medium">{item.label}</span>
                     </button>
                   ) : (

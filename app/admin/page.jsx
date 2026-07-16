@@ -7,7 +7,7 @@ import PageHeader from '../../components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Shield, Activity, Users, Zap, FlaskConical, SlidersHorizontal,
-  Wrench, Bell, UserCog, Sparkles, ClipboardCheck, Eye,
+  Wrench, Bell, UserCog, Sparkles, ClipboardCheck, Eye, MessageSquarePlus,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
@@ -17,6 +17,7 @@ import { useMenuVisibility } from '@/components/menu-visibility-provider';
 const ADMIN_TOOLS = [
   { href: '/admin/users', icon: Users, title: 'People & XP', desc: "See anyone's level, badges, lessons, and XP history — and grant or deduct XP" },
   { href: '/admin/activity-log', icon: Activity, title: 'Activity Log', desc: 'Review all AI interactions, inputs, and outputs across users' },
+  { href: '/admin/feedback', icon: MessageSquarePlus, title: 'Feedback', desc: 'User-submitted bugs, ideas, and reactions from the "Send feedback" form' },
   { href: '/admin/lesson-qa', icon: ClipboardCheck, title: 'Lesson QA', desc: 'Hidden quality review of generated lessons — scores, issues, who got them' },
   { href: '/admin/lesson-preview', icon: FlaskConical, title: 'Lesson Content Preview', desc: 'Generate and review what a lesson produces for any topic and depth' },
   { href: '/admin/scenario-preview', icon: FlaskConical, title: 'Scenario Preview', desc: 'Preview role-aware calibration scenarios for any role — tune generation without retaking the gate' },

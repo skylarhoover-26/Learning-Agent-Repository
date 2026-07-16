@@ -6,11 +6,11 @@
 
 import { useState } from 'react';
 import {
-  Crosshair, Check, ArrowRight,
+  Crosshair, Check, ArrowRight, Info,
   Shield, MessageSquare, Brain, Bot, Database, Wand2,
   Award, TrendingUp, User, Users, Building2,
 } from 'lucide-react';
-import { SKILL_LABELS, SKILL_KEYS } from '@/lib/calibration-store';
+import { SKILL_LABELS, SKILL_KEYS, SKILL_DEFINITIONS } from '@/lib/calibration-store';
 import { SCORE_LABELS, DIMENSION_LABELS, getOverallLevel } from '@/lib/scoring-store';
 
 export const SKILL_ICONS = {
@@ -21,6 +21,29 @@ export const SKILL_ICONS = {
   agents: Bot,
   data: Database,
 };
+
+// Small (i) affordance that reveals a plain-language definition of a competency
+// on hover or keyboard focus, so people know what each skill means (e.g. what
+// "AI Evaluation" covers) before rating themselves.
+function SkillInfo({ skillKey }) {
+  const def = SKILL_DEFINITIONS[skillKey];
+  if (!def) return null;
+  return (
+    <span className="group relative inline-flex items-center">
+      <Info
+        className="w-3.5 h-3.5 text-slate-400 hover:text-brand focus:text-brand cursor-help outline-none"
+        tabIndex={0}
+        aria-label={`What ${SKILL_LABELS[skillKey]} means`}
+      />
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-60 -translate-x-1/2 rounded-lg bg-slate-900 dark:bg-slate-700 px-3 py-2 text-xs font-normal leading-snug text-white text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        {def}
+      </span>
+    </span>
+  );
+}
 
 const DIMENSION_ICONS = {
   personal: User,
@@ -135,6 +158,7 @@ export function SelfRateStep({ selfRating, onRatingChange }) {
                 <div className="flex items-center gap-2">
                   <Icon className="w-4 h-4 text-brand" />
                   <span className="text-sm font-semibold text-ink dark:text-slate-200">{SKILL_LABELS[key]}</span>
+                  <SkillInfo skillKey={key} />
                 </div>
                 <span className="text-xs font-bold text-brand">{ratingLabels[labelIdx]}</span>
               </div>
@@ -233,6 +257,7 @@ export function SkillResults({ skills, selfRating }) {
                     <div className="flex items-center gap-2">
                       <Icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                       <span className="text-sm font-medium text-ink dark:text-slate-200">{SKILL_LABELS[key]}</span>
+                      <SkillInfo skillKey={key} />
                     </div>
                     <span className={`text-xs font-bold ${
                       Math.abs(delta) < 10 ? 'text-green-600' :

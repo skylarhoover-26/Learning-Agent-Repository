@@ -12,16 +12,20 @@ export default function CinematicPageHero({ eyebrow, title, subtitle, icon: Icon
   return (
     <header className={centered ? 'text-center mb-10 sm:mb-12' : 'mb-10 sm:mb-12'}>
       {eyebrow && (
+        // Plain uppercase kicker (no pill background/border) so it reads as a
+        // label, not a clickable button — testers kept trying to click the pill.
         <span
-          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-4 ${centered ? 'mx-auto' : ''}`}
-          style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}
+          className={`inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[.18em] mb-4 ${centered ? 'mx-auto' : ''}`}
+          style={{ color: 'var(--accent)' }}
         >
           {Icon && <Icon className="w-3.5 h-3.5" />}
           {eyebrow}
         </span>
       )}
       <h1
-        className={`font-display font-extrabold tracking-tight leading-[1.03] ${gradient ? 'cine-grad-flow inline-block' : ''} ${centered ? 'mx-auto' : ''}`}
+        // leading + small padding keep the gradient (background-clip: text) from
+        // clipping descenders / the last glyph of the heading.
+        className={`font-display font-extrabold tracking-tight leading-[1.1] pb-[0.12em] pr-[0.06em] ${gradient ? 'cine-grad-flow inline-block' : ''} ${centered ? 'mx-auto' : ''}`}
         style={{ fontSize: 'clamp(32px,4.6vw,56px)' }}
       >
         {title}

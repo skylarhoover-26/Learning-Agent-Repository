@@ -37,47 +37,34 @@ const SCENARIO_PROMPT = "I'd like to try a scenario based on my work.";
 
 // Small numbered badge for the picker's step headers.
 // The lesson picker is a 3-step wizard: choose depth → choose format → pick a
-// topic (picking the topic launches the lesson). This renders the progress rail
-// at the top; completed steps are clickable to jump back.
-const WIZARD_STEPS = [
-  { n: 1, label: 'Depth' },
-  { n: 2, label: 'Format' },
-  { n: 3, label: 'Topic' },
-];
+// topic (picking the topic launches the lesson). As you advance, each completed
+// step collapses into a grayed-out summary row (the "ladder") that shows the
+// choice you made; click a row to jump back and change it.
+const DEPTH_SUMMARY = {
+  quick_tip: 'Quick Tip · 60 seconds',
+  standard: 'Quick Lesson · 3–5 min',
+  deep_dive: 'Deep Dive · 15–20 min',
+  project_quest: 'Project Quest · 20–60 min',
+};
 
-function WizardProgress({ step, onJump }) {
-  const total = WIZARD_STEPS.length;
+// One collapsed rung of the wizard ladder: a completed step, grayed out, showing
+// the learner's choice. Clicking it reopens that step so they can change it.
+function LadderRow({ label, value, onEdit }) {
   return (
-    <div className="max-w-md mx-auto mb-8">
-      <div className="flex items-center justify-between mb-2">
-        {WIZARD_STEPS.map((s) => {
-          const done = s.n < step;
-          const active = s.n === step;
-          return (
-            <button
-              key={s.n}
-              type="button"
-              onClick={() => done && onJump(s.n)}
-              disabled={!done}
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                done ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
-              } ${active ? 'text-brand' : done ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}
-            >
-              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold shrink-0 ${
-                active || done ? 'bg-brand text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-              }`}>
-                {done ? <Check className="w-3.5 h-3.5" /> : s.n}
-              </span>
-              <span className="hidden sm:inline">{s.label}</span>
-            </button>
-          );
-        })}
-      </div>
-      <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-        <div className="h-full bg-brand transition-all duration-300" style={{ width: `${(step / total) * 100}%` }} />
-      </div>
-      <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-2">Step {step} of {total}</p>
-    </div>
+    <button
+      type="button"
+      onClick={onEdit}
+      className="group w-full flex items-center gap-3 px-4 py-3 mb-3 rounded-2xl cine-glass text-left opacity-75 hover:opacity-100 transition-all"
+    >
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-white shrink-0">
+        <Check className="w-3.5 h-3.5" />
+      </span>
+      <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold w-14 shrink-0">{label}</span>
+      <span className="flex-1 font-medium text-slate-600 dark:text-slate-300 truncate">{value}</span>
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 group-hover:text-brand transition-colors shrink-0">
+        <PenLine className="w-3.5 h-3.5" /> Edit
+      </span>
+    </button>
   );
 }
 
@@ -606,6 +593,16 @@ function LessonContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // Escalate a Quick Tip into a full Deep Dive on the same topic. Surfaced as a
+  // persistent "Go deeper" button so the option survives after the tip finishes —
+  // the in-lesson "Want to go deeper?" chat unmounts once the tip completes.
+  function goDeeper() {
+    setLearnMode('read');
+    setFormat('deep_dive');
+    setView('lesson');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function continueLesson(input, displayLabel) {
     setUserInputs((prev) => [...prev, displayLabel || input]);
     setIsLoading(true);
@@ -956,7 +953,24 @@ function LessonContent() {
           <p className="text-slate-600 dark:text-slate-400">Pick from popular topics or type your own.</p>
         </div>
 
-        <WizardProgress step={wizardStep} onJump={setWizardStep} />
+        {/* Ladder: completed steps collapse into grayed-out summary rows that
+            stack above the active step; click one to jump back and edit it. */}
+        {wizardStep > 1 && (
+          <LadderRow
+            label="Depth"
+            value={DEPTH_SUMMARY[format] || 'Quick Lesson'}
+            onEdit={() => setWizardStep(1)}
+          />
+        )}
+        {wizardStep > 2 && (
+          <LadderRow
+            label="Format"
+            value={learnMode === 'watch'
+              ? 'Narrated lesson'
+              : (format === 'project_quest' ? 'Read & build' : 'Read & practice')}
+            onEdit={() => setWizardStep(2)}
+          />
+        )}
 
         {wizardStep === 1 && (
         <div data-tour="page-lesson" className="mb-8">
@@ -1020,7 +1034,7 @@ function LessonContent() {
               </div>
             </button>
           </div>
-          <div className="flex justify-end mt-6">
+          <div className="flex justify-center mt-6">
             <button
               type="button"
               onClick={() => setWizardStep(2)}
@@ -1081,7 +1095,7 @@ function LessonContent() {
                   ? 'Pick a topic below and we’ll generate a short narrated lesson, read aloud to you.'
                   : 'Pick a topic below for a hands-on lesson you work through step by step.')}
           </p>
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-center gap-3 mt-6">
             <button
               type="button"
               onClick={() => setWizardStep(1)}
@@ -1105,19 +1119,9 @@ function LessonContent() {
         {wizardStep === 3 && (
         <>
         <div data-tour="lesson-topics" className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">
-              Pick a topic
-            </h3>
-            <button
-              type="button"
-              onClick={() => setWizardStep(2)}
-              className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
-            >
-              <ChevronRight className="w-4 h-4 rotate-180" />
-              Back
-            </button>
-          </div>
+          <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
+            Pick a topic
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => {
               const selected = selectedTopic === s.topic;
@@ -1149,17 +1153,27 @@ function LessonContent() {
             })}
           </div>
           <div className="flex flex-col items-center gap-3 mt-6">
-            <button
-              onClick={generateSelected}
-              disabled={!selectedTopic || generating}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-pill bg-brand text-white font-semibold hover:bg-brand-600 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {generating ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Generating your lesson…</>
-              ) : (
-                <><Sparkles className="w-4 h-4" /> {learnMode === 'watch' ? 'Generate narrated lesson' : 'Generate lesson'}</>
-              )}
-            </button>
+            <div className="flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setWizardStep(2)}
+                className="inline-flex items-center gap-1.5 px-5 py-3 rounded-pill cine-glass text-slate-600 dark:text-slate-300 font-semibold text-sm hover:opacity-80 transition-all"
+              >
+                <ChevronRight className="w-4 h-4 rotate-180" />
+                Back
+              </button>
+              <button
+                onClick={generateSelected}
+                disabled={!selectedTopic || generating}
+                className="inline-flex items-center gap-2 px-7 py-3 rounded-pill bg-brand text-white font-semibold hover:bg-brand-600 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {generating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating your lesson…</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> {learnMode === 'watch' ? 'Generate narrated lesson' : 'Generate lesson'}</>
+                )}
+              </button>
+            </div>
             <button
               onClick={() => setSurpriseMode(true)}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
@@ -1532,6 +1546,22 @@ function LessonContent() {
                     onPickAnother={resetToPickerView}
                     onDashboard={() => router.push('/')}
                   />
+                  {/* Quick Tips are 60-second reads — keep a persistent way to go
+                      deeper on the same topic even after the tip is finished. */}
+                  {isQuickTip && (
+                    <div className="mt-4 rounded-xl border border-brand-200 dark:border-slate-700 bg-brand-50/60 dark:bg-slate-800/60 p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-ink dark:text-slate-200">Want to go deeper?</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Turn this quick tip into a full, hands-on Deep Dive on the same topic.</p>
+                      </div>
+                      <button
+                        onClick={goDeeper}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm shadow-sm hover:bg-brand-600 transition-all shrink-0"
+                      >
+                        <BookMarked className="w-4 h-4" /> Go deeper
+                      </button>
+                    </div>
+                  )}
                   <CompletionFeedback
                     kind="lesson"
                     topic={topic}

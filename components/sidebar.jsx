@@ -10,11 +10,12 @@ import {
   Grid3X3, Gamepad2, Award, MessageCircle,
   Compass, Trophy, BookOpen, Terminal, Home, Library,
   ExternalLink, TrendingUp,
-  Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles,
+  Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles, MessageSquarePlus,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
 import { useTour } from '@/components/guided-tour-provider';
+import { useFeedback } from '@/components/feedback-provider';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { isCinematicRoute } from '@/lib/cinematic-routes';
 
@@ -96,6 +97,7 @@ export const NAV_SECTIONS = [
     items: [
       { themeToggle: true },
       { walkthrough: true, icon: Play, label: 'Tour', desc: 'Replay the guided walkthrough of the app' },
+      { feedback: true, icon: MessageSquarePlus, label: 'Send feedback', desc: 'Report a bug or share an idea' },
       { voicePicker: true },
     ],
   },
@@ -285,6 +287,7 @@ export function SidebarShell({ children }) {
 export function SideNav() {
   const { open, setOpen } = useSidebar();
   const { startTour } = useTour();
+  const { openFeedback } = useFeedback();
   const pathname = usePathname();
   const {
     isAdmin, actingAsAdmin, isManager,
@@ -431,6 +434,17 @@ export function SideNav() {
                   key="tour"
                   onClick={startTour}
                   data-tour="nav-tour"
+                  className="group relative w-full flex items-center gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <item.icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
+                  <span className="min-w-0 block text-sm font-medium leading-tight truncate">{item.label}</span>
+                  <ItemDescPopup text={item.desc} />
+                </button>
+              ) : item.feedback ? (
+                <button
+                  key="feedback"
+                  onClick={openFeedback}
+                  data-tour="nav-feedback"
                   className="group relative w-full flex items-center gap-3 px-4 py-2 border-l-2 border-transparent text-left text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   <item.icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />

@@ -19,9 +19,15 @@ const SAMPLE_PROMPTS = [
   "Senior Director of Enablement. I lead a team that builds training. I review their content, run program launches, write executive updates, and meet with stakeholders.",
 ];
 
-// Minimal, neutral difficulty labels — no bright color blocks.
+// Colored difficulty pills — same green/amber/red scale used across the app
+// (library, games, practice) so difficulty reads the same everywhere.
 const DIFFICULTY_LABELS = { easy: 'Easy', medium: 'Medium', advanced: 'Advanced' };
-const difficultyPill = 'text-xs font-medium text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600 rounded px-1.5 py-0.5';
+const DIFFICULTY_STYLES = {
+  easy: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
+  medium: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
+  advanced: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+};
+const difficultyPill = 'inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-bold uppercase tracking-wide border';
 
 function DiscoverContent() {
   const searchParams = useSearchParams();
@@ -208,7 +214,7 @@ function DiscoverContent() {
                 <div key={i} className="cine-glass rounded-2xl transition-all p-5">
                   <h3 className="font-semibold text-ink dark:text-slate-200 leading-tight mb-2">{opp.title}</h3>
                   <div className="flex items-center gap-2 flex-wrap mb-3">
-                    <span className={difficultyPill}>{DIFFICULTY_LABELS[opp.difficulty] || 'Medium'}</span>
+                    <span className={`${difficultyPill} ${DIFFICULTY_STYLES[opp.difficulty] || DIFFICULTY_STYLES.medium}`}>{DIFFICULTY_LABELS[opp.difficulty] || 'Medium'}</span>
                     {opp.timeSaved && (
                       <span className="text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-1">
                         <Clock className="w-3 h-3" />

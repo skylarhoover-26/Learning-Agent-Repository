@@ -10,6 +10,7 @@ import PageTracker from '@/components/page-tracker';
 import GlobalXpPopup from '@/components/global-xp-popup';
 import { SidebarProvider, SideNav, SidebarShell, MenuStrip } from '@/components/sidebar';
 import { MenuVisibilityProvider } from '@/components/menu-visibility-provider';
+import { FeedbackProvider } from '@/components/feedback-provider';
 import { HeaderProvider } from '@/components/header-context';
 import HeaderBar from '@/components/header-bar';
 import FeatureGuard from '@/components/feature-guard';
@@ -63,6 +64,7 @@ export default function RootLayout({ children }) {
               <SidebarProvider>
                 <TourProvider>
                   <MenuVisibilityProvider>
+                    <FeedbackProvider>
                     <HeaderProvider>
                       <HeaderBar />
                       <SideNav />
@@ -80,6 +82,7 @@ export default function RootLayout({ children }) {
                       </SidebarShell>
                       <PreviewModeBanner />
                     </HeaderProvider>
+                    </FeedbackProvider>
                   </MenuVisibilityProvider>
                   <CalibrationGate />
                   <OnboardingTour />
