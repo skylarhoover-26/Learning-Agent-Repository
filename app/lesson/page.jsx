@@ -30,6 +30,7 @@ import PausedLessonsBox from '@/components/paused-lessons-box';
 import { listPausedLessons, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import { QUESTS } from '@/lib/quest-data';
 import { useActiveTool } from '@/components/active-tool-provider';
+import { prefetchPlan } from '@/lib/lesson-prefetch';
 
 // Prefilled into the chat bar at the lesson's first practice point so the learner
 // can hit enter to kick off an interactive, personalized scenario.
@@ -493,6 +494,11 @@ function LessonContent() {
     if (learnMode === 'watch') {
       launchVideo(t);
     } else {
+      // Prefetch the plan for the reader (covers typed / surprise / clarified
+      // topics that don't go through generateSelected). Dedupes by key.
+      if (format === 'standard' || format === 'deep_dive') {
+        prefetchPlan(t, format, tools);
+      }
       startLesson(t);
     }
   }
@@ -504,6 +510,11 @@ function LessonContent() {
   function generateSelected() {
     if (!selectedTopic || generating) return;
     setGenerating(true);
+    // Start the plan now (during the generating beat + reader mount) so it's
+    // ready sooner. Only the plan-driven read readers consume this.
+    if (learnMode === 'read' && (format === 'standard' || format === 'deep_dive')) {
+      prefetchPlan(selectedTopic, format, tools);
+    }
     generateTimerRef.current = setTimeout(() => {
       generateTimerRef.current = null;
       chooseTopic(selectedTopic);

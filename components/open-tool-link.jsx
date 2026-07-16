@@ -15,17 +15,19 @@ export function mentionsOpenTool(text, toolLabel) {
 }
 
 // The contextual "Open <tool> →" button, rendered right where the lesson says
-// to open the tool. Uses whichever tool the learner confirmed at the start.
-export default function OpenToolLink({ className = '', onOpened }) {
+// to open the tool. Opens the tool THIS lesson is built around when one is passed
+// in (`tool`); otherwise falls back to the learner's primary tool.
+export default function OpenToolLink({ tool, className = '', onOpened }) {
   const { primaryTool } = useActiveTool();
-  if (!primaryTool?.url) return null;
+  const openTool = tool || primaryTool;
+  if (!openTool?.url) return null;
   return (
     <button
       type="button"
-      onClick={() => { openLlmWindow(primaryTool.url); onOpened?.(); }}
+      onClick={() => { openLlmWindow(openTool.url); onOpened?.(); }}
       className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-brand text-white text-sm font-semibold hover:bg-brand-600 transition-all ${className}`}
     >
-      <ExternalLink className="w-4 h-4" /> Open {primaryTool.label}
+      <ExternalLink className="w-4 h-4" /> Open {openTool.label}
     </button>
   );
 }

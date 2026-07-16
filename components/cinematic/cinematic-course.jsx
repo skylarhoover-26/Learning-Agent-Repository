@@ -10,6 +10,7 @@ import BookLoader from '@/components/book-loader';
 import CompletionFeedback from '@/components/completion-feedback';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
+import { takePrefetchedPlan } from '@/lib/lesson-prefetch';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { onLessonComplete } from '@/lib/progression';
 import { emitXp } from '@/lib/xp-bus';
@@ -55,7 +56,12 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
 
     (async () => {
       let planData = null;
-      for (let attempt = 1; attempt <= 2 && active; attempt++) {
+      // Reuse a plan the picker may have already started generating the moment
+      // the topic was chosen (hides the plan latency behind the mount).
+      const prefetched = takePrefetchedPlan(topic, format, tools);
+      if (prefetched) planData = await prefetched;
+      if (!active) return;
+      for (let attempt = 1; attempt <= 2 && active && !planData; attempt++) {
         try {
           const res = await fetch('/api/lesson/plan', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },

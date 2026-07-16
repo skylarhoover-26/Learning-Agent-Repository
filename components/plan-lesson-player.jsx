@@ -103,6 +103,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // The tool the lesson is actually built around (recommended-if-owned, else the
   // learner's starred tool). Sent first so generation centers on it.
   const [lessonToolIds, setLessonToolIds] = useState(null);
+  // The resolved tool OBJECT the lesson is built around — powers the "Open" button
+  // and tool labels so they name the same tool the content was written for.
+  const [lessonTool, setLessonTool] = useState(null);
   const startedAt = useRef(new Date().toISOString());
   const recorded = useRef(false);
 
@@ -169,7 +172,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           setQaThread(saved.qaThread || []);
           // Restore the lesson's tool + callout so resumed steps/answers stay on
           // the same tool the lesson was built around.
-          if (saved.lessonToolIds) setLessonToolIds(saved.lessonToolIds);
+          if (saved.lessonToolIds) {
+            setLessonToolIds(saved.lessonToolIds);
+            const savedTool = (tools || []).find((t) => t.id === saved.lessonToolIds[0]);
+            if (savedTool) setLessonTool(savedTool);
+          }
           if (saved.recommendation) setRecommendation(saved.recommendation);
           startedAt.current = saved.startedAt || startedAt.current;
           setLoading(false);
@@ -203,7 +210,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       const match = recTool ? owned.find((t) => (t.label || '').toLowerCase() === recTool.toLowerCase()) : null;
       const primary = match || owned[0] || null;
       const lessonTools = primary ? [primary.id] : undefined;
-      if (active) setLessonToolIds(lessonTools);
+      if (active) { setLessonToolIds(lessonTools); setLessonTool(primary); }
 
       // Try up to twice on the client too — if the first request fails (the
       // server already retries internally), a fresh attempt usually succeeds
@@ -1143,7 +1150,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
               {/* qa answers render whole; teach steps render one section at a time. */}
               {(!isTeachStep || currentPanel === 'concept') && (
-                <FormattedContent text={teach?.message || ''} />
+                <FormattedContent text={teach?.message || ''} tool={lessonTool} />
               )}
 
               {(!isTeachStep || currentPanel === 'cards') && teachBlocks.length > 0 && (
@@ -1191,12 +1198,12 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                 prompt-writing activity needs it. Shown once per lesson (the
                 window is reused on later steps), with a short line naming the
                 tool so they know exactly where to do the work. */}
-            {!toolOpened && !(step.id in resolved) && step.activityType === 'write' && primaryTool?.url && (
+            {!toolOpened && !(step.id in resolved) && step.activityType === 'write' && (lessonTool || primaryTool)?.url && (
               <div className="mb-3 rounded-xl border border-brand-200 dark:border-slate-600 bg-brand-50/70 dark:bg-slate-800 p-3">
                 <p className="text-sm text-ink dark:text-slate-200 mb-2">
-                  This part is hands-on in <span className="font-semibold">{primaryTool.emoji} {primaryTool.label}</span>. Open it in a separate window and do the work there — then come back here.
+                  This part is hands-on in <span className="font-semibold">{(lessonTool || primaryTool).emoji} {(lessonTool || primaryTool).label}</span>. Open it in a separate window and do the work there — then come back here.
                 </p>
-                <OpenToolLink onOpened={() => setToolOpened(true)} />
+                <OpenToolLink tool={lessonTool} onOpened={() => setToolOpened(true)} />
               </div>
             )}
           <LessonActivity
@@ -1206,7 +1213,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             resolved={step.id in resolved}
             passed={resolved[step.id] === true}
             onResolve={(p) => resolveActivity(step.id, p)}
-            toolLabel={primaryTool?.label}
+            toolLabel={(lessonTool || primaryTool)?.label}
             onAskCoach={askCoach}
           />
           </>
@@ -1214,7 +1221,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
         {step?.kind === 'build' && (
           <div>
-            <FormattedContent text={step.build?.brief || ''} />
+            <FormattedContent text={step.build?.brief || ''} tool={lessonTool} />
             {step.build?.example && (
               <LessonInteractive blocks={[{ type: 'reveal', title: 'Example to model', prompt: 'Show me an example to model', content: step.build.example }]} />
             )}
