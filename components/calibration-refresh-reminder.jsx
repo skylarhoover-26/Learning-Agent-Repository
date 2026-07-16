@@ -8,13 +8,14 @@ import {
   getLastAssessmentAt,
   isImpactAssessmentSnoozed,
   snoozeImpactAssessment,
+  IMPACT_ASSESSMENT_INTERVAL_WEEKS,
 } from '@/lib/scoring-store';
 
-// Non-blocking monthly nudge to re-grade the AI competencies. The first run is
-// forced by CalibrationGate; this only appears AFTER calibration is done and it's
-// been ~a month since the last grade, so scores stay current with how someone
+// Non-blocking nudge to re-grade the AI competencies. The first run is forced by
+// CalibrationGate; this only appears AFTER calibration is done and it's been the
+// full interval since the last grade, so scores stay current with how someone
 // has grown. "Remind me later" snoozes for 3 days.
-const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+const INTERVAL_MS = IMPACT_ASSESSMENT_INTERVAL_WEEKS * 7 * 24 * 60 * 60 * 1000;
 
 export default function CalibrationRefreshReminder() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function CalibrationRefreshReminder() {
     if (!profile?.calibrated_at) return;
     // Base "due" on the last time impact was graded; fall back to first calibration.
     const last = getLastAssessmentAt() || profile.calibrated_at;
-    const due = Date.now() - new Date(last).getTime() >= MONTH_MS;
+    const due = Date.now() - new Date(last).getTime() >= INTERVAL_MS;
     if (!due || isImpactAssessmentSnoozed()) return;
     const timer = setTimeout(() => setShow(true), 800);
     return () => clearTimeout(timer);
@@ -65,7 +66,7 @@ export default function CalibrationRefreshReminder() {
             Time to re-grade your AI competencies
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
-            It&apos;s been about a month. Take a few minutes so your impact scores and lessons stay
+            It&apos;s been about 6 weeks. Take a few minutes so your impact scores and lessons stay
             matched to how you&apos;ve grown.
           </p>
           <div className="flex items-center gap-3">
