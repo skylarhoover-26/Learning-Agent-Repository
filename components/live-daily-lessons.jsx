@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CalendarDays, ChevronRight, Zap, Clock, BookOpen, ArrowRight } from 'lucide-react';
+import { difficultyPillBase, difficultyPillClass, difficultyLabel } from '@/lib/difficulty';
 
 const CATEGORY_DOTS = {
   'Applied AI': 'bg-blue-500',
@@ -64,7 +65,11 @@ export default function LiveDailyLessons() {
                 <span className="text-xs text-slate-400 flex items-center gap-1">
                   <Clock className="w-3 h-3" /> {lesson.duration}
                 </span>
-                <span className="text-xs text-slate-400">{lesson.difficulty}</span>
+                {lesson.difficulty && (
+                  <span className={`${difficultyPillBase} ${difficultyPillClass(lesson.difficulty)}`}>
+                    {difficultyLabel(lesson.difficulty)}
+                  </span>
+                )}
               </div>
             </div>
           </div>
