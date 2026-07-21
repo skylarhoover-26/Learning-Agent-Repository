@@ -21,15 +21,46 @@ function isExempt(pathname) {
   );
 }
 
+// Per-user local "already calibrated" marker. The gate closes optimistically when
+// updateProfile sets calibrated_at, but a profile refetch can briefly return a
+// stale record whose calibrated_at hasn't propagated yet (reads hit Supabase
+// first, with a blob fallback). That stale read would re-open the gate and drop
+// the user back at step 0 with no way home. This device-local marker keeps the
+// gate closed once they've finished, independent of that read timing. The real
+// calibrated_at still persists server-side for cross-device.
+function calKey(email) {
+  return email ? `la_calibrated_${String(email).toLowerCase()}` : null;
+}
+function hasLocalCalibrated(email) {
+  try {
+    const k = calKey(email);
+    return !!(k && localStorage.getItem(k));
+  } catch {
+    return false;
+  }
+}
+function markLocalCalibrated(email) {
+  try {
+    const k = calKey(email);
+    if (k) localStorage.setItem(k, new Date().toISOString());
+  } catch {
+    /* storage may be unavailable — the server calibrated_at still gates */
+  }
+}
+
 export default function CalibrationGate() {
   const pathname = usePathname();
   const { profile, updateProfile } = useProfile();
 
   // Wait until we have a profile (ProfileProvider redirects to onboarding if
-  // there isn't one). Once calibrated, the gate never shows again.
+  // there isn't one). Once calibrated — by the profile flag OR the local marker
+  // — the gate never shows again.
   if (!profile || profile.calibrated_at || isExempt(pathname)) return null;
+  if (hasLocalCalibrated(profile.email)) return null;
 
   function handleComplete() {
+    // Mark locally FIRST so a stale profile refetch can't re-open the gate.
+    markLocalCalibrated(profile.email);
     updateProfile({ calibrated_at: new Date().toISOString() }).catch(() => {});
   }
 
