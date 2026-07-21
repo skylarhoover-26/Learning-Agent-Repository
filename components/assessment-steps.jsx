@@ -62,15 +62,14 @@ export function IntroStep({ onNext }) {
           Placement &middot; ~5 minutes
         </div>
         <h2 className="text-2xl font-bold tracking-tight mb-2">
-          Get AI training that&apos;s actually worth your time.
+          Let&apos;s find your starting point.
         </h2>
       </div>
       <div className="p-8">
         <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-          This is the one step that makes everything after it <strong>yours</strong>.
-          {' '}<strong>Answer honestly</strong> and your lessons, home screen, and daily picks
-          all aim at your real job — pitched to what you already know, so nothing feels
-          too basic or over your head.
+          A few quick questions about how you work with AI today.
+          {' '}<strong>Answer honestly</strong> — your answers shape your experience
+          with the app going forward.
         </p>
         <button
           onClick={onNext}
