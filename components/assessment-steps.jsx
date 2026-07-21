@@ -332,18 +332,18 @@ export function SkillResults({ skills, selfRating }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-          <div className="flex items-center gap-2 text-green-700 text-xs font-bold uppercase tracking-wide mb-2">
+        <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 border border-green-100 dark:border-green-500/20">
+          <div className="flex items-center gap-2 text-green-700 dark:text-green-400 text-xs font-bold uppercase tracking-wide mb-2">
             <Award className="w-4 h-4" /> Strongest
           </div>
-          <p className="text-sm font-bold text-ink dark:text-slate-200">{SKILL_LABELS[top.k]}</p>
+          <p className="text-sm font-bold text-ink dark:text-slate-100">{SKILL_LABELS[top.k]}</p>
           <p className="text-xs text-slate-600 dark:text-slate-400">{Math.round(top.v * 100)}/100 mastery</p>
         </div>
-        <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
-          <div className="flex items-center gap-2 text-amber-700 text-xs font-bold uppercase tracking-wide mb-2">
+        <div className="bg-amber-50 dark:bg-amber-500/10 rounded-xl p-4 border border-amber-100 dark:border-amber-500/20">
+          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wide mb-2">
             <TrendingUp className="w-4 h-4" /> Biggest gap
           </div>
-          <p className="text-sm font-bold text-ink dark:text-slate-200">{SKILL_LABELS[bottom.k]}</p>
+          <p className="text-sm font-bold text-ink dark:text-slate-100">{SKILL_LABELS[bottom.k]}</p>
           <p className="text-xs text-slate-600 dark:text-slate-400">{Math.round(bottom.v * 100)}/100 mastery</p>
         </div>
       </div>
