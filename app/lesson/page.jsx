@@ -51,6 +51,26 @@ const DEPTH_SUMMARY = {
   project_quest: 'Project Quest · 20–60 min',
 };
 
+// The four depth cards double as a difficulty scale (easy → advanced), so each
+// gets its own color: green → amber → orange → red. The color shows even when
+// unselected (tinted icon tile) so the row reads as a scale at a glance, and
+// the selected card lights up loudly (solid tile + ring + glow + check badge).
+const DEPTH_OPTIONS = [
+  { key: 'quick_tip', icon: Zap, label: 'Quick Tip', duration: '60 seconds', desc: 'One bite-sized insight you can read and apply right away. No exercise.', tone: 'green' },
+  { key: 'standard', icon: BookOpen, label: 'Quick Lesson', duration: '3-5 min', desc: 'A focused walkthrough with one hands-on exercise to practice the skill.', tone: 'amber' },
+  { key: 'deep_dive', icon: BookMarked, label: 'Deep Dive', duration: '15-20 min', desc: 'A thorough, step-by-step lesson with multiple exercises to master the topic.', tone: 'orange' },
+  { key: 'project_quest', icon: Trophy, label: 'Project Quest', duration: '20-60 min', desc: 'Build something real start to finish, guided the whole way.', tone: 'red' },
+];
+
+// Static class strings per tone (kept whole so Tailwind's JIT sees them). `glow`
+// feeds the inline boxShadow on the selected card.
+const DEPTH_TONES = {
+  green: { ring: 'ring-green-400 dark:ring-green-500', glow: 'rgba(34,197,94,0.5)', iconOn: 'bg-green-500 text-white', iconOff: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400', badge: 'bg-green-500' },
+  amber: { ring: 'ring-amber-400 dark:ring-amber-500', glow: 'rgba(245,158,11,0.5)', iconOn: 'bg-amber-500 text-white', iconOff: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400', badge: 'bg-amber-500' },
+  orange: { ring: 'ring-orange-400 dark:ring-orange-500', glow: 'rgba(249,115,22,0.5)', iconOn: 'bg-orange-500 text-white', iconOff: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400', badge: 'bg-orange-500' },
+  red: { ring: 'ring-red-400 dark:ring-red-500', glow: 'rgba(239,68,68,0.5)', iconOn: 'bg-red-500 text-white', iconOff: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400', badge: 'bg-red-500' },
+};
+
 // One collapsed rung of the wizard ladder: a completed step, grayed out, showing
 // the learner's choice. Clicking it reopens that step so they can change it.
 function LadderRow({ label, value, onEdit }) {
@@ -1020,62 +1040,43 @@ function LessonContent() {
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 font-semibold">
             How deep do you want to go?
           </h3>
+          {/* Project Quest is a depth too — selecting it shows the curated
+              quests right here instead of jumping to another page. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { key: 'quick_tip', icon: Zap, label: 'Quick Tip', duration: '60 seconds', desc: 'One bite-sized insight you can read and apply right away. No exercise.' },
-              { key: 'standard', icon: BookOpen, label: 'Quick Lesson', duration: '3-5 min', desc: 'A focused walkthrough with one hands-on exercise to practice the skill.' },
-              { key: 'deep_dive', icon: BookMarked, label: 'Deep Dive', duration: '15-20 min', desc: 'A thorough, step-by-step lesson with multiple exercises to master the topic.' },
-            ].map(f => (
-              <button
-                key={f.key}
-                onClick={() => selectFormat(f.key)}
-                className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
-                  format === f.key ? 'ring-2 ring-[var(--accent)]' : ''
-                }`}
-                style={format === f.key ? { boxShadow: '0 0 30px -6px var(--accent)' } : undefined}
-                aria-pressed={format === f.key}
-              >
-                {format === f.key && (
-                  <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: 'var(--accent)' }} />
-                )}
-                <div className="relative">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      format === f.key ? 'bg-brand text-white' : 'bg-bg-subtle dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                    }`}>
-                      <f.icon className="w-4 h-4" />
+            {DEPTH_OPTIONS.map(f => {
+              const selected = format === f.key;
+              const tone = DEPTH_TONES[f.tone];
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => selectFormat(f.key)}
+                  className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
+                    selected ? `ring-2 ${tone.ring} scale-[1.02]` : ''
+                  }`}
+                  style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
+                  aria-pressed={selected}
+                >
+                  {selected && (
+                    <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: tone.glow }} />
+                  )}
+                  {selected && (
+                    <span className={`absolute top-3 right-3 inline-flex items-center justify-center w-5 h-5 rounded-full text-white shadow-sm ${tone.badge}`}>
+                      <Check className="w-3.5 h-3.5" />
+                    </span>
+                  )}
+                  <div className="relative">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${selected ? tone.iconOn : tone.iconOff}`}>
+                        <f.icon className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{f.duration}</span>
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{f.duration}</span>
+                    <div className="font-bold text-ink dark:text-slate-200">{f.label}</div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{f.desc}</p>
                   </div>
-                  <div className="font-bold text-ink dark:text-slate-200">{f.label}</div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{f.desc}</p>
-                </div>
-              </button>
-            ))}
-            {/* Project Quest is a depth too — selecting it shows the curated
-                quests right here instead of jumping to another page. */}
-            <button
-              onClick={() => selectFormat('project_quest')}
-              className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
-                format === 'project_quest' ? 'ring-2 ring-[var(--gold)]' : ''
-              }`}
-              style={format === 'project_quest' ? { boxShadow: '0 0 30px -6px var(--gold)' } : undefined}
-              aria-pressed={format === 'project_quest'}
-            >
-              {format === 'project_quest' && (
-                <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: 'var(--gold)' }} />
-              )}
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${format === 'project_quest' ? 'bg-cta text-ink' : 'bg-cta-50 text-cta-700 dark:bg-slate-700 dark:text-cta-400'}`}>
-                    <Trophy className="w-4 h-4" />
-                  </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">20-60 min</span>
-                </div>
-                <div className="font-bold text-ink dark:text-slate-200">Project Quest</div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Build something real start to finish, guided the whole way.</p>
-              </div>
-            </button>
+                </button>
+              );
+            })}
           </div>
           <div className="flex justify-center mt-6">
             <button
