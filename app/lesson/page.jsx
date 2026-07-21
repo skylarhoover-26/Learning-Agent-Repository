@@ -71,6 +71,26 @@ const DEPTH_TONES = {
   red: { ring: 'ring-red-400 dark:ring-red-500', glow: 'rgba(239,68,68,0.5)', iconOn: 'bg-red-500 text-white', iconOff: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400', badge: 'bg-red-500' },
 };
 
+// Step 2 (format) has two cards, so each gets its own identity color and the
+// same loud selected treatment (ring + glow + check badge + scale) as the depth
+// step. Read = blue, Narrated = violet.
+const FORMAT_TONES = {
+  read: { ring: 'ring-blue-400 dark:ring-blue-500', glow: 'rgba(59,130,246,0.5)', iconOn: 'bg-blue-500 text-white', iconOff: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400', badge: 'bg-blue-500' },
+  watch: { ring: 'ring-violet-400 dark:ring-violet-500', glow: 'rgba(139,92,246,0.5)', iconOn: 'bg-violet-500 text-white', iconOff: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400', badge: 'bg-violet-500' },
+};
+
+// Step 3 (topics) isn't a scale, so tiles cycle through a 6-color palette by
+// position — every tile reads as its own category, and the selected one lights
+// up with a ring + glow + check badge. `tile` tints the emoji chip.
+const TOPIC_TONES = [
+  { ring: 'ring-blue-400 dark:ring-blue-500', glow: 'rgba(59,130,246,0.5)', tile: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800', badge: 'bg-blue-500', chevron: 'text-blue-400' },
+  { ring: 'ring-teal-400 dark:ring-teal-500', glow: 'rgba(20,184,166,0.5)', tile: 'bg-teal-50 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800', badge: 'bg-teal-500', chevron: 'text-teal-400' },
+  { ring: 'ring-violet-400 dark:ring-violet-500', glow: 'rgba(139,92,246,0.5)', tile: 'bg-violet-50 text-violet-600 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800', badge: 'bg-violet-500', chevron: 'text-violet-400' },
+  { ring: 'ring-amber-400 dark:ring-amber-500', glow: 'rgba(245,158,11,0.5)', tile: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800', badge: 'bg-amber-500', chevron: 'text-amber-400' },
+  { ring: 'ring-rose-400 dark:ring-rose-500', glow: 'rgba(244,63,94,0.5)', tile: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800', badge: 'bg-rose-500', chevron: 'text-rose-400' },
+  { ring: 'ring-emerald-400 dark:ring-emerald-500', glow: 'rgba(16,185,129,0.5)', tile: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800', badge: 'bg-emerald-500', chevron: 'text-emerald-400' },
+];
+
 // One collapsed rung of the wizard ladder: a completed step, grayed out, showing
 // the learner's choice. Clicking it reopens that step so they can change it.
 function LadderRow({ label, value, onEdit }) {
@@ -1104,23 +1124,27 @@ function LessonContent() {
               { key: 'watch', icon: PlayCircle, label: 'Narrated lesson', desc: 'Sit back and listen — slides read aloud to you.' },
             ].map((m) => {
               const selected = learnMode === m.key;
+              const tone = FORMAT_TONES[m.key] || FORMAT_TONES.read;
               return (
                 <button
                   key={m.key}
                   onClick={() => setLearnMode(m.key)}
                   aria-pressed={selected}
                   className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
-                    selected ? 'ring-2 ring-[var(--accent)]' : ''
+                    selected ? `ring-2 ${tone.ring} scale-[1.02]` : ''
                   }`}
-                  style={selected ? { boxShadow: '0 0 30px -6px var(--accent)' } : undefined}
+                  style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
                 >
                   {selected && (
-                    <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: 'var(--accent)' }} />
+                    <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: tone.glow }} />
+                  )}
+                  {selected && (
+                    <span className={`absolute top-3 right-3 inline-flex items-center justify-center w-5 h-5 rounded-full text-white shadow-sm ${tone.badge}`}>
+                      <Check className="w-3.5 h-3.5" />
+                    </span>
                   )}
                   <div className="relative">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
-                      selected ? 'bg-brand text-white' : 'bg-bg-subtle dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 transition-colors ${selected ? tone.iconOn : tone.iconOff}`}>
                       <m.icon className="w-4 h-4" />
                     </div>
                     <div className="font-bold text-ink dark:text-slate-200">{m.label}</div>
@@ -1169,20 +1193,21 @@ function LessonContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => {
               const selected = selectedTopic === s.topic;
+              const tone = TOPIC_TONES[i % TOPIC_TONES.length];
               return (
                 <button
                   key={i}
                   onClick={() => setSelectedTopic(s.topic)}
                   aria-pressed={selected}
                   className={`group relative overflow-hidden flex items-center gap-3 p-4 cine-glass cine-lift rounded-2xl transition-all text-left ${
-                    selected ? 'ring-2 ring-[var(--accent)]' : ''
+                    selected ? `ring-2 ${tone.ring} scale-[1.02]` : ''
                   }`}
-                  style={selected ? { boxShadow: '0 0 30px -6px var(--accent)' } : undefined}
+                  style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
                 >
                   {selected && (
-                    <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: 'var(--accent)' }} />
+                    <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: tone.glow }} />
                   )}
-                  <span className="relative shrink-0 w-11 h-11 rounded-xl grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>
+                  <span className={`relative shrink-0 w-11 h-11 rounded-xl grid place-items-center border ${tone.tile}`}>
                     <TopicIcon emoji={s.emoji} />
                   </span>
                   <div className="relative flex-1">
@@ -1190,8 +1215,8 @@ function LessonContent() {
                     <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.topic}</div>
                   </div>
                   {selected
-                    ? <Check className="relative w-5 h-5 text-brand" />
-                    : <ChevronRight className="relative w-5 h-5 text-slate-400 group-hover:text-brand group-hover:translate-x-1 transition-all" />}
+                    ? <span className={`relative inline-flex items-center justify-center w-6 h-6 rounded-full text-white shadow-sm ${tone.badge}`}><Check className="w-4 h-4" /></span>
+                    : <ChevronRight className={`relative w-5 h-5 ${tone.chevron} opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all`} />}
                 </button>
               );
             })}
