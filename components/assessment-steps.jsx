@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import {
   Crosshair, Check, ArrowRight, Info,
-  Shield, MessageSquare, Brain, Bot, Database, Wand2,
+  Shield, MessageSquare, Brain, Bot, Database, Wand2, Cpu,
   Award, TrendingUp, User, Users, Building2,
 } from 'lucide-react';
 import { SKILL_LABELS, SKILL_KEYS, SKILL_DEFINITIONS } from '@/lib/calibration-store';
@@ -20,6 +20,7 @@ export const SKILL_ICONS = {
   eval: Brain,
   agents: Bot,
   data: Database,
+  models: Cpu,
 };
 
 // Small (i) affordance that reveals a plain-language definition of a competency

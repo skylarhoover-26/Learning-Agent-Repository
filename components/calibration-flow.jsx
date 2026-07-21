@@ -38,9 +38,11 @@ export default function CalibrationFlow({ onComplete, gated = false, homeOnFinis
   const [waitingToStart, setWaitingToStart] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [selfRating, setSelfRating] = useState({
-    privacy: 0.5, prompting: 0.5, comms: 0.5, eval: 0.5, agents: 0.5, data: 0.5,
-  });
+  // Default every competency slider to the midpoint. Derived from the skill order
+  // so a newly added dimension automatically gets a self-rating slider.
+  const [selfRating, setSelfRating] = useState(
+    Object.fromEntries(CALIBRATION_SKILL_ORDER.map((k) => [k, 0.5])),
+  );
   // Per competency: { value, self, label, example }
   const [impactAnswers, setImpactAnswers] = useState({});
   const [scoring, setScoring] = useState(false);   // AI is synthesizing impact scores

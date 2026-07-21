@@ -7,6 +7,10 @@
     {
       "path": "/api/reporting/refresh",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/model-lineup/refresh",
+      "schedule": "0 7 * * *"
     }
   ]
 }
