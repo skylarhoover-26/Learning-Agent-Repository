@@ -23,27 +23,55 @@ export const SKILL_ICONS = {
   models: Cpu,
 };
 
-// Small (i) affordance that reveals a plain-language definition of a competency
-// on hover or keyboard focus, so people know what each skill means (e.g. what
-// "AI Evaluation" covers) before rating themselves.
-function SkillInfo({ skillKey }) {
-  const def = SKILL_DEFINITIONS[skillKey];
-  if (!def) return null;
+// Small (i) affordance that reveals plain-language help text on hover or keyboard
+// focus. Reused for competency definitions and for the self-vs-measured verdict.
+function InfoTip({ text, label = 'More info' }) {
+  if (!text) return null;
   return (
     <span className="group relative inline-flex items-center">
       <Info
         className="w-3.5 h-3.5 text-slate-400 hover:text-brand focus:text-brand cursor-help outline-none"
         tabIndex={0}
-        aria-label={`What ${SKILL_LABELS[skillKey]} means`}
+        aria-label={label}
       />
       <span
         role="tooltip"
-        className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-60 -translate-x-1/2 rounded-lg bg-slate-900 dark:bg-slate-700 px-3 py-2 text-xs font-normal leading-snug text-white text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+        className="pointer-events-none absolute right-0 top-full z-30 mt-2 w-64 rounded-lg bg-slate-900 dark:bg-slate-700 px-3 py-2 text-xs font-normal leading-snug text-white text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
       >
-        {def}
+        {text}
       </span>
     </span>
   );
+}
+
+// Definition tooltip for a competency (e.g. what "AI Evaluation" covers), shown
+// next to each skill so people know what they mean before rating themselves.
+function SkillInfo({ skillKey }) {
+  return <InfoTip text={SKILL_DEFINITIONS[skillKey]} label={`What ${SKILL_LABELS[skillKey]} means`} />;
+}
+
+// The self-vs-measured verdict for one competency, plus a plain-language note on
+// what it means going forward (revealed in the badge's (i) tooltip).
+function calibrationStatus(delta) {
+  if (Math.abs(delta) < 10) {
+    return {
+      label: 'Calibrated',
+      tone: 'text-green-600',
+      explain: 'Your self-rating closely matched how you actually did on the scenarios — nice self-awareness. Your lessons start right where you expect.',
+    };
+  }
+  if (delta > 0) {
+    return {
+      label: `Overrated by ${delta}`,
+      tone: 'text-amber-600',
+      explain: `You rated yourself ${delta} points higher than your scenario answers showed. Totally normal — we'll make sure the fundamentals are solid before speeding up, so nothing feels shaky.`,
+    };
+  }
+  return {
+    label: `Underrated by ${Math.abs(delta)}`,
+    tone: 'text-blue-600',
+    explain: `You did ${Math.abs(delta)} points better than you gave yourself credit for. We'll pitch your lessons a little higher so they stay challenging instead of feeling too basic.`,
+  };
 }
 
 const DIMENSION_ICONS = {
@@ -251,32 +279,41 @@ export function SkillResults({ skills, selfRating }) {
               const delta = self - measured;
               const Icon = SKILL_ICONS[key];
 
+              const status = calibrationStatus(delta);
+
               return (
                 <div key={key}>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                       <span className="text-sm font-medium text-ink dark:text-slate-200">{SKILL_LABELS[key]}</span>
                       <SkillInfo skillKey={key} />
                     </div>
-                    <span className={`text-xs font-bold ${
-                      Math.abs(delta) < 10 ? 'text-green-600' :
-                      delta > 0 ? 'text-amber-600' : 'text-blue-600'
-                    }`}>
-                      {Math.abs(delta) < 10 ? 'Calibrated' :
-                       delta > 0 ? `Overrated by ${delta}` : `Underrated by ${Math.abs(delta)}`}
+                    <span className="flex items-center gap-1">
+                      <span className={`text-xs font-bold ${status.tone}`}>{status.label}</span>
+                      <InfoTip text={status.explain} label={`What "${status.label}" means`} />
                     </span>
                   </div>
-                  <div className="relative h-6 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div className="absolute h-full bg-brand/30 rounded-full transition-all duration-700" style={{ width: `${self}%` }} />
-                    <div className="absolute h-full bg-brand rounded-full transition-all duration-700" style={{ width: `${measured}%` }} />
-                    <div className="absolute inset-0 flex items-center justify-end pr-2">
-                      <span className="text-[10px] font-bold text-ink dark:text-slate-200">{measured}/100</span>
+
+                  {/* Two SEPARATE, distinctly-colored bars so self and measured
+                      are both visible at once — a single overlapping track hid
+                      whichever value was shorter. Each bar's label and value are
+                      grouped and color-matched to the bar. */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-16 shrink-0 text-[11px] font-semibold text-amber-600 dark:text-amber-400">Self</span>
+                      <div className="relative flex-1 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="absolute h-full bg-amber-400 rounded-full transition-all duration-700" style={{ width: `${self}%` }} />
+                      </div>
+                      <span className="w-7 shrink-0 text-right text-xs font-bold text-amber-600 dark:text-amber-400">{self}</span>
                     </div>
-                  </div>
-                  <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                    <span>Self: {self}</span>
-                    <span>Measured: {measured}</span>
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-16 shrink-0 text-[11px] font-semibold text-brand">Measured</span>
+                      <div className="relative flex-1 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="absolute h-full bg-brand rounded-full transition-all duration-700" style={{ width: `${measured}%` }} />
+                      </div>
+                      <span className="w-7 shrink-0 text-right text-xs font-bold text-brand">{measured}</span>
+                    </div>
                   </div>
                 </div>
               );
@@ -284,9 +321,13 @@ export function SkillResults({ skills, selfRating }) {
           </div>
 
           <div className="mt-6 flex gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-400" /> Self-rated</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand" /> Measured</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand/30" /> Self-rated</span>
           </div>
+
+          <p className="mt-4 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            This is a snapshot of today. In about 6 weeks we&apos;ll invite you to recalibrate, so your scores and lessons keep pace as you grow.
+          </p>
         </div>
       </div>
 
