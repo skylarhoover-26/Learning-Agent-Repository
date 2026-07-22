@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback } from '@/lib/feedback-store';
+import { autoPriority } from '@/lib/feedback-priority';
 
 // Screenshot uploads can take a moment; give the route headroom past the default.
 export const maxDuration = 30;
@@ -41,6 +42,7 @@ export async function POST(request) {
       email: user.email,
       name: user.name || user.email,
       category,
+      priority: autoPriority(category),
       text: text.slice(0, 5000),
       page: (body.page || '').toString().slice(0, 300),
       screenshotUrls,

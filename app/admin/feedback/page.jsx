@@ -102,7 +102,8 @@ function AdminFeedbackInner() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Import failed');
       const removedNote = data.removed ? `, removed ${data.removed} duplicate${data.removed === 1 ? '' : 's'}` : '';
-      setImportMsg(`Imported ${data.imported} item${data.imported === 1 ? '' : 's'}${removedNote}.`);
+      const prioritizedNote = data.prioritized ? `, set priority on ${data.prioritized}` : '';
+      setImportMsg(`Imported ${data.imported} item${data.imported === 1 ? '' : 's'}${removedNote}${prioritizedNote}.`);
       await loadFeedback();
     } catch (e) {
       setImportMsg(null);
