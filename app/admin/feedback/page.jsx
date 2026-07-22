@@ -35,9 +35,14 @@ function isDone(f) {
   return f.status === 'done';
 }
 
+function isPraise(f) {
+  return f.category === 'Praise';
+}
+
 const TABS = [
   { key: 'pending', label: 'Pending' },
   { key: 'completed', label: 'Completed' },
+  { key: 'praise', label: 'Praise' },
 ];
 
 export default function AdminFeedback() {
@@ -125,10 +130,13 @@ function AdminFeedbackInner() {
         )}
 
         {items !== null && items.length > 0 && (() => {
-          const pending = items.filter((f) => !isDone(f));
-          const completed = items.filter(isDone);
-          const counts = { pending: pending.length, completed: completed.length };
-          const shown = tab === 'completed' ? completed : pending;
+          // Praise is positive signal, not a to-do, so it gets its own tab and
+          // is excluded from the Pending/Completed triage queues.
+          const praise = items.filter(isPraise);
+          const pending = items.filter((f) => !isPraise(f) && !isDone(f));
+          const completed = items.filter((f) => !isPraise(f) && isDone(f));
+          const counts = { pending: pending.length, completed: completed.length, praise: praise.length };
+          const shown = tab === 'praise' ? praise : tab === 'completed' ? completed : pending;
           return (
             <>
               <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-slate-700">
@@ -150,7 +158,11 @@ function AdminFeedbackInner() {
 
               {shown.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-10 text-center">
-                  {tab === 'completed' ? 'Nothing marked done yet.' : 'No pending feedback — all caught up!'}
+                  {tab === 'praise'
+                    ? 'No praise yet.'
+                    : tab === 'completed'
+                    ? 'Nothing marked done yet.'
+                    : 'No pending feedback — all caught up!'}
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -185,17 +197,19 @@ function FeedbackCard({ feedback: f, busy, onSetStatus }) {
         <span className="text-sm font-semibold text-ink dark:text-slate-200">{f.name || f.email}</span>
         <span className="text-xs text-slate-400">·</span>
         <span className="text-xs text-slate-500 dark:text-slate-400">{formatDate(f.at)}</span>
-        <button
-          onClick={() => onSetStatus(f.id, done ? 'open' : 'done')}
-          disabled={busy}
-          className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
-            done
-              ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
-              : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20'
-          }`}
-        >
-          {done ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
-        </button>
+        {!isPraise(f) && (
+          <button
+            onClick={() => onSetStatus(f.id, done ? 'open' : 'done')}
+            disabled={busy}
+            className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
+              done
+                ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
+                : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20'
+            }`}
+          >
+            {done ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
+          </button>
+        )}
       </div>
       <p className="text-sm text-ink dark:text-slate-200 whitespace-pre-wrap">{f.text}</p>
       {f.page && (
