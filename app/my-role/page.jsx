@@ -224,7 +224,18 @@ function MyRolePageInner() {
               <Row label="Department" value={role.department || '—'} />
               {role.sub_team && <Row label="Team" value={role.sub_team} />}
               <Row label="Experience" value={TIERS.find((t) => t.id === role.tier)?.label || role.tier || '—'} />
-              <Row label="Goals" value={role.goals?.length ? role.goals.join(', ') : '—'} />
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400 mb-1.5">Goals</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {role.goals?.length
+                    ? role.goals.map((g) => (
+                        <span key={g} className="px-2.5 py-1 rounded-full bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-slate-200 text-xs">
+                          {g}
+                        </span>
+                      ))
+                    : <span className="text-slate-400">—</span>}
+                </dd>
+              </div>
               <div>
                 <dt className="text-slate-500 dark:text-slate-400 mb-1.5">Top tasks</dt>
                 <dd className="flex flex-wrap gap-2">

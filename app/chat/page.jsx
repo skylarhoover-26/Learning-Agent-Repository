@@ -352,6 +352,26 @@ function ChatPageInner() {
         <div className="sticky bottom-0 border-t border-slate-200 dark:border-slate-700 bg-bg dark:bg-slate-900/95 backdrop-blur">
           <div data-tour="page-chat" className="max-w-3xl mx-auto px-4 sm:px-6 py-3">
             {composerBox}
+            {/* Keep the human-help channels reachable mid-conversation too — on the
+                welcome screen they sit under the suggestions, but once a chat is
+                going the sticky footer was hiding them. */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+              <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+                <LifeBuoy className="w-3 h-3" /> Need a human?
+              </span>
+              {SLACK_CHANNELS.map(c => (
+                <a
+                  key={c.href}
+                  href={c.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-brand dark:text-brand-200 hover:underline"
+                >
+                  {c.label}
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       )}

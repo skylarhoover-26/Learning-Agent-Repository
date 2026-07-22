@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { CATEGORY_PRIORITY } from '@/lib/feedback-priority';
@@ -79,6 +79,7 @@ function AdminFeedbackInner() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (loaded && !isAdmin) router.replace('/');
@@ -131,7 +132,7 @@ function AdminFeedbackInner() {
   // always snap back to page 1 when any of them change.
   useEffect(() => {
     setPage(1);
-  }, [tab, sortBy, priorityFilter]);
+  }, [tab, sortBy, priorityFilter, search]);
 
   if (!loaded) {
     return (
@@ -194,12 +195,20 @@ function AdminFeedbackInner() {
           const completed = items.filter((f) => !isPraise(f) && isDone(f));
           const counts = { pending: pending.length, completed: completed.length, praise: praise.length };
           const base = tab === 'praise' ? praise : tab === 'completed' ? completed : pending;
-          // Narrow to a single priority (or "no priority") when a filter is set.
-          const filtered = priorityFilter === 'all'
-            ? base
-            : priorityFilter === 'none'
-              ? base.filter((f) => !f.priority)
-              : base.filter((f) => f.priority === priorityFilter);
+          // Free-text search across the card's text, author, and page — so a
+          // reviewer can find a specific report without scrolling the whole queue.
+          const q = search.trim().toLowerCase();
+          // Narrow to a single priority (or "no priority") when a filter is set,
+          // then apply the search query on top.
+          const filtered = base.filter((f) => {
+            if (priorityFilter === 'none' && f.priority) return false;
+            if (priorityFilter !== 'all' && priorityFilter !== 'none' && f.priority !== priorityFilter) return false;
+            if (q) {
+              const hay = `${f.text || ''} ${f.name || ''} ${f.email || ''} ${f.page || ''}`.toLowerCase();
+              if (!hay.includes(q)) return false;
+            }
+            return true;
+          });
           // Copy before sorting so we never mutate the source arrays.
           const sorted = [...filtered].sort((a, b) => {
             if (sortBy === 'priority') {
@@ -213,6 +222,31 @@ function AdminFeedbackInner() {
           const shown = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
           return (
             <>
+              <div className="relative mb-4">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search feedback by text, name, or page…"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-sm pl-9 pr-9 py-2 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    aria-label="Clear search"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400 hover:text-ink dark:hover:text-slate-200"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                {q && (
+                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    {sorted.length} match{sorted.length === 1 ? '' : 'es'} in {tab}
+                  </p>
+                )}
+              </div>
+
               <div className="flex items-center justify-between gap-2 mb-4 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2">
                   {TABS.map((t) => (
@@ -261,7 +295,9 @@ function AdminFeedbackInner() {
 
               {shown.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-10 text-center">
-                  {priorityFilter !== 'all' && base.length > 0
+                  {q
+                    ? `No feedback matches "${search.trim()}" in ${tab}.`
+                    : priorityFilter !== 'all' && base.length > 0
                     ? `No ${priorityFilter === 'none' ? 'unprioritized' : priorityFilter} items in ${tab}.`
                     : tab === 'praise'
                     ? 'No praise yet.'

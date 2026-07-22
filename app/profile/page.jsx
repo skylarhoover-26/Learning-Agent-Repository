@@ -10,6 +10,7 @@ import {
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProfile } from '@/components/profile-provider';
+import { useProgression } from '@/components/progression-provider';
 import Avatar from '@/components/avatar';
 import AvatarLocker from '@/components/avatar-locker';
 import { useChampions } from '@/components/champion-provider';
@@ -44,6 +45,10 @@ function ProfilePageInner() {
   const router = useRouter();
   const { profile: ctxProfile, updateProfile, isLoading: profileLoading } = useProfile();
   const { crownTier } = useChampions();
+  // Live progression stats (XP, level, badges, lessons) so the cards below reflect
+  // real progress instead of static placeholders. Re-reads on every XP award via
+  // the provider's xp-bus subscription, so leveling up updates here immediately.
+  const { totalXp, level, badgesEarned, lessonHistory } = useProgression();
   const [profile, setProfile] = useState(null);
   const [editName, setEditName] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
@@ -233,9 +238,18 @@ function ProfilePageInner() {
             </span>
           </div>
           {(profile.goals?.length || profile.goal) && (
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-              {profile.goals?.length > 1 ? 'Goals' : 'Goal'}: {profile.goals?.length ? profile.goals.join(', ') : profile.goal}
-            </p>
+            <div className="mb-3">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1.5">
+                {profile.goals?.length > 1 ? 'Goals' : 'Goal'}
+              </p>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {(profile.goals?.length ? profile.goals : [profile.goal]).map((g) => (
+                  <span key={g} className="px-2.5 py-1 rounded-full bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-slate-200 text-xs">
+                    {g}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
           {profile.onboarded_at && (
             <p className="text-xs text-slate-400">
@@ -497,10 +511,10 @@ function ProfilePageInner() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="font-semibold text-ink dark:text-slate-200 mb-4">Learning Stats</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard icon={Zap} label="Sessions" value="0" />
-            <StatCard icon={Star} label="XP" value="0" />
-            <StatCard icon={Trophy} label="Level" value="1" />
-            <StatCard icon={Trophy} label="Badges" value="0" />
+            <StatCard icon={Zap} label="Lessons" value={lessonHistory.length} />
+            <StatCard icon={Star} label="XP" value={totalXp.toLocaleString()} />
+            <StatCard icon={Trophy} label="Level" value={level} />
+            <StatCard icon={Trophy} label="Badges" value={badgesEarned.length} />
           </div>
         </div>
 

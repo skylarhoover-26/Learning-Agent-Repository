@@ -217,19 +217,29 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // before we ever show an error.
       let planData = null;
       let planErr = null;
+      // Per-attempt timeout so a hung server call (the route's own budget is 120s
+      // via maxDuration) can't leave the learner spinning on the browser default
+      // forever — it falls into the retry, then the existing error UI. Generous
+      // enough (90s) that a normal deep-dive generation is never aborted.
+      const PLAN_TIMEOUT_MS = 90000;
       for (let attempt = 1; attempt <= 2 && active; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), PLAN_TIMEOUT_MS);
         try {
           const res = await fetch('/api/lesson/plan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic, format, tools: lessonTools }),
+            signal: controller.signal,
           });
+          clearTimeout(timer);
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Failed to plan lesson');
           planData = data;
           planErr = null;
           break;
         } catch (err) {
+          clearTimeout(timer);
           planErr = err;
         }
       }
@@ -386,6 +396,12 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
   // ---- Persist progress (pause/resume) --------------------------------------
   const persist = useCallback((next = {}) => {
+    // Once XP is claimed the lesson is complete and claimXp() has already removed
+    // its paused entry. Never re-persist after that — the lesson stays on screen
+    // for the "did this help?" checkpoint, and any interaction there (e.g. asking
+    // the coach, which persists the Q&A thread) would otherwise silently re-add a
+    // finished lesson to the resume queue. Same guard the conversational player has.
+    if (recorded.current) return;
     const sIdx = next.stepIdx ?? stepIdx;
     const sArr = next.steps || steps;
     upsertPausedLesson({

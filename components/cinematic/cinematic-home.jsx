@@ -172,7 +172,7 @@ export default function CinematicHome() {
   return (
     <CinematicShell>
       {/* HERO + LEVEL JOURNEY */}
-      <section className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center cine-rise">
+      <section data-tour="page-home" className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center cine-rise">
         {/* Left: welcome */}
         <div>
           <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-5" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--ink-dim)' }}>
@@ -284,7 +284,7 @@ export default function CinematicHome() {
               );
             })}
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-3">
+          <div data-tour="home-xp" className="mt-4 grid grid-cols-3 gap-3">
             <StatCard icon={Flame} value={streak} label="day streak" tint="#FF7A45" />
             <StatCard icon={Sparkles} value={totalXp.toLocaleString()} label="total XP" tint="#3B94FF" />
             <StatCard icon={Award} value={badgeCount} label="badges" tint="#FFB706" />
@@ -293,7 +293,7 @@ export default function CinematicHome() {
       </section>
 
       {/* DISCOVER BANNER */}
-      <Link href="/discover" className="cine-tilt group block relative overflow-hidden rounded-[28px] p-10 sm:p-14" style={{ background: 'linear-gradient(135deg,#0A3AC8,#2E7BFF)', boxShadow: '0 40px 90px -60px var(--accent)' }}>
+      <Link href="/discover" data-tour="home-find-ai" className="cine-tilt group block relative overflow-hidden rounded-[28px] p-10 sm:p-14" style={{ background: 'linear-gradient(135deg,#0A3AC8,#2E7BFF)', boxShadow: '0 40px 90px -60px var(--accent)' }}>
         <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.18em] px-3 py-1 rounded-full mb-5 cine-gold">
           <Compass className="w-3.5 h-3.5" /> Discover
         </span>
@@ -307,7 +307,7 @@ export default function CinematicHome() {
       {/* WAYS TO LEARN */}
       <section className="cine-rise">
         <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight mb-7">Ways to learn</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div data-tour="home-qa-chat" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {WAYS.map((w) => (
             <Link key={w.href} href={w.href} className="cine-glass cine-tilt group relative overflow-hidden rounded-2xl p-5 flex flex-col gap-3" style={{ '--accent': w.tint }}>
               <span aria-hidden className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-40 transition-opacity group-hover:opacity-70" style={{ background: w.tint }} />
@@ -324,7 +324,7 @@ export default function CinematicHome() {
       </section>
 
       {/* TODAY'S PICK */}
-      <Link href={todaysPick?.href || '/daily'} className="cine-tilt group block cine-glass rounded-3xl p-6 flex items-center gap-5" style={{ '--accent': 'var(--gold)' }}>
+      <Link href={todaysPick?.href || '/daily'} data-tour="home-todays-pick" className="cine-tilt group block cine-glass rounded-3xl p-6 flex items-center gap-5" style={{ '--accent': 'var(--gold)' }}>
         <span className="w-14 h-14 rounded-2xl grid place-items-center shrink-0" style={{ background: 'linear-gradient(135deg,var(--gold),#ffce4d)', boxShadow: '0 0 24px -6px var(--gold)' }}>
           <Sparkles className="w-7 h-7" style={{ color: '#0A2443' }} />
         </span>
@@ -365,7 +365,7 @@ export default function CinematicHome() {
           </div>
 
           {/* Leaderboard */}
-          <div className="cine-glass cine-tilt rounded-3xl p-6">
+          <div data-tour="home-leaderboard" className="cine-glass cine-tilt rounded-3xl p-6">
             <div className="flex items-center justify-between mb-3">
               <p className="font-display font-bold inline-flex items-center gap-2"><Trophy className="w-4 h-4" style={{ color: 'var(--gold)' }} /> Top learners</p>
               <Link href="/leaderboard" className="text-xs font-semibold group inline-flex items-center gap-1" style={{ color: 'var(--accent2)' }}>
@@ -397,7 +397,7 @@ export default function CinematicHome() {
       </section>
 
       {/* YOUR SKILLS */}
-      <section className="cine-rise cine-glass rounded-3xl p-6">
+      <section data-tour="home-skills" className="cine-rise cine-glass rounded-3xl p-6">
         <div className="flex items-center justify-between mb-5">
           <p className="font-display font-bold inline-flex items-center gap-2"><TrendingUp className="w-4 h-4" style={{ color: 'var(--accent2)' }} /> Your skills</p>
           <Link href="/heatmap" className="text-xs font-semibold group inline-flex items-center gap-1" style={{ color: 'var(--accent2)' }}>
@@ -417,7 +417,7 @@ export default function CinematicHome() {
 
       {/* AI NEWS */}
       {news !== null && news.length > 0 && (
-        <section className="cine-rise">
+        <section data-tour="home-news" className="cine-rise">
           <div className="flex items-center gap-2 mb-1">
             <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
             <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight">AI news</h3>
