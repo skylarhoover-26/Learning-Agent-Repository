@@ -1,0 +1,130 @@
+[
+  {
+    "id": "imported-andrea-mcfadden-01",
+    "at": "2026-07-14T16:00:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/onboarding",
+    "text": "When signing in with a non-Housecall Pro account, there's no clear \"access denied\" message — I expected to be told I couldn't get in, but there's no option to log in outside of Okta. (Severity: Low)"
+  },
+  {
+    "id": "imported-andrea-mcfadden-02",
+    "at": "2026-07-14T15:55:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/onboarding",
+    "text": "Name/role/team are pre-populated correctly from my HCP record during profile setup, but I'm unable to edit them. The data was correct for me, but this could be a problem if someone's prefilled data is wrong. (Severity: Med)"
+  },
+  {
+    "id": "imported-andrea-mcfadden-03",
+    "at": "2026-07-14T15:50:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/onboarding",
+    "text": "During goal selection, once I entered my selected goals I was routed into the app — and afterward I couldn't get back to the goal selection screen."
+  },
+  {
+    "id": "imported-andrea-mcfadden-04",
+    "at": "2026-07-14T15:45:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/onboarding",
+    "text": "On the goals display, the goals show listed with commas instead of as a formatted list (a, b, c, etc.)."
+  },
+  {
+    "id": "imported-andrea-mcfadden-05",
+    "at": "2026-07-14T15:40:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/",
+    "text": "The streak and XP pills on Home aren't clickable — I expected tapping them to navigate back to Home."
+  },
+  {
+    "id": "imported-andrea-mcfadden-06",
+    "at": "2026-07-14T15:35:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/",
+    "text": "I have a partially completed lesson, but it doesn't show up in the notification bell dropdown. (Severity: Med)"
+  },
+  {
+    "id": "imported-andrea-mcfadden-07",
+    "at": "2026-07-14T15:30:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Confusing",
+    "page": "/discover",
+    "text": "Question on intended behavior: should I be able to complete lessons without finishing the \"Your Move\" section? I was able to submit lessons by only answering the review question."
+  },
+  {
+    "id": "imported-andrea-mcfadden-08",
+    "at": "2026-07-14T15:25:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/lesson",
+    "text": "Pause & resume: the paused lesson didn't show in the notification bell — it showed further down the screen with a Resume button. When I resumed a narrated lesson the narration had to regenerate (took a while), and resuming brought me back to the beginning instead of where I left off."
+  },
+  {
+    "id": "imported-andrea-mcfadden-09",
+    "at": "2026-07-14T15:20:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/lesson",
+    "text": "Inside a lesson there's no option to refine or regenerate to make it simpler or more specific — I couldn't find the refine/regenerate control."
+  },
+  {
+    "id": "imported-andrea-mcfadden-10",
+    "at": "2026-07-14T15:15:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Confusing",
+    "page": "/lesson",
+    "text": "Project Quest worked once I clicked the Project Quest tile, but the difference between Deep Dive and Project Quest isn't very obvious. (Severity: Low)"
+  },
+  {
+    "id": "imported-andrea-mcfadden-11",
+    "at": "2026-07-14T15:10:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/chat",
+    "text": "In Just Chat, the footer is supposed to link to both the HCP Skill Shop Help and HCP MX Skill Shop help channels — I don't see either one."
+  },
+  {
+    "id": "imported-andrea-mcfadden-12",
+    "at": "2026-07-14T15:05:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/my-tools",
+    "text": "I don't see the \"open tool / LLM window\" callout for my preferred tool from within lessons at all — only from My AI Tools under my name in the top right. There's also no guidance on how to use it; it just opens the tool. (Severity: Med)"
+  },
+  {
+    "id": "imported-andrea-mcfadden-13",
+    "at": "2026-07-14T15:00:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Idea",
+    "page": "/my-tools",
+    "text": "The only way to change your preferred tool is to remove it and let the others move to the top. It would be nice to have a button or drag-and-drop to order your tools. Also, when I changed the order there was a link to my preferred tool at the bottom."
+  },
+  {
+    "id": "imported-andrea-mcfadden-14",
+    "at": "2026-07-14T14:55:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/my-role",
+    "text": "On My Role, after changing my department/sub-team (and when trying \"Schedule a date\"), I'm unable to click \"Apply now\" to save the change."
+  },
+  {
+    "id": "imported-andrea-mcfadden-15",
+    "at": "2026-07-14T14:50:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Bug",
+    "page": "/",
+    "text": "The guided tour launched from Settings isn't interactive the way it is the first time after calibration — it opens as a plain-text box, the Next button sometimes works and sometimes doesn't, and I can exit but can't complete the tour. Not a severe break, but should be fixed for learners. (Severity: Med)"
+  },
+  {
+    "id": "imported-andrea-mcfadden-16",
+    "at": "2026-07-14T14:45:00.000Z",
+    "name": "Andrea McFadden",
+    "category": "Praise",
+    "page": "/",
+    "text": "First impression: 4/5 — really excellent. I noted a few places where I couldn't find things, but overall I think this is going to be a game changer."
+  }
+]

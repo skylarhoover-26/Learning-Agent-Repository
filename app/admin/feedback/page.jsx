@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft, Check, RotateCcw } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, DownloadCloud } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
@@ -56,10 +56,42 @@ function AdminFeedbackInner() {
   const [error, setError] = useState(null);
   const [tab, setTab] = useState('pending');
   const [updatingId, setUpdatingId] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState(null);
 
   useEffect(() => {
     if (loaded && !isAdmin) router.replace('/');
   }, [loaded, isAdmin, router]);
+
+  const loadFeedback = useCallback(async () => {
+    try {
+      const res = await fetch('/api/feedback');
+      if (!res.ok) throw new Error('Failed to load feedback');
+      const data = await res.json();
+      setItems(data.feedback || []);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, []);
+
+  // Pull tester test-script feedback into the store, then refresh the list.
+  async function runImport() {
+    setImporting(true);
+    setImportMsg(null);
+    setError(null);
+    try {
+      const res = await fetch('/api/feedback/import', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Import failed');
+      setImportMsg(`Imported ${data.imported} item${data.imported === 1 ? '' : 's'}.`);
+      await loadFeedback();
+    } catch (e) {
+      setImportMsg(null);
+      setError(e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
 
   // Flip a record's status. Optimistic: update the UI first, then persist;
   // roll back and surface an error if the request fails.
@@ -85,16 +117,8 @@ function AdminFeedbackInner() {
 
   useEffect(() => {
     if (!loaded || !isAdmin) return;
-    let alive = true;
-    fetch('/api/feedback')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load feedback');
-        return res.json();
-      })
-      .then((data) => { if (alive) setItems(data.feedback || []); })
-      .catch((e) => { if (alive) setError(e.message); });
-    return () => { alive = false; };
-  }, [loaded, isAdmin]);
+    loadFeedback();
+  }, [loaded, isAdmin, loadFeedback]);
 
   if (!loaded) {
     return (
@@ -110,9 +134,22 @@ function AdminFeedbackInner() {
       <PageHeader icon={MessageSquarePlus} title="Feedback" subtitle="What people are telling us through the in-app Send feedback form" />
 
       <main className="max-w-3xl mx-auto px-6 py-6">
-        <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-brand mb-5">
-          <ArrowLeft className="w-4 h-4" /> Back to Admin Dashboard
-        </Link>
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-brand">
+            <ArrowLeft className="w-4 h-4" /> Back to Admin Dashboard
+          </Link>
+          <div className="flex items-center gap-3">
+            {importMsg && <span className="text-xs text-green-600 dark:text-green-400">{importMsg}</span>}
+            <button
+              onClick={runImport}
+              disabled={importing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-50"
+            >
+              <DownloadCloud className="w-3.5 h-3.5" />
+              {importing ? 'Importing…' : 'Import test-script feedback'}
+            </button>
+          </div>
+        </div>
 
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
