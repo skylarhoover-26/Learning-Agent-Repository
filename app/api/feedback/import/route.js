@@ -20,7 +20,7 @@ export async function POST() {
   try {
     const records = getTesterFeedbackRecords();
     const { imported, removed } = await reconcileImportedFeedback(records);
-    const prioritized = await backfillPriorities();
+    const { updated: prioritized } = await backfillPriorities();
     return NextResponse.json({ ok: true, imported, removed, prioritized });
   } catch (error) {
     console.error('POST /api/feedback/import error:', error);

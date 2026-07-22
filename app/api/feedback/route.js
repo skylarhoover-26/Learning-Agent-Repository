@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
-import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback } from '@/lib/feedback-store';
+import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, backfillPriorities } from '@/lib/feedback-store';
 import { autoPriority } from '@/lib/feedback-priority';
 
-// Screenshot uploads can take a moment; give the route headroom past the default.
-export const maxDuration = 30;
+// Screenshot uploads and the on-load priority backfill can take a moment.
+export const maxDuration = 60;
 // GET reads mutable blob data — never let Next statically cache it.
 export const dynamic = 'force-dynamic';
 
@@ -54,14 +54,22 @@ export async function POST(request) {
   }
 }
 
-// Only admins can read the collected feedback.
+// Only admins can read the collected feedback. Loading also backfills a
+// category-based priority onto any record still missing one, so nothing shows
+// up unrated. Falls back to a plain read if the backfill can't complete.
 export async function GET() {
   const user = await getAuthenticatedUser();
   if (!user?.email || !(await isAdmin(user.email))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
-  const feedback = await listFeedback();
-  return NextResponse.json({ feedback });
+  try {
+    const { records } = await backfillPriorities();
+    return NextResponse.json({ feedback: records });
+  } catch (error) {
+    console.error('GET /api/feedback backfill failed, returning plain list:', error);
+    const feedback = await listFeedback();
+    return NextResponse.json({ feedback });
+  }
 }
 
 // Only admins can triage feedback (mark done / reopen, set priority).
