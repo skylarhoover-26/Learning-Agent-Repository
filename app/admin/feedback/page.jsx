@@ -83,7 +83,8 @@ function AdminFeedbackInner() {
       const res = await fetch('/api/feedback/import', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Import failed');
-      setImportMsg(`Imported ${data.imported} item${data.imported === 1 ? '' : 's'}.`);
+      const removedNote = data.removed ? `, removed ${data.removed} duplicate${data.removed === 1 ? '' : 's'}` : '';
+      setImportMsg(`Imported ${data.imported} item${data.imported === 1 ? '' : 's'}${removedNote}.`);
       await loadFeedback();
     } catch (e) {
       setImportMsg(null);

@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
-import { saveFeedback } from '@/lib/feedback-store';
+import { reconcileImportedFeedback } from '@/lib/feedback-store';
 import { getTesterFeedbackRecords } from '@/lib/tester-feedback';
 
-// Writing ~16 blobs sequentially can run past the default budget.
+// Writing/deleting many blobs sequentially can run past the default budget.
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 
-// Admin-only: import tester test-script feedback into the feedback store.
+// Admin-only: sync tester test-script feedback into the feedback store.
 // Idempotent — records use deterministic ids, so re-running overwrites in
-// place instead of duplicating.
+// place; any previously-imported record no longer in the files is removed.
 export async function POST() {
   const user = await getAuthenticatedUser();
   if (!user?.email || !(await isAdmin(user.email))) {
@@ -18,10 +18,8 @@ export async function POST() {
   }
   try {
     const records = getTesterFeedbackRecords();
-    for (const record of records) {
-      await saveFeedback(record);
-    }
-    return NextResponse.json({ ok: true, imported: records.length });
+    const { imported, removed } = await reconcileImportedFeedback(records);
+    return NextResponse.json({ ok: true, imported, removed });
   } catch (error) {
     console.error('POST /api/feedback/import error:', error);
     return NextResponse.json({ error: 'Failed to import feedback' }, { status: 500 });
