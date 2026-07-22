@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, DownloadCloud } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { CATEGORY_PRIORITY } from '@/lib/feedback-priority';
@@ -63,6 +63,8 @@ const TABS = [
   { key: 'praise', label: 'Praise' },
 ];
 
+const PAGE_SIZE = 10;
+
 export default function AdminFeedback() {
   return <CinematicFrame><AdminFeedbackInner /></CinematicFrame>;
 }
@@ -76,8 +78,7 @@ function AdminFeedbackInner() {
   const [sortBy, setSortBy] = useState('priority');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
-  const [importing, setImporting] = useState(false);
-  const [importMsg, setImportMsg] = useState(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (loaded && !isAdmin) router.replace('/');
@@ -93,27 +94,6 @@ function AdminFeedbackInner() {
       setError(e.message);
     }
   }, []);
-
-  // Pull tester test-script feedback into the store, then refresh the list.
-  async function runImport() {
-    setImporting(true);
-    setImportMsg(null);
-    setError(null);
-    try {
-      const res = await fetch('/api/feedback/import', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Import failed');
-      const removedNote = data.removed ? `, removed ${data.removed} duplicate${data.removed === 1 ? '' : 's'}` : '';
-      const prioritizedNote = data.prioritized ? `, set priority on ${data.prioritized}` : '';
-      setImportMsg(`Imported ${data.imported} item${data.imported === 1 ? '' : 's'}${removedNote}${prioritizedNote}.`);
-      await loadFeedback();
-    } catch (e) {
-      setImportMsg(null);
-      setError(e.message);
-    } finally {
-      setImporting(false);
-    }
-  }
 
   // Patch a record (status and/or priority). Optimistic: update the UI first,
   // then persist; roll back and surface an error if the request fails.
@@ -147,6 +127,12 @@ function AdminFeedbackInner() {
     loadFeedback();
   }, [loaded, isAdmin, loadFeedback]);
 
+  // Jumping tabs/filters/sort can land you past the end of the new list, so
+  // always snap back to page 1 when any of them change.
+  useEffect(() => {
+    setPage(1);
+  }, [tab, sortBy, priorityFilter]);
+
   if (!loaded) {
     return (
       <div className="min-h-screen bg-bg-warm dark:bg-slate-900 flex items-center justify-center">
@@ -165,17 +151,6 @@ function AdminFeedbackInner() {
           <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-brand">
             <ArrowLeft className="w-4 h-4" /> Back to Admin Dashboard
           </Link>
-          <div className="flex items-center gap-3">
-            {importMsg && <span className="text-xs text-green-600 dark:text-green-400">{importMsg}</span>}
-            <button
-              onClick={runImport}
-              disabled={importing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-50"
-            >
-              <DownloadCloud className="w-3.5 h-3.5" />
-              {importing ? 'Importing…' : 'Import test-script feedback'}
-            </button>
-          </div>
         </div>
 
         <div className="mb-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/40 px-3 py-2">
@@ -226,13 +201,16 @@ function AdminFeedbackInner() {
               ? base.filter((f) => !f.priority)
               : base.filter((f) => f.priority === priorityFilter);
           // Copy before sorting so we never mutate the source arrays.
-          const shown = [...filtered].sort((a, b) => {
+          const sorted = [...filtered].sort((a, b) => {
             if (sortBy === 'priority') {
               const diff = priorityRank(a) - priorityRank(b);
               if (diff !== 0) return diff;
             }
             return (b.at || '').localeCompare(a.at || '');
           });
+          const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+          const safePage = Math.min(page, pageCount);
+          const shown = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
           return (
             <>
               <div className="flex items-center justify-between gap-2 mb-4 border-b border-slate-200 dark:border-slate-700">
@@ -292,21 +270,64 @@ function AdminFeedbackInner() {
                     : 'No pending feedback — all caught up!'}
                 </p>
               ) : (
-                <div className="space-y-3">
-                  {shown.map((f) => (
-                    <FeedbackCard
-                      key={f.id}
-                      feedback={f}
-                      busy={updatingId === f.id}
-                      onPatch={patchItem}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="space-y-3">
+                    {shown.map((f) => (
+                      <FeedbackCard
+                        key={f.id}
+                        feedback={f}
+                        busy={updatingId === f.id}
+                        onPatch={patchItem}
+                      />
+                    ))}
+                  </div>
+                  {pageCount > 1 && (
+                    <Pager page={safePage} pageCount={pageCount} onPage={setPage} />
+                  )}
+                </>
               )}
             </>
           );
         })()}
       </main>
+    </div>
+  );
+}
+
+function Pager({ page, pageCount, onPage }) {
+  const pages = Array.from({ length: pageCount }, (_, i) => i + 1);
+  return (
+    <div className="flex items-center justify-center gap-1.5 mt-5">
+      <button
+        onClick={() => onPage(page - 1)}
+        disabled={page === 1}
+        aria-label="Previous page"
+        className="p-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-40 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-800"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      {pages.map((p) => (
+        <button
+          key={p}
+          onClick={() => onPage(p)}
+          aria-current={p === page ? 'page' : undefined}
+          className={`min-w-[2rem] px-2 py-1 rounded-md text-sm font-medium border transition-colors ${
+            p === page
+              ? 'border-brand bg-brand text-white'
+              : 'border-slate-200 text-slate-600 hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800'
+          }`}
+        >
+          {p}
+        </button>
+      ))}
+      <button
+        onClick={() => onPage(page + 1)}
+        disabled={page === pageCount}
+        aria-label="Next page"
+        className="p-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-40 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-800"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
     </div>
   );
 }
