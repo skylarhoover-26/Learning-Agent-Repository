@@ -56,6 +56,7 @@ export async function POST(request) {
         record.priority = classification.priority;
         record.aiReason = classification.reason;
         record.aiBugVerdict = classification.bugVerdict;
+        record.priorityIsAiAssigned = true;
       }
     }
     await saveFeedback(record);
@@ -137,6 +138,9 @@ export async function PATCH(request) {
         return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
       }
       patch.priority = body.priority;
+      // A manual override is authoritative going forward — never let a future
+      // AI re-triage pass touch it again.
+      patch.priorityIsAiAssigned = false;
     }
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });

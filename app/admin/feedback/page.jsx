@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote, RefreshCw } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS } from '@/lib/feedback-priority';
@@ -93,6 +93,8 @@ function AdminFeedbackInner() {
   const [updatingId, setUpdatingId] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [retriaging, setRetriaging] = useState(false);
+  const [retriageMsg, setRetriageMsg] = useState(null);
 
   useEffect(() => {
     if (loaded && !isAdmin) router.replace('/');
@@ -141,6 +143,26 @@ function AdminFeedbackInner() {
     loadFeedback();
   }, [loaded, isAdmin, loadFeedback]);
 
+  // Re-run AI priority classification on every non-manually-overridden record
+  // (e.g. after tuning the triage prompt) and reload. Can take a minute or two
+  // over a large backlog.
+  async function runRetriage() {
+    setRetriaging(true);
+    setRetriageMsg(null);
+    setError(null);
+    try {
+      const res = await fetch('/api/feedback/retriage', { method: 'POST' });
+      if (!res.ok) throw new Error('Re-triage failed');
+      const data = await res.json();
+      setRetriageMsg(`Re-triaged ${data.updated} item${data.updated === 1 ? '' : 's'}.`);
+      await loadFeedback();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setRetriaging(false);
+    }
+  }
+
   // Jumping tabs/filters/sort can land you past the end of the new list, so
   // always snap back to page 1 when any of them change.
   useEffect(() => {
@@ -161,11 +183,22 @@ function AdminFeedbackInner() {
       <PageHeader icon={MessageSquarePlus} title="Feedback" subtitle="What people are telling us through the in-app Send feedback form" />
 
       <main className="max-w-3xl mx-auto px-6 py-6">
-        <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex items-center justify-between gap-3 mb-2">
           <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-brand">
             <ArrowLeft className="w-4 h-4" /> Back to Admin Dashboard
           </Link>
+          <button
+            onClick={runRetriage}
+            disabled={retriaging}
+            title="Re-run AI priority classification on every record that hasn't been manually overridden — use after tuning the triage prompt"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${retriaging ? 'animate-spin' : ''}`} /> {retriaging ? 'Re-triaging…' : 'Re-run AI triage'}
+          </button>
         </div>
+        {retriageMsg && (
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{retriageMsg}</p>
+        )}
 
         <div className="mb-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/40 px-3 py-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
