@@ -74,6 +74,7 @@ function AdminFeedbackInner() {
   const [error, setError] = useState(null);
   const [tab, setTab] = useState('pending');
   const [sortBy, setSortBy] = useState('priority');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState(null);
@@ -218,8 +219,14 @@ function AdminFeedbackInner() {
           const completed = items.filter((f) => !isPraise(f) && isDone(f));
           const counts = { pending: pending.length, completed: completed.length, praise: praise.length };
           const base = tab === 'praise' ? praise : tab === 'completed' ? completed : pending;
+          // Narrow to a single priority (or "no priority") when a filter is set.
+          const filtered = priorityFilter === 'all'
+            ? base
+            : priorityFilter === 'none'
+              ? base.filter((f) => !f.priority)
+              : base.filter((f) => f.priority === priorityFilter);
           // Copy before sorting so we never mutate the source arrays.
-          const shown = [...base].sort((a, b) => {
+          const shown = [...filtered].sort((a, b) => {
             if (sortBy === 'priority') {
               const diff = priorityRank(a) - priorityRank(b);
               if (diff !== 0) return diff;
@@ -245,22 +252,40 @@ function AdminFeedbackInner() {
                     </button>
                   ))}
                 </div>
-                <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 pb-2">
-                  Sort
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
-                  >
-                    <option value="priority">Priority</option>
-                    <option value="newest">Newest</option>
-                  </select>
-                </label>
+                <div className="flex items-center gap-3 pb-2">
+                  <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    Priority
+                    <select
+                      value={priorityFilter}
+                      onChange={(e) => setPriorityFilter(e.target.value)}
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
+                    >
+                      <option value="all">All</option>
+                      {PRIORITY_LEVELS.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                      <option value="none">No priority</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    Sort
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
+                    >
+                      <option value="priority">Priority</option>
+                      <option value="newest">Newest</option>
+                    </select>
+                  </label>
+                </div>
               </div>
 
               {shown.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-10 text-center">
-                  {tab === 'praise'
+                  {priorityFilter !== 'all' && base.length > 0
+                    ? `No ${priorityFilter === 'none' ? 'unprioritized' : priorityFilter} items in ${tab}.`
+                    : tab === 'praise'
                     ? 'No praise yet.'
                     : tab === 'completed'
                     ? 'Nothing marked done yet.'
