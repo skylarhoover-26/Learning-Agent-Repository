@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Sparkles, RotateCcw, Lightbulb, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Target, Sparkles, RotateCcw, Lightbulb, RefreshCw } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import LessonInteractive from '@/components/lesson-interactive';
 import LessonActivity from '@/components/lesson-activity';
@@ -43,6 +43,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
   const [award, setAward] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showObjectives, setShowObjectives] = useState(false);
 
   const startedAt = useRef(null);
   const heroRef = useRef(null);
@@ -211,16 +212,42 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
     <div ref={rootRef} className="relative">
       {showConfetti && <ConfettiBurst onDone={() => setShowConfetti(false)} />}
 
-      {/* Sticky progress sub-bar (sits under the cinematic top nav) */}
-      <div className="sticky top-16 z-30 -mx-6 px-6 py-2.5 flex items-center gap-3 backdrop-blur" style={{ background: 'color-mix(in srgb, var(--bg) 78%, transparent)', borderBottom: '1px solid var(--line)' }}>
-        <button onClick={onExit} className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70 shrink-0" style={{ color: 'var(--ink-dim)' }}>
-          <ArrowLeft className="w-4 h-4" /> Exit
-        </button>
-        <span className="text-xs font-bold uppercase tracking-wide truncate" style={{ color: 'var(--ink-dim)' }}>{meta.label}</span>
-        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--line)' }}>
-          <div className="h-full rounded-full transition-[width] duration-200" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,var(--accent),var(--accent2))' }} />
+      {/* Sticky progress sub-bar (sits under the cinematic top nav) — pinned
+          for the whole scroll, so the topic + objectives toggle stay reachable
+          even after the hero (which shows them once) scrolls away. */}
+      <div className="sticky top-16 z-30 -mx-6 px-6 backdrop-blur" style={{ background: 'color-mix(in srgb, var(--bg) 78%, transparent)', borderBottom: '1px solid var(--line)' }}>
+        <div className="py-2.5 flex items-center gap-3">
+          <button onClick={onExit} className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70 shrink-0" style={{ color: 'var(--ink-dim)' }}>
+            <ArrowLeft className="w-4 h-4" /> Exit
+          </button>
+          <span className="text-xs font-bold uppercase tracking-wide shrink-0" style={{ color: 'var(--ink-dim)' }}>{meta.label}</span>
+          <span className="text-xs font-semibold truncate" style={{ color: 'var(--ink)' }} title={topic}>{topic}</span>
+          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--line)' }}>
+            <div className="h-full rounded-full transition-[width] duration-200" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,var(--accent),var(--accent2))' }} />
+          </div>
+          <span className="text-xs tabular-nums shrink-0" style={{ color: 'var(--ink-dim)' }}>{Math.round(progress)}%</span>
+          {objectives.length > 0 && (
+            <button
+              onClick={() => setShowObjectives((v) => !v)}
+              aria-expanded={showObjectives}
+              className="inline-flex items-center gap-1 text-xs font-medium shrink-0 transition-opacity hover:opacity-70"
+              style={{ color: 'var(--accent)' }}
+            >
+              <Target className="w-3.5 h-3.5" /> Objectives
+              {showObjectives ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          )}
         </div>
-        <span className="text-xs tabular-nums shrink-0" style={{ color: 'var(--ink-dim)' }}>{Math.round(progress)}%</span>
+        {showObjectives && objectives.length > 0 && (
+          <ul className="pb-3 pt-1 space-y-1.5">
+            {objectives.map((o) => (
+              <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
+                <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--good)' }} />
+                <span>{o.text}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Vertical chapter rail (desktop) */}

@@ -1102,15 +1102,15 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         </button>
       </div>
 
-      {/* Chapter hero — eyebrow + big gradient topic title, pinned on every
-          screen so the learner always sees what they're in. Objectives show on
-          the opening step only, like a chapter intro. */}
+      {/* Chapter hero — eyebrow + big gradient topic title + objectives,
+          pinned on every screen so the learner always sees what they picked
+          and where it's headed. */}
       <div className="text-center pt-4 pb-1">
         <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-4" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
           {FORMAT_LABEL[format] || 'Lesson'} · Step {stepIdx + 1} of {total}
         </span>
         <h1 className="font-display font-extrabold leading-[1.04] tracking-tight cine-grad-flow mx-auto max-w-3xl" style={{ fontSize: 'clamp(28px,4vw,48px)' }}>{topic}</h1>
-        {stepIdx === 0 && objectives.length > 0 && (
+        {objectives.length > 0 && (
           <ul className="mt-5 max-w-md mx-auto space-y-1.5 text-left">
             {objectives.map((o) => (
               <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
