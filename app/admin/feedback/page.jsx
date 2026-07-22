@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
@@ -29,6 +29,17 @@ function formatDate(iso) {
   }
 }
 
+// Records without a status are treated as pending, so the existing backlog
+// shows up under "Pending" without a migration.
+function isDone(f) {
+  return f.status === 'done';
+}
+
+const TABS = [
+  { key: 'pending', label: 'Pending' },
+  { key: 'completed', label: 'Completed' },
+];
+
 export default function AdminFeedback() {
   return <CinematicFrame><AdminFeedbackInner /></CinematicFrame>;
 }
@@ -38,10 +49,34 @@ function AdminFeedbackInner() {
   const { isAdmin, loaded } = useMenuVisibility();
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
+  const [tab, setTab] = useState('pending');
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     if (loaded && !isAdmin) router.replace('/');
   }, [loaded, isAdmin, router]);
+
+  // Flip a record's status. Optimistic: update the UI first, then persist;
+  // roll back and surface an error if the request fails.
+  async function setStatus(id, status) {
+    const prev = items;
+    setUpdatingId(id);
+    setError(null);
+    setItems((cur) => cur.map((f) => (f.id === id ? { ...f, status } : f)));
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      });
+      if (!res.ok) throw new Error('Failed to update feedback');
+    } catch (e) {
+      setItems(prev);
+      setError(e.message);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   useEffect(() => {
     if (!loaded || !isAdmin) return;
@@ -89,42 +124,93 @@ function AdminFeedbackInner() {
           </div>
         )}
 
-        {items !== null && items.length > 0 && (
-          <>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{items.length} submission{items.length === 1 ? '' : 's'}</p>
-            <div className="space-y-3">
-              {items.map((f) => (
-                <div key={f.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    {f.category && (
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-bold uppercase tracking-wide border ${CATEGORY_STYLES[f.category] || CATEGORY_STYLES.Other}`}>
-                        {f.category}
-                      </span>
-                    )}
-                    <span className="text-sm font-semibold text-ink dark:text-slate-200">{f.name || f.email}</span>
-                    <span className="text-xs text-slate-400">·</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{formatDate(f.at)}</span>
-                  </div>
-                  <p className="text-sm text-ink dark:text-slate-200 whitespace-pre-wrap">{f.text}</p>
-                  {f.page && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">On page: <code>{f.page}</code></p>
-                  )}
-                  {Array.isArray(f.screenshotUrls) && f.screenshotUrls.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {f.screenshotUrls.map((url, i) => (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={url} alt="Screenshot" className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-600 hover:opacity-90" />
-                        </a>
-                      ))}
-                    </div>
-                  )}
+        {items !== null && items.length > 0 && (() => {
+          const pending = items.filter((f) => !isDone(f));
+          const completed = items.filter(isDone);
+          const counts = { pending: pending.length, completed: completed.length };
+          const shown = tab === 'completed' ? completed : pending;
+          return (
+            <>
+              <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-slate-700">
+                {TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={`px-3 py-2 -mb-px text-sm font-medium border-b-2 transition-colors ${
+                      tab === t.key
+                        ? 'border-brand text-brand'
+                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {t.label}
+                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{counts[t.key]}</span>
+                  </button>
+                ))}
+              </div>
+
+              {shown.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-10 text-center">
+                  {tab === 'completed' ? 'Nothing marked done yet.' : 'No pending feedback — all caught up!'}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {shown.map((f) => (
+                    <FeedbackCard
+                      key={f.id}
+                      feedback={f}
+                      busy={updatingId === f.id}
+                      onSetStatus={setStatus}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
-          </>
-        )}
+              )}
+            </>
+          );
+        })()}
       </main>
+    </div>
+  );
+}
+
+function FeedbackCard({ feedback: f, busy, onSetStatus }) {
+  const done = isDone(f);
+  return (
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+      <div className="flex items-center gap-2 flex-wrap mb-2">
+        {f.category && (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-bold uppercase tracking-wide border ${CATEGORY_STYLES[f.category] || CATEGORY_STYLES.Other}`}>
+            {f.category}
+          </span>
+        )}
+        <span className="text-sm font-semibold text-ink dark:text-slate-200">{f.name || f.email}</span>
+        <span className="text-xs text-slate-400">·</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">{formatDate(f.at)}</span>
+        <button
+          onClick={() => onSetStatus(f.id, done ? 'open' : 'done')}
+          disabled={busy}
+          className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
+            done
+              ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
+              : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20'
+          }`}
+        >
+          {done ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
+        </button>
+      </div>
+      <p className="text-sm text-ink dark:text-slate-200 whitespace-pre-wrap">{f.text}</p>
+      {f.page && (
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">On page: <code>{f.page}</code></p>
+      )}
+      {Array.isArray(f.screenshotUrls) && f.screenshotUrls.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {f.screenshotUrls.map((url, i) => (
+            <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="Screenshot" className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-600 hover:opacity-90" />
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

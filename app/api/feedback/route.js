@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
-import { saveFeedback, listFeedback, uploadFeedbackScreenshot } from '@/lib/feedback-store';
+import { saveFeedback, listFeedback, uploadFeedbackScreenshot, updateFeedbackStatus } from '@/lib/feedback-store';
 
 // Screenshot uploads can take a moment; give the route headroom past the default.
 export const maxDuration = 30;
@@ -9,6 +9,7 @@ export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 
 const CATEGORIES = ['Idea', 'Bug', 'Confusing', 'Praise', 'Other'];
+const STATUSES = ['open', 'done'];
 const MAX_SHOTS = 4;
 
 // Any signed-in learner can submit feedback.
@@ -58,4 +59,31 @@ export async function GET() {
   }
   const feedback = await listFeedback();
   return NextResponse.json({ feedback });
+}
+
+// Only admins can triage feedback (mark done / reopen).
+export async function PATCH(request) {
+  const user = await getAuthenticatedUser();
+  if (!user?.email || !(await isAdmin(user.email))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+  try {
+    const body = await request.json();
+    const id = (body.id || '').toString();
+    const status = body.status;
+    if (!id) {
+      return NextResponse.json({ error: 'Feedback id is required' }, { status: 400 });
+    }
+    if (!STATUSES.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    }
+    const updated = await updateFeedbackStatus(id, status);
+    if (!updated) {
+      return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, feedback: updated });
+  } catch (error) {
+    console.error('PATCH /api/feedback error:', error);
+    return NextResponse.json({ error: 'Failed to update feedback' }, { status: 500 });
+  }
 }
