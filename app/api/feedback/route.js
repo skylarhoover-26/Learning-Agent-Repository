@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
-import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, backfillPriorities } from '@/lib/feedback-store';
-import { autoPriority } from '@/lib/feedback-priority';
+import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, backfillPriorities, appendFeedbackNote, appendFeedbackScreenshot } from '@/lib/feedback-store';
+import { PRIORITY_LEVELS } from '@/lib/feedback-priority';
+import { classifyFeedback } from '@/lib/feedback-triage';
+import { notifyCriticalFeedback } from '@/lib/slack-notify';
 
 // Screenshot uploads and the on-load priority backfill can take a moment.
 export const maxDuration = 60;
@@ -11,7 +13,6 @@ export const dynamic = 'force-dynamic';
 
 const CATEGORIES = ['Idea', 'Bug', 'Confusing', 'Praise', 'Other'];
 const STATUSES = ['open', 'done'];
-const PRIORITIES = ['Critical', 'High', 'Med', 'Low', 'Future'];
 const MAX_SHOTS = 4;
 
 // Any signed-in learner can submit feedback.
@@ -36,17 +37,31 @@ export async function POST(request) {
     }
 
     const id = `${Date.now()}-${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
-    await saveFeedback({
+    const record = {
       id,
       at: new Date().toISOString(),
       email: user.email,
       name: user.name || user.email,
       category,
-      priority: autoPriority(category),
       text: text.slice(0, 5000),
       page: (body.page || '').toString().slice(0, 300),
       screenshotUrls,
-    });
+    };
+    // Priority comes from the AI reading actual severity, not the category the
+    // user picked — a Bug can be Low, an Idea can be Critical. Praise skips
+    // triage entirely (positive signal, not a to-do).
+    if (category !== 'Praise') {
+      const classification = await classifyFeedback(record);
+      if (classification) {
+        record.priority = classification.priority;
+        record.aiReason = classification.reason;
+        record.aiBugVerdict = classification.bugVerdict;
+      }
+    }
+    await saveFeedback(record);
+    if (record.priority === 'Critical') {
+      await notifyCriticalFeedback(record).catch((error) => console.error('notifyCriticalFeedback error:', error));
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('POST /api/feedback error:', error);
@@ -54,9 +69,9 @@ export async function POST(request) {
   }
 }
 
-// Only admins can read the collected feedback. Loading also backfills a
-// category-based priority onto any record still missing one, so nothing shows
-// up unrated. Falls back to a plain read if the backfill can't complete.
+// Only admins can read the collected feedback. Loading also backfills an
+// AI-assigned priority onto any record still missing one, so nothing shows up
+// unrated. Falls back to a plain read if the backfill can't complete.
 export async function GET() {
   const user = await getAuthenticatedUser();
   if (!user?.email || !(await isAdmin(user.email))) {
@@ -85,6 +100,22 @@ export async function PATCH(request) {
       return NextResponse.json({ error: 'Feedback id is required' }, { status: 400 });
     }
 
+    // Notes and post-hoc screenshots are append-only threads, not overwrite
+    // patches, so they're handled separately from the status/priority merge below.
+    if (typeof body.note === 'string' && body.note.trim()) {
+      const note = { text: body.note.trim().slice(0, 2000), by: user.name || user.email, at: new Date().toISOString() };
+      const updated = await appendFeedbackNote(id, note);
+      if (!updated) return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+      return NextResponse.json({ ok: true, feedback: updated });
+    }
+    if (typeof body.screenshot === 'string' && body.screenshot) {
+      const url = await uploadFeedbackScreenshot(body.screenshot);
+      if (!url) return NextResponse.json({ error: 'Failed to upload screenshot' }, { status: 400 });
+      const updated = await appendFeedbackScreenshot(id, url);
+      if (!updated) return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+      return NextResponse.json({ ok: true, feedback: updated });
+    }
+
     const patch = {};
     if ('status' in body) {
       if (!STATUSES.includes(body.status)) {
@@ -102,7 +133,7 @@ export async function PATCH(request) {
     }
     if ('priority' in body) {
       // null clears the priority; otherwise it must be a known level.
-      if (body.priority !== null && !PRIORITIES.includes(body.priority)) {
+      if (body.priority !== null && !PRIORITY_LEVELS.includes(body.priority)) {
         return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
       }
       patch.priority = body.priority;
@@ -114,6 +145,10 @@ export async function PATCH(request) {
     const updated = await patchFeedback(id, patch);
     if (!updated) {
       return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+    }
+    // Admin manually escalated it to Critical — alert same as an AI-flagged one.
+    if (patch.priority === 'Critical') {
+      await notifyCriticalFeedback(updated).catch((error) => console.error('notifyCriticalFeedback error:', error));
     }
     return NextResponse.json({ ok: true, feedback: updated });
   } catch (error) {

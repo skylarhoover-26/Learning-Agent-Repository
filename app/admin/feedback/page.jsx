@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
-import { CATEGORY_PRIORITY } from '@/lib/feedback-priority';
+import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS } from '@/lib/feedback-priority';
 
 // Category → pill color, so bugs/ideas/praise are scannable at a glance.
 const CATEGORY_STYLES = {
@@ -19,12 +19,25 @@ const CATEGORY_STYLES = {
   Other: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 };
 
-// Priority levels mirror the task-tracker sheet: Critical → Future.
-const PRIORITY_LEVELS = ['Critical', 'High', 'Med', 'Low', 'Future'];
-const PRIORITY_ORDER = { Critical: 0, High: 1, Med: 2, Low: 3, Future: 4 };
+// AI bug-triage verdict → badge color/label, so admins can see at a glance
+// which Bug reports the classifier thinks are real vs. not before opening them.
+const AI_VERDICT_STYLES = {
+  likely_bug: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+  not_bug: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600',
+  unclear: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
+};
+const AI_VERDICT_LABELS = {
+  likely_bug: 'AI: Likely a bug',
+  not_bug: 'AI: Not a bug',
+  unclear: 'AI: Unclear',
+};
+
+// Order mirrors PRIORITY_LEVELS (lib/feedback-priority.js): Critical → Future.
+const PRIORITY_ORDER = Object.fromEntries(PRIORITY_LEVELS.map((p, i) => [p, i]));
 const PRIORITY_STYLES = {
   Critical: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
   High: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+  'Needs Info': 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800',
   Med: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
   Low: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
   Future: 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
@@ -156,19 +169,13 @@ function AdminFeedbackInner() {
 
         <div className="mb-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/40 px-3 py-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="font-semibold text-slate-600 dark:text-slate-300">Auto-priority by category:</span>
-            {Object.entries(CATEGORY_PRIORITY).map(([cat, pri]) => (
-              <span key={cat} className="inline-flex items-center gap-1">
-                <span className="font-medium text-ink dark:text-slate-200">{cat}</span>
-                <span aria-hidden>→</span>
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-pill text-[10px] font-semibold border ${PRIORITY_STYLES[pri]}`}>{pri}</span>
+            <span className="font-semibold text-slate-600 dark:text-slate-300">AI-assigned by severity, not category:</span>
+            {PRIORITY_LEVELS.map((p) => (
+              <span key={p} title={PRIORITY_DEFINITIONS[p]} className="inline-flex items-center">
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-pill text-[10px] font-semibold border ${PRIORITY_STYLES[p]}`}>{p}</span>
               </span>
             ))}
-            <span className="inline-flex items-center gap-1">
-              <span className="font-medium text-ink dark:text-slate-200">Praise</span>
-              <span aria-hidden>→</span>
-              <span className="italic">no priority</span>
-            </span>
+            <span className="italic">(hover a level for its definition — admins can always override)</span>
           </div>
         </div>
 
@@ -368,8 +375,34 @@ function Pager({ page, pageCount, onPage }) {
   );
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function FeedbackCard({ feedback: f, busy, onPatch }) {
   const done = isDone(f);
+  const [noteDraft, setNoteDraft] = useState('');
+  const fileRef = useRef(null);
+
+  function submitNote() {
+    const text = noteDraft.trim();
+    if (!text || busy) return;
+    onPatch(f.id, { note: text });
+    setNoteDraft('');
+  }
+
+  async function attachScreenshot(fileList) {
+    const file = Array.from(fileList || []).find((fl) => fl.type.startsWith('image/'));
+    if (!file || busy) return;
+    const dataUrl = await fileToDataUrl(file).catch(() => null);
+    if (dataUrl) onPatch(f.id, { screenshot: dataUrl });
+  }
+
   return (
     <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
       <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -388,6 +421,7 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
               onChange={(e) => onPatch(f.id, { priority: e.target.value || null })}
               disabled={busy}
               aria-label="Priority"
+              title={f.aiReason || ''}
               className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${f.priority ? PRIORITY_STYLES[f.priority] : PRIORITY_UNSET}`}
             >
               <option value="">Priority…</option>
@@ -410,6 +444,26 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
         )}
       </div>
       <p className="text-sm text-ink dark:text-slate-200 whitespace-pre-wrap">{f.text}</p>
+      {f.aiBugVerdict && (
+        <p
+          title={f.aiReason || ''}
+          className={`inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-pill text-[10px] font-semibold border ${AI_VERDICT_STYLES[f.aiBugVerdict] || AI_VERDICT_STYLES.unclear}`}
+        >
+          <Sparkles className="w-3 h-3" /> {AI_VERDICT_LABELS[f.aiBugVerdict] || 'AI: Unclear'}
+        </p>
+      )}
+      {f.draftPrUrl && (
+        <p className="mt-2">
+          <a
+            href={f.draftPrUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-pill text-[10px] font-semibold border bg-brand-50 text-brand-700 border-brand-200 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-800 hover:opacity-80"
+          >
+            <GitPullRequestDraft className="w-3 h-3" /> Draft fix PR open
+          </a>
+        </p>
+      )}
       {done && f.doneBy && (
         <p className="text-xs text-green-600 dark:text-green-400 mt-2 inline-flex items-center gap-1">
           <Check className="w-3.5 h-3.5" /> Marked done by {f.doneBy}{f.doneAt ? ` · ${formatDate(f.doneAt)}` : ''}
@@ -418,14 +472,64 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
       {f.page && (
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">On page: <code>{f.page}</code></p>
       )}
-      {Array.isArray(f.screenshotUrls) && f.screenshotUrls.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {f.screenshotUrls.map((url, i) => (
+      {(Array.isArray(f.screenshotUrls) && f.screenshotUrls.length > 0) || !isPraise(f) ? (
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          {(f.screenshotUrls || []).map((url, i) => (
             <a key={i} href={url} target="_blank" rel="noopener noreferrer">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={url} alt="Screenshot" className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-600 hover:opacity-90" />
             </a>
           ))}
+          {!isPraise(f) && (
+            <>
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={busy}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-brand hover:text-brand disabled:opacity-50"
+              >
+                <Paperclip className="w-3.5 h-3.5" /> Attach image
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => attachScreenshot(e.target.files)}
+              />
+            </>
+          )}
+        </div>
+      ) : null}
+      {!isPraise(f) && (
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+          {Array.isArray(f.notes) && f.notes.length > 0 && (
+            <div className="space-y-1.5 mb-2">
+              {f.notes.map((n, i) => (
+                <p key={i} className="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
+                  <StickyNote className="w-3 h-3 mt-0.5 shrink-0" />
+                  <span><span className="text-ink dark:text-slate-200">{n.text}</span> — {n.by}{n.at ? `, ${formatDate(n.at)}` : ''}</span>
+                </p>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitNote(); }}
+              disabled={busy}
+              placeholder="Add a note…"
+              className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs text-ink dark:text-slate-200 px-2.5 py-1.5 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40 disabled:opacity-50"
+            />
+            <button
+              onClick={submitNote}
+              disabled={busy || !noteDraft.trim()}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+            >
+              Add
+            </button>
+          </div>
         </div>
       )}
     </div>
