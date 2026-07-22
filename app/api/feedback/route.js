@@ -91,6 +91,14 @@ export async function PATCH(request) {
         return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
       }
       patch.status = body.status;
+      // Stamp who resolved it (accountability); clear the stamp on reopen.
+      if (body.status === 'done') {
+        patch.doneBy = user.name || user.email;
+        patch.doneAt = new Date().toISOString();
+      } else {
+        patch.doneBy = null;
+        patch.doneAt = null;
+      }
     }
     if ('priority' in body) {
       // null clears the priority; otherwise it must be a known level.

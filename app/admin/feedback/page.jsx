@@ -8,6 +8,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, DownloadCloud } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
+import { CATEGORY_PRIORITY } from '@/lib/feedback-priority';
 
 // Category → pill color, so bugs/ideas/praise are scannable at a glance.
 const CATEGORY_STYLES = {
@@ -127,6 +128,11 @@ function AdminFeedbackInner() {
         body: JSON.stringify({ id, ...patch }),
       });
       if (!res.ok) throw new Error('Failed to update feedback');
+      // Adopt the server's record so server-stamped fields (doneBy/doneAt) show.
+      const data = await res.json();
+      if (data.feedback) {
+        setItems((cur) => cur.map((f) => (f.id === id ? data.feedback : f)));
+      }
     } catch (e) {
       setItems(prev);
       setError(e.message);
@@ -168,6 +174,24 @@ function AdminFeedbackInner() {
               <DownloadCloud className="w-3.5 h-3.5" />
               {importing ? 'Importing…' : 'Import test-script feedback'}
             </button>
+          </div>
+        </div>
+
+        <div className="mb-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/40 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="font-semibold text-slate-600 dark:text-slate-300">Auto-priority by category:</span>
+            {Object.entries(CATEGORY_PRIORITY).map(([cat, pri]) => (
+              <span key={cat} className="inline-flex items-center gap-1">
+                <span className="font-medium text-ink dark:text-slate-200">{cat}</span>
+                <span aria-hidden>→</span>
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-pill text-[10px] font-semibold border ${PRIORITY_STYLES[pri]}`}>{pri}</span>
+              </span>
+            ))}
+            <span className="inline-flex items-center gap-1">
+              <span className="font-medium text-ink dark:text-slate-200">Praise</span>
+              <span aria-hidden>→</span>
+              <span className="italic">no priority</span>
+            </span>
           </div>
         </div>
 
@@ -304,6 +328,11 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
         )}
       </div>
       <p className="text-sm text-ink dark:text-slate-200 whitespace-pre-wrap">{f.text}</p>
+      {done && f.doneBy && (
+        <p className="text-xs text-green-600 dark:text-green-400 mt-2 inline-flex items-center gap-1">
+          <Check className="w-3.5 h-3.5" /> Marked done by {f.doneBy}{f.doneAt ? ` · ${formatDate(f.doneAt)}` : ''}
+        </p>
+      )}
       {f.page && (
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">On page: <code>{f.page}</code></p>
       )}
