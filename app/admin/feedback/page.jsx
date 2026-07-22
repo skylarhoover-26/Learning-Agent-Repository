@@ -18,6 +18,23 @@ const CATEGORY_STYLES = {
   Other: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 };
 
+// Priority levels mirror the task-tracker sheet: Critical → Future.
+const PRIORITY_LEVELS = ['Critical', 'High', 'Med', 'Low', 'Future'];
+const PRIORITY_ORDER = { Critical: 0, High: 1, Med: 2, Low: 3, Future: 4 };
+const PRIORITY_STYLES = {
+  Critical: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+  High: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+  Med: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
+  Low: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
+  Future: 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+};
+const PRIORITY_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
+
+// Unset priorities sort last; ties fall back to newest-first by date.
+function priorityRank(f) {
+  return f.priority in PRIORITY_ORDER ? PRIORITY_ORDER[f.priority] : 99;
+}
+
 function formatDate(iso) {
   if (!iso) return '';
   try {
@@ -55,6 +72,7 @@ function AdminFeedbackInner() {
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [tab, setTab] = useState('pending');
+  const [sortBy, setSortBy] = useState('priority');
   const [updatingId, setUpdatingId] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState(null);
@@ -94,18 +112,18 @@ function AdminFeedbackInner() {
     }
   }
 
-  // Flip a record's status. Optimistic: update the UI first, then persist;
-  // roll back and surface an error if the request fails.
-  async function setStatus(id, status) {
+  // Patch a record (status and/or priority). Optimistic: update the UI first,
+  // then persist; roll back and surface an error if the request fails.
+  async function patchItem(id, patch) {
     const prev = items;
     setUpdatingId(id);
     setError(null);
-    setItems((cur) => cur.map((f) => (f.id === id ? { ...f, status } : f)));
+    setItems((cur) => cur.map((f) => (f.id === id ? { ...f, ...patch } : f)));
     try {
       const res = await fetch('/api/feedback', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status }),
+        body: JSON.stringify({ id, ...patch }),
       });
       if (!res.ok) throw new Error('Failed to update feedback');
     } catch (e) {
@@ -174,24 +192,45 @@ function AdminFeedbackInner() {
           const pending = items.filter((f) => !isPraise(f) && !isDone(f));
           const completed = items.filter((f) => !isPraise(f) && isDone(f));
           const counts = { pending: pending.length, completed: completed.length, praise: praise.length };
-          const shown = tab === 'praise' ? praise : tab === 'completed' ? completed : pending;
+          const base = tab === 'praise' ? praise : tab === 'completed' ? completed : pending;
+          // Copy before sorting so we never mutate the source arrays.
+          const shown = [...base].sort((a, b) => {
+            if (sortBy === 'priority') {
+              const diff = priorityRank(a) - priorityRank(b);
+              if (diff !== 0) return diff;
+            }
+            return (b.at || '').localeCompare(a.at || '');
+          });
           return (
             <>
-              <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-slate-700">
-                {TABS.map((t) => (
-                  <button
-                    key={t.key}
-                    onClick={() => setTab(t.key)}
-                    className={`px-3 py-2 -mb-px text-sm font-medium border-b-2 transition-colors ${
-                      tab === t.key
-                        ? 'border-brand text-brand'
-                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
-                    }`}
+              <div className="flex items-center justify-between gap-2 mb-4 border-b border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-2">
+                  {TABS.map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => setTab(t.key)}
+                      className={`px-3 py-2 -mb-px text-sm font-medium border-b-2 transition-colors ${
+                        tab === t.key
+                          ? 'border-brand text-brand'
+                          : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {t.label}
+                      <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{counts[t.key]}</span>
+                    </button>
+                  ))}
+                </div>
+                <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 pb-2">
+                  Sort
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
                   >
-                    {t.label}
-                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{counts[t.key]}</span>
-                  </button>
-                ))}
+                    <option value="priority">Priority</option>
+                    <option value="newest">Newest</option>
+                  </select>
+                </label>
               </div>
 
               {shown.length === 0 ? (
@@ -209,7 +248,7 @@ function AdminFeedbackInner() {
                       key={f.id}
                       feedback={f}
                       busy={updatingId === f.id}
-                      onSetStatus={setStatus}
+                      onPatch={patchItem}
                     />
                   ))}
                 </div>
@@ -222,7 +261,7 @@ function AdminFeedbackInner() {
   );
 }
 
-function FeedbackCard({ feedback: f, busy, onSetStatus }) {
+function FeedbackCard({ feedback: f, busy, onPatch }) {
   const done = isDone(f);
   return (
     <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
@@ -236,17 +275,31 @@ function FeedbackCard({ feedback: f, busy, onSetStatus }) {
         <span className="text-xs text-slate-400">·</span>
         <span className="text-xs text-slate-500 dark:text-slate-400">{formatDate(f.at)}</span>
         {!isPraise(f) && (
-          <button
-            onClick={() => onSetStatus(f.id, done ? 'open' : 'done')}
-            disabled={busy}
-            className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
-              done
-                ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
-                : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20'
-            }`}
-          >
-            {done ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <select
+              value={f.priority || ''}
+              onChange={(e) => onPatch(f.id, { priority: e.target.value || null })}
+              disabled={busy}
+              aria-label="Priority"
+              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${f.priority ? PRIORITY_STYLES[f.priority] : PRIORITY_UNSET}`}
+            >
+              <option value="">Priority…</option>
+              {PRIORITY_LEVELS.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => onPatch(f.id, { status: done ? 'open' : 'done' })}
+              disabled={busy}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
+                done
+                  ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
+                  : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20'
+              }`}
+            >
+              {done ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
+            </button>
+          </div>
         )}
       </div>
       <p className="text-sm text-ink dark:text-slate-200 whitespace-pre-wrap">{f.text}</p>
