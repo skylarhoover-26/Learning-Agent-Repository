@@ -14,7 +14,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   try {
-    const summary = await sendDailyNotifications();
+    const summary = await sendDailyNotifications('manual');
     return NextResponse.json({ ok: true, ...summary });
   } catch (error) {
     console.error('POST /api/admin/notifications/send error:', error);

@@ -3,7 +3,19 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { Bell, Plus, Trash2, Loader2, Send } from 'lucide-react';
+import { Bell, Plus, Trash2, Loader2, Send, History, CheckCircle2, AlertTriangle } from 'lucide-react';
+
+const TRIGGER_LABEL = { cron: 'Automatic (weekday)', manual: 'Manual send', n8n: 'n8n schedule' };
+
+function formatSentAt(iso) {
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
 
 export default function NotificationsAdminPage() {
   return <CinematicFrame><NotificationsAdminPageInner /></CinematicFrame>;
@@ -15,6 +27,7 @@ function NotificationsAdminPageInner() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
+  const [log, setLog] = useState([]);
 
   useEffect(() => {
     fetch('/api/admin-check')
@@ -23,12 +36,23 @@ function NotificationsAdminPageInner() {
       .catch(() => setAllowed(false));
   }, []);
 
+  async function loadLog() {
+    try {
+      const r = await fetch('/api/admin/notifications/log');
+      const d = r.ok ? await r.json() : { entries: [] };
+      setLog(Array.isArray(d.entries) ? d.entries : []);
+    } catch {
+      /* non-fatal */
+    }
+  }
+
   useEffect(() => {
     if (!allowed) return;
     fetch('/api/admin/notify-allowlist')
       .then((r) => (r.ok ? r.json() : { emails: [] }))
       .then((d) => setEmails(Array.isArray(d.emails) ? d.emails : []))
       .catch(() => {});
+    loadLog();
   }, [allowed]);
 
   async function save(next) {
@@ -83,6 +107,7 @@ function NotificationsAdminPageInner() {
       } else {
         setStatus(`sent:${data.sent}/${data.recipients}`);
       }
+      loadLog();
     } catch {
       setStatus('error');
     }
@@ -180,7 +205,66 @@ function NotificationsAdminPageInner() {
             )}
           </div>
         </div>
+
+        <SendHistory log={log} onRefresh={loadLog} />
       </main>
+    </div>
+  );
+}
+
+// Pulse check: confirms each daily-pick send actually fired, newest-first.
+function SendHistory({ log, onRefresh }) {
+  const last = log[0];
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-ink dark:text-slate-200">
+          <History className="w-4 h-4 text-slate-400" /> Recent sends
+        </h2>
+        <button
+          onClick={onRefresh}
+          className="text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {last ? (
+        <div className="mb-4 flex items-center gap-2 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/40 px-4 py-3">
+          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+          <p className="text-sm text-green-800 dark:text-green-300">
+            Last sent <strong>{formatSentAt(last.at)}</strong> — {last.sent}/{last.recipients} delivered
+            {last.failed > 0 ? `, ${last.failed} failed` : ''}.
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-slate-400 italic mb-2">
+          No sends recorded yet. Once the weekday send fires (or you send manually), it'll show here.
+        </p>
+      )}
+
+      {log.length > 0 && (
+        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+          {log.map((e, i) => (
+            <li key={`${e.at}-${i}`} className="flex items-center justify-between gap-4 py-2.5">
+              <div className="min-w-0">
+                <p className="text-sm text-ink dark:text-slate-200">{formatSentAt(e.at)}</p>
+                <p className="text-xs text-slate-400">{TRIGGER_LABEL[e.trigger] || e.trigger}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {e.failed > 0 ? (
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                )}
+                <span className="text-sm text-slate-600 dark:text-slate-300">
+                  {e.sent}/{e.recipients}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -18,6 +18,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|api/auth|api/slack|api/manager-data|api/manager-lookup|api/curriculum|api/daily-digest|api/lesson/grade|api/lesson/tones|api/scoring).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|api/auth|api/slack|api/cron|api/manager-data|api/manager-lookup|api/curriculum|api/daily-digest|api/lesson/grade|api/lesson/tones|api/scoring).*)',
   ],
 };

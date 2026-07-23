@@ -22,7 +22,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    const summary = await sendDailyNotifications();
+    const summary = await sendDailyNotifications('n8n');
     return NextResponse.json({ ok: true, ...summary });
   } catch (error) {
     console.error('POST /api/notifications/daily error:', error);

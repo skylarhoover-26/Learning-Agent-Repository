@@ -46,7 +46,7 @@ async function run(request) {
     // the summary surfaces per-recipient failures for follow-up.
     await saveUserData(SYSTEM_ID, SENT_MARKER, { date: today, at: new Date().toISOString() });
 
-    const summary = await sendDailyNotifications();
+    const summary = await sendDailyNotifications('cron');
     return NextResponse.json({ ok: true, date: today, ...summary });
   } catch (error) {
     console.error('GET /api/cron/daily-pick error:', error);
