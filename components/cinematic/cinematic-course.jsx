@@ -11,6 +11,7 @@ import CompletionFeedback from '@/components/completion-feedback';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { takePrefetchedPlan } from '@/lib/lesson-prefetch';
+import { getPausedLesson, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { onLessonComplete } from '@/lib/progression';
 import { emitXp } from '@/lib/xp-bus';
@@ -60,6 +61,28 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
     startedAt.current = new Date().toISOString();
 
     (async () => {
+      // Resume an in-progress session for this exact lesson if one exists —
+      // skips regeneration entirely so exiting and reopening never loses
+      // progress or re-spends an AI generation (mirrors PlanLessonPlayer).
+      try {
+        const saved = getPausedLesson(format, topic)?.state || null;
+        if (saved && saved.plan) {
+          if (!active) return;
+          setPlan(saved.plan);
+          setTeach(saved.teach || {});
+          setResolved(saved.resolved || {});
+          if (saved.lessonToolId) {
+            const savedTool = (tools || []).find((t) => t.id === saved.lessonToolId);
+            if (savedTool) setLessonTool(savedTool);
+          }
+          startedAt.current = saved.startedAt || startedAt.current;
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // ignore bad save
+      }
+
       let planData = null;
       // Reuse a plan the picker may have already started generating the moment
       // the topic was chosen (hides the plan latency behind the mount).
@@ -166,6 +189,27 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
     return () => io.disconnect();
   }, [plan, teach, completed]);
 
+  // ---- Persist progress (pause/resume) --------------------------------------
+  // Keeps this lesson resumable from the header bell / picker's paused-lessons
+  // list even if the learner just closes the tab instead of finishing —
+  // finish() clears the entry once the lesson is actually complete.
+  useEffect(() => {
+    if (loading || !plan || completed) return;
+    const activitySteps = (plan.steps || []).filter((s) => s.kind === 'activity');
+    const passedCount = Object.values(resolved).filter(Boolean).length;
+    upsertPausedLesson({
+      format,
+      topic,
+      startedAt: startedAt.current,
+      stepLabel: activitySteps.length ? `${passedCount}/${activitySteps.length} activities done` : 'In progress',
+      state: {
+        topic, format, plan, teach, resolved,
+        lessonToolId: lessonTool?.id || null,
+        startedAt: startedAt.current,
+      },
+    });
+  }, [loading, plan, teach, resolved, completed, format, topic, lessonTool]);
+
   const objectives = plan?.objectives || [];
   const steps = plan?.steps || [];
   const activitySteps = steps.filter((s) => s.kind === 'activity');
@@ -183,6 +227,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
     });
     setAward(result);
     if (result) emitXp(result);
+    removePausedLesson(format, topic);
     setCompleted(true);
     setShowConfetti(true);
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
