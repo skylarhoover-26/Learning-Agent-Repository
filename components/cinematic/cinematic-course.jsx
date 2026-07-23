@@ -62,46 +62,53 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
 
     (async () => {
       // Resume an in-progress session for this exact lesson if one exists —
-      // skips regeneration entirely so exiting and reopening never loses
-      // progress or re-spends an AI generation (mirrors PlanLessonPlayer).
+      // reuses its plan (and whatever teach content it already has) instead of
+      // regenerating from scratch, so exiting and reopening — even mid-generation,
+      // e.g. before every section finished writing — never loses progress or
+      // re-spends an AI generation (mirrors PlanLessonPlayer). Anything the saved
+      // session is still missing gets backfilled below like a fresh lesson would.
+      let planData = null;
+      let existingTeach = {};
+      let existingResolved = {};
+      let existingToolId = null;
       try {
         const saved = getPausedLesson(format, topic)?.state || null;
         if (saved && saved.plan) {
-          if (!active) return;
-          setPlan(saved.plan);
-          setTeach(saved.teach || {});
-          setResolved(saved.resolved || {});
-          if (saved.lessonToolId) {
-            const savedTool = (tools || []).find((t) => t.id === saved.lessonToolId);
-            if (savedTool) setLessonTool(savedTool);
-          }
+          planData = saved.plan;
+          existingTeach = saved.teach || {};
+          existingResolved = saved.resolved || {};
+          existingToolId = saved.lessonToolId || null;
           startedAt.current = saved.startedAt || startedAt.current;
-          setLoading(false);
-          return;
         }
       } catch {
         // ignore bad save
       }
 
-      let planData = null;
-      // Reuse a plan the picker may have already started generating the moment
-      // the topic was chosen (hides the plan latency behind the mount).
-      const prefetched = takePrefetchedPlan(topic, format, tools);
-      if (prefetched) planData = await prefetched;
-      if (!active) return;
-      for (let attempt = 1; attempt <= 2 && active && !planData; attempt++) {
-        try {
-          const res = await fetch('/api/lesson/plan', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic, format, tools }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed to plan lesson');
-          planData = data; break;
-        } catch (err) { if (attempt === 2) { if (active) { setError(err.message || 'Failed to design the lesson.'); setLoading(false); } } }
+      if (planData) {
+        if (!active) return;
+        setPlan(planData);
+        setTeach(existingTeach);
+        setResolved(existingResolved);
+      } else {
+        // Reuse a plan the picker may have already started generating the moment
+        // the topic was chosen (hides the plan latency behind the mount).
+        const prefetched = takePrefetchedPlan(topic, format, tools);
+        if (prefetched) planData = await prefetched;
+        if (!active) return;
+        for (let attempt = 1; attempt <= 2 && active && !planData; attempt++) {
+          try {
+            const res = await fetch('/api/lesson/plan', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ topic, format, tools }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to plan lesson');
+            planData = data; break;
+          } catch (err) { if (attempt === 2) { if (active) { setError(err.message || 'Failed to design the lesson.'); setLoading(false); } } }
+        }
+        if (!active || !planData) return;
+        setPlan(planData);
       }
-      if (!active || !planData) return;
-      setPlan(planData);
 
       // The plan picks the best of the learner's tools for this topic and returns
       // it as primaryTool. Reorder our tools to match so teach content is written
@@ -110,14 +117,20 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
         const idx = tools.findIndex((t) => t.id === planData.primaryTool);
         return idx > 0 ? [tools[idx], ...tools.slice(0, idx), ...tools.slice(idx + 1)] : tools;
       })();
-      if (active) setLessonTool(orderedTools[0] || primaryTool);
+      let toolAlreadySet = false;
+      if (existingToolId) {
+        const savedTool = (tools || []).find((t) => t.id === existingToolId);
+        if (savedTool) { setLessonTool(savedTool); toolAlreadySet = true; }
+      }
+      if (active && !toolAlreadySet) setLessonTool(orderedTools[0] || primaryTool);
 
-      // Write ALL teach content before revealing the reader, so the lesson is
-      // complete the moment it opens (no half-empty "Preparing…" sections). Teach
-      // steps still run in parallel — we just wait for the whole set. A step that
-      // fails after retries resolves into teachErr so the gate can never hang.
+      // Write whatever teach content this lesson is still missing — normally
+      // all of it for a fresh lesson, or just the gap left by an earlier exit
+      // mid-generation — before revealing the reader, so it's never half-empty.
+      // Steps run in parallel; a step that fails after retries resolves into
+      // teachErr so the gate can never hang.
       const steps = planData.steps || [];
-      const teachSteps = steps.filter((s) => s.kind === 'teach' || s.kind === 'qa');
+      const teachSteps = steps.filter((s) => (s.kind === 'teach' || s.kind === 'qa') && !existingTeach[s.id]);
       setTeachTotal(teachSteps.length);
       setTeachDone(0);
       let finished = 0;
@@ -191,10 +204,10 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
 
   // ---- Persist progress (pause/resume) --------------------------------------
   // Keeps this lesson resumable from the header bell / picker's paused-lessons
-  // list even if the learner just closes the tab instead of finishing —
-  // finish() clears the entry once the lesson is actually complete.
+  // list even if the learner closes the tab mid-generation (not just after it
+  // finishes reading) — finish() clears the entry once actually complete.
   useEffect(() => {
-    if (loading || !plan || completed) return;
+    if (!plan || completed) return;
     const activitySteps = (plan.steps || []).filter((s) => s.kind === 'activity');
     const passedCount = Object.values(resolved).filter(Boolean).length;
     upsertPausedLesson({
@@ -208,7 +221,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
         startedAt: startedAt.current,
       },
     });
-  }, [loading, plan, teach, resolved, completed, format, topic, lessonTool]);
+  }, [plan, teach, resolved, completed, format, topic, lessonTool]);
 
   const objectives = plan?.objectives || [];
   const steps = plan?.steps || [];
