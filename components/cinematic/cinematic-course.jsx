@@ -29,6 +29,10 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
   const { profile } = useProfile();
   const { tools, primaryTool } = useActiveTool();
   const meta = FORMAT_META[format] || FORMAT_META.standard;
+  // Quick Lessons are short enough (1-2 objectives) to keep the objectives
+  // permanently visible rather than behind a toggle — longer formats keep
+  // the collapsible behavior so the sticky bar doesn't get crowded.
+  const alwaysShowObjectives = format === 'standard';
 
   const [plan, setPlan] = useState(null);            // { objectives, steps }
   const [teach, setTeach] = useState({});            // stepId -> { message, blocks, keyPoints }
@@ -227,18 +231,24 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
           </div>
           <span className="text-xs tabular-nums shrink-0" style={{ color: 'var(--ink-dim)' }}>{Math.round(progress)}%</span>
           {objectives.length > 0 && (
-            <button
-              onClick={() => setShowObjectives((v) => !v)}
-              aria-expanded={showObjectives}
-              className="inline-flex items-center gap-1 text-xs font-medium shrink-0 transition-opacity hover:opacity-70"
-              style={{ color: 'var(--accent)' }}
-            >
-              <Target className="w-3.5 h-3.5" /> Objectives
-              {showObjectives ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
+            alwaysShowObjectives ? (
+              <span className="inline-flex items-center gap-1 text-xs font-medium shrink-0" style={{ color: 'var(--accent)' }}>
+                <Target className="w-3.5 h-3.5" /> Objectives
+              </span>
+            ) : (
+              <button
+                onClick={() => setShowObjectives((v) => !v)}
+                aria-expanded={showObjectives}
+                className="inline-flex items-center gap-1 text-xs font-medium shrink-0 transition-opacity hover:opacity-70"
+                style={{ color: 'var(--accent)' }}
+              >
+                <Target className="w-3.5 h-3.5" /> Objectives
+                {showObjectives ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )
           )}
         </div>
-        {showObjectives && objectives.length > 0 && (
+        {(alwaysShowObjectives || showObjectives) && objectives.length > 0 && (
           <ul className="pb-3 pt-1 space-y-1.5">
             {objectives.map((o) => (
               <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
@@ -264,10 +274,10 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-5" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
               {meta.label} · {meta.mins}
             </span>
-            <h1 className="font-display font-extrabold tracking-tight cine-grad-flow max-w-3xl" style={{ fontSize: 'clamp(30px,5vw,60px)', lineHeight: 1.05, letterSpacing: '-.03em' }}>
+            <h1 className="font-display font-extrabold tracking-tight max-w-3xl" style={{ fontSize: 'clamp(30px,5vw,60px)', lineHeight: 1.05, letterSpacing: '-.03em', color: 'var(--ink)' }}>
               {topic}
             </h1>
-            {objectives.length > 0 && (
+            {!alwaysShowObjectives && objectives.length > 0 && (
               <ul className="mt-6 max-w-md mx-auto space-y-1.5 text-left">
                 {objectives.map((o) => (
                   <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
