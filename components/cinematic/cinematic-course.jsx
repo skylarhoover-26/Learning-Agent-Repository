@@ -259,19 +259,19 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
 
       <div className="relative z-10 max-w-[860px] mx-auto px-2 sm:px-6">
         {/* HERO */}
-        <section className="min-h-[88vh] flex flex-col justify-center items-center text-center">
+        <section className="min-h-[64vh] flex flex-col justify-center items-center text-center">
           <div ref={heroRef} className="flex flex-col items-center">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-6" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-5" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
               {meta.label} · {meta.mins}
             </span>
-            <h1 className="font-display font-extrabold tracking-tight cine-grad-flow max-w-4xl" style={{ fontSize: 'clamp(44px,7vw,96px)', lineHeight: 0.95, letterSpacing: '-.035em' }}>
+            <h1 className="font-display font-extrabold tracking-tight cine-grad-flow max-w-3xl" style={{ fontSize: 'clamp(30px,5vw,60px)', lineHeight: 1.05, letterSpacing: '-.03em' }}>
               {topic}
             </h1>
             {objectives.length > 0 && (
-              <ul className="mt-9 max-w-md mx-auto space-y-2 text-left">
+              <ul className="mt-6 max-w-md mx-auto space-y-1.5 text-left">
                 {objectives.map((o) => (
-                  <li key={o.id} className="flex items-start gap-2.5 text-[15px]" style={{ color: 'var(--ink-dim)' }}>
-                    <Check className="w-4 h-4 mt-1 shrink-0" style={{ color: 'var(--good)' }} />
+                  <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
+                    <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--good)' }} />
                     <span>{o.text}</span>
                   </li>
                 ))}
