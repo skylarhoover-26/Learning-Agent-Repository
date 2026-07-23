@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Target, Sparkles, RotateCcw, Lightbulb, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Target, Sparkles, RotateCcw, Lightbulb, RefreshCw, List } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import LessonInteractive from '@/components/lesson-interactive';
 import LessonActivity from '@/components/lesson-activity';
@@ -34,6 +34,12 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
   // permanently visible rather than behind a toggle — longer formats keep
   // the collapsible behavior so the sticky bar doesn't get crowded.
   const alwaysShowObjectives = format === 'standard';
+  // Quick Lesson (3-5 min) and Deep Dive (15-20 min) share this component but
+  // must FEEL like different-sized commitments: Quick Lesson reads as a compact,
+  // minimal single-column note (no big hero, no chapter nav); Deep Dive leans
+  // into the full "course" treatment — a tall hero, a table of contents, numbered
+  // chapter dividers, and a clickable chapter rail. isDeepDive gates all of that.
+  const isDeepDive = format === 'deep_dive';
 
   const [plan, setPlan] = useState(null);            // { objectives, steps }
   const [teach, setTeach] = useState({});            // stepId -> { message, blocks, keyPoints }
@@ -49,6 +55,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
   const [showConfetti, setShowConfetti] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showObjectives, setShowObjectives] = useState(false);
+  const [activeSecId, setActiveSecId] = useState(null); // deep-dive chapter rail: which chapter is centered
 
   const startedAt = useRef(null);
   const heroRef = useRef(null);
@@ -181,7 +188,8 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
       const y = window.scrollY || doc.scrollTop || 0;
       const p = max > 0 ? Math.min(1, y / max) : 0;
       setProgress(8 + p * 92);
-      if (heroRef.current) {
+      // Parallax the hero only for Deep Dive — Quick Lesson has no tall hero.
+      if (isDeepDive && heroRef.current) {
         heroRef.current.style.transform = `translateY(${y * 0.3}px)`;
         heroRef.current.style.opacity = String(Math.max(0, 1 - y / 520));
       }
@@ -189,7 +197,19 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
-  }, [plan, completed]);
+  }, [plan, completed, isDeepDive]);
+
+  // ---- Deep Dive: track which chapter is centered, to light its rail dot -----
+  useEffect(() => {
+    if (!isDeepDive || !rootRef.current) return;
+    const secs = Array.from(rootRef.current.querySelectorAll('[data-sec]'));
+    if (!secs.length) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) setActiveSecId(e.target.getAttribute('data-sec')); });
+    }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+    secs.forEach((s) => io.observe(s));
+    return () => io.disconnect();
+  }, [isDeepDive, plan, teach, completed]);
 
   // ---- Reveal sections as they enter the viewport -------------------------
   useEffect(() => {
@@ -228,8 +248,25 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
   const activitySteps = steps.filter((s) => s.kind === 'activity');
   const allActivitiesDone = activitySteps.every((s) => s.id in resolved);
 
+  // "Chapters" = the teach steps (the concepts), numbered in order. Drives the
+  // Deep Dive table of contents, the chapter dividers, and the chapter rail.
+  const chapters = steps.filter((s) => s.kind === 'teach');
+  const conceptNumber = {};
+  chapters.forEach((s, i) => { conceptNumber[s.id] = i + 1; });
+  const totalChapters = chapters.length;
+
+  // Deep Dive breathes (tall sections, big headings); Quick Lesson is tight.
+  const secPad = isDeepDive ? 'py-14 sm:py-20' : 'py-7';
+  const headFs = isDeepDive ? 'clamp(28px,3.6vw,46px)' : 'clamp(22px,3vw,32px)';
+
   const resolveActivity = useCallback((id, passed) => {
     setResolved((prev) => ({ ...prev, [id]: passed }));
+  }, []);
+
+  // Smooth-scroll a chapter into view (TOC + rail), clearing the sticky sub-bar.
+  const scrollToSec = useCallback((id) => {
+    const el = document.getElementById(`sec-${id}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   function finish() {
@@ -318,50 +355,122 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
         )}
       </div>
 
-      {/* Vertical chapter rail (desktop) */}
-      <div className="hidden lg:flex fixed left-6 top-1/2 -translate-y-1/2 z-20 flex-col items-center" aria-hidden>
-        <div className="relative w-[3px] h-60 rounded-full overflow-hidden" style={{ background: 'var(--line)' }}>
-          <div className="absolute top-0 left-0 w-full rounded-full transition-[height] duration-200" style={{ height: `${progress}%`, background: 'linear-gradient(var(--accent),var(--accent2))' }} />
-        </div>
-      </div>
+      {/* Chapter rail (desktop, Deep Dive only) — clickable chapter dots that
+          jump to each concept and light up as you pass through them. Quick
+          Lesson is too short to warrant navigation, so it gets no rail. */}
+      {isDeepDive && totalChapters > 1 && (
+        <nav className="hidden lg:flex fixed left-6 top-1/2 -translate-y-1/2 z-20 flex-col gap-3.5" aria-label="Chapters">
+          {chapters.map((c, ci) => {
+            const active = activeSecId === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => scrollToSec(c.id)}
+                title={`${ci + 1}. ${c.title}`}
+                aria-current={active ? 'true' : undefined}
+                className="group flex items-center gap-2.5"
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full transition-all duration-200"
+                  style={{ background: active ? 'var(--accent)' : 'var(--line)', transform: active ? 'scale(1.35)' : 'scale(1)' }}
+                />
+                <span
+                  className="text-xs font-medium max-w-[140px] truncate transition-opacity duration-200"
+                  style={{ color: 'var(--ink-dim)', opacity: active ? 0.9 : 0 }}
+                >
+                  {c.title}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
-      <div className="relative z-10 max-w-[860px] mx-auto px-2 sm:px-6">
-        {/* HERO */}
-        <section className="min-h-[64vh] flex flex-col justify-center items-center text-center">
-          <div ref={heroRef} className="flex flex-col items-center">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-5" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
+      <div className={`relative z-10 mx-auto px-2 sm:px-6 ${isDeepDive ? 'max-w-[860px]' : 'max-w-[680px]'}`}>
+        {isDeepDive ? (
+          <>
+            {/* Deep Dive HERO — tall, cinematic, with a "scroll to begin" cue. */}
+            <section className="min-h-[64vh] flex flex-col justify-center items-center text-center">
+              <div ref={heroRef} className="flex flex-col items-center">
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-5" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
+                  {meta.label} · {meta.mins}
+                </span>
+                <h1 className="font-display font-extrabold tracking-tight max-w-3xl" style={{ fontSize: 'clamp(34px,5.5vw,64px)', lineHeight: 1.04, letterSpacing: '-.03em', color: 'var(--ink)' }}>
+                  {topic}
+                </h1>
+                {objectives.length > 0 && (
+                  <ul className="mt-6 max-w-md mx-auto space-y-1.5 text-left">
+                    {objectives.map((o) => (
+                      <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
+                        <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--good)' }} />
+                        <span>{o.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="absolute bottom-10 flex flex-col items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] animate-bounce" style={{ color: 'var(--ink-dim)' }}>
+                Scroll to begin
+                <ChevronDown className="w-5 h-5" />
+              </div>
+            </section>
+
+            {/* Table of contents — sets the expectation that this is a longer,
+                multi-chapter read, and lets the learner jump around. */}
+            {totalChapters > 1 && (
+              <section className="reveal pb-2">
+                <div className="cine-glass rounded-2xl p-5 sm:p-6">
+                  <p className="flex items-center gap-2 text-sm font-bold mb-3" style={{ color: 'var(--accent2)' }}>
+                    <List className="w-4 h-4" /> In this Deep Dive · {totalChapters} chapters
+                  </p>
+                  <ol className="space-y-2.5">
+                    {chapters.map((c, ci) => (
+                      <li key={c.id}>
+                        <button onClick={() => scrollToSec(c.id)} className="group w-full flex items-center gap-3 text-left">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>{ci + 1}</span>
+                          <span className="text-[15px] group-hover:opacity-70 transition-opacity" style={{ color: 'var(--ink)' }}>{c.title}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </section>
+            )}
+          </>
+        ) : (
+          /* Quick Lesson HEADER — compact, no theatrics: eyebrow + title, then
+             straight into the (single) concept. Objectives already sit in the
+             sticky sub-bar for this format, so we don't repeat them here. */
+          <section className="pt-6 pb-1 text-center">
+            <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-3" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
               {meta.label} · {meta.mins}
             </span>
-            <h1 className="font-display font-extrabold tracking-tight max-w-3xl" style={{ fontSize: 'clamp(30px,5vw,60px)', lineHeight: 1.05, letterSpacing: '-.03em', color: 'var(--ink)' }}>
+            <h1 className="font-display font-extrabold tracking-tight mx-auto max-w-xl" style={{ fontSize: 'clamp(24px,4vw,38px)', lineHeight: 1.1, letterSpacing: '-.02em', color: 'var(--ink)' }}>
               {topic}
             </h1>
-            {!alwaysShowObjectives && objectives.length > 0 && (
-              <ul className="mt-6 max-w-md mx-auto space-y-1.5 text-left">
-                {objectives.map((o) => (
-                  <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
-                    <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--good)' }} />
-                    <span>{o.text}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="absolute bottom-10 flex flex-col items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] animate-bounce" style={{ color: 'var(--ink-dim)' }}>
-            Scroll to begin
-            <ChevronDown className="w-5 h-5" />
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* SECTIONS — every step, laid out as a scroll-document */}
         {steps.map((step, i) => {
           if (step.kind === 'teach' || step.kind === 'qa') {
             const t = teach[step.id];
             return (
-              <section key={step.id} className="reveal py-14 sm:py-20">
-                <div className="text-[13px] font-bold uppercase tracking-[.18em] mb-3" style={{ color: 'var(--accent2)' }}>
-                  {step.kind === 'qa' ? 'Your question' : `Concept ${i + 1}`}
-                </div>
-                <h2 className="font-display font-bold tracking-tight mb-6" style={{ fontSize: 'clamp(28px,3.6vw,46px)', lineHeight: 1.04, letterSpacing: '-.03em' }}>
+              <section key={step.id} id={`sec-${step.id}`} data-sec={step.id} className={`reveal scroll-mt-28 ${secPad}`}>
+                {isDeepDive && step.kind === 'teach' ? (
+                  // Numbered chapter divider — reads like a book/course.
+                  <div className="flex items-center gap-3 mb-5">
+                    <span className="text-[12px] font-bold uppercase tracking-[.22em] whitespace-nowrap" style={{ color: 'var(--accent2)' }}>
+                      Chapter {conceptNumber[step.id]} of {totalChapters}
+                    </span>
+                    <span className="flex-1 h-px" style={{ background: 'var(--line)' }} />
+                  </div>
+                ) : (
+                  <div className="text-[13px] font-bold uppercase tracking-[.18em] mb-3" style={{ color: 'var(--accent2)' }}>
+                    {step.kind === 'qa' ? 'Your question' : `Concept ${conceptNumber[step.id] || i + 1}`}
+                  </div>
+                )}
+                <h2 className="font-display font-bold tracking-tight mb-6" style={{ fontSize: headFs, lineHeight: 1.06, letterSpacing: '-.03em' }}>
                   {step.title}
                 </h2>
                 {!t && !teachErr[step.id] && <div className="py-6"><BookLoader message="Preparing…" size="sm" /></div>}
@@ -395,9 +504,9 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
           }
           if (step.kind === 'activity') {
             return (
-              <section key={step.id} className="reveal py-14 sm:py-20">
+              <section key={step.id} className={`reveal scroll-mt-28 ${secPad}`}>
                 <div className="text-[13px] font-bold uppercase tracking-[.18em] mb-3" style={{ color: 'var(--accent)' }}>Your move</div>
-                <h2 className="font-display font-bold tracking-tight mb-6" style={{ fontSize: 'clamp(28px,3.6vw,46px)', lineHeight: 1.04, letterSpacing: '-.03em' }}>
+                <h2 className="font-display font-bold tracking-tight mb-6" style={{ fontSize: headFs, lineHeight: 1.06, letterSpacing: '-.03em' }}>
                   {step.title}
                 </h2>
                 <LessonActivity
