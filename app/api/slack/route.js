@@ -1,11 +1,25 @@
+import { after } from 'next/server';
 import { MODELS } from '@/lib/models';
 import { createHmac, timingSafeEqual } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
-import { SKILLS } from '@/lib/heatmap-data';
+import { lookupSlackEmailByUserId } from '@/lib/slack-notify';
+import { generateSlackReply } from '@/lib/slack-chat';
+import {
+  getLearnerSnapshot,
+  buildLeaderboardBlocks,
+  buildSkillsBlocks,
+} from '@/lib/slack-personalize';
+import {
+  logSlackMessage,
+  reserveSlackEvent,
+  getConversationHistoryForEmail,
+} from '@/lib/slack-conversation-store';
+
+export const maxDuration = 60;
 
 const SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
 const BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-learning-platform.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://learning-agent-pearl.vercel.app';
 
 function verifySlackSignature(signature, timestamp, body) {
   if (!SIGNING_SECRET) return false;
@@ -30,67 +44,13 @@ async function sendSlackMessage(channel, blocks, text) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${BOT_TOKEN}`,
+        Authorization: `Bearer ${BOT_TOKEN}`,
       },
       body: JSON.stringify({ channel, blocks, text }),
     });
   } catch (error) {
     console.error('Failed to send Slack message:', error);
   }
-}
-
-function buildHeatmapBlocks() {
-  const categories = ['Foundations', 'Application', 'Safety', 'Frontier'];
-  const sections = categories.map(cat => {
-    const catSkills = SKILLS.filter(s => s.category === cat);
-    const lines = catSkills.map(s => {
-      const bar = '█'.repeat(Math.round(s.mastery / 10)) + '░'.repeat(10 - Math.round(s.mastery / 10));
-      const stale = s.freshness > 60 ? ' ⚠️' : '';
-      return `${bar} ${s.mastery}% ${s.name}${stale}`;
-    }).join('\n');
-    return {
-      type: 'section',
-      text: { type: 'mrkdwn', text: `*${cat}*\n\`\`\`${lines}\`\`\`` },
-    };
-  });
-
-  return [
-    { type: 'header', text: { type: 'plain_text', text: '🧠 Knowledge Heatmap' } },
-    ...sections,
-    { type: 'divider' },
-    {
-      type: 'actions',
-      elements: [{
-        type: 'button',
-        text: { type: 'plain_text', text: 'View Full Heatmap' },
-        url: `${APP_URL}/heatmap`,
-        action_id: 'open_heatmap',
-      }],
-    },
-  ];
-}
-
-function buildStreakBlocks() {
-  return [
-    { type: 'header', text: { type: 'plain_text', text: '🔥 Your Learning Streak' } },
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: '*Current streak:* 3 days\n*Total lessons:* 4 completed\n*Level:* 3 (250 XP)',
-      },
-    },
-    { type: 'divider' },
-    {
-      type: 'actions',
-      elements: [{
-        type: 'button',
-        text: { type: 'plain_text', text: 'Open Home' },
-        url: APP_URL,
-        action_id: 'open_dashboard',
-      }],
-    },
-  ];
 }
 
 async function generateQuickTip(topic) {
@@ -128,19 +88,19 @@ async function generateQuickTip(topic) {
 
 function buildHelpBlocks() {
   return [
-    { type: 'header', text: { type: 'plain_text', text: '🎓 AI Learning Platform — Slack Bot' } },
+    { type: 'header', text: { type: 'plain_text', text: '🎓 AI Learning Coach — Slack' } },
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
         text: [
-          '*Available commands:*',
-          '`/learn [topic]` — Get a quick AI tip on any topic',
-          '`/streak` — Check your learning streak & progress',
-          '`/heatmap` — See your knowledge heatmap summary',
-          '`/skills` — View your skill breakdown',
+          "*Just message me* with any question about AI — I'll answer right here and point you back to the app when there's something to try.",
           '',
-          'Or just message me with a question about AI!',
+          '*Quick commands:*',
+          '`/learn [topic]` — a quick AI tip on any topic',
+          '`/leaderboard` — where you stand this week',
+          '`/heatmap` — your knowledge heatmap',
+          '`/skills` — your skill breakdown',
         ].join('\n'),
       },
     },
@@ -149,39 +109,10 @@ function buildHelpBlocks() {
       type: 'actions',
       elements: [{
         type: 'button',
-        text: { type: 'plain_text', text: 'Open Learning Platform' },
+        text: { type: 'plain_text', text: 'Open the app' },
         url: APP_URL,
         action_id: 'open_platform',
       }],
-    },
-  ];
-}
-
-function buildSkillsBlocks() {
-  const strong = SKILLS.filter(s => s.mastery >= 70);
-  const growing = SKILLS.filter(s => s.mastery >= 30 && s.mastery < 70);
-  const gaps = SKILLS.filter(s => s.mastery < 30);
-
-  const fmt = (list) => list.length === 0
-    ? '_None yet_'
-    : list.map(s => `• ${s.name} (${s.mastery}%)`).join('\n');
-
-  return [
-    { type: 'header', text: { type: 'plain_text', text: '📊 Your Skills' } },
-    { type: 'section', text: { type: 'mrkdwn', text: `*✅ Strong (${strong.length})*\n${fmt(strong)}` } },
-    { type: 'section', text: { type: 'mrkdwn', text: `*📈 Growing (${growing.length})*\n${fmt(growing)}` } },
-    { type: 'section', text: { type: 'mrkdwn', text: `*🔲 Gaps (${gaps.length})*\n${fmt(gaps)}` } },
-    { type: 'divider' },
-    {
-      type: 'actions',
-      elements: [
-        {
-          type: 'button',
-          text: { type: 'plain_text', text: 'View Heatmap' },
-          url: `${APP_URL}/heatmap`,
-          action_id: 'open_heatmap',
-        },
-      ],
     },
   ];
 }
@@ -204,7 +135,74 @@ async function sendDelayedResponse(responseUrl, blocks, responseType) {
   }
 }
 
-function handleSlashCommand(command, text, responseUrl) {
+// Two-way DM chat. Runs in the background (after the 200 ack) so we never blow
+// Slack's 3s deadline. Deduped on event_id so a retry can't double-reply.
+async function handleDirectMessage(payload) {
+  const event = payload.event || {};
+  const eventId = payload.event_id;
+
+  const proceed = await reserveSlackEvent(eventId);
+  if (!proceed) return; // already handled (Slack retry)
+
+  const slackUserId = event.user;
+  const channel = event.channel;
+  const text = (event.text || '').trim();
+  if (!text || !channel) return;
+
+  const { email } = await lookupSlackEmailByUserId(slackUserId);
+
+  // Prior turns for multi-turn memory (fetched before we log the current one).
+  const history = email ? await getConversationHistoryForEmail(email, 8) : [];
+
+  await logSlackMessage({
+    email,
+    slackUserId,
+    direction: 'inbound',
+    channel,
+    text,
+    meta: { event_id: eventId, source: 'dm' },
+  });
+
+  const { blocks, text: replyText, meta } = await generateSlackReply({ text, email, history });
+  await sendSlackMessage(channel, blocks, replyText);
+
+  await logSlackMessage({
+    email,
+    slackUserId,
+    direction: 'outbound',
+    channel,
+    text: replyText,
+    meta,
+  });
+}
+
+// Personalized slash commands (leaderboard / heatmap / skills) need an async
+// email lookup, so they ack immediately then post the real data via response_url.
+async function handleDataSlash(command, responseUrl, userId, userName) {
+  const { email } = await lookupSlackEmailByUserId(userId);
+  const snapshot = await getLearnerSnapshot(email);
+  const isSkills = command === '/heatmap' || command === '/skills';
+  const blocks = isSkills ? buildSkillsBlocks(snapshot) : buildLeaderboardBlocks(snapshot);
+  await sendDelayedResponse(responseUrl, blocks, 'ephemeral');
+  await logSlackMessage({
+    email,
+    slackUserId: userId,
+    direction: 'inbound',
+    channel: null,
+    text: command,
+    meta: { source: 'slash', command },
+  });
+  await logSlackMessage({
+    email,
+    slackUserId: userId,
+    direction: 'outbound',
+    channel: null,
+    text: isSkills ? 'Sent knowledge heatmap summary.' : 'Sent leaderboard standing.',
+    meta: { source: isSkills ? 'skills' : 'leaderboard', command },
+  });
+}
+
+function handleSlashCommand(command, text, responseUrl, userId, userName) {
   switch (command) {
     case '/learn': {
       if (!text || text.trim() === '') {
@@ -220,12 +218,18 @@ function handleSlashCommand(command, text, responseUrl) {
         deferred,
       };
     }
+    case '/leaderboard':
     case '/streak':
-      return { immediate: { response_type: 'ephemeral', text: '🔥 *Your Learning Streak*\n\n*Current streak:* 3 days\n*Total lessons:* 4 completed\n*Level:* 3 (250 XP)\n\n<' + APP_URL + '|Open Home>' }, deferred: null };
     case '/heatmap':
-      return { immediate: { blocks: buildHeatmapBlocks(), response_type: 'ephemeral' }, deferred: null };
-    case '/skills':
-      return { immediate: { blocks: buildSkillsBlocks(), response_type: 'ephemeral' }, deferred: null };
+    case '/skills': {
+      const deferred = async () => {
+        await handleDataSlash(command, responseUrl, userId, userName);
+      };
+      return {
+        immediate: { response_type: 'ephemeral', text: 'One sec — pulling that up…' },
+        deferred,
+      };
+    }
     default:
       return { immediate: { blocks: buildHelpBlocks(), response_type: 'ephemeral' }, deferred: null };
   }
@@ -249,10 +253,21 @@ export async function POST(request) {
     }
 
     if (payload.type === 'event_callback') {
-      const event = payload.event;
-      if (event.type === 'message' && !event.bot_id && event.channel_type === 'im') {
-        const blocks = buildHelpBlocks();
-        await sendSlackMessage(event.channel, blocks, 'Here are the available commands:');
+      const event = payload.event || {};
+      // Only real, human, direct messages — ignore the bot's own posts, edits/
+      // deletes (subtype), and non-DM channel types.
+      const isHumanDM =
+        event.type === 'message' &&
+        !event.bot_id &&
+        event.subtype === undefined &&
+        event.channel_type === 'im';
+      if (isHumanDM) {
+        // Ack now; do the slow AI work after the response is flushed.
+        after(() =>
+          handleDirectMessage(payload).catch((err) =>
+            console.error('DM handler error:', err)
+          )
+        );
       }
       return Response.json({ ok: true });
     }
@@ -261,16 +276,17 @@ export async function POST(request) {
   }
 
   if (contentType.includes('application/x-www-form-urlencoded')) {
-
     const params = new URLSearchParams(rawBody);
     const command = params.get('command');
     const text = params.get('text') || '';
     const responseUrl = params.get('response_url') || '';
+    const userId = params.get('user_id') || '';
+    const userName = params.get('user_name') || '';
 
-    const { immediate, deferred } = handleSlashCommand(command, text, responseUrl);
+    const { immediate, deferred } = handleSlashCommand(command, text, responseUrl, userId, userName);
 
     if (deferred) {
-      deferred().catch(err => console.error('Deferred handler error:', err));
+      after(() => deferred().catch((err) => console.error('Deferred handler error:', err)));
     }
 
     return Response.json(immediate);
@@ -281,9 +297,9 @@ export async function POST(request) {
 
 export async function GET() {
   return Response.json({
-    name: 'AI Learning Platform Slack Bot',
+    name: 'AI Learning Coach Slack Bot',
     status: 'active',
-    commands: ['/learn', '/streak', '/heatmap', '/skills'],
+    commands: ['/learn', '/leaderboard', '/heatmap', '/skills'],
     configured: Boolean(SIGNING_SECRET && BOT_TOKEN),
   });
 }

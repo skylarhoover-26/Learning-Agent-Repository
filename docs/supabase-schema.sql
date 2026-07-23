@@ -97,6 +97,35 @@ create table if not exists system_documents (
   updated_at  timestamptz default now()
 );
 
+-- ─────────────────────────────────────────────────────────────
+-- SLACK: two-way conversation log (admin monitoring) + event dedup
+-- ─────────────────────────────────────────────────────────────
+-- Every inbound (user → bot) and outbound (bot → user) Slack message is logged
+-- here so admins can monitor coaching conversations at /admin/conversations.
+-- email may be null when a Slack user can't be mapped to an app identity.
+create table if not exists slack_conversations (
+  id             bigint generated always as identity primary key,
+  email          text,                          -- app identity (lowercased), null if unmapped
+  slack_user_id  text,                           -- Slack "U..." id
+  direction      text not null,                  -- 'inbound' | 'outbound'
+  channel        text,                           -- Slack channel / IM id
+  text           text not null default '',
+  meta           jsonb default '{}'::jsonb,      -- event_id, lessonTopic, command, source...
+  created_at     timestamptz not null default now()
+);
+create index if not exists slack_conversations_email_created_idx  on slack_conversations(email, created_at desc);
+create index if not exists slack_conversations_created_idx        on slack_conversations(created_at desc);
+
+-- Idempotency guard: Slack retries an event (up to 3x) if we don't 200 within
+-- 3s. We ack immediately and process the reply async, but a slow ack can still
+-- trigger a retry — insert the event_id here first and skip if it already ran,
+-- so a user is never double-replied. Old rows can be pruned; primary key is the
+-- Slack event_id.
+create table if not exists slack_processed_events (
+  event_id    text primary key,
+  created_at  timestamptz not null default now()
+);
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ROW-LEVEL SECURITY
 -- The app talks to Supabase ONLY from server-side routes using the service_role
@@ -104,10 +133,12 @@ create table if not exists system_documents (
 -- anon/public key is ever exposed, no rows are readable. One service_role policy
 -- per table keeps server access working.
 -- ═══════════════════════════════════════════════════════════════════════════
-alter table profiles         enable row level security;
-alter table xp_events        enable row level security;
-alter table user_documents   enable row level security;
-alter table system_documents enable row level security;
+alter table profiles                enable row level security;
+alter table xp_events               enable row level security;
+alter table user_documents          enable row level security;
+alter table system_documents        enable row level security;
+alter table slack_conversations     enable row level security;
+alter table slack_processed_events  enable row level security;
 
 -- service_role has full access (used by the server). Guard creation so re-runs
 -- don't error on an existing policy.
@@ -124,5 +155,11 @@ begin
   end if;
   if not exists (select 1 from pg_policies where tablename = 'system_documents' and policyname = 'service_role_all') then
     create policy service_role_all on system_documents for all to service_role using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'slack_conversations' and policyname = 'service_role_all') then
+    create policy service_role_all on slack_conversations for all to service_role using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'slack_processed_events' and policyname = 'service_role_all') then
+    create policy service_role_all on slack_processed_events for all to service_role using (true) with check (true);
   end if;
 end $$;
