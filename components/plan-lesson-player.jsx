@@ -472,7 +472,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           const res = await fetch('/api/lesson/teach', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic, objectives, step, priorTitles, priorContent, upcoming, tools: lessonToolIds || toolIds }),
+            body: JSON.stringify({ topic, format, objectives, step, priorTitles, priorContent, upcoming, tools: lessonToolIds || toolIds }),
             signal: controller.signal,
           });
           clearTimeout(timer);

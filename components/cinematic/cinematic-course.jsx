@@ -110,7 +110,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
             try {
               const res = await fetch('/api/lesson/teach', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, objectives: planData.objectives, step, priorTitles, priorContent: '', upcoming, tools: orderedTools }),
+                body: JSON.stringify({ topic, format, objectives: planData.objectives, step, priorTitles, priorContent: '', upcoming, tools: orderedTools }),
                 signal: controller.signal,
               });
               clearTimeout(timer);

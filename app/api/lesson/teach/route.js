@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { topic, objectives, tools, mode } = body;
+    const { topic, objectives, tools, mode, format } = body;
     const profile = await getAuthenticatedProfile();
     const profileForGen = tools ? { ...profile, preferred_tools: tools } : profile;
 
@@ -30,6 +30,7 @@ export async function POST(request) {
       priorTitles: body.priorTitles || [],
       priorContent: body.priorContent || [],
       upcoming: body.upcoming || null,
+      format,
     });
     return NextResponse.json(result);
   } catch (error) {

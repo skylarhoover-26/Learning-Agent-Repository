@@ -31,7 +31,7 @@ export default function AdminLessonContent({ plan, topic, format }) {
       const res = await fetch('/api/admin/lesson-content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, topic, tier: format === 'developer' ? 'developer' : 'beginner' }),
+        body: JSON.stringify({ plan, topic, format, tier: format === 'developer' ? 'developer' : 'beginner' }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load');

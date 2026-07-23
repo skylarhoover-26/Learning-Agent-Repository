@@ -14,7 +14,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { plan, topic, tier = 'beginner' } = await request.json();
+    const { plan, topic, tier = 'beginner', format } = await request.json();
     if (!plan || !Array.isArray(plan.steps)) {
       return NextResponse.json({ error: 'Missing plan' }, { status: 400 });
     }
@@ -29,7 +29,7 @@ export async function POST(request) {
     for (const step of plan.steps) {
       if (step.kind !== 'teach') continue;
       try {
-        const content = await generateTeachStep(topic, profile, { objectives, step, priorTitles });
+        const content = await generateTeachStep(topic, profile, { objectives, step, priorTitles, format });
         teach[step.id] = { message: content.message, keyPoints: content.keyPoints || [] };
       } catch {
         teach[step.id] = { message: '', keyPoints: [], error: true };
