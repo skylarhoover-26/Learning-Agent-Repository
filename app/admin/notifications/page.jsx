@@ -60,6 +60,16 @@ function NotificationsAdminPageInner() {
   }
 
   async function sendNow() {
+    const count = emails.length;
+    if (count === 0) return;
+    // Real broadcast, not a private preview — make the admin confirm exactly
+    // who gets DM'd right now so nobody fires it at the group by accident.
+    const ok = window.confirm(
+      `Send today's pick to ${count} ${count === 1 ? 'person' : 'people'} RIGHT NOW?\n\n` +
+      `${emails.join('\n')}\n\n` +
+      `This sends a real Slack DM to everyone above — it is not a private test.`
+    );
+    if (!ok) return;
     setBusy(true);
     setStatus(null);
     try {
@@ -106,7 +116,7 @@ function NotificationsAdminPageInner() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Only people on this list receive the daily Slack push. Add or remove by email anytime —
-            no redeploy needed. The daily send is triggered by the n8n schedule.
+            no redeploy needed. The daily pick is sent automatically every weekday morning (~9:30am PT).
           </p>
 
           <div className="flex items-center gap-2 mb-4">
@@ -154,7 +164,9 @@ function NotificationsAdminPageInner() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 disabled:opacity-40 transition-all shadow-sm"
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Send now (test)
+              {emails.length === 0
+                ? 'Send now'
+                : `Send to ${emails.length} ${emails.length === 1 ? 'person' : 'people'} now`}
             </button>
             {status === 'saved' && <span className="text-sm text-green-600 dark:text-green-400">Saved</span>}
             {status === 'error' && <span className="text-sm text-red-600 dark:text-red-400">Something went wrong</span>}
