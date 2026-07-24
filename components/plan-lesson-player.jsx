@@ -1132,13 +1132,16 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
       {/* Step body */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-white text-xs font-bold">{stepIdx + 1}</span>
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-            {step?.kind === 'activity' ? 'Activity' : step?.kind === 'build' ? 'Build' : step?.kind === 'recap' ? 'Recap' : step?.kind === 'qa' ? 'Your question' : 'Step'}
-            {step?.title ? ` · ${step.title}` : ''}
-          </span>
-        </div>
+        {/* Quick Tips are a single page — no step badge/label chrome. */}
+        {format !== 'quick_tip' && (
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-white text-xs font-bold">{stepIdx + 1}</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              {step?.kind === 'activity' ? 'Activity' : step?.kind === 'build' ? 'Build' : step?.kind === 'recap' ? 'Recap' : step?.kind === 'qa' ? 'Your question' : 'Step'}
+              {step?.title ? ` · ${step.title}` : ''}
+            </span>
+          </div>
+        )}
 
         {(step?.kind === 'teach' || step?.kind === 'qa') && (
           teachLoading && !teach ? (
