@@ -45,6 +45,8 @@ const PRIORITY_STYLES = {
   Future: 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
 };
 const PRIORITY_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
+// Skipped: a muted, struck-through-feeling slate so it reads as "set aside".
+const SKIPPED_STYLE = 'bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:border-slate-500';
 
 // Feature-area tag: neutral indigo pill, distinct from the category/priority
 // colors so the three buckets stay visually separable on a card.
@@ -73,13 +75,24 @@ function isDone(f) {
   return f.status === 'done';
 }
 
+// "Skipped" is an admin-only disposition: reviewed and intentionally passed on
+// (never AI-assigned). It lives in the status field alongside open/done.
+function isSkipped(f) {
+  return f.status === 'skipped';
+}
+
 function isPraise(f) {
   return f.category === 'Praise';
 }
 
+// Sentinel value used in the per-card priority dropdown to mark an item Skipped
+// — it sets status, not priority, so it stays out of the AI-driven priority set.
+const SKIPPED = 'Skipped';
+
 const TABS = [
   { key: 'pending', label: 'Pending' },
   { key: 'completed', label: 'Completed' },
+  { key: 'skipped', label: 'Skipped' },
   { key: 'praise', label: 'Praise' },
 ];
 
@@ -256,12 +269,14 @@ function AdminFeedbackInner() {
 
         {items !== null && items.length > 0 && (() => {
           // Praise is positive signal, not a to-do, so it gets its own tab and
-          // is excluded from the Pending/Completed triage queues.
+          // is excluded from the triage queues. Skipped items (admin set them
+          // aside) also leave Pending and get their own tab.
           const praise = items.filter(isPraise);
-          const pending = items.filter((f) => !isPraise(f) && !isDone(f));
+          const pending = items.filter((f) => !isPraise(f) && !isDone(f) && !isSkipped(f));
           const completed = items.filter((f) => !isPraise(f) && isDone(f));
-          const counts = { pending: pending.length, completed: completed.length, praise: praise.length };
-          const base = tab === 'praise' ? praise : tab === 'completed' ? completed : pending;
+          const skipped = items.filter((f) => !isPraise(f) && isSkipped(f));
+          const counts = { pending: pending.length, completed: completed.length, skipped: skipped.length, praise: praise.length };
+          const base = tab === 'praise' ? praise : tab === 'completed' ? completed : tab === 'skipped' ? skipped : pending;
           // Free-text search across the card's text, author, and page — so a
           // reviewer can find a specific report without scrolling the whole queue.
           const q = search.trim().toLowerCase();
@@ -394,6 +409,8 @@ function AdminFeedbackInner() {
                     ? 'No praise yet.'
                     : tab === 'completed'
                     ? 'Nothing marked done yet.'
+                    : tab === 'skipped'
+                    ? 'Nothing skipped.'
                     : 'No pending feedback — all caught up!'}
                 </p>
               ) : (
@@ -470,6 +487,8 @@ function fileToDataUrl(file) {
 
 function FeedbackCard({ feedback: f, busy, onPatch }) {
   const done = isDone(f);
+  const skipped = isSkipped(f);
+  const resolved = done || skipped; // done or set-aside → the button offers "Reopen"
   const [noteDraft, setNoteDraft] = useState('');
   const fileRef = useRef(null);
 
@@ -514,17 +533,28 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
               ))}
             </select>
             <select
-              value={f.priority || ''}
-              onChange={(e) => onPatch(f.id, { priority: e.target.value || null })}
+              value={skipped ? SKIPPED : (f.priority || '')}
+              onChange={(e) => {
+                const val = e.target.value;
+                // "Skipped" is a status, not a priority — set it aside without
+                // touching (or clearing) whatever priority it already has.
+                if (val === SKIPPED) { onPatch(f.id, { status: 'skipped' }); return; }
+                // Choosing a real priority (or clearing) pulls a skipped item
+                // back into the queue so it doesn't get stranded in Skipped.
+                const patch = { priority: val || null };
+                if (skipped) patch.status = 'open';
+                onPatch(f.id, patch);
+              }}
               disabled={busy}
               aria-label="Priority"
-              title={f.aiReason || ''}
-              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${f.priority ? PRIORITY_STYLES[f.priority] : PRIORITY_UNSET}`}
+              title={skipped ? 'Set aside by an admin — pick a priority to return it to the queue' : (f.aiReason || '')}
+              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${skipped ? SKIPPED_STYLE : (f.priority ? PRIORITY_STYLES[f.priority] : PRIORITY_UNSET)}`}
             >
               <option value="">Priority…</option>
               {PRIORITY_LEVELS.map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
+              <option value={SKIPPED}>Skipped</option>
             </select>
           </div>
         )}
@@ -618,15 +648,15 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
           </div>
           <div className="flex justify-end mt-3">
             <button
-              onClick={() => onPatch(f.id, { status: done ? 'open' : 'done' })}
+              onClick={() => onPatch(f.id, { status: resolved ? 'open' : 'done' })}
               disabled={busy}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
-                done
+                resolved
                   ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
                   : 'border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20'
               }`}
             >
-              {done ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
+              {resolved ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
             </button>
           </div>
         </div>

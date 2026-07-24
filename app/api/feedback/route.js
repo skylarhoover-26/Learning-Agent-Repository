@@ -13,7 +13,7 @@ export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
 const CATEGORIES = ['Idea', 'Bug', 'Confusing', 'Praise', 'Other'];
-const STATUSES = ['open', 'done'];
+const STATUSES = ['open', 'done', 'skipped'];
 const MAX_SHOTS = 4;
 
 // Any signed-in learner can submit feedback.
