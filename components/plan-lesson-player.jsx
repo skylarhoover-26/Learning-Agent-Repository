@@ -1333,7 +1333,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
               <div className="text-center">
                 <Trophy className="w-10 h-10 text-cta-500 mx-auto mb-2" />
                 <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">You did it!</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{isQuest ? 'You worked through every step of your project.' : 'You completed every activity and proved each objective.'}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{isQuest ? 'You worked through every step of your project.' : format === 'quick_tip' ? 'You picked up a quick tip you can use right away.' : 'You completed every activity and proved each objective.'}</p>
               </div>
               {recapFooter}
             </div>
