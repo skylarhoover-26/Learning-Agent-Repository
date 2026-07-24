@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote, RefreshCw } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote, RefreshCw } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS } from '@/lib/feedback-priority';
@@ -89,6 +89,10 @@ function isPraise(f) {
 // — it sets status, not priority, so it stays out of the AI-driven priority set.
 const SKIPPED = 'Skipped';
 
+// Sentinel used inside the multi-select filters to represent "untagged" items
+// (no priority / no feature), so it can be picked alongside real values.
+const NONE = '__none__';
+
 const TABS = [
   { key: 'pending', label: 'Pending' },
   { key: 'completed', label: 'Completed' },
@@ -109,8 +113,9 @@ function AdminFeedbackInner() {
   const [error, setError] = useState(null);
   const [tab, setTab] = useState('pending');
   const [sortBy, setSortBy] = useState('priority');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [featureFilter, setFeatureFilter] = useState('all');
+  // Multi-select filters: arrays of chosen values. Empty = no filter (All).
+  const [priorityFilter, setPriorityFilter] = useState([]);
+  const [featureFilter, setFeatureFilter] = useState([]);
   const [updatingId, setUpdatingId] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -285,10 +290,10 @@ function AdminFeedbackInner() {
           // One predicate powers both the current-tab list and the global
           // "Total" counter, so the total reflects exactly the active filters.
           const matchesFilters = (f) => {
-            if (priorityFilter === 'none' && f.priority) return false;
-            if (priorityFilter !== 'all' && priorityFilter !== 'none' && f.priority !== priorityFilter) return false;
-            if (featureFilter === 'none' && f.feature) return false;
-            if (featureFilter !== 'all' && featureFilter !== 'none' && f.feature !== featureFilter) return false;
+            // Empty selection = no constraint (All). Otherwise the record must
+            // match one of the chosen values; NONE matches untagged items.
+            if (priorityFilter.length > 0 && !priorityFilter.includes(f.priority || NONE)) return false;
+            if (featureFilter.length > 0 && !featureFilter.includes(f.feature || NONE)) return false;
             if (q) {
               const hay = `${f.text || ''} ${f.name || ''} ${f.email || ''} ${f.page || ''}`.toLowerCase();
               if (!hay.includes(q)) return false;
@@ -347,34 +352,18 @@ function AdminFeedbackInner() {
               {/* Filters on their own line so their dropdowns never run off the
                   side of the screen; they wrap to the next line on narrow widths. */}
               <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2 mb-3">
-                <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  Priority
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
-                  >
-                    <option value="all">All</option>
-                    {PRIORITY_LEVELS.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                    <option value="none">No priority</option>
-                  </select>
-                </label>
-                <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  Feature
-                  <select
-                    value={featureFilter}
-                    onChange={(e) => setFeatureFilter(e.target.value)}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
-                  >
-                    <option value="all">All</option>
-                    {FEATURE_AREAS.map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                    <option value="none">No feature</option>
-                  </select>
-                </label>
+                <MultiSelect
+                  label="Priority"
+                  selected={priorityFilter}
+                  onChange={setPriorityFilter}
+                  options={[...PRIORITY_LEVELS.map((p) => ({ value: p, label: p })), { value: NONE, label: 'No priority' }]}
+                />
+                <MultiSelect
+                  label="Feature"
+                  selected={featureFilter}
+                  onChange={setFeatureFilter}
+                  options={[...FEATURE_AREAS.map((a) => ({ value: a, label: a })), { value: NONE, label: 'No feature' }]}
+                />
                 <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   Sort
                   <select
@@ -418,7 +407,7 @@ function AdminFeedbackInner() {
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-10 text-center">
                   {q
                     ? `No feedback matches "${search.trim()}" in ${tab}.`
-                    : (priorityFilter !== 'all' || featureFilter !== 'all') && base.length > 0
+                    : (priorityFilter.length > 0 || featureFilter.length > 0) && base.length > 0
                     ? `No items match the current filters in ${tab}.`
                     : tab === 'praise'
                     ? 'No praise yet.'
@@ -449,6 +438,76 @@ function AdminFeedbackInner() {
           );
         })()}
       </main>
+    </div>
+  );
+}
+
+// A compact checkbox dropdown so a filter can hold several selections at once.
+// Empty selection reads as "All"; picking values narrows to their union.
+function MultiSelect({ label, options, selected, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close when clicking anywhere outside the control.
+  useEffect(() => {
+    if (!open) return;
+    function onDocMouseDown(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, [open]);
+
+  const toggle = (val) => {
+    onChange(selected.includes(val) ? selected.filter((v) => v !== val) : [...selected, val]);
+  };
+
+  const summary = selected.length === 0
+    ? 'All'
+    : selected.length === 1
+    ? (options.find((o) => o.value === selected[0])?.label ?? selected[0])
+    : `${selected.length} selected`;
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+        {label}
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex items-center justify-between gap-1 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-2 py-1 min-w-[6rem]"
+        >
+          <span className="truncate">{summary}</span>
+          <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+      {open && (
+        <div className="absolute z-20 mt-1 min-w-[11rem] max-h-64 overflow-auto rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg py-1">
+          {selected.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              className="w-full text-left px-3 py-1.5 text-xs text-brand hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              Clear selection
+            </button>
+          )}
+          {options.map((o) => (
+            <label
+              key={o.value}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs text-ink dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(o.value)}
+                onChange={() => toggle(o.value)}
+                className="accent-brand"
+              />
+              {o.label}
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
