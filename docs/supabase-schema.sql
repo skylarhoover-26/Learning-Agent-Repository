@@ -126,6 +126,36 @@ create table if not exists slack_processed_events (
   created_at  timestamptz not null default now()
 );
 
+-- ─────────────────────────────────────────────────────────────
+-- FEEDBACK: in-app feedback submissions (admin triage at /admin/feedback)
+-- ─────────────────────────────────────────────────────────────
+-- One row per feedback submission. Keyed by the app-generated record id
+-- ("<ts>-<uuid>" for in-app submissions, "imported-*" for tester-script imports).
+-- Mirrors the profiles pattern: queryable columns for the admin views + a `raw`
+-- jsonb that is the lossless source of truth on read-back. Screenshots are NOT
+-- stored here — they live in Vercel Blob and only their URLs are kept below.
+-- notes[] is the admin note thread; screenshot_urls[] is the attached-image set.
+create table if not exists feedback (
+  id              text primary key,               -- record.id
+  email           text,                           -- submitter (from Okta session)
+  name            text,
+  category        text,                           -- Idea | Bug | Confusing | Praise | Other
+  text            text,
+  page            text,                           -- app page the feedback was filed from
+  status          text,                           -- open | done | skipped
+  priority        text,                           -- feedback-priority level, or null (unsorted)
+  feature         text,                           -- feature-area tag, or null
+  done_by         text,                           -- admin who resolved it
+  done_at         timestamptz,
+  screenshot_urls jsonb default '[]'::jsonb,       -- blob URLs only
+  notes           jsonb default '[]'::jsonb,       -- [{ text, by, at }] admin note thread
+  raw             jsonb not null,                 -- full record, verbatim (source of truth on read)
+  created_at      timestamptz,                    -- from record.at (submit time)
+  updated_at      timestamptz default now()
+);
+create index if not exists feedback_created_idx  on feedback(created_at desc);
+create index if not exists feedback_status_idx   on feedback(status);
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ROW-LEVEL SECURITY
 -- The app talks to Supabase ONLY from server-side routes using the service_role
@@ -139,6 +169,7 @@ alter table user_documents          enable row level security;
 alter table system_documents        enable row level security;
 alter table slack_conversations     enable row level security;
 alter table slack_processed_events  enable row level security;
+alter table feedback                enable row level security;
 
 -- service_role has full access (used by the server). Guard creation so re-runs
 -- don't error on an existing policy.
@@ -161,5 +192,8 @@ begin
   end if;
   if not exists (select 1 from pg_policies where tablename = 'slack_processed_events' and policyname = 'service_role_all') then
     create policy service_role_all on slack_processed_events for all to service_role using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'feedback' and policyname = 'service_role_all') then
+    create policy service_role_all on feedback for all to service_role using (true) with check (true);
   end if;
 end $$;
