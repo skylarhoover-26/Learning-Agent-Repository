@@ -119,13 +119,25 @@ function AdminFeedbackInner() {
     }
   }, []);
 
-  // Patch a record (status and/or priority). Optimistic: update the UI first,
-  // then persist; roll back and surface an error if the request fails.
+  // Patch a record. Optimistic: update the UI first, then persist; roll back and
+  // surface an error if the request fails.
+  //
+  // Notes and post-hoc screenshots are append-only additions — they must have
+  // ZERO effect on how the card is ranked or ordered. So for those we never
+  // adopt the server's whole record (which could carry a slightly stale
+  // priority from the read-modify-write and silently re-sort the list); we fold
+  // in only the notes/screenshotUrls threads and leave every sort-relevant field
+  // (priority, feature, status, date) exactly as it is on screen.
   async function patchItem(id, patch) {
+    const isAppend = 'note' in patch || 'screenshot' in patch;
     const prev = items;
     setUpdatingId(id);
     setError(null);
-    setItems((cur) => cur.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    // Field patches (status/priority/feature) update optimistically; appends
+    // wait for the server so we don't inject a half-formed note/screenshot.
+    if (!isAppend) {
+      setItems((cur) => cur.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    }
     try {
       const res = await fetch('/api/feedback', {
         method: 'PATCH',
@@ -133,10 +145,17 @@ function AdminFeedbackInner() {
         body: JSON.stringify({ id, ...patch }),
       });
       if (!res.ok) throw new Error('Failed to update feedback');
-      // Adopt the server's record so server-stamped fields (doneBy/doneAt) show.
       const data = await res.json();
       if (data.feedback) {
-        setItems((cur) => cur.map((f) => (f.id === id ? data.feedback : f)));
+        setItems((cur) => cur.map((f) => {
+          if (f.id !== id) return f;
+          // Append: take only the threads, keep everything else local → no re-rank.
+          if (isAppend) {
+            return { ...f, notes: data.feedback.notes, screenshotUrls: data.feedback.screenshotUrls };
+          }
+          // Field patch: adopt the server record so server-stamped fields (doneBy/doneAt) show.
+          return data.feedback;
+        }));
       }
     } catch (e) {
       setItems(prev);
