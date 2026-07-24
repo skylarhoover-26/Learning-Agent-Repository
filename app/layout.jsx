@@ -31,6 +31,15 @@ const inter = Inter({
 export const metadata = {
   title: 'AI Learning Coach — Housecall Pro',
   description: 'Personalized AI learning for the Housecall Pro team',
+  // Version query busts stubborn browser favicon caches when the emblem changes.
+  icons: {
+    icon: [
+      { url: '/icon.png?v=ailc1', type: 'image/png' },
+      { url: '/favicon.ico?v=ailc1', sizes: 'any' },
+    ],
+    shortcut: '/favicon.ico?v=ailc1',
+    apple: '/icon.png?v=ailc1',
+  },
 };
 
 export default function RootLayout({ children }) {
