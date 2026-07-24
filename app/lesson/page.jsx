@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import CinematicCourse from '@/components/cinematic/cinematic-course';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
 import CompletionFeedback from '@/components/completion-feedback';
 import LessonQuiz from '@/components/lesson-quiz';
@@ -478,14 +477,12 @@ function LessonContent() {
   useEffect(() => {
     if (initialTopic && !hasStarted.current && slides.length === 0) {
       hasStarted.current = true;
-      // Launched in watch mode → open the narrated video; otherwise start the
-      // interactive read lesson.
+      // Launched in watch mode → open the narrated video. All read-mode formats
+      // (Quick Tip, Quick Lesson, Deep Dive, Project Quest) fall through: the
+      // plan-driven step player mounts on view==='lesson' and handles its own start.
       if (initialMode === 'watch') {
         launchVideo(initialTopic);
-      } else if ((initialFormat || 'standard') === 'quick_tip') {
-        fetchStartLesson(initialTopic, 'quick_tip');
       }
-      // Quick Lesson / Deep Dive: the plan-driven player handles its own start.
     }
   }, [initialTopic]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -554,9 +551,8 @@ function LessonContent() {
   function startLesson(t) {
     setTopic(t);
     setView('lesson');
-    // Quick Lessons & Deep Dives use the plan-driven player (it fetches its own
-    // plan). Only Quick Tips use the conversational start.
-    if (format === 'quick_tip') fetchStartLesson(t);
+    // All read-mode formats (Quick Tip, Quick Lesson, Deep Dive, Project Quest)
+    // now use the plan-driven step player, which fetches its own plan on mount.
   }
 
   // Entry point from the picker: watch a narrated video or start a read lesson.
@@ -566,7 +562,7 @@ function LessonContent() {
     } else {
       // Prefetch the plan for the reader (covers typed / surprise / clarified
       // topics that don't go through generateSelected). Dedupes by key.
-      if (format === 'standard' || format === 'deep_dive') {
+      if (format === 'quick_tip' || format === 'standard' || format === 'deep_dive') {
         prefetchPlan(t, format, tools);
       }
       startLesson(t);
@@ -869,8 +865,8 @@ function LessonContent() {
       if (learnMode === 'watch') {
         launchVideo(t);
       } else {
+        prefetchPlan(t, 'quick_tip', tools);
         setView('lesson');
-        fetchStartLesson(t, 'quick_tip');
       }
     } catch (err) {
       setSurpriseError(err.message || 'Something went wrong. Please try again.');
@@ -885,17 +881,18 @@ function LessonContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surpriseMode]);
 
-  // Resume a paused lesson in-place: quick tips restore their conversational
-  // state here; plan-driven formats (Quick Lesson / Deep Dive / Project Quest)
-  // rehydrate from their own saved state when the player mounts. Shared by the
-  // picker box and the header bell (via the ?resume=<key> deep link below).
+  // Resume a paused lesson in-place. All read-mode formats (Quick Tip, Quick
+  // Lesson, Deep Dive, Project Quest) now rehydrate from their own saved state
+  // when the plan-driven step player mounts, so we just restore topic/format and
+  // open the lesson view. Shared by the picker box and the header bell (via the
+  // ?resume=<key> deep link below).
   const resumeEntry = useCallback((entry) => {
     if (!entry) return;
     const s = entry.state || {};
     setTopic(entry.topic);
     setFormat(entry.format || 'standard');
     // Narrated ("watch") lessons reopen straight into the player and regenerate
-    // from the start; every other format resumes the read flow in place.
+    // from the start; every read-mode format resumes in the step player.
     if (s.learnMode === 'watch') {
       setLearnMode('watch');
       setView('picker'); // the narrated player is a modal layered over the picker
@@ -903,15 +900,6 @@ function LessonContent() {
       return;
     }
     setLearnMode('read');
-    if (entry.format === 'quick_tip') {
-      setSlides(s.slides || []);
-      setCurrentSlideIdx(s.currentSlideIdx || 0);
-      setMessages(s.messages || []);
-      setUserInputs(s.userInputs || []);
-      lessonStartedAt.current = s.lessonStartedAt || new Date().toISOString();
-      hasRecordedCompletion.current = false;
-      practicePrefilledRef.current = true; // don't auto-prefill mid-lesson on resume
-    }
     setView('lesson');
   }, [launchVideo]);
 
@@ -1505,27 +1493,12 @@ function LessonContent() {
     </div>
   );
 
-  // Quick Lessons, Deep Dives & Project Quests (read mode) use the plan-driven
-  // player: Bloom objectives, required interactive activities, Step X of N,
-  // pause/resume.
-  // Quick Lesson & Deep Dive (read mode) get the immersive full-scroll course
-  // reader — the cinematic "chapter" experience. Same plan/teach APIs, grading,
-  // and XP as the step player; only the presentation is the scroll.
-  if (view === 'lesson' && learnMode === 'read' && (format === 'standard' || format === 'deep_dive')) {
-    return (
-      <CinematicCourse
-        key={`${format}__${topic}`}
-        topic={topic}
-        format={format}
-        onExit={resetToPickerView}
-        onFocusedLesson={startFocusedLesson}
-      />
-    );
-  }
-
-  // Project Quests (read mode) keep the step-driven build player (build engine,
-  // artifact assembly) which the scroll reader doesn't cover.
-  if (view === 'lesson' && learnMode === 'read' && format === 'project_quest') {
+  // Quick Lessons, Deep Dives & Project Quests (read mode) all use the plan-driven
+  // step player: Bloom objectives, one concept/activity per step (shown one at a
+  // time, not a scroll), a persistent objectives header, Step X of N, required
+  // interactive activities, pause/resume, and a recap. Same plan/teach/grading
+  // APIs and XP across formats — only the step count scales by format.
+  if (view === 'lesson' && learnMode === 'read' && (format === 'quick_tip' || format === 'standard' || format === 'deep_dive' || format === 'project_quest')) {
     return (
       <>
         <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
