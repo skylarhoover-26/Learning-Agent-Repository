@@ -37,9 +37,9 @@ const SAMPLES = [
   'writing better prompts for invoice descriptions',
 ];
 
-// Admin-gated preview of the "generate your own game" flow. The generation
-// backend isn't wired yet, so "Generate game" shows a preview of what would
-// launch — this is here to iterate on the flow in the real app.
+// The "generate your own game" flow, open to everyone. `live` games generate +
+// launch for real via their slug route; any non-live game falls back to a flow
+// preview. Custom rounds are practice — they award no XP (see saveGameResult).
 export default function GenerateYourOwnGame() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -83,9 +83,6 @@ export default function GenerateYourOwnGame() {
       <div className="flex items-center gap-2 mb-1.5">
         <Wand2 className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-ink dark:text-slate-100">Generate your own game</h2>
-        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--accent) 14%, transparent)', color: 'var(--accent)', border: '1px solid var(--line)' }}>
-          Admin preview
-        </span>
       </div>
       <p className="text-sm mb-6" style={{ color: 'var(--ink-dim)' }}>
         Pick a game type, then give it any topic — your coach builds a custom round just for you.
