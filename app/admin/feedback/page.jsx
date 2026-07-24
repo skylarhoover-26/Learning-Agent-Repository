@@ -346,7 +346,7 @@ function AdminFeedbackInner() {
 
               {/* Filters on their own line so their dropdowns never run off the
                   side of the screen; they wrap to the next line on narrow widths. */}
-              <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 mb-3">
+              <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2 mb-3">
                 <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   Priority
                   <select
