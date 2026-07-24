@@ -344,72 +344,74 @@ function AdminFeedbackInner() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between gap-2 mb-4 border-b border-slate-200 dark:border-slate-700">
-                <div className="flex items-center gap-2">
-                  {TABS.map((t) => (
-                    <button
-                      key={t.key}
-                      onClick={() => setTab(t.key)}
-                      className={`px-3 py-2 -mb-px text-sm font-medium border-b-2 transition-colors ${
-                        tab === t.key
-                          ? 'border-brand text-brand'
-                          : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
-                      }`}
-                    >
-                      {t.label}
-                      <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{counts[t.key]}</span>
-                    </button>
-                  ))}
-                  <span
-                    title="Total feedback matching the current Priority, Feature, and search filters — across every tab"
-                    className="ml-1 pl-3 border-l border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap"
+              {/* Filters on their own line so their dropdowns never run off the
+                  side of the screen; they wrap to the next line on narrow widths. */}
+              <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 mb-3">
+                <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  Priority
+                  <select
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
                   >
-                    Total
-                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{totalMatching}</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 pb-2">
-                  <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    Priority
-                    <select
-                      value={priorityFilter}
-                      onChange={(e) => setPriorityFilter(e.target.value)}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
-                    >
-                      <option value="all">All</option>
-                      {PRIORITY_LEVELS.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                      <option value="none">No priority</option>
-                    </select>
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    Feature
-                    <select
-                      value={featureFilter}
-                      onChange={(e) => setFeatureFilter(e.target.value)}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
-                    >
-                      <option value="all">All</option>
-                      {FEATURE_AREAS.map((a) => (
-                        <option key={a} value={a}>{a}</option>
-                      ))}
-                      <option value="none">No feature</option>
-                    </select>
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    Sort
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
-                    >
-                      <option value="priority">Priority</option>
-                      <option value="feature">Feature</option>
-                      <option value="newest">Newest</option>
-                    </select>
-                  </label>
-                </div>
+                    <option value="all">All</option>
+                    {PRIORITY_LEVELS.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                    <option value="none">No priority</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  Feature
+                  <select
+                    value={featureFilter}
+                    onChange={(e) => setFeatureFilter(e.target.value)}
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
+                  >
+                    <option value="all">All</option>
+                    {FEATURE_AREAS.map((a) => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                    <option value="none">No feature</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  Sort
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
+                  >
+                    <option value="priority">Priority</option>
+                    <option value="feature">Feature</option>
+                    <option value="newest">Newest</option>
+                  </select>
+                </label>
+              </div>
+
+              {/* Tabs + counts, with Total leading (left of Pending). */}
+              <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <span
+                  title="Total feedback matching the current Priority, Feature, and search filters — across every tab"
+                  className="pl-1 pr-3 mr-1 border-r border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap"
+                >
+                  Total
+                  <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{totalMatching}</span>
+                </span>
+                {TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={`px-3 py-2 -mb-px text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      tab === t.key
+                        ? 'border-brand text-brand'
+                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {t.label}
+                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{counts[t.key]}</span>
+                  </button>
+                ))}
               </div>
 
               {shown.length === 0 ? (
