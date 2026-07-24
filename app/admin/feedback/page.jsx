@@ -507,17 +507,6 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
-            <button
-              onClick={() => onPatch(f.id, { status: done ? 'open' : 'done' })}
-              disabled={busy}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
-                done
-                  ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
-                  : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20'
-              }`}
-            >
-              {done ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
-            </button>
           </div>
         )}
       </div>
@@ -606,6 +595,19 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
               className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
             >
               Add
+            </button>
+          </div>
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={() => onPatch(f.id, { status: done ? 'open' : 'done' })}
+              disabled={busy}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
+                done
+                  ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
+                  : 'border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20'
+              }`}
+            >
+              {done ? <><RotateCcw className="w-3.5 h-3.5" /> Reopen</> : <><Check className="w-3.5 h-3.5" /> Mark as done</>}
             </button>
           </div>
         </div>
