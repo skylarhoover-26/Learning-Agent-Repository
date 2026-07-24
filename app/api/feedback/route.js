@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
-import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, backfillPriorities, appendFeedbackNote, appendFeedbackScreenshot } from '@/lib/feedback-store';
+import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, appendFeedbackNote, appendFeedbackScreenshot } from '@/lib/feedback-store';
 import { PRIORITY_LEVELS, PAGING_PRIORITIES } from '@/lib/feedback-priority';
 import { FEATURE_AREAS } from '@/lib/feedback-features';
-import { classifyFeedback } from '@/lib/feedback-triage';
 import { notifyCriticalFeedback } from '@/lib/slack-notify';
 
-// Screenshot uploads and the on-load priority backfill can take a moment.
+// Screenshot uploads can take a moment.
 export const maxDuration = 60;
 // GET reads mutable blob data — never let Next statically cache it.
 export const dynamic = 'force-dynamic';
@@ -48,26 +47,12 @@ export async function POST(request) {
       page: (body.page || '').toString().slice(0, 300),
       screenshotUrls,
     };
-    // Priority comes from the AI reading actual severity, not the category the
-    // user picked — a Bug can be Low, an Idea can be Critical. Praise skips
-    // triage entirely (positive signal, not a to-do).
-    if (category !== 'Praise') {
-      const classification = await classifyFeedback(record);
-      if (classification) {
-        record.priority = classification.priority;
-        record.aiReason = classification.reason;
-        record.aiBugVerdict = classification.bugVerdict;
-        record.priorityIsAiAssigned = true;
-        if (classification.feature) {
-          record.feature = classification.feature;
-          record.featureIsAiAssigned = true;
-        }
-      }
-    }
+    // No automatic triage: feedback arrives un-sorted (no priority/feature) and
+    // waits in the admin "New" tab until an admin sorts it by assigning a
+    // priority. This keeps categorization a deliberate human step.
     await saveFeedback(record);
-    if (PAGING_PRIORITIES.includes(record.priority)) {
-      await notifyCriticalFeedback(record).catch((error) => console.error('notifyCriticalFeedback error:', error));
-    }
+    // No priority is set on submit, so nothing pages here — admins escalate
+    // manually via PATCH, which fires the critical alert when warranted.
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('POST /api/feedback error:', error);
@@ -75,21 +60,19 @@ export async function POST(request) {
   }
 }
 
-// Only admins can read the collected feedback. Loading also backfills an
-// AI-assigned priority onto any record still missing one, so nothing shows up
-// unrated. Falls back to a plain read if the backfill can't complete.
+// Only admins can read the collected feedback. Un-rated records are returned
+// as-is (no auto-backfill) so they surface in the "New" tab for manual sorting.
 export async function GET() {
   const user = await getAuthenticatedUser();
   if (!user?.email || !(await isAdmin(user.email))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   try {
-    const { records } = await backfillPriorities();
-    return NextResponse.json({ feedback: records });
-  } catch (error) {
-    console.error('GET /api/feedback backfill failed, returning plain list:', error);
     const feedback = await listFeedback();
     return NextResponse.json({ feedback });
+  } catch (error) {
+    console.error('GET /api/feedback failed:', error);
+    return NextResponse.json({ error: 'Failed to load feedback' }, { status: 500 });
   }
 }
 
