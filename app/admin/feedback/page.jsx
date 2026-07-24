@@ -282,7 +282,9 @@ function AdminFeedbackInner() {
           const q = search.trim().toLowerCase();
           // Narrow to a single priority (or "no priority") when a filter is set,
           // then apply the search query on top.
-          const filtered = base.filter((f) => {
+          // One predicate powers both the current-tab list and the global
+          // "Total" counter, so the total reflects exactly the active filters.
+          const matchesFilters = (f) => {
             if (priorityFilter === 'none' && f.priority) return false;
             if (priorityFilter !== 'all' && priorityFilter !== 'none' && f.priority !== priorityFilter) return false;
             if (featureFilter === 'none' && f.feature) return false;
@@ -292,7 +294,11 @@ function AdminFeedbackInner() {
               if (!hay.includes(q)) return false;
             }
             return true;
-          });
+          };
+          const filtered = base.filter(matchesFilters);
+          // Total across every tab (pending/completed/skipped/praise) that matches
+          // the active Priority/Feature/search filters — not scoped to the current tab.
+          const totalMatching = items.filter(matchesFilters).length;
           // Copy before sorting so we never mutate the source arrays.
           const sorted = [...filtered].sort((a, b) => {
             if (sortBy === 'priority') {
@@ -354,6 +360,13 @@ function AdminFeedbackInner() {
                       <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{counts[t.key]}</span>
                     </button>
                   ))}
+                  <span
+                    title="Total feedback matching the current Priority, Feature, and search filters — across every tab"
+                    className="ml-1 pl-3 border-l border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap"
+                  >
+                    Total
+                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{totalMatching}</span>
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 pb-2">
                   <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
