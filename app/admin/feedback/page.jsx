@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote, DatabaseZap } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS } from '@/lib/feedback-priority';
@@ -126,6 +126,9 @@ function AdminFeedbackInner() {
   const [updatingId, setUpdatingId] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  // One-click Supabase re-sync (replaces the browser-console backfill).
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
 
   useEffect(() => {
     if (loaded && !isAdmin) router.replace('/');
@@ -188,6 +191,25 @@ function AdminFeedbackInner() {
     }
   }
 
+  // Copy every feedback record into Supabase (idempotent upsert-by-id). This is
+  // the button-driven version of the one-time backfill — safe to click anytime
+  // to reconcile the two stores.
+  async function syncToSupabase() {
+    setSyncing(true);
+    setSyncResult(null);
+    setError(null);
+    try {
+      const res = await fetch('/api/feedback/migrate-to-supabase', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Sync failed');
+      setSyncResult(`Synced ${data.migrated} of ${data.total} to Supabase`);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   useEffect(() => {
     if (!loaded || !isAdmin) return;
     loadFeedback();
@@ -217,6 +239,21 @@ function AdminFeedbackInner() {
           <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-brand">
             <ArrowLeft className="w-4 h-4" /> Back to Admin Dashboard
           </Link>
+          <div className="flex items-center gap-2">
+            {syncResult && (
+              <span className="text-xs text-green-600 dark:text-green-400">{syncResult}</span>
+            )}
+            <button
+              type="button"
+              onClick={syncToSupabase}
+              disabled={syncing}
+              title="Copy all feedback into Supabase (safe to re-run anytime)"
+              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+            >
+              <DatabaseZap className={`w-4 h-4 ${syncing ? 'animate-pulse' : ''}`} />
+              {syncing ? 'Syncing…' : 'Sync to Supabase'}
+            </button>
+          </div>
         </div>
 
         <div className="mb-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/40 px-3 py-2">
