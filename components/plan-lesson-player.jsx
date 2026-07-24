@@ -271,6 +271,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   }, [loading]);
 
   const objectives = plan?.objectives || [];
+  // Descriptive one-sentence lesson title shown as the hero. Falls back to the
+  // raw topic for lessons paused under the old plan schema (no headline field).
+  const headline = plan?.headline || topic;
   const step = steps[stepIdx] || null;
   const total = steps.length;
 
@@ -1109,16 +1112,22 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[.18em] mb-4" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--accent)' }}>
           {FORMAT_LABEL[format] || 'Lesson'} · Step {stepIdx + 1} of {total}
         </span>
-        <h1 className="font-display font-extrabold leading-[1.04] tracking-tight cine-grad-flow mx-auto max-w-3xl" style={{ fontSize: 'clamp(28px,4vw,48px)' }}>{topic}</h1>
+        <h1 className="font-display font-extrabold leading-[1.12] tracking-tight cine-grad-flow mx-auto max-w-3xl" style={{ fontSize: 'clamp(20px,2.6vw,32px)' }}>{headline}</h1>
         {objectives.length > 0 && (
-          <ul className="mt-5 max-w-md mx-auto space-y-1.5 text-left">
-            {objectives.map((o) => (
-              <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
-                <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--good)' }} />
-                <span>{o.text}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-5 max-w-md mx-auto text-left">
+            <p className="flex items-center gap-2 text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>
+              <Target className="w-4 h-4 shrink-0" style={{ color: 'var(--accent)' }} />
+              By the end, you'll be able to:
+            </p>
+            <ul className="space-y-1.5">
+              {objectives.map((o) => (
+                <li key={o.id} className="flex items-start gap-2 text-sm" style={{ color: 'var(--ink-dim)' }}>
+                  <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--good)' }} />
+                  <span>{o.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
