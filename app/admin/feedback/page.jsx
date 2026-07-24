@@ -9,6 +9,7 @@ import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRig
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS } from '@/lib/feedback-priority';
+import { FEATURE_AREAS } from '@/lib/feedback-features';
 
 // Category → pill color, so bugs/ideas/praise are scannable at a glance.
 const CATEGORY_STYLES = {
@@ -32,9 +33,10 @@ const AI_VERDICT_LABELS = {
   unclear: 'AI: Unclear',
 };
 
-// Order mirrors PRIORITY_LEVELS (lib/feedback-priority.js): Critical → Future.
+// Order mirrors PRIORITY_LEVELS (lib/feedback-priority.js): Show stopper → Future.
 const PRIORITY_ORDER = Object.fromEntries(PRIORITY_LEVELS.map((p, i) => [p, i]));
 const PRIORITY_STYLES = {
+  'Show stopper': 'bg-red-600 text-white border-red-700 dark:bg-red-700 dark:text-red-50 dark:border-red-500',
   Critical: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
   High: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
   'Needs Info': 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800',
@@ -43,6 +45,11 @@ const PRIORITY_STYLES = {
   Future: 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
 };
 const PRIORITY_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
+
+// Feature-area tag: neutral indigo pill, distinct from the category/priority
+// colors so the three buckets stay visually separable on a card.
+const FEATURE_STYLE = 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-800';
+const FEATURE_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
 
 // Unset priorities sort last; ties fall back to newest-first by date.
 function priorityRank(f) {
@@ -90,6 +97,7 @@ function AdminFeedbackInner() {
   const [tab, setTab] = useState('pending');
   const [sortBy, setSortBy] = useState('priority');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [featureFilter, setFeatureFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -167,7 +175,7 @@ function AdminFeedbackInner() {
   // always snap back to page 1 when any of them change.
   useEffect(() => {
     setPage(1);
-  }, [tab, sortBy, priorityFilter, search]);
+  }, [tab, sortBy, priorityFilter, featureFilter, search]);
 
   if (!loaded) {
     return (
@@ -243,6 +251,8 @@ function AdminFeedbackInner() {
           const filtered = base.filter((f) => {
             if (priorityFilter === 'none' && f.priority) return false;
             if (priorityFilter !== 'all' && priorityFilter !== 'none' && f.priority !== priorityFilter) return false;
+            if (featureFilter === 'none' && f.feature) return false;
+            if (featureFilter !== 'all' && featureFilter !== 'none' && f.feature !== featureFilter) return false;
             if (q) {
               const hay = `${f.text || ''} ${f.name || ''} ${f.email || ''} ${f.page || ''}`.toLowerCase();
               if (!hay.includes(q)) return false;
@@ -253,6 +263,13 @@ function AdminFeedbackInner() {
           const sorted = [...filtered].sort((a, b) => {
             if (sortBy === 'priority') {
               const diff = priorityRank(a) - priorityRank(b);
+              if (diff !== 0) return diff;
+            }
+            if (sortBy === 'feature') {
+              // Group by feature area (alphabetical); untagged items sink last.
+              const fa = a.feature || '￿';
+              const fb = b.feature || '￿';
+              const diff = fa.localeCompare(fb);
               if (diff !== 0) return diff;
             }
             return (b.at || '').localeCompare(a.at || '');
@@ -320,6 +337,20 @@ function AdminFeedbackInner() {
                     </select>
                   </label>
                   <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    Feature
+                    <select
+                      value={featureFilter}
+                      onChange={(e) => setFeatureFilter(e.target.value)}
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
+                    >
+                      <option value="all">All</option>
+                      {FEATURE_AREAS.map((a) => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                      <option value="none">No feature</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                     Sort
                     <select
                       value={sortBy}
@@ -327,6 +358,7 @@ function AdminFeedbackInner() {
                       className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-1.5 py-1"
                     >
                       <option value="priority">Priority</option>
+                      <option value="feature">Feature</option>
                       <option value="newest">Newest</option>
                     </select>
                   </label>
@@ -337,8 +369,8 @@ function AdminFeedbackInner() {
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-10 text-center">
                   {q
                     ? `No feedback matches "${search.trim()}" in ${tab}.`
-                    : priorityFilter !== 'all' && base.length > 0
-                    ? `No ${priorityFilter === 'none' ? 'unprioritized' : priorityFilter} items in ${tab}.`
+                    : (priorityFilter !== 'all' || featureFilter !== 'all') && base.length > 0
+                    ? `No items match the current filters in ${tab}.`
                     : tab === 'praise'
                     ? 'No praise yet.'
                     : tab === 'completed'
@@ -449,6 +481,19 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
         <span className="text-xs text-slate-500 dark:text-slate-400">{formatDate(f.at)}</span>
         {!isPraise(f) && (
           <div className="ml-auto flex items-center gap-2">
+            <select
+              value={f.feature || ''}
+              onChange={(e) => onPatch(f.id, { feature: e.target.value || null })}
+              disabled={busy}
+              aria-label="Feature area"
+              title={f.feature ? `Feature area: ${f.feature}${f.featureIsAiAssigned ? ' (AI-suggested)' : ''}` : 'Tag which part of the app this is about'}
+              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${f.feature ? FEATURE_STYLE : FEATURE_UNSET}`}
+            >
+              <option value="">Feature…</option>
+              {FEATURE_AREAS.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
             <select
               value={f.priority || ''}
               onChange={(e) => onPatch(f.id, { priority: e.target.value || null })}

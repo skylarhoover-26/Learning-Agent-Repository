@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, backfillPriorities, appendFeedbackNote, appendFeedbackScreenshot } from '@/lib/feedback-store';
-import { PRIORITY_LEVELS } from '@/lib/feedback-priority';
+import { PRIORITY_LEVELS, PAGING_PRIORITIES } from '@/lib/feedback-priority';
+import { FEATURE_AREAS } from '@/lib/feedback-features';
 import { classifyFeedback } from '@/lib/feedback-triage';
 import { notifyCriticalFeedback } from '@/lib/slack-notify';
 
@@ -57,10 +58,14 @@ export async function POST(request) {
         record.aiReason = classification.reason;
         record.aiBugVerdict = classification.bugVerdict;
         record.priorityIsAiAssigned = true;
+        if (classification.feature) {
+          record.feature = classification.feature;
+          record.featureIsAiAssigned = true;
+        }
       }
     }
     await saveFeedback(record);
-    if (record.priority === 'Critical') {
+    if (PAGING_PRIORITIES.includes(record.priority)) {
       await notifyCriticalFeedback(record).catch((error) => console.error('notifyCriticalFeedback error:', error));
     }
     return NextResponse.json({ ok: true });
@@ -142,6 +147,15 @@ export async function PATCH(request) {
       // AI re-triage pass touch it again.
       patch.priorityIsAiAssigned = false;
     }
+    if ('feature' in body) {
+      // null clears the feature tag; otherwise it must be a known area.
+      if (body.feature !== null && !FEATURE_AREAS.includes(body.feature)) {
+        return NextResponse.json({ error: 'Invalid feature' }, { status: 400 });
+      }
+      patch.feature = body.feature;
+      // Same as priority: a manual tag is authoritative and won't be re-triaged.
+      patch.featureIsAiAssigned = false;
+    }
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
     }
@@ -150,8 +164,8 @@ export async function PATCH(request) {
     if (!updated) {
       return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
     }
-    // Admin manually escalated it to Critical — alert same as an AI-flagged one.
-    if (patch.priority === 'Critical') {
+    // Admin manually escalated it to a paging level — alert same as AI-flagged.
+    if (PAGING_PRIORITIES.includes(patch.priority)) {
       await notifyCriticalFeedback(updated).catch((error) => console.error('notifyCriticalFeedback error:', error));
     }
     return NextResponse.json({ ok: true, feedback: updated });
