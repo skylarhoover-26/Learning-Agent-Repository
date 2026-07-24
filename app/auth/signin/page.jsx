@@ -4,7 +4,7 @@ import { signIn } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import {
-  Sparkles, LogIn, Gamepad2, BookOpen, MessageCircle, PenTool, ShieldCheck,
+  LogIn, Gamepad2, BookOpen, MessageCircle, PenTool, ShieldCheck,
   Rss, Trophy,
 } from 'lucide-react';
 
@@ -56,12 +56,11 @@ function SignInForm() {
       {/* Glass card, animated in. */}
       <div className="cine-rise cine-glass relative w-full max-w-md rounded-[28px] px-8 py-10 sm:px-10 sm:py-12 text-center">
         {/* Gradient logo mark — mirrors the top-bar / drawer badge. */}
-        <span
-          className="w-16 h-16 rounded-2xl grid place-items-center mx-auto mb-6"
-          style={{ background: 'linear-gradient(135deg,var(--accent),var(--gold))', boxShadow: '0 0 30px -6px var(--accent)' }}
-        >
-          <Sparkles className="w-8 h-8 text-white" strokeWidth={2.4} />
-        </span>
+        <img
+          src="/brand/ai-learning-coach.png"
+          alt="AI Learning Coach"
+          className="w-20 h-20 mx-auto mb-6"
+        />
 
         <h1 className="font-display font-extrabold text-4xl sm:text-[2.75rem] leading-[1.05] tracking-tight">
           <span className="cine-grad-flow">AI Learning Coach</span>

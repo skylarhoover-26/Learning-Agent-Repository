@@ -4,7 +4,7 @@ import { createContext, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Menu, X, Home, Sparkles, ExternalLink, Play, MessageSquarePlus,
+  Menu, X, Home, ExternalLink, Play, MessageSquarePlus,
 } from 'lucide-react';
 import UserMenu from '@/components/user-menu';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
@@ -67,9 +67,7 @@ function TopNav({ onMenu }) {
             <Menu className="w-5 h-5" />
           </button>
           <Link href="/" className="group flex items-center gap-2.5 min-w-0">
-            <span className="w-9 h-9 rounded-xl grid place-items-center shrink-0 transition-transform group-hover:scale-105" style={{ background: 'linear-gradient(135deg,#3B94FF,#FFB706)', boxShadow: '0 0 22px -4px rgba(59,148,255,.9)' }}>
-              <Sparkles className="w-5 h-5 text-white" strokeWidth={2.4} />
-            </span>
+            <img src="/brand/ai-learning-coach.png" alt="AI Learning Coach" className="w-9 h-9 shrink-0 transition-transform group-hover:scale-105" />
             <span className="leading-tight min-w-0">
               <span className="block font-display font-bold text-[15px] text-white truncate tracking-tight">AI Learning Coach</span>
               <span className="block text-[11px] text-white/55 tracking-wide">By Housecall Pro</span>
@@ -157,9 +155,7 @@ function Drawer({ open, onClose }) {
       >
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3" style={{ background: 'var(--navbg)', borderBottom: '1px solid var(--line)' }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'linear-gradient(135deg,var(--accent),var(--gold))' }}>
-              <Sparkles className="w-4 h-4 text-white" strokeWidth={2.4} />
-            </div>
+            <img src="/brand/ai-learning-coach.png" alt="" className="w-8 h-8" />
             <p className="font-display font-bold text-sm">Menu</p>
           </div>
           <button onClick={onClose} aria-label="Close menu" className="cine-lift w-8 h-8 rounded-full grid place-items-center" style={{ color: 'var(--ink-dim)' }}>
