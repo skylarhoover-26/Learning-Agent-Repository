@@ -23,6 +23,16 @@ import {
 
 const FORMAT_LABEL = { quick_tip: 'Quick Tip', standard: 'Quick Lesson', deep_dive: 'Deep Dive', project_quest: 'Project Quest' };
 
+// Loading copy per format — heavier formats legitimately take much longer to
+// generate, so the "this usually takes…" estimate and the point at which we
+// switch to "taking a little longer than usual" (slow, in seconds) both scale.
+const FORMAT_LOAD = {
+  quick_tip:     { estimate: '10–20 seconds', slow: 30 },
+  standard:      { estimate: '15–30 seconds', slow: 45 },
+  deep_dive:     { estimate: 'a minute or two', slow: 120 },
+  project_quest: { estimate: '1–3 minutes', slow: 180 },
+};
+
 // The concrete terms/items an activity will quiz, so the preceding teach step
 // can be told to define each one by name (never test what wasn't taught). Pulls
 // the learner-facing prompts only — never the answer keys.
@@ -948,11 +958,12 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   if (!revealed) {
     // Asymptotic bar: climbs quickly then eases toward ~95% (we can't show true
     // progress for a single model call, so this just signals "still working").
+    const load = FORMAT_LOAD[format] || FORMAT_LOAD.standard;
     const pct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / 14))));
     const message =
       elapsed < 8 ? `Designing your lesson on ${topic}…`
       : elapsed < 20 ? 'Writing the steps and activities…'
-      : elapsed < 35 ? 'Putting on the finishing touches…'
+      : elapsed < load.slow ? 'Putting on the finishing touches…'
       : 'Almost there — this one’s taking a little longer than usual…';
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
@@ -962,7 +973,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-2 text-center text-xs text-slate-400">
-            This usually takes 10–30 seconds{elapsed >= 35 ? ' — hang tight, almost done.' : '.'}
+            This usually takes {load.estimate}{elapsed >= load.slow ? ' — hang tight, almost done.' : '.'}
           </p>
         </div>
       </div>
