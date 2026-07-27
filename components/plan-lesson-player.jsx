@@ -172,6 +172,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           setPlan(saved.plan);
           setSteps(saved.steps || saved.plan.steps);
           setStepIdx(saved.stepIdx || 0);
+          // Restore position within a multi-section teach step + which steps had
+          // their cards explored, so resume lands where they actually left off.
+          setPanelIdx(saved.panelIdx || 0);
+          setTeachEngaged(saved.teachEngaged || {});
           setTeachContent(saved.teachContent || {});
           setResolved(saved.resolved || {});
           setArtifact(saved.artifact || {});
@@ -453,6 +457,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         topic, format, plan,
         steps: sArr,
         stepIdx: sIdx,
+        // Position WITHIN a multi-section teach step, plus which steps have had
+        // their interactive cards fully explored — so resume lands on the same
+        // section with Continue already unlocked, not back at the step's start.
+        panelIdx: next.panelIdx ?? panelIdx,
+        teachEngaged: next.teachEngaged || teachEngaged,
         teachContent: next.teachContent || teachContent,
         resolved: next.resolved || resolved,
         artifact: next.artifact || artifact,
@@ -462,7 +471,16 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         startedAt: startedAt.current,
       },
     });
-  }, [topic, format, plan, steps, stepIdx, teachContent, resolved, artifact, qaThread, lessonToolIds, recommendation]);
+  }, [topic, format, plan, steps, stepIdx, panelIdx, teachEngaged, teachContent, resolved, artifact, qaThread, lessonToolIds, recommendation]);
+
+  // Auto-save intra-step progress (which section you're on, which cards you've
+  // flipped) whenever it changes, so pausing at any moment resumes exactly
+  // there instead of the start of the step. Guarded: nothing to save before the
+  // plan exists, and never re-add a completed lesson.
+  useEffect(() => {
+    if (!plan || recorded.current) return;
+    persist();
+  }, [panelIdx, teachEngaged, plan, persist]);
 
   // The actual teaching text the learner has already seen, in order — fed to the
   // AI so each step and answer is grounded in the real lesson (it "remembers").
