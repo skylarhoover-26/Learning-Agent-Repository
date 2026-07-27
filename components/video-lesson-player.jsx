@@ -152,18 +152,28 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     return () => clearInterval(id);
   }, [prepared, hasStarted]);
 
-  // --- Pre-generate ALL scene audio before the lesson can start ---
+  // --- Pre-generate scene audio. On a FRESH lesson we prime every scene up
+  // front (blocking the start screen) so playback never stops to load. On RESUME
+  // (we reused a saved script) we skip that gate — jump straight to the saved
+  // scene and warm the audio in the BACKGROUND, so reopening doesn't look like a
+  // full regeneration. Playback still works: a not-yet-primed scene falls back
+  // to an on-demand fetch. ---
   useEffect(() => {
     if (!script) return;
     let cancelled = false;
-    setPrepared(false);
-    setPrepProgress({ done: 0, total: script.scenes.length });
+    const isResume = !!initialScript?.scenes?.length;
+    if (isResume) {
+      setPrepared(true); // start screen shows immediately at the saved scene
+    } else {
+      setPrepared(false);
+      setPrepProgress({ done: 0, total: script.scenes.length });
+    }
     prime(
       script.scenes.map((s) => s.narration),
-      (done, total) => { if (!cancelled) setPrepProgress({ done, total }); }
+      (done, total) => { if (!cancelled && !isResume) setPrepProgress({ done, total }); }
     ).finally(() => { if (!cancelled) setPrepared(true); });
     return () => { cancelled = true; };
-  }, [script, prime]);
+  }, [script, prime, initialScript]);
 
   // --- Keep the TTS speed in sync with the chosen playback rate ---
   useEffect(() => { setRate(speed); }, [speed, setRate]);
