@@ -577,17 +577,15 @@ function LessonContent() {
   // (the destination's own loader — plan player / narrated player — continues
   // from there). Go back cancels before the launch fires, so nothing is built.
   function generateSelected() {
-    if (!selectedTopic || generating) return;
-    setGenerating(true);
-    // Start the plan now (during the generating beat + reader mount) so it's
-    // ready sooner. Only the plan-driven read readers consume this.
+    if (!selectedTopic) return;
+    // Warm the plan request, then go STRAIGHT into the lesson view — the player's
+    // own loader (which now waits until the lesson is fully ready) is the single
+    // loading screen. We used to show a separate "Generating…" modal for a beat
+    // first, which read as two back-to-back loaders.
     if (learnMode === 'read' && (format === 'standard' || format === 'deep_dive')) {
       prefetchPlan(selectedTopic, format, tools);
     }
-    generateTimerRef.current = setTimeout(() => {
-      generateTimerRef.current = null;
-      chooseTopic(selectedTopic);
-    }, 550);
+    chooseTopic(selectedTopic);
   }
 
   function cancelGenerate() {
@@ -1388,29 +1386,6 @@ function LessonContent() {
           <PausedLessonsBox onResume={resumeEntry} />
         </div>
       </main>
-      {/* Generating popup: shown after "Generate lesson" until the lesson opens.
-          Hidden once the narrated player mounts (videoTopic set) so it doesn't
-          stack under it; read lessons flip the whole view and unmount this. */}
-      {generating && !videoTopic && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-6" style={{ background: 'rgba(10,20,40,0.55)', backdropFilter: 'blur(4px)' }}>
-          <div className="cine-glass rounded-3xl p-8 max-w-md w-full text-center" style={{ background: 'var(--card)', boxShadow: '0 40px 90px -60px var(--accent)' }}>
-            <BookLoader message={`Generating your ${learnMode === 'watch' ? 'narrated ' : ''}lesson…`} size="lg" />
-            {selectedTopic && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">
-                {(suggested || SUGGESTED_TOPICS).find((s) => s.topic === selectedTopic)?.label || selectedTopic}
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={cancelGenerate}
-              className="mt-6 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill cine-glass text-slate-600 dark:text-slate-300 font-semibold text-sm hover:opacity-80 transition-all"
-            >
-              <ChevronRight className="w-4 h-4 rotate-180" />
-              Go back
-            </button>
-          </div>
-        </div>
-      )}
       {videoTopic && (
         <VideoLessonPlayer
           topic={videoTopic}
