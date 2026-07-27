@@ -6,6 +6,7 @@ import {
   Loader2, Volume2, CheckCircle, Gauge, Sparkles, MessageSquare, Send,
 } from 'lucide-react';
 import { useTts } from '@/lib/use-tts';
+import { useSidebar } from '@/components/sidebar';
 import BookLoader from '@/components/book-loader';
 import LessonQuiz from '@/components/lesson-quiz';
 import { FormattedContent } from '@/components/lesson-slide';
@@ -95,6 +96,9 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const [qaThread, setQaThread] = useState([]);
 
   const { isSpeaking, isPaused, isLoading: ttsLoading, speak, pause, resume, stop, setRate, prime } = useTts();
+  // Whether the slide-over menu is open — so the loading screen can center in the
+  // same content area as the read-lesson loader (which is padded md:pl-80).
+  const { open: sidebarOpen } = useSidebar() || {};
 
   // Tracks whether the CURRENT scene has actually started speaking, so we only
   // auto-advance on a real narration-end (not before audio has begun).
@@ -401,8 +405,10 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     <div className={`fixed flex items-center justify-center p-4 overflow-y-auto ${cinematic
         ? 'inset-0 z-50 bg-slate-950/90 backdrop-blur-sm'
         // While loading, sit BELOW the sticky top nav (h-16) and under its z so
-        // the header/hamburger stay visible and usable — like the read loader.
-        : 'inset-x-0 top-16 bottom-0 z-30 bg-bg-warm dark:bg-slate-900'}`}>
+        // the header/hamburger stay visible and usable — like the read loader —
+        // and match the read loader's md:pl-80 offset when the menu is open so
+        // the card centers in the content area, not the full viewport.
+        : `inset-x-0 top-16 bottom-0 z-30 bg-bg-warm dark:bg-slate-900 ${sidebarOpen ? 'md:pl-80' : ''}`}`}>
       <div className="relative w-full max-w-3xl my-auto">
         {/* Close — hidden while loading (matches the read loader, which has no
             cancel mid-generation); shown once the lesson is ready to play. */}
