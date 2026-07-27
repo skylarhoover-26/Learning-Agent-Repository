@@ -94,7 +94,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const [asking, setAsking] = useState(false);
   const [qaThread, setQaThread] = useState([]);
 
-  const { isSpeaking, isLoading: ttsLoading, speak, stop, setRate, prime } = useTts();
+  const { isSpeaking, isPaused, isLoading: ttsLoading, speak, pause, resume, stop, setRate, prime } = useTts();
 
   // Tracks whether the CURRENT scene has actually started speaking, so we only
   // auto-advance on a real narration-end (not before audio has begun).
@@ -263,17 +263,24 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const togglePlay = useCallback(() => {
     if (finished) return;
     setIsPlaying((p) => {
-      const next = !p;
-      if (!next) {
-        stop();
+      if (p) {
+        // Playing → PAUSE in place (keep the audio position) instead of tearing
+        // it down, so pressing play again resumes rather than restarting.
+        pause();
+        return false;
+      }
+      // Not playing → resume where we paused, or start the scene from the top
+      // if it hasn't begun / already finished.
+      if (isPaused) {
+        resume();
       } else {
         setNarrationDone(false);
         startedSpeakingRef.current = false;
         if (scene) speak(scene.narration);
       }
-      return next;
+      return true;
     });
-  }, [finished, scene, speak, stop]);
+  }, [finished, scene, speak, pause, resume, isPaused]);
 
   const cycleSpeed = useCallback(() => {
     setSpeed((s) => {
