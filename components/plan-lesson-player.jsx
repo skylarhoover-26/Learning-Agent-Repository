@@ -83,6 +83,12 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     setTeachEngaged((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
   }, []);
   const [loading, setLoading] = useState(true);
+  // The full-screen loader stays up until the lesson is fully ready to READ —
+  // the plan finishing isn't enough, the first step's content has to be
+  // generated too. Otherwise the lesson pops in with a "Preparing…" placeholder
+  // step. Flips true once the current step is ready and then stays true, so
+  // advancing to a not-yet-loaded later step shows the inline loader, not this.
+  const [revealed, setRevealed] = useState(false);
   const [elapsed, setElapsed] = useState(0); // seconds spent generating, for the loading bar
   const [error, setError] = useState(null);
   const [teachLoading, setTeachLoading] = useState(false);
@@ -186,6 +192,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         // ignore bad save
       }
 
+      // Generating a fresh lesson (not a resume): show the full-screen loader
+      // until it's ready to read. Reset on rebuilds too (rebuildNonce), which
+      // re-enter here without remounting.
+      if (active) { setLoading(true); setRevealed(false); setError(null); }
+
       // First, find the best tool for this lesson and resolve which tool the
       // lesson should be built around: the recommended one IF the learner owns
       // it, otherwise their starred/primary tool.
@@ -275,12 +286,26 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   }, [topic, format, toolKey, rebuildNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tick an elapsed-seconds counter while the lesson is being designed, so the
-  // loading bar can advance and the message can reassure on longer runs.
+  // loading bar can advance and the message can reassure on longer runs. Runs
+  // until the lesson is revealed (covers both plan generation AND the first
+  // step's content generation).
   useEffect(() => {
-    if (!loading) { setElapsed(0); return; }
+    if (revealed) { setElapsed(0); return; }
     const id = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [loading]);
+  }, [revealed]);
+
+  // Reveal the lesson only once the CURRENT step is genuinely ready: the plan
+  // has loaded AND (the step isn't a teach/qa step, or its content has arrived,
+  // or it errored so the inline retry can show). Once revealed, stay revealed.
+  useEffect(() => {
+    if (loading || revealed) return;
+    const s = steps[stepIdx];
+    const teachish = s && (s.kind === 'teach' || s.kind === 'qa');
+    if (!s || !teachish || teachContent[s.id]?.message || teachError[s.id]) {
+      setRevealed(true);
+    }
+  }, [loading, revealed, steps, stepIdx, teachContent, teachError]);
 
   const objectives = plan?.objectives || [];
   // Descriptive one-sentence lesson title shown as the hero. Falls back to the
@@ -890,7 +915,19 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   }
 
   // ---- Render ----------------------------------------------------------------
-  if (loading) {
+  // A plan-generation failure shows its own error UI even before reveal.
+  if (error && !revealed) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
+        <p className="text-red-700 dark:text-red-400 text-sm font-medium mb-2">{error}</p>
+        <button onClick={() => window.location.reload()} className="text-sm text-red-600 underline">Try again</button>
+      </div>
+    );
+  }
+  // Hold the full-screen loader until the lesson is ready to read — through both
+  // plan generation and the first step's content — so it never appears with a
+  // "Preparing…" placeholder step.
+  if (!revealed) {
     // Asymptotic bar: climbs quickly then eases toward ~95% (we can't show true
     // progress for a single model call, so this just signals "still working").
     const pct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / 14))));
