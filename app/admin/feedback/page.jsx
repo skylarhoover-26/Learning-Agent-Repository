@@ -184,7 +184,11 @@ function AdminFeedbackInner() {
         }));
       }
     } catch (e) {
-      setItems(prev);
+      // Only optimistic (field) patches mutated the list pre-flight and need a
+      // rollback. Appends never touched the list before the response, so
+      // restoring an old snapshot here would wrongly discard notes/edits that
+      // landed in between — for appends we just surface the error.
+      if (!isAppend) setItems(prev);
       setError(e.message);
     } finally {
       setUpdatingId(null);
@@ -582,12 +586,22 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
   const resolved = done || skipped; // done or set-aside → the button offers "Reopen"
   const [noteDraft, setNoteDraft] = useState('');
   const fileRef = useRef(null);
+  // Ref-based in-flight guard: React state (`busy`) flips a render *after* the
+  // click, so a double-click or a held Enter (keydown auto-repeat) can fire two
+  // note submits before the input disables. Two concurrent appends race and one
+  // note is lost — the ref closes that window synchronously.
+  const submittingRef = useRef(false);
 
-  function submitNote() {
+  async function submitNote() {
     const text = noteDraft.trim();
-    if (!text || busy) return;
-    onPatch(f.id, { note: text });
+    if (!text || busy || submittingRef.current) return;
+    submittingRef.current = true;
     setNoteDraft('');
+    try {
+      await onPatch(f.id, { note: text });
+    } finally {
+      submittingRef.current = false;
+    }
   }
 
   async function attachScreenshot(fileList) {
@@ -724,7 +738,7 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
               type="text"
               value={noteDraft}
               onChange={(e) => setNoteDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') submitNote(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.repeat) submitNote(); }}
               disabled={busy}
               placeholder="Add a note…"
               className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs text-ink dark:text-slate-200 px-2.5 py-1.5 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40 disabled:opacity-50"

@@ -156,6 +156,29 @@ create table if not exists feedback (
 create index if not exists feedback_created_idx  on feedback(created_at desc);
 create index if not exists feedback_status_idx   on feedback(status);
 
+-- Atomic note append. Adds one note to BOTH the flat `notes` column and the
+-- `raw` record (raw is the read source) in a single UPDATE, so concurrent note
+-- adds — a double-click, a held Enter, or two admins at once — can never
+-- clobber each other the way a read-modify-write of the whole record could.
+-- Returns the updated `raw` record, or NULL when no row matches the id.
+-- Safe to re-run (create or replace).
+create or replace function append_feedback_note(p_id text, p_note jsonb)
+returns jsonb
+language sql
+as $$
+  update feedback
+  set notes      = coalesce(notes, '[]'::jsonb) || jsonb_build_array(p_note),
+      raw        = jsonb_set(
+                     raw,
+                     '{notes}',
+                     coalesce(raw->'notes', '[]'::jsonb) || jsonb_build_array(p_note),
+                     true
+                   ),
+      updated_at = now()
+  where id = p_id
+  returning raw;
+$$;
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ROW-LEVEL SECURITY
 -- The app talks to Supabase ONLY from server-side routes using the service_role
