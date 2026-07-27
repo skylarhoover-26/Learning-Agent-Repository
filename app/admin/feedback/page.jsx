@@ -116,7 +116,8 @@ const NONE = '__none__';
 
 const TABS = [
   { key: 'new', label: 'New' },
-  { key: 'pending', label: 'Pending' },
+  { key: 'needsReview', label: 'Needs Review' },
+  { key: 'pending', label: 'In Progress' },
   { key: 'done', label: 'Done' },
   { key: 'skipped', label: 'Skipped' },
   { key: 'praise', label: 'Praise' },
@@ -234,6 +235,13 @@ function AdminFeedbackInner() {
     loadFeedback();
   }, [loaded, isAdmin, loadFeedback]);
 
+  // The In Progress tab defaults to sorting by workflow status, so in-progress
+  // items group together; entering it snaps the Sort control to Status (which
+  // the admin can still change while on the tab).
+  useEffect(() => {
+    if (tab === 'pending') setSortBy('status');
+  }, [tab]);
+
   // Jumping tabs/filters/sort can land you past the end of the new list, so
   // always snap back to page 1 when any of them change.
   useEffect(() => {
@@ -310,12 +318,18 @@ function AdminFeedbackInner() {
           // a priority, but not yet done).
           const praise = items.filter(isPraise);
           const active = items.filter((f) => !isPraise(f) && !isDone(f) && !isSkipped(f));
-          const newItems = active.filter((f) => !isSorted(f));
-          const pending = active.filter(isSorted);
+          // Needs Review is a pre-filter stage carved out of the active set (any
+          // open item an admin flagged for review), sitting between New and
+          // In Progress. The rest split into New (no priority yet) vs In Progress
+          // (sorted — has a priority — and being worked).
+          const needsReview = active.filter((f) => f.workStatus === 'Needs Review');
+          const rest = active.filter((f) => f.workStatus !== 'Needs Review');
+          const newItems = rest.filter((f) => !isSorted(f));
+          const pending = rest.filter(isSorted);
           const done = items.filter((f) => !isPraise(f) && isDone(f));
           const skipped = items.filter((f) => !isPraise(f) && isSkipped(f));
-          const counts = { new: newItems.length, pending: pending.length, done: done.length, skipped: skipped.length, praise: praise.length };
-          const base = tab === 'praise' ? praise : tab === 'done' ? done : tab === 'skipped' ? skipped : tab === 'new' ? newItems : pending;
+          const counts = { new: newItems.length, needsReview: needsReview.length, pending: pending.length, done: done.length, skipped: skipped.length, praise: praise.length };
+          const base = tab === 'praise' ? praise : tab === 'done' ? done : tab === 'skipped' ? skipped : tab === 'new' ? newItems : tab === 'needsReview' ? needsReview : pending;
           // Free-text search across the card's text, author, and page — so a
           // reviewer can find a specific report without scrolling the whole queue.
           const q = search.trim().toLowerCase();
@@ -457,7 +471,9 @@ function AdminFeedbackInner() {
                     ? 'Nothing skipped.'
                     : tab === 'new'
                     ? 'No new feedback — nothing waiting to be sorted.'
-                    : 'No pending feedback — all caught up!'}
+                    : tab === 'needsReview'
+                    ? 'Nothing flagged for review.'
+                    : 'No in-progress feedback — all caught up!'}
                 </p>
               ) : (
                 <>
