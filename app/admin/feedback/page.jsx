@@ -58,6 +58,11 @@ const WORK_STATUS_STYLES = {
   Blocked: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
 };
 const WORK_STATUS_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
+// Terminal "Done" state shown in the per-card status dropdown once an item is
+// marked done, so the control reads "Done" instead of a stale pipeline value.
+const WORK_STATUS_DONE_STYLE = 'bg-green-50 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+// Sentinel for the synthetic "Done" option in the per-card status dropdown.
+const DONE_STATUS = 'Done';
 // Order mirrors WORK_STATUSES: Not Started → Blocked; unset sinks last.
 const WORK_STATUS_ORDER = Object.fromEntries(WORK_STATUSES.map((s, i) => [s, i]));
 function workStatusRank(f) {
@@ -819,16 +824,24 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
           </div>
           <div className="flex items-center justify-between gap-2 mt-3">
             <select
-              value={f.workStatus || 'Not Started'}
-              onChange={(e) => onPatch(f.id, { workStatus: e.target.value || null })}
+              value={done ? DONE_STATUS : (f.workStatus || 'Not Started')}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Choosing "Done" marks it done instantly (same as the button).
+                if (val === DONE_STATUS) { onPatch(f.id, { status: 'done' }); return; }
+                // Picking a pipeline status on a done item reopens it into that status.
+                if (done) { onPatch(f.id, { status: 'open', workStatus: val }); return; }
+                onPatch(f.id, { workStatus: val || null });
+              }}
               disabled={busy}
               aria-label="Work status"
-              title="Where this stands in the work"
-              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${WORK_STATUS_STYLES[f.workStatus || 'Not Started'] || WORK_STATUS_UNSET}`}
+              title={done ? 'Marked done — pick a status to reopen it' : 'Where this stands in the work'}
+              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${done ? WORK_STATUS_DONE_STYLE : (WORK_STATUS_STYLES[f.workStatus || 'Not Started'] || WORK_STATUS_UNSET)}`}
             >
               {WORK_STATUSES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
+              <option value={DONE_STATUS}>Done</option>
             </select>
             <button
               onClick={() => onPatch(f.id, { status: resolved ? 'open' : 'done' })}
