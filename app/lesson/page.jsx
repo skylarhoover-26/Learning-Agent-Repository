@@ -1091,7 +1091,7 @@ function LessonContent() {
               return (
                 <button
                   key={f.key}
-                  onClick={() => selectFormat(f.key)}
+                  onClick={() => { selectFormat(f.key); setWizardStep(2); }}
                   className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
                     selected ? `ring-2 ${tone.ring} scale-[1.02]` : ''
                   }`}

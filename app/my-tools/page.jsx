@@ -83,9 +83,9 @@ function MyToolsPageInner() {
       <main className="max-w-3xl mx-auto px-6 pt-6 pb-10 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
-            Pick every AI tool you have — you can choose more than one. For each lesson, the coach
-            automatically picks the best one of your tools for that topic, and flags when a tool you
-            don&rsquo;t have yet would fit even better. No need to set a default.
+            Pick every AI tool you have — choose as many as you use. You don&rsquo;t pick a single
+            &ldquo;preferred&rdquo; tool here: for each lesson, the coach automatically chooses the best one
+            of your tools for that topic (and flags when a tool you don&rsquo;t have yet would fit even better).
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
