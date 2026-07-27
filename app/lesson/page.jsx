@@ -219,6 +219,9 @@ function LessonContent() {
   // generating popup is actually visible and "Go back" can cancel before launch.
   const generateTimerRef = useRef(null);
   const [videoTopic, setVideoTopic] = useState(null);
+  // When resuming a paused narrated lesson, holds its saved { script, scene } so
+  // the player reuses them instead of regenerating a brand-new script.
+  const [videoResume, setVideoResume] = useState(null);
   // When the narrated player is showing a Project Quest, this holds the quest id so
   // the script is sourced from the quest's curated steps.
   const [videoQuestId, setVideoQuestId] = useState(null);
@@ -823,15 +826,16 @@ function LessonContent() {
   const launchVideo = useCallback((t, fmt = format) => {
     videoStartedAt.current = new Date().toISOString();
     videoCompletedRef.current = false;
+    setVideoResume(null); // fresh launch → generate a new script
     const norm = (s) => (s || '').trim().toLowerCase();
     const quest = fmt === 'project_quest'
       ? QUESTS.find((q) => norm(q.title) === norm(t))
       : null;
     setVideoQuestId(quest ? quest.id : null);
     setVideoTopic(t);
-    // Narrated lessons are resumable too: record a paused entry so they show up
-    // in the resume list / header bell. Reopening regenerates the narration from
-    // the start (narrated scripts aren't checkpointed) — the intended behavior.
+    // Seed a paused entry immediately so it shows up in the resume list; the
+    // player's onProgress then upgrades it with the real script + scene so a
+    // reopen resumes the SAME lesson instead of regenerating a new one.
     try {
       upsertPausedLesson({
         format: fmt,
@@ -842,6 +846,26 @@ function LessonContent() {
       });
     } catch { /* resume persistence is best-effort */ }
   }, [format]);
+
+  // Persist the narrated lesson's exact script + current scene as it plays, so
+  // resuming reuses them (fixes "a completely new lesson is generated").
+  const handleVideoProgress = useCallback((script, sceneIdx) => {
+    const t = videoTopic;
+    if (!t || !script?.scenes?.length) return;
+    try {
+      upsertPausedLesson({
+        format,
+        topic: t,
+        state: {
+          topic: t, format, learnMode: 'watch',
+          lessonStartedAt: videoStartedAt.current,
+          videoScript: script, videoScene: sceneIdx,
+        },
+        stepLabel: `Narrated · scene ${sceneIdx + 1} of ${script.scenes.length}`,
+        startedAt: videoStartedAt.current,
+      });
+    } catch { /* best-effort */ }
+  }, [videoTopic, format]);
 
   // "Surprise me": pick a personalized topic (same source as the old quick-win
   // surprise), then launch it as a normal Quick Tip lesson — narrated when the
@@ -891,12 +915,22 @@ function LessonContent() {
     const s = entry.state || {};
     setTopic(entry.topic);
     setFormat(entry.format || 'standard');
-    // Narrated ("watch") lessons reopen straight into the player and regenerate
-    // from the start; every read-mode format resumes in the step player.
+    // Narrated ("watch") lessons resume with their SAVED script + scene when we
+    // have them (so it's the same lesson, not a fresh one); older entries that
+    // predate script persistence fall back to regenerating.
     if (s.learnMode === 'watch') {
       setLearnMode('watch');
       setView('picker'); // the narrated player is a modal layered over the picker
-      launchVideo(entry.topic, entry.format || 'standard');
+      if (s.videoScript?.scenes?.length) {
+        videoStartedAt.current = s.lessonStartedAt || new Date().toISOString();
+        videoCompletedRef.current = false;
+        setVideoResume({ script: s.videoScript, scene: s.videoScene || 0 });
+        setVideoQuestId(null);
+        setFormat(entry.format || 'standard');
+        setVideoTopic(entry.topic);
+      } else {
+        launchVideo(entry.topic, entry.format || 'standard');
+      }
       return;
     }
     setLearnMode('read');
@@ -1369,8 +1403,11 @@ function LessonContent() {
           format={format}
           tools={tools}
           questId={videoQuestId}
+          initialScript={videoResume?.script || null}
+          initialScene={videoResume?.scene || 0}
+          onProgress={handleVideoProgress}
           onComplete={handleVideoComplete}
-          onClose={() => { setVideoTopic(null); setVideoQuestId(null); setGenerating(false); }}
+          onClose={() => { setVideoTopic(null); setVideoQuestId(null); setVideoResume(null); setGenerating(false); }}
         />
       )}
       </>

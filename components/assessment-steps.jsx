@@ -96,9 +96,8 @@ export function IntroStep({ onNext }) {
       </div>
       <div className="p-8">
         <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-          A few quick questions about how you work with AI today.
-          {' '}<strong>Answer honestly</strong> — your answers shape your experience
-          with the app going forward.
+          A few quick questions about how you use AI today.
+          {' '}<strong>Answer honestly</strong> — your answers shape your experience.
         </p>
         <button
           onClick={onNext}

@@ -51,10 +51,10 @@ function estimateNarrationTime(script) {
  * lesson awards XP exactly like the read version: quick tips pay full on
  * completion; longer formats run a short checkpoint quiz that scales the XP.
  */
-export default function VideoLessonPlayer({ topic, format = 'standard', tools, questId, onComplete, onClose }) {
+export default function VideoLessonPlayer({ topic, format = 'standard', tools, questId, initialScript = null, initialScene = 0, onProgress, onComplete, onClose }) {
   const [script, setScript] = useState(null);
   const [loadError, setLoadError] = useState(null);
-  const [sceneIdx, setSceneIdx] = useState(0);
+  const [sceneIdx, setSceneIdx] = useState(initialScene || 0);
   const [hasStarted, setHasStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -97,6 +97,14 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   // --- Load the script once ---
   useEffect(() => {
     let cancelled = false;
+    // Resuming a paused narrated lesson → reuse the EXACT saved script rather
+    // than regenerating a brand-new (and possibly different) one. The scene
+    // index is restored from initialScene via useState above.
+    if (initialScript?.scenes?.length) {
+      setScript(initialScript);
+      setLoadError(null);
+      return () => { cancelled = true; };
+    }
     setScript(null);
     setLoadError(null);
     fetch('/api/lesson/video', {
@@ -115,6 +123,15 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
       });
     return () => { cancelled = true; };
   }, [topic, format]);
+
+  // --- Report progress up so the parent can persist a resumable entry with the
+  // exact script + current scene (narrated lessons used to regenerate a whole
+  // new script on resume). Fires when the script loads and on each scene change. ---
+  useEffect(() => {
+    if (script?.scenes?.length && typeof onProgress === 'function') {
+      onProgress(script, sceneIdx);
+    }
+  }, [script, sceneIdx, onProgress]);
 
   // --- Pre-generate ALL scene audio before the lesson can start ---
   useEffect(() => {

@@ -1017,11 +1017,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     </div>
   ) : (
     <>
-      {/* Finished but didn't pass: they got the floor; nudge a retake for full XP. */}
+      {/* Finished but didn't pass: no XP is earned — nudge a retake to pass. */}
       {award && award.passed === false && !alreadyEarned && (
         <div className="mt-5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-center">
           <p className="text-sm text-ink dark:text-slate-200">
-            You earned <span className="font-bold">{award.xpAwarded} XP</span> for finishing. Score{' '}
+            You didn&apos;t quite pass, so <span className="font-bold">no XP this time</span>. Score{' '}
             {Math.round(PASS_THRESHOLD * 100)}%+ to earn the full <span className="font-bold">{award.maxXp} XP</span>.
           </p>
           <button

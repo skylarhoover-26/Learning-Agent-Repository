@@ -516,7 +516,7 @@ export default function OnboardingPage() {
           )}
           {step === 6 && (
             <div className="mt-8">
-              <StepNav onBack={goBack} onNext={() => handleFinish(goals)} label="Start Learning" variant="finish" />
+              <StepNav onBack={goBack} onNext={() => handleFinish(goals)} label="Finish setup" variant="finish" />
             </div>
           )}
           {step === 1 && showSubTeams && (
