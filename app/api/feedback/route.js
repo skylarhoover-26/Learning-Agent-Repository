@@ -54,6 +54,9 @@ export async function POST(request) {
       page: (body.page || '').toString().slice(0, 300),
       screenshotUrls,
       recordingUrls,
+      // Default workflow status so every new card starts at "Not Started"
+      // instead of a blank status; it flows into the Not Started tab once triaged.
+      workStatus: 'Not Started',
     };
     // No automatic triage: feedback arrives un-sorted (no priority/feature) and
     // waits in the admin "New" tab until an admin sorts it by assigning a
