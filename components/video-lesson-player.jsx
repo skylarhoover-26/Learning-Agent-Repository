@@ -115,6 +115,12 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     if (initialScript?.scenes?.length) {
       setScript(initialScript);
       setLoadError(null);
+      // Resume lands directly on the saved scene's slide, PAUSED — not the
+      // "press play to start" screen, and NOT auto-narrating. Otherwise pressing
+      // play re-reads a scene the learner already heard ("repeats the text at
+      // me"). They can press play to re-hear it or skip ahead.
+      setHasStarted(true);
+      setIsPlaying(false);
       return () => { cancelled = true; };
     }
     setScript(null);
@@ -392,7 +398,11 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const cinematic = (script && prepared) || hasStarted;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto ${cinematic ? 'bg-slate-950/90 backdrop-blur-sm' : 'bg-bg-warm dark:bg-slate-900'}`}>
+    <div className={`fixed flex items-center justify-center p-4 overflow-y-auto ${cinematic
+        ? 'inset-0 z-50 bg-slate-950/90 backdrop-blur-sm'
+        // While loading, sit BELOW the sticky top nav (h-16) and under its z so
+        // the header/hamburger stay visible and usable — like the read loader.
+        : 'inset-x-0 top-16 bottom-0 z-30 bg-bg-warm dark:bg-slate-900'}`}>
       <div className="relative w-full max-w-3xl my-auto">
         {/* Close — hidden while loading (matches the read loader, which has no
             cancel mid-generation); shown once the lesson is ready to play. */}
