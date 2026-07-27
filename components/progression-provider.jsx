@@ -6,7 +6,7 @@ import { getTotalXp, getLevel, getLevelProgress, calculateStreak, activityTimest
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { onXp } from '@/lib/xp-bus';
-import { hydrate, saveToBlob } from '@/lib/sync-store';
+import { hydrate, reconcileLedger, saveToBlob } from '@/lib/sync-store';
 
 const ProgressionContext = createContext(null);
 
@@ -126,6 +126,16 @@ export function ProgressionProvider({ children }) {
             hydrate(`lp_xp_${learnerId}`),
             hydrate(`lp_badges_${learnerId}`),
             hydrate(`lp_lessons_${learnerId}`),
+          ]);
+          // hydrate() is local-wins, so a device that already had some local XP
+          // never picks up a higher server total (why a learner could show 25 XP
+          // locally while the leaderboard showed 115). Reconcile UP to the
+          // server's authoritative total when it's ahead.
+          const xpSum = (arr) => arr.reduce((s, e) => s + (Number(e?.amount) || 0), 0);
+          await Promise.all([
+            reconcileLedger(`lp_xp_${learnerId}`, xpSum),
+            reconcileLedger(`lp_badges_${learnerId}`),
+            reconcileLedger(`lp_lessons_${learnerId}`),
           ]);
         } catch {
           // best-effort — fall through to whatever is in local storage
