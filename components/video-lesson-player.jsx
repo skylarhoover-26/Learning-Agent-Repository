@@ -25,6 +25,15 @@ function splitIntoLines(text) {
     .filter(Boolean);
 }
 
+// Loading estimate per format, mirroring the read-lesson loader so the two feel
+// consistent. Narrated runs a bit longer (script + all-scene audio up front).
+const NARRATED_ESTIMATE = {
+  quick_tip: '15–30 seconds',
+  standard: '30–60 seconds',
+  deep_dive: 'a minute or two',
+  project_quest: '1–3 minutes',
+};
+
 // Rough spoken-duration estimate from the total narration word count
 // (~150 words/min). Shown so the learner knows the time commitment before
 // starting. Returns e.g. "~30 sec" or "~3 min", or null if no narration.
@@ -63,6 +72,9 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   // between scenes. The start screen waits until this is done.
   const [prepared, setPrepared] = useState(false);
   const [prepProgress, setPrepProgress] = useState({ done: 0, total: 0 });
+  // Seconds spent loading, for the progress bar on the loading screen (matches
+  // the read-lesson loader). Ticks until the lesson is prepped or started.
+  const [elapsed, setElapsed] = useState(0);
   // Whether the current scene's narration has finished. We DON'T auto-advance —
   // the learner reads/acts, then taps the next arrow when ready.
   const [narrationDone, setNarrationDone] = useState(false);
@@ -132,6 +144,13 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
       onProgress(script, sceneIdx);
     }
   }, [script, sceneIdx, onProgress]);
+
+  // --- Tick the loading-bar counter until the lesson is prepped or started ---
+  useEffect(() => {
+    if (prepared || hasStarted) { setElapsed(0); return; }
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [prepared, hasStarted]);
 
   // --- Pre-generate ALL scene audio before the lesson can start ---
   useEffect(() => {
@@ -346,6 +365,10 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   }, [handleClose]);
 
   const showDone = finished && (phase === 'done' || phase === 'quiz-loading');
+  // Loading-bar values, matching the read-lesson loader's look.
+  const loadEstimate = NARRATED_ESTIMATE[format] || NARRATED_ESTIMATE.standard;
+  const loadPct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / 14))));
+  const prepPct = prepProgress.total ? Math.round((prepProgress.done / prepProgress.total) * 100) : loadPct;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -359,11 +382,18 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
           <X className="w-5 h-5" /> Close
         </button>
 
-        {/* Loading */}
+        {/* Loading the script — same look as the read-lesson loader. */}
         {!script && !loadError && (
-          <div className="bg-slate-900 rounded-2xl p-12 border border-slate-800">
-            <BookLoader message={`Preparing your narrated lesson on ${topic}...`} size="lg" />
-            <p className="text-center text-slate-500 text-xs mt-4">Writing the script and preparing the narration.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
+            <BookLoader message={`Designing your narrated lesson on ${topic}…`} size="lg" />
+            <div className="mt-6 max-w-md mx-auto">
+              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${loadPct}%` }} />
+              </div>
+              <p className="mt-2 text-center text-xs text-slate-400">
+                Writing the script and narration — this usually takes {loadEstimate}.
+              </p>
+            </div>
           </div>
         )}
 
@@ -380,19 +410,18 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
           </div>
         )}
 
-        {/* Generating audio — all scenes are primed before the lesson starts */}
+        {/* Generating audio — all scenes are primed before the lesson starts.
+            Same loader look as above; the bar now tracks real scene progress. */}
         {script && !prepared && !hasStarted && (
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
-            <div className="aspect-video flex flex-col items-center justify-center text-center px-8 py-10">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-300 bg-brand-900/40 px-2.5 py-1 rounded-full mb-5">
-                <Volume2 className="w-3.5 h-3.5" /> Narrated lesson
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">{script.title}</h2>
-              <Loader2 className="w-6 h-6 animate-spin text-brand-300 mb-3" />
-              <p className="text-slate-300 text-sm">Generating the narration…</p>
-              <p className="text-slate-500 text-xs mt-1">
-                Preparing all {prepProgress.total || total} scenes up front so playback never stops to load
-                {prepProgress.total ? ` · ${prepProgress.done}/${prepProgress.total}` : ''}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
+            <BookLoader message={script.title || 'Preparing your narrated lesson…'} size="lg" />
+            <div className="mt-6 max-w-md mx-auto">
+              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-brand rounded-full transition-all duration-500 ease-out" style={{ width: `${prepPct}%` }} />
+              </div>
+              <p className="mt-2 text-center text-xs text-slate-400">
+                Preparing the narration so playback never stops to load
+                {prepProgress.total ? ` · ${prepProgress.done}/${prepProgress.total} scenes` : '…'}
               </p>
             </div>
           </div>
