@@ -11,13 +11,13 @@ import BookLoader from '@/components/book-loader';
 import LessonQuiz from '@/components/lesson-quiz';
 import { FormattedContent } from '@/components/lesson-slide';
 
-// Playback speeds the learner can cycle through. Kept tight and useful — slow
+// Playback speeds the learner can cycle through. Kept tight and useful â slow
 // for dense topics, fast for review.
 const SPEEDS = [1, 1.25, 1.5, 2, 0.75];
 
 // Split a spoken-narration string into one line per sentence so step-by-step
 // instructions (e.g. "do X in Claude") render readably instead of as one dense
-// block. Display-only — TTS still speaks the original string.
+// block. Display-only â TTS still speaks the original string.
 function splitIntoLines(text) {
   if (!text) return [];
   return text
@@ -29,11 +29,19 @@ function splitIntoLines(text) {
 // Loading estimate per format, mirroring the read-lesson loader so the two feel
 // consistent. Narrated runs a bit longer (script + all-scene audio up front).
 const NARRATED_ESTIMATE = {
-  quick_tip: '15–30 seconds',
-  standard: '30–60 seconds',
+  quick_tip: '15â30 seconds',
+  standard: '30â60 seconds',
   deep_dive: 'a minute or two',
-  project_quest: '1–3 minutes',
+  project_quest: '1â3 minutes',
 };
+
+// "M:SS" for the scrubber time labels.
+function fmtTime(s) {
+  if (!Number.isFinite(s) || s < 0) s = 0;
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
 
 // Rough spoken-duration estimate from the total narration word count
 // (~150 words/min). Shown so the learner knows the time commitment before
@@ -51,20 +59,22 @@ function estimateNarrationTime(script) {
 }
 
 /**
- * VideoLessonPlayer — the "prefer to watch" alternative to a chat-driven lesson.
+ * VideoLessonPlayer â the "prefer to watch" alternative to a chat-driven lesson.
  * Fetches a linear narrated script for a topic, then plays it as an auto-advancing
  * narrated slideshow: each scene is read aloud (OpenAI TTS) and advances when the
  * narration finishes.
  *
- * Playback never auto-starts — the learner presses play to begin (clicking is the
+ * Playback never auto-starts â the learner presses play to begin (clicking is the
  * user gesture browsers require for audio anyway). When the narration ends, the
  * lesson awards XP exactly like the read version: quick tips pay full on
  * completion; longer formats run a short checkpoint quiz that scales the XP.
  */
-export default function VideoLessonPlayer({ topic, format = 'standard', tools, questId, initialScript = null, initialScene = 0, onProgress, onComplete, onClose }) {
+export default function VideoLessonPlayer({ topic, format = 'standard', tools, questId, initialScript = null, initialScene = 0, initialTime = 0, onProgress, onComplete, onClose }) {
   const [script, setScript] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [sceneIdx, setSceneIdx] = useState(initialScene || 0);
+  // On resume, seek the resumed scene to this saved time the first time it plays.
+  const pendingSeekRef = useRef(initialTime > 0 ? initialTime : null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -76,13 +86,13 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   // Seconds spent loading, for the progress bar on the loading screen (matches
   // the read-lesson loader). Ticks until the lesson is prepped or started.
   const [elapsed, setElapsed] = useState(0);
-  // Whether the current scene's narration has finished. We DON'T auto-advance —
+  // Whether the current scene's narration has finished. We DON'T auto-advance â
   // the learner reads/acts, then taps the next arrow when ready.
   const [narrationDone, setNarrationDone] = useState(false);
 
   // Completion / XP flow. After narration ends: quick tips award immediately;
   // other formats fetch a short quiz, and XP is awarded when it's finished.
-  // 'narrating' → 'quiz-loading' → 'quiz' → 'done'
+  // 'narrating' â 'quiz-loading' â 'quiz' â 'done'
   const [phase, setPhase] = useState('narrating');
   const [quizQuestions, setQuizQuestions] = useState(null);
   const awardedRef = useRef(false);
@@ -95,8 +105,8 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const [asking, setAsking] = useState(false);
   const [qaThread, setQaThread] = useState([]);
 
-  const { isSpeaking, isPaused, isLoading: ttsLoading, speak, pause, resume, stop, setRate, prime } = useTts();
-  // Whether the slide-over menu is open — so the loading screen can center in the
+  const { isSpeaking, isPaused, isLoading: ttsLoading, currentTime, duration, speak, pause, resume, seek, stop, setRate, prime } = useTts();
+  // Whether the slide-over menu is open â so the loading screen can center in the
   // same content area as the read-lesson loader (which is padded md:pl-80).
   const { open: sidebarOpen } = useSidebar() || {};
 
@@ -113,13 +123,13 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   // --- Load the script once ---
   useEffect(() => {
     let cancelled = false;
-    // Resuming a paused narrated lesson → reuse the EXACT saved script rather
+    // Resuming a paused narrated lesson â reuse the EXACT saved script rather
     // than regenerating a brand-new (and possibly different) one. The scene
     // index is restored from initialScene via useState above.
     if (initialScript?.scenes?.length) {
       setScript(initialScript);
       setLoadError(null);
-      // Resume lands directly on the saved scene's slide, PAUSED — not the
+      // Resume lands directly on the saved scene's slide, PAUSED â not the
       // "press play to start" screen, and NOT auto-narrating. Otherwise pressing
       // play re-reads a scene the learner already heard ("repeats the text at
       // me"). They can press play to re-hear it or skip ahead.
@@ -146,14 +156,42 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     return () => { cancelled = true; };
   }, [topic, format]);
 
-  // --- Report progress up so the parent can persist a resumable entry with the
-  // exact script + current scene (narrated lessons used to regenerate a whole
-  // new script on resume). Fires when the script loads and on each scene change. ---
+  // --- Persist a resumable entry (script + current scene + time). On a FRESH
+  // lesson the first fire saves the script so it can be resumed; on a RESUME we
+  // skip that first fire so we don't clobber the saved scene/time with zeros.
+  // Later scene changes save the new scene at time 0. ---
+  const firstPersistRef = useRef(true);
   useEffect(() => {
-    if (script?.scenes?.length && typeof onProgress === 'function') {
-      onProgress(script, sceneIdx);
+    if (!(script?.scenes?.length) || typeof onProgress !== 'function') return;
+    if (firstPersistRef.current) {
+      firstPersistRef.current = false;
+      if (!initialScript) onProgress(script, sceneIdx, 0); // fresh lesson only
+      return;
     }
-  }, [script, sceneIdx, onProgress]);
+    onProgress(script, sceneIdx, 0); // new scene → position 0
+  }, [script, sceneIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- Throttled save of the live playback position while playing, so a resume
+  // (or even a hard tab-close after the last save) lands near where you were. ---
+  const lastTimeSaveRef = useRef(0);
+  useEffect(() => {
+    if (!isPlaying || !(script?.scenes?.length) || typeof onProgress !== 'function') return;
+    if (currentTime < lastTimeSaveRef.current || currentTime - lastTimeSaveRef.current >= 3) {
+      lastTimeSaveRef.current = currentTime;
+      onProgress(script, sceneIdx, currentTime);
+    }
+  }, [currentTime, isPlaying, script, sceneIdx, onProgress]);
+
+  // --- On resume, once the resumed scene actually starts playing, seek to the
+  // saved time (once). ---
+  useEffect(() => {
+    if (isSpeaking && pendingSeekRef.current != null) {
+      const t = pendingSeekRef.current;
+      pendingSeekRef.current = null;
+      // small delay so the audio element has its metadata/duration ready
+      setTimeout(() => seek(t), 120);
+    }
+  }, [isSpeaking, seek]);
 
   // --- Tick the loading-bar counter until the lesson is prepped or started ---
   useEffect(() => {
@@ -164,7 +202,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
 
   // --- Pre-generate scene audio. On a FRESH lesson we prime every scene up
   // front (blocking the start screen) so playback never stops to load. On RESUME
-  // (we reused a saved script) we skip that gate — jump straight to the saved
+  // (we reused a saved script) we skip that gate â jump straight to the saved
   // scene and warm the audio in the BACKGROUND, so reopening doesn't look like a
   // full regeneration. Playback still works: a not-yet-primed scene falls back
   // to an on-demand fetch. ---
@@ -209,19 +247,19 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   }, [isSpeaking]);
 
   // --- Narration finished for this scene: stop and WAIT for the learner ---
-  // We deliberately do NOT auto-advance — so a "try this in your AI tool" step
+  // We deliberately do NOT auto-advance â so a "try this in your AI tool" step
   // stays on screen until they tap the next arrow.
   useEffect(() => {
     if (!isPlaying || ttsLoading || isSpeaking) return;
     if (!startedSpeakingRef.current) return; // hasn't spoken yet this scene
     setIsPlaying(false);
     setNarrationDone(true);
-    // Heard this scene in full → save the NEXT scene as the resume point, so
+    // Heard this scene in full â save the NEXT scene as the resume point, so
     // reopening never replays a scene you already finished. (A mid-scene pause
     // leaves the current scene saved via the onProgress effect, so you don't
     // skip a scene you only partly heard.)
     if (script?.scenes?.length && typeof onProgress === 'function') {
-      onProgress(script, Math.min(sceneIdx + 1, script.scenes.length - 1));
+      onProgress(script, Math.min(sceneIdx + 1, script.scenes.length - 1), 0);
     }
   }, [isSpeaking, ttsLoading, isPlaying, sceneIdx, script, onProgress]);
 
@@ -234,7 +272,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
 
   useEffect(() => {
     if (!finished || phase !== 'narrating') return;
-    // Quick tips are completion-only — full XP, no quiz (matches read mode).
+    // Quick tips are completion-only â full XP, no quiz (matches read mode).
     if (format === 'quick_tip') {
       award(1, 0);
       setPhase('done');
@@ -242,7 +280,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     }
     // Longer formats: short checkpoint quiz grounded in the narration, so XP
     // scales by correctness exactly like the read lesson. If the quiz can't be
-    // built, never block completion — award full credit.
+    // built, never block completion â award full credit.
     let cancelled = false;
     setPhase('quiz-loading');
     const messages = scenes.map((s) => ({
@@ -291,12 +329,16 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     if (finished) return;
     setIsPlaying((p) => {
       if (p) {
-        // Playing → PAUSE in place (keep the audio position) instead of tearing
+        // Playing â PAUSE in place (keep the audio position) instead of tearing
         // it down, so pressing play again resumes rather than restarting.
         pause();
+        // Capture the exact position so resume lands here.
+        if (script?.scenes?.length && typeof onProgress === 'function') {
+          onProgress(script, sceneIdx, currentTime);
+        }
         return false;
       }
-      // Not playing → resume where we paused, or start the scene from the top
+      // Not playing â resume where we paused, or start the scene from the top
       // if it hasn't begun / already finished.
       if (isPaused) {
         resume();
@@ -307,7 +349,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
       }
       return true;
     });
-  }, [finished, scene, speak, pause, resume, isPaused]);
+  }, [finished, scene, speak, pause, resume, isPaused, script, sceneIdx, currentTime, onProgress]);
 
   const cycleSpeed = useCallback(() => {
     setSpeed((s) => {
@@ -318,6 +360,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
 
   const goPrev = useCallback(() => {
     stop();
+    pendingSeekRef.current = null; // a manual scene change cancels the resume-seek
     setFinished(false);
     setSceneIdx((i) => Math.max(0, i - 1));
     setIsPlaying(true);
@@ -325,6 +368,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
 
   const goNext = useCallback(() => {
     stop();
+    pendingSeekRef.current = null; // a manual scene change cancels the resume-seek
     if (sceneIdx < total - 1) {
       setSceneIdx((i) => i + 1);
       setIsPlaying(true);
@@ -344,11 +388,15 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   }, [stop]);
 
   const handleClose = useCallback(() => {
+    // Capture the exact position before tearing down, so resume lands here.
+    if (script?.scenes?.length && typeof onProgress === 'function') {
+      onProgress(script, sceneIdx, currentTime);
+    }
     stop();
     onClose?.();
-  }, [stop, onClose]);
+  }, [stop, onClose, script, sceneIdx, currentTime, onProgress]);
 
-  // Open the coach — pause the narration so it doesn't talk over the answer.
+  // Open the coach â pause the narration so it doesn't talk over the answer.
   const openCoach = useCallback(() => {
     setCoachOpen(true);
     setIsPlaying(false);
@@ -384,7 +432,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
       setQaThread((prev) => prev.map((x) => (x.id === id ? { ...x, a, loading: false } : x)));
     } catch {
       setQaThread((prev) => prev.map((x) => (
-        x.id === id ? { ...x, a: 'Sorry — I couldn’t answer that just now. Please try again.', loading: false, error: true } : x
+        x.id === id ? { ...x, a: 'Sorry â I couldnât answer that just now. Please try again.', loading: false, error: true } : x
       )));
     } finally {
       setAsking(false);
@@ -412,12 +460,12 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     <div className={`fixed flex items-center justify-center p-4 overflow-y-auto ${cinematic
         ? 'inset-0 z-50 bg-slate-950/90 backdrop-blur-sm'
         // While loading, sit BELOW the sticky top nav (h-16) and under its z so
-        // the header/hamburger stay visible and usable — like the read loader —
+        // the header/hamburger stay visible and usable â like the read loader â
         // and match the read loader's md:pl-80 offset when the menu is open so
         // the card centers in the content area, not the full viewport.
         : `inset-x-0 top-16 bottom-0 z-30 bg-bg-warm dark:bg-slate-900 ${sidebarOpen ? 'md:pl-80' : ''}`}`}>
       <div className="relative w-full max-w-3xl my-auto">
-        {/* Close — hidden while loading (matches the read loader, which has no
+        {/* Close â hidden while loading (matches the read loader, which has no
             cancel mid-generation); shown once the lesson is ready to play. */}
         {cinematic && (
           <button
@@ -429,19 +477,19 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
           </button>
         )}
 
-        {/* Loading the script — same look as the read-lesson loader. */}
+        {/* Loading the script â same look as the read-lesson loader. */}
         {!script && !loadError && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
-            <BookLoader message={`Designing your narrated lesson on ${topic}…`} size="lg" />
+            <BookLoader message={`Designing your narrated lesson on ${topic}â¦`} size="lg" />
             <div className="mt-6 max-w-md mx-auto">
               <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${loadPct}%` }} />
               </div>
               <p className="mt-2 text-center text-xs text-slate-400">
-                Writing the script and narration — this usually takes {loadEstimate}.
+                Writing the script and narration â this usually takes {loadEstimate}.
               </p>
-              <p className="mt-1 text-center text-[11px] text-slate-400">
-                Keep this tab open while it builds.
+              <p className="mt-3 text-center text-sm font-bold text-amber-500 dark:text-amber-400">
+                ⚠️ Keep this tab open while it builds — leaving pauses the progress.
               </p>
             </div>
           </div>
@@ -460,38 +508,38 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
           </div>
         )}
 
-        {/* Generating audio — all scenes are primed before the lesson starts.
+        {/* Generating audio â all scenes are primed before the lesson starts.
             Same loader look as above; the bar now tracks real scene progress. */}
         {script && !prepared && !hasStarted && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
-            <BookLoader message={script.title || 'Preparing your narrated lesson…'} size="lg" />
+            <BookLoader message={script.title || 'Preparing your narrated lessonâ¦'} size="lg" />
             <div className="mt-6 max-w-md mx-auto">
               <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div className="h-full bg-brand rounded-full transition-all duration-500 ease-out" style={{ width: `${prepPct}%` }} />
               </div>
               <p className="mt-2 text-center text-xs text-slate-400">
                 Preparing the narration so playback never stops to load
-                {prepProgress.total ? ` · ${prepProgress.done}/${prepProgress.total} scenes` : '…'}
+                {prepProgress.total ? ` Â· ${prepProgress.done}/${prepProgress.total} scenes` : 'â¦'}
               </p>
-              <p className="mt-1 text-center text-[11px] text-slate-400">
-                Keep this tab open while it builds.
+              <p className="mt-3 text-center text-sm font-bold text-amber-500 dark:text-amber-400">
+                ⚠️ Keep this tab open while it builds — leaving pauses the progress.
               </p>
             </div>
           </div>
         )}
 
-        {/* Start screen — playback waits for the learner to press play */}
+        {/* Start screen â playback waits for the learner to press play */}
         {script && prepared && !hasStarted && (
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
             <div className="aspect-video flex flex-col items-center justify-center text-center px-8 py-10">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-300 bg-brand-900/40 px-2.5 py-1 rounded-full mb-5">
-                <Volume2 className="w-3.5 h-3.5" /> Narrated lesson · audio ready
+                <Volume2 className="w-3.5 h-3.5" /> Narrated lesson Â· audio ready
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 leading-tight">{script.title}</h2>
               <p className="text-slate-400 mb-8 text-sm">
                 {total} {total === 1 ? 'scene' : 'scenes'}
-                {estimateNarrationTime(script) ? ` · ${estimateNarrationTime(script)}` : ''}
-                {' '}· read aloud · you advance each scene yourself
+                {estimateNarrationTime(script) ? ` Â· ${estimateNarrationTime(script)}` : ''}
+                {' '}Â· read aloud Â· you advance each scene yourself
               </p>
               <button
                 onClick={handleStart}
@@ -523,12 +571,12 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
 
               {showDone ? (
                 <div className="text-center">
-                  <div className="text-5xl mb-3">🎉</div>
+                  <div className="text-5xl mb-3">ð</div>
                   <h2 className="text-2xl font-bold text-white mb-1">Lesson complete!</h2>
                   <p className="text-slate-400 mb-2">{script.title}</p>
                   {phase === 'quiz-loading' ? (
                     <p className="inline-flex items-center gap-2 text-slate-400 text-sm mb-5">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Saving your progress…
+                      <Loader2 className="w-4 h-4 animate-spin" /> Saving your progressâ¦
                     </p>
                   ) : (
                     <p className="inline-flex items-center gap-1.5 text-brand-300 text-sm font-medium mb-6">
@@ -541,7 +589,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                       onClick={handleClose}
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand text-white font-semibold hover:bg-brand-600 transition-all shadow-lg"
                     >
-                      Learn something else →
+                      Learn something else â
                     </button>
                     <button
                       onClick={replay}
@@ -578,7 +626,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
 
             {/* Caption (the spoken narration). Split into sentences so any
                 step-by-step instructions read as separate lines instead of one
-                dense paragraph. This only affects display — TTS still speaks
+                dense paragraph. This only affects display â TTS still speaks
                 the full scene.narration string. */}
             {!showDone && scene && (
               <div className="px-8 sm:px-14 pb-2">
@@ -601,6 +649,25 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                     }`}
                   />
                 ))}
+              </div>
+            )}
+
+            {/* Scrubber — YouTube-style time bar for the current scene's audio. */}
+            {!showDone && scene && (
+              <div className="px-8 sm:px-14 pt-3 flex items-center gap-3">
+                <span className="text-[11px] tabular-nums text-slate-400 w-9 text-right shrink-0">{fmtTime(currentTime)}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={duration > 0 ? duration : 1}
+                  step={0.1}
+                  value={Math.min(currentTime, duration || 0)}
+                  onChange={(e) => seek(Number(e.target.value))}
+                  disabled={!duration}
+                  aria-label="Seek within this scene"
+                  className="flex-1 h-1.5 accent-brand cursor-pointer disabled:opacity-40 disabled:cursor-default"
+                />
+                <span className="text-[11px] tabular-nums text-slate-400 w-9 shrink-0">{fmtTime(duration)}</span>
               </div>
             )}
 
@@ -646,7 +713,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                   aria-label={`Playback speed ${speed}x. Tap to change.`}
                   title="Playback speed"
                 >
-                  <Gauge className="w-4 h-4" /> {speed}×
+                  <Gauge className="w-4 h-4" /> {speed}Ã
                 </button>
               </div>
             )}
@@ -656,15 +723,15 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <p className="px-8 sm:px-14 pb-4 -mt-1 text-center text-xs text-slate-400">
                 {narrationDone
                   ? (sceneIdx < total - 1
-                      ? 'Take your time — tap the → arrow when you\'re ready for the next scene.'
-                      : 'That\'s the last scene — tap the → arrow to wrap up.')
-                  : 'Scenes don\'t auto-advance — you control when to move on.'}
+                      ? 'Take your time â tap the â arrow when you\'re ready for the next scene.'
+                      : 'That\'s the last scene â tap the â arrow to wrap up.')
+                  : 'Scenes don\'t auto-advance â you control when to move on.'}
               </p>
             )}
           </div>
         )}
 
-        {/* In-lesson coach — available while watching so a learner can ask for
+        {/* In-lesson coach â available while watching so a learner can ask for
             help (lesson, AI-tool navigation, or being stuck) without leaving. */}
         {script && hasStarted && phase !== 'quiz' && (
           <div className="mt-3">
@@ -678,7 +745,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
             ) : (
               <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl p-3">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <p className="text-xs text-slate-500 dark:text-slate-400 px-1">Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on — narration is paused while we chat.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 px-1">Ask about the lesson, how to use your AI tool, or anything you&apos;re stuck on â narration is paused while we chat.</p>
                   <button onClick={() => setCoachOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0" aria-label="Close help">
                     <X className="w-4 h-4" />
                   </button>
@@ -688,7 +755,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && askQuestion()}
-                    placeholder="Ask a question or tell me what you're stuck on…"
+                    placeholder="Ask a question or tell me what you're stuck onâ¦"
                     className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-ink dark:text-slate-200 outline-none focus:border-brand"
                     autoFocus
                   />
@@ -710,7 +777,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                           </span>
                           <div className="flex-1 min-w-0 rounded-2xl rounded-bl-md bg-bg-subtle dark:bg-slate-900 px-3 py-2 text-sm">
                             {item.loading ? (
-                              <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…</span>
+                              <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinkingâ¦</span>
                             ) : (
                               <FormattedContent text={item.a} />
                             )}

@@ -837,7 +837,7 @@ function LessonContent() {
     const saved = getPausedLesson(fmt, t)?.state;
     if (saved?.learnMode === 'watch' && saved.videoScript?.scenes?.length) {
       videoStartedAt.current = saved.lessonStartedAt || new Date().toISOString();
-      setVideoResume({ script: saved.videoScript, scene: saved.videoScene || 0 });
+      setVideoResume({ script: saved.videoScript, scene: saved.videoScene || 0, time: saved.videoTime || 0 });
       setVideoTopic(t);
       return;
     }
@@ -861,7 +861,7 @@ function LessonContent() {
 
   // Persist the narrated lesson's exact script + current scene as it plays, so
   // resuming reuses them (fixes "a completely new lesson is generated").
-  const handleVideoProgress = useCallback((script, sceneIdx) => {
+  const handleVideoProgress = useCallback((script, sceneIdx, time = 0) => {
     const t = videoTopic;
     if (!t || !script?.scenes?.length) return;
     try {
@@ -871,7 +871,7 @@ function LessonContent() {
         state: {
           topic: t, format, learnMode: 'watch',
           lessonStartedAt: videoStartedAt.current,
-          videoScript: script, videoScene: sceneIdx,
+          videoScript: script, videoScene: sceneIdx, videoTime: time,
         },
         stepLabel: `Narrated · scene ${sceneIdx + 1} of ${script.scenes.length}`,
         startedAt: videoStartedAt.current,
@@ -936,7 +936,7 @@ function LessonContent() {
       if (s.videoScript?.scenes?.length) {
         videoStartedAt.current = s.lessonStartedAt || new Date().toISOString();
         videoCompletedRef.current = false;
-        setVideoResume({ script: s.videoScript, scene: s.videoScene || 0 });
+        setVideoResume({ script: s.videoScript, scene: s.videoScene || 0, time: s.videoTime || 0 });
         setVideoQuestId(null);
         setFormat(entry.format || 'standard');
         setVideoTopic(entry.topic);
@@ -1284,6 +1284,11 @@ function LessonContent() {
               <Zap className="w-4 h-4" />
               Or surprise me
             </button>
+            {/* Heads-up before they generate: building takes a moment and the tab
+                must stay open. */}
+            <p className="mt-4 text-center text-sm font-bold text-amber-600 dark:text-amber-400">
+              ⚠️ Building takes 10s–2 min — keep this tab open while your lesson builds.
+            </p>
           </div>
         </div>
 
@@ -1394,6 +1399,7 @@ function LessonContent() {
           questId={videoQuestId}
           initialScript={videoResume?.script || null}
           initialScene={videoResume?.scene || 0}
+          initialTime={videoResume?.time || 0}
           onProgress={handleVideoProgress}
           onComplete={handleVideoComplete}
           onClose={() => { setVideoTopic(null); setVideoQuestId(null); setVideoResume(null); setGenerating(false); }}

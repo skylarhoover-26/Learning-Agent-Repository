@@ -975,8 +975,8 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           <p className="mt-2 text-center text-xs text-slate-400">
             This usually takes {load.estimate}{elapsed >= load.slow ? ' — hang tight, almost done.' : '.'}
           </p>
-          <p className="mt-1 text-center text-[11px] text-slate-400">
-            Keep this tab open while it builds.
+          <p className="mt-3 text-center text-sm font-bold text-amber-600 dark:text-amber-400">
+            ⚠️ Keep this tab open while it builds — leaving pauses the progress.
           </p>
         </div>
       </div>
