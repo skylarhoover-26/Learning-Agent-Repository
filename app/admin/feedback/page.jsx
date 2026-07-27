@@ -116,6 +116,7 @@ const SKIPPED = 'Skipped';
 const NONE = '__none__';
 
 const TABS = [
+  { key: 'all', label: 'All' },
   { key: 'new', label: 'New' },
   { key: 'notStarted', label: 'Not Started' },
   { key: 'pending', label: 'In Progress' },
@@ -137,7 +138,7 @@ function AdminFeedbackInner() {
   const { isAdmin, loaded } = useMenuVisibility();
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
-  const [tab, setTab] = useState('new');
+  const [tab, setTab] = useState('all');
   const [sortBy, setSortBy] = useState('priority');
   // Multi-select filters: arrays of chosen values. Empty = no filter (All).
   const [priorityFilter, setPriorityFilter] = useState([]);
@@ -327,8 +328,8 @@ function AdminFeedbackInner() {
           const notStarted = triaged.filter((f) => !['In Progress', 'Needs Review', 'Blocked'].includes(f.workStatus));
           const done = items.filter((f) => !isPraise(f) && isDone(f));
           const skipped = items.filter((f) => !isPraise(f) && isSkipped(f));
-          const counts = { new: newItems.length, notStarted: notStarted.length, pending: inProgress.length, needsReview: needsReview.length, blocked: blocked.length, done: done.length, skipped: skipped.length, praise: praise.length };
-          const base = tab === 'praise' ? praise : tab === 'done' ? done : tab === 'skipped' ? skipped : tab === 'new' ? newItems : tab === 'notStarted' ? notStarted : tab === 'needsReview' ? needsReview : tab === 'blocked' ? blocked : inProgress;
+          const counts = { all: items.length, new: newItems.length, notStarted: notStarted.length, pending: inProgress.length, needsReview: needsReview.length, blocked: blocked.length, done: done.length, skipped: skipped.length, praise: praise.length };
+          const base = tab === 'all' ? items : tab === 'praise' ? praise : tab === 'done' ? done : tab === 'skipped' ? skipped : tab === 'new' ? newItems : tab === 'notStarted' ? notStarted : tab === 'needsReview' ? needsReview : tab === 'blocked' ? blocked : inProgress;
           // Free-text search across the card's text, author, and page — so a
           // reviewer can find a specific report without scrolling the whole queue.
           const q = search.trim().toLowerCase();
@@ -469,6 +470,8 @@ function AdminFeedbackInner() {
                     ? `No feedback matches "${search.trim()}" in ${tab}.`
                     : (priorityFilter.length > 0 || featureFilter.length > 0 || statusFilter.length > 0) && base.length > 0
                     ? `No items match the current filters in ${tab}.`
+                    : tab === 'all'
+                    ? 'No feedback yet.'
                     : tab === 'praise'
                     ? 'No praise yet.'
                     : tab === 'done'
