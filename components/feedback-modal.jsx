@@ -8,6 +8,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { X, Loader2, Check } from 'lucide-react';
+import MediaCapture from '@/components/media-capture';
 
 const CATEGORIES = ['Idea', 'Bug', 'Confusing', 'Praise', 'Other'];
 const MAX_SHOTS = 4;
@@ -26,6 +27,7 @@ export default function FeedbackModal({ open, onClose }) {
   const [category, setCategory] = useState('');
   const [text, setText] = useState('');
   const [shots, setShots] = useState([]); // [{ name, dataUrl }]
+  const [recordings, setRecordings] = useState([]); // Blob URLs of screen recordings
   const [status, setStatus] = useState('idle'); // idle | sending | done | error
   const [error, setError] = useState(null);
   const fileRef = useRef(null);
@@ -36,6 +38,7 @@ export default function FeedbackModal({ open, onClose }) {
       setCategory('');
       setText('');
       setShots([]);
+      setRecordings([]);
       setStatus('idle');
       setError(null);
     }
@@ -100,6 +103,7 @@ export default function FeedbackModal({ open, onClose }) {
           category: category || null,
           text: text.trim(),
           screenshots: shots.map((s) => s.dataUrl),
+          recordings,
           page: pathname,
         }),
       });
@@ -201,6 +205,36 @@ export default function FeedbackModal({ open, onClose }) {
                       onClick={() => setShots((prev) => prev.filter((_, j) => j !== i))}
                       className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center"
                       aria-label="Remove screenshot"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-3">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+                Or record your screen (with audio) — great for showing a bug in action.
+              </p>
+              <MediaCapture
+                disabled={status === 'sending'}
+                onUploaded={(url) => setRecordings((prev) => [...prev, url])}
+              />
+            </div>
+            {recordings.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {recordings.map((url, i) => (
+                  <div key={i} className="relative">
+                    <video
+                      src={url}
+                      controls
+                      className="w-40 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-600 bg-black"
+                    />
+                    <button
+                      onClick={() => setRecordings((prev) => prev.filter((_, j) => j !== i))}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center"
+                      aria-label="Remove recording"
                     >
                       <X className="w-3 h-3" />
                     </button>

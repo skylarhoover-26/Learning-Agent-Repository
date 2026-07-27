@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
-import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, appendFeedbackNote, appendFeedbackScreenshot } from '@/lib/feedback-store';
+import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, appendFeedbackNote, appendFeedbackScreenshot, appendFeedbackRecording, isBlobUrl } from '@/lib/feedback-store';
 import { PRIORITY_LEVELS, PAGING_PRIORITIES, WORK_STATUSES } from '@/lib/feedback-priority';
 import { FEATURE_AREAS } from '@/lib/feedback-features';
 import { notifyCriticalFeedback } from '@/lib/slack-notify';
@@ -36,6 +36,13 @@ export async function POST(request) {
       if (url) screenshotUrls.push(url);
     }
 
+    // Screen recordings are uploaded directly browser→Blob (see
+    // /api/feedback/upload), so they arrive here as already-hosted URLs — keep
+    // only the ones that actually point at our Blob store.
+    const recordingUrls = Array.isArray(body.recordings)
+      ? body.recordings.filter(isBlobUrl).slice(0, MAX_SHOTS)
+      : [];
+
     const id = `${Date.now()}-${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
     const record = {
       id,
@@ -46,6 +53,7 @@ export async function POST(request) {
       text: text.slice(0, 5000),
       page: (body.page || '').toString().slice(0, 300),
       screenshotUrls,
+      recordingUrls,
     };
     // No automatic triage: feedback arrives un-sorted (no priority/feature) and
     // waits in the admin "New" tab until an admin sorts it by assigning a
@@ -101,6 +109,16 @@ export async function PATCH(request) {
       const url = await uploadFeedbackScreenshot(body.screenshot);
       if (!url) return NextResponse.json({ error: 'Failed to upload screenshot' }, { status: 400 });
       const updated = await appendFeedbackScreenshot(id, url);
+      if (!updated) return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+      return NextResponse.json({ ok: true, feedback: updated });
+    }
+    // A screen recording, already uploaded browser→Blob — store its URL only if
+    // it points at our Blob store.
+    if (typeof body.recording === 'string' && body.recording) {
+      if (!isBlobUrl(body.recording)) {
+        return NextResponse.json({ error: 'Invalid recording URL' }, { status: 400 });
+      }
+      const updated = await appendFeedbackRecording(id, body.recording);
       if (!updated) return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
       return NextResponse.json({ ok: true, feedback: updated });
     }

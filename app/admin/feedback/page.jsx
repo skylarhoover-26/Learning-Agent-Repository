@@ -8,6 +8,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote, DatabaseZap } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
+import MediaCapture from '@/components/media-capture';
 import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS, WORK_STATUSES } from '@/lib/feedback-priority';
 import { FEATURE_AREAS } from '@/lib/feedback-features';
 
@@ -174,7 +175,7 @@ function AdminFeedbackInner() {
   // in only the notes/screenshotUrls threads and leave every sort-relevant field
   // (priority, feature, status, date) exactly as it is on screen.
   async function patchItem(id, patch) {
-    const isAppend = 'note' in patch || 'screenshot' in patch;
+    const isAppend = 'note' in patch || 'screenshot' in patch || 'recording' in patch;
     const prev = items;
     setUpdatingId(id);
     setError(null);
@@ -196,7 +197,7 @@ function AdminFeedbackInner() {
           if (f.id !== id) return f;
           // Append: take only the threads, keep everything else local → no re-rank.
           if (isAppend) {
-            return { ...f, notes: data.feedback.notes, screenshotUrls: data.feedback.screenshotUrls };
+            return { ...f, notes: data.feedback.notes, screenshotUrls: data.feedback.screenshotUrls, recordingUrls: data.feedback.recordingUrls };
           }
           // Field patch: adopt the server record so server-stamped fields (doneBy/doneAt) show.
           return data.feedback;
@@ -739,13 +740,23 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
       {f.page && (
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">On page: <code>{f.page}</code></p>
       )}
-      {(Array.isArray(f.screenshotUrls) && f.screenshotUrls.length > 0) || !isPraise(f) ? (
+      {(Array.isArray(f.screenshotUrls) && f.screenshotUrls.length > 0) ||
+      (Array.isArray(f.recordingUrls) && f.recordingUrls.length > 0) ||
+      !isPraise(f) ? (
         <div className="flex flex-wrap items-center gap-2 mt-3">
           {(f.screenshotUrls || []).map((url, i) => (
             <a key={i} href={url} target="_blank" rel="noopener noreferrer">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={url} alt="Screenshot" className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-600 hover:opacity-90" />
             </a>
+          ))}
+          {(f.recordingUrls || []).map((url, i) => (
+            <video
+              key={`rec-${i}`}
+              src={url}
+              controls
+              className="w-40 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-600 bg-black"
+            />
           ))}
           {!isPraise(f) && (
             <>
@@ -762,6 +773,10 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
                 accept="image/*"
                 className="hidden"
                 onChange={(e) => attachScreenshot(e.target.files)}
+              />
+              <MediaCapture
+                disabled={busy}
+                onUploaded={(url) => onPatch(f.id, { recording: url })}
               />
             </>
           )}
