@@ -57,6 +57,11 @@ const WORK_STATUS_STYLES = {
   Blocked: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
 };
 const WORK_STATUS_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
+// Order mirrors WORK_STATUSES: Not Started → Blocked; unset sinks last.
+const WORK_STATUS_ORDER = Object.fromEntries(WORK_STATUSES.map((s, i) => [s, i]));
+function workStatusRank(f) {
+  return f.workStatus in WORK_STATUS_ORDER ? WORK_STATUS_ORDER[f.workStatus] : 99;
+}
 
 // Feature-area tag: neutral indigo pill, distinct from the category/priority
 // colors so the three buckets stay visually separable on a card.
@@ -346,6 +351,11 @@ function AdminFeedbackInner() {
               const diff = fa.localeCompare(fb);
               if (diff !== 0) return diff;
             }
+            if (sortBy === 'status') {
+              // Order by workflow status (Not Started → Blocked); unset sinks last.
+              const diff = workStatusRank(a) - workStatusRank(b);
+              if (diff !== 0) return diff;
+            }
             return (b.at || '').localeCompare(a.at || '');
           });
           const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
@@ -402,6 +412,7 @@ function AdminFeedbackInner() {
                   >
                     <option value="priority">Priority</option>
                     <option value="feature">Feature</option>
+                    <option value="status">Status</option>
                     <option value="newest">Newest</option>
                   </select>
                 </label>
