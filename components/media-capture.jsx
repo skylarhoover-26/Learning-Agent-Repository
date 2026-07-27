@@ -6,8 +6,8 @@
 // base64 data URL through a JSON body. On success it calls onUploaded(url) with
 // the hosted Blob URL; the caller attaches that URL to the feedback record.
 
-import { useCallback, useRef, useState } from 'react';
-import { upload } from '@vercel/blob/client';
+import { useRef, useState } from 'react';
+import { uploadFeedbackVideo } from '@/lib/feedback-upload';
 import { Paperclip, Loader2 } from 'lucide-react';
 
 export default function MediaCapture({ onUploaded, disabled = false }) {
@@ -15,33 +15,19 @@ export default function MediaCapture({ onUploaded, disabled = false }) {
   const [err, setErr] = useState(null);
   const fileRef = useRef(null);
 
-  const uploadFile = useCallback(
-    async (file, ext) => {
-      setUploading(true);
-      setErr(null);
-      try {
-        const name = `feedback-recordings/recording-${Date.now()}.${ext}`;
-        const result = await upload(name, file, {
-          access: 'public',
-          handleUploadUrl: '/api/feedback/upload',
-          contentType: file.type || (ext === 'mp4' ? 'video/mp4' : 'video/webm'),
-          multipart: true, // resilient for large videos
-        });
-        onUploaded?.(result.url);
-      } catch (e) {
-        setErr(e?.message || 'Upload failed');
-      } finally {
-        setUploading(false);
-      }
-    },
-    [onUploaded]
-  );
-
   async function onFilePicked(fileList) {
     const file = Array.from(fileList || []).find((f) => f.type.startsWith('video/'));
     if (!file) return;
-    const ext = (file.name?.split('.').pop() || '').toLowerCase();
-    await uploadFile(file, ext && ext.length <= 4 ? ext : file.type.includes('mp4') ? 'mp4' : 'webm');
+    setUploading(true);
+    setErr(null);
+    try {
+      const url = await uploadFeedbackVideo(file);
+      onUploaded?.(url);
+    } catch (e) {
+      setErr(e?.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   }
 
   const btn =

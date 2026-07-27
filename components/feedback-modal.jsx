@@ -8,7 +8,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { X, Loader2, Check } from 'lucide-react';
-import MediaCapture from '@/components/media-capture';
+import { uploadFeedbackVideo } from '@/lib/feedback-upload';
 
 const CATEGORIES = ['Idea', 'Bug', 'Confusing', 'Praise', 'Other'];
 const MAX_SHOTS = 4;
@@ -27,7 +27,8 @@ export default function FeedbackModal({ open, onClose }) {
   const [category, setCategory] = useState('');
   const [text, setText] = useState('');
   const [shots, setShots] = useState([]); // [{ name, dataUrl }]
-  const [recordings, setRecordings] = useState([]); // Blob URLs of screen recordings
+  const [recordings, setRecordings] = useState([]); // Blob URLs of attached videos
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [status, setStatus] = useState('idle'); // idle | sending | done | error
   const [error, setError] = useState(null);
   const fileRef = useRef(null);
@@ -39,22 +40,45 @@ export default function FeedbackModal({ open, onClose }) {
       setText('');
       setShots([]);
       setRecordings([]);
+      setUploadingVideo(false);
       setStatus('idle');
       setError(null);
     }
   }, [open]);
 
   const addFiles = useCallback(async (fileList) => {
-    const images = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'));
-    const next = [];
-    for (const f of images) {
+    const all = Array.from(fileList || []);
+    const images = all.filter((f) => f.type.startsWith('image/'));
+    const videos = all.filter((f) => f.type.startsWith('video/'));
+
+    if (images.length) {
+      const next = [];
+      for (const f of images) {
+        try {
+          next.push({ name: f.name || 'screenshot', dataUrl: await fileToDataUrl(f) });
+        } catch {
+          // skip unreadable file
+        }
+      }
+      setShots((prev) => [...prev, ...next].slice(0, MAX_SHOTS));
+    }
+
+    // Videos are too big for the JSON body, so they upload straight to Blob and
+    // we keep only the resulting URL.
+    if (videos.length) {
+      setError(null);
+      setUploadingVideo(true);
       try {
-        next.push({ name: f.name || 'screenshot', dataUrl: await fileToDataUrl(f) });
-      } catch {
-        // skip unreadable file
+        for (const v of videos) {
+          const url = await uploadFeedbackVideo(v);
+          setRecordings((prev) => [...prev, url].slice(0, MAX_SHOTS));
+        }
+      } catch (e) {
+        setError(e?.message || 'Video upload failed');
+      } finally {
+        setUploadingVideo(false);
       }
     }
-    setShots((prev) => [...prev, ...next].slice(0, MAX_SHOTS));
   }, []);
 
   // Paste-to-attach while the modal is open (matches the reference form).
@@ -170,7 +194,7 @@ export default function FeedbackModal({ open, onClose }) {
               className={`${inputClass} mb-4 resize-y`}
             />
 
-            <label className="block text-sm font-semibold text-ink dark:text-slate-200 mb-1">Screenshots (optional)</label>
+            <label className="block text-sm font-semibold text-ink dark:text-slate-200 mb-1">Screenshots or video (optional)</label>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -181,16 +205,21 @@ export default function FeedbackModal({ open, onClose }) {
               }}
               className="w-full px-3 py-4 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 text-sm text-slate-500 dark:text-slate-400 hover:border-brand transition-colors"
             >
-              Add screenshots — click to upload, drag &amp; drop, or paste
+              Add a screenshot or video — click to upload, drag &amp; drop, or paste
             </button>
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               multiple
               className="hidden"
               onChange={(e) => addFiles(e.target.files)}
             />
+            {uploadingVideo && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading video…
+              </p>
+            )}
             {shots.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {shots.map((s, i) => (
@@ -213,15 +242,6 @@ export default function FeedbackModal({ open, onClose }) {
               </div>
             )}
 
-            <div className="mt-3">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">
-                Or attach a video — great for showing a bug in action.
-              </p>
-              <MediaCapture
-                disabled={status === 'sending'}
-                onUploaded={(url) => setRecordings((prev) => [...prev, url])}
-              />
-            </div>
             {recordings.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {recordings.map((url, i) => (
@@ -254,7 +274,7 @@ export default function FeedbackModal({ open, onClose }) {
               </button>
               <button
                 onClick={submit}
-                disabled={!text.trim() || status === 'sending'}
+                disabled={!text.trim() || status === 'sending' || uploadingVideo}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {status === 'sending' ? (
