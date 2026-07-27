@@ -116,8 +116,10 @@ const NONE = '__none__';
 
 const TABS = [
   { key: 'new', label: 'New' },
-  { key: 'needsReview', label: 'Needs Review' },
+  { key: 'notStarted', label: 'Not Started' },
   { key: 'pending', label: 'In Progress' },
+  { key: 'needsReview', label: 'Needs Review' },
+  { key: 'blocked', label: 'Blocked' },
   { key: 'done', label: 'Done' },
   { key: 'skipped', label: 'Skipped' },
   { key: 'praise', label: 'Praise' },
@@ -236,13 +238,6 @@ function AdminFeedbackInner() {
     loadFeedback();
   }, [loaded, isAdmin, loadFeedback]);
 
-  // The In Progress tab defaults to sorting by workflow status, so in-progress
-  // items group together; entering it snaps the Sort control to Status (which
-  // the admin can still change while on the tab).
-  useEffect(() => {
-    if (tab === 'pending') setSortBy('status');
-  }, [tab]);
-
   // Jumping tabs/filters/sort can land you past the end of the new list, so
   // always snap back to page 1 when any of them change.
   useEffect(() => {
@@ -319,18 +314,20 @@ function AdminFeedbackInner() {
           // a priority, but not yet done).
           const praise = items.filter(isPraise);
           const active = items.filter((f) => !isPraise(f) && !isDone(f) && !isSkipped(f));
-          // Needs Review is a pre-filter stage carved out of the active set (any
-          // open item an admin flagged for review), sitting between New and
-          // In Progress. The rest split into New (no priority yet) vs In Progress
-          // (sorted — has a priority — and being worked).
-          const needsReview = active.filter((f) => f.workStatus === 'Needs Review');
-          const rest = active.filter((f) => f.workStatus !== 'Needs Review');
-          const newItems = rest.filter((f) => !isSorted(f));
-          const pending = rest.filter(isSorted);
+          // Fully status-driven tabs. New = untriaged (no priority yet). Once an
+          // admin assigns a priority, an item flows into one of the workflow-
+          // status tabs by its workStatus; unset (or "Not Started") lands in Not
+          // Started, so every active item always has exactly one tab home.
+          const newItems = active.filter((f) => !isSorted(f));
+          const triaged = active.filter(isSorted);
+          const inProgress = triaged.filter((f) => f.workStatus === 'In Progress');
+          const needsReview = triaged.filter((f) => f.workStatus === 'Needs Review');
+          const blocked = triaged.filter((f) => f.workStatus === 'Blocked');
+          const notStarted = triaged.filter((f) => !['In Progress', 'Needs Review', 'Blocked'].includes(f.workStatus));
           const done = items.filter((f) => !isPraise(f) && isDone(f));
           const skipped = items.filter((f) => !isPraise(f) && isSkipped(f));
-          const counts = { new: newItems.length, needsReview: needsReview.length, pending: pending.length, done: done.length, skipped: skipped.length, praise: praise.length };
-          const base = tab === 'praise' ? praise : tab === 'done' ? done : tab === 'skipped' ? skipped : tab === 'new' ? newItems : tab === 'needsReview' ? needsReview : pending;
+          const counts = { new: newItems.length, notStarted: notStarted.length, pending: inProgress.length, needsReview: needsReview.length, blocked: blocked.length, done: done.length, skipped: skipped.length, praise: praise.length };
+          const base = tab === 'praise' ? praise : tab === 'done' ? done : tab === 'skipped' ? skipped : tab === 'new' ? newItems : tab === 'notStarted' ? notStarted : tab === 'needsReview' ? needsReview : tab === 'blocked' ? blocked : inProgress;
           // Free-text search across the card's text, author, and page — so a
           // reviewer can find a specific report without scrolling the whole queue.
           const q = search.trim().toLowerCase();
@@ -479,8 +476,12 @@ function AdminFeedbackInner() {
                     ? 'Nothing skipped.'
                     : tab === 'new'
                     ? 'No new feedback — nothing waiting to be sorted.'
+                    : tab === 'notStarted'
+                    ? 'Nothing waiting to be started.'
                     : tab === 'needsReview'
                     ? 'Nothing flagged for review.'
+                    : tab === 'blocked'
+                    ? 'Nothing blocked.'
                     : 'No in-progress feedback — all caught up!'}
                 </p>
               ) : (
