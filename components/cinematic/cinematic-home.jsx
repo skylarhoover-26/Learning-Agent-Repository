@@ -342,8 +342,10 @@ export default function CinematicHome() {
       <section className="cine-rise">
         <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight mb-7">Your stats</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Current streak with weekday pills */}
-          <div className="cine-glass cine-tilt rounded-3xl p-6">
+          {/* Current streak with weekday pills — the whole card is a tilt-styled
+              card, so make it actually navigate (to your progress) rather than
+              looking clickable but doing nothing. */}
+          <Link href="/achievements" className="cine-glass cine-tilt rounded-3xl p-6 block">
             <p className="font-display font-bold inline-flex items-center gap-2"><Flame className="w-4 h-4" style={{ color: '#FF7A45' }} /> Current streak</p>
             <p className="font-display font-extrabold text-5xl mt-3">{streak}<span className="text-base font-semibold ml-2" style={{ color: 'var(--ink-dim)' }}>days in a row</span></p>
             <div className="flex items-center gap-1.5 mt-4">
@@ -362,15 +364,16 @@ export default function CinematicHome() {
             <p className="text-sm mt-4" style={{ color: 'var(--ink-dim)' }}>
               {streak > 0 ? "You're on a roll — one lesson today keeps it alive." : 'Start a lesson today to begin a streak.'}
             </p>
-          </div>
+          </Link>
 
-          {/* Leaderboard */}
-          <div data-tour="home-leaderboard" className="cine-glass cine-tilt rounded-3xl p-6">
+          {/* Leaderboard — the whole card navigates to the full board (the inner
+              cue is a span, not a nested <a>, so the HTML stays valid). */}
+          <Link href="/leaderboard" data-tour="home-leaderboard" className="cine-glass cine-tilt rounded-3xl p-6 block">
             <div className="flex items-center justify-between mb-3">
               <p className="font-display font-bold inline-flex items-center gap-2"><Trophy className="w-4 h-4" style={{ color: 'var(--gold)' }} /> Top learners</p>
-              <Link href="/leaderboard" className="text-xs font-semibold group inline-flex items-center gap-1" style={{ color: 'var(--accent2)' }}>
+              <span className="text-xs font-semibold group inline-flex items-center gap-1" style={{ color: 'var(--accent2)' }}>
                 View full leaderboard <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-              </Link>
+              </span>
             </div>
             {people.length === 0 ? (
               <p className="text-sm italic" style={{ color: 'var(--ink-dim)' }}>Rankings appear as the team earns XP.</p>
@@ -392,7 +395,7 @@ export default function CinematicHome() {
                 ))}
               </ul>
             )}
-          </div>
+          </Link>
         </div>
       </section>
 

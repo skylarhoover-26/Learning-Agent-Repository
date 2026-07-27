@@ -129,9 +129,16 @@ export function TourProvider({ children }) {
     const step = GUIDED_TOUR_STEPS[index];
     if (!step) return;
     if (step.route && window.location.pathname !== step.route) router.push(step.route);
-    setOpen(true); // sidebar must stay open for its anchors
+    // Only open the slide-over menu for the step that actually highlights it.
+    // On every other step the menu would sit OVER the home cards we're trying to
+    // spotlight, which is what made the tour feel like floating definition cards
+    // instead of a walkthrough of the real page.
+    setOpen(step.element === '[data-tour="sidebar"]');
     if (step.profileMenu) setProfileMenu(step.profileMenu);
-    await waitForElement(step.element);
+    // Shorter ceiling: if an anchor genuinely isn't there we fall back to a
+    // centered popover quickly instead of stalling ~4s per step (the poll still
+    // resolves instantly the moment the element appears).
+    await waitForElement(step.element, 1800);
   }, [router, setOpen]);
 
   // After a step is spotlighted, run its demo actions: animate typing into a box,
@@ -237,9 +244,9 @@ export function TourProvider({ children }) {
     // instead of the learner's real saved data.
     try { window.sessionStorage.setItem('tourActive', '1'); } catch {}
     showClickShield();
-    setOpen(true);
-    // Let the sidebar finish its slide-in, then prep + show the first step.
-    await new Promise(r => setTimeout(r, 280));
+    // prepareStep(0) sets the correct sidebar state for the first step (home →
+    // closed). A short settle lets the route/render land before we spotlight.
+    await new Promise(r => setTimeout(r, 120));
     await prepareStep(0);
     if (driverRef.current) d.drive(0);
   }, [prepareStep, runStepActions, setOpen]);
