@@ -440,10 +440,12 @@ function AdminFeedbackInner() {
               </div>
 
               {/* Tabs + counts, with Total leading (left of Pending). */}
-              <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+              {/* Pill tabs that wrap onto multiple lines so every bucket stays
+                  visible (no sideways scroll) even with the full status pipeline. */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
                 <span
                   title="Total feedback matching the current Priority, Feature, and search filters — across every tab"
-                  className="pl-1 pr-3 mr-1 border-r border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap"
+                  className="pr-3 mr-0.5 border-r border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap"
                 >
                   Total
                   <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{totalMatching}</span>
@@ -452,14 +454,14 @@ function AdminFeedbackInner() {
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
-                    className={`px-3 py-2 -mb-px text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors whitespace-nowrap ${
                       tab === t.key
-                        ? 'border-brand text-brand'
-                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
+                        ? 'bg-brand text-white border-brand'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700'
                     }`}
                   >
                     {t.label}
-                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{counts[t.key]}</span>
+                    <span className={`text-xs ${tab === t.key ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'}`}>{counts[t.key]}</span>
                   </button>
                 ))}
               </div>
