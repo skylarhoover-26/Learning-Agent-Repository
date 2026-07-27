@@ -32,13 +32,13 @@ function getSentenceStyle(idx, flagged, revealed, isHallucination) {
 
   // revealed
   if (isHallucination && flagged) {
-    return 'bg-green-50 border-green-300 ring-1 ring-green-200'; // correct catch
+    return 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800'; // correct catch
   }
   if (isHallucination && !flagged) {
-    return 'bg-red-50 border-red-300 ring-1 ring-red-200'; // missed
+    return 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-800'; // missed
   }
   if (!isHallucination && flagged) {
-    return 'bg-orange-50 border-orange-300 ring-1 ring-orange-200'; // false flag
+    return 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 ring-1 ring-orange-200 dark:ring-orange-800'; // false flag
   }
   return 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'; // correct skip
 }
@@ -323,10 +323,10 @@ function HallucinationHunt() {
                   key={i}
                   className={`p-3 rounded-xl border text-sm ${
                     r.caught === r.totalHallucinations && r.falseFlags === 0
-                      ? 'bg-green-50 border-green-200'
+                      ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
                       : r.caught > 0
-                      ? 'bg-orange-50 border-orange-200'
-                      : 'bg-red-50 border-red-200'
+                      ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800'
+                      : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -486,17 +486,17 @@ function HallucinationHunt() {
             <h3 className="font-bold text-ink dark:text-slate-200 text-lg mb-4">Results</h3>
 
             <div className="grid grid-cols-3 gap-4 mb-5">
-              <div className="text-center p-3 bg-green-50 rounded-xl border border-green-200">
-                <div className="text-2xl font-bold text-green-700">{caught}</div>
-                <div className="text-xs text-green-600">Caught</div>
+              <div className="text-center p-3 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-800">
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">{caught}</div>
+                <div className="text-xs text-green-600 dark:text-green-400">Caught</div>
               </div>
-              <div className="text-center p-3 bg-red-50 rounded-xl border border-red-200">
-                <div className="text-2xl font-bold text-red-700">{missed}</div>
-                <div className="text-xs text-red-600">Missed</div>
+              <div className="text-center p-3 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200 dark:border-red-800">
+                <div className="text-2xl font-bold text-red-700 dark:text-red-300">{missed}</div>
+                <div className="text-xs text-red-600 dark:text-red-400">Missed</div>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-xl border border-orange-200">
-                <div className="text-2xl font-bold text-orange-700">{falseFlags}</div>
-                <div className="text-xs text-orange-600">False Flags</div>
+              <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/30 rounded-xl border border-orange-200 dark:border-orange-800">
+                <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{falseFlags}</div>
+                <div className="text-xs text-orange-600 dark:text-orange-400">False Flags</div>
               </div>
             </div>
 

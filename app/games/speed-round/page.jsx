@@ -235,19 +235,19 @@ function SpeedRound() {
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="p-3 bg-green-50 rounded-xl border border-green-200">
-                <div className="text-2xl font-bold text-green-700">{correctCount}</div>
-                <div className="text-xs text-green-600">Correct</div>
+              <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-800">
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">{correctCount}</div>
+                <div className="text-xs text-green-600 dark:text-green-400">Correct</div>
               </div>
-              <div className="p-3 bg-red-50 rounded-xl border border-red-200">
-                <div className="text-2xl font-bold text-red-700">
+              <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200 dark:border-red-800">
+                <div className="text-2xl font-bold text-red-700 dark:text-red-300">
                   {questions.length - correctCount - timedOutCount}
                 </div>
-                <div className="text-xs text-red-600">Wrong</div>
+                <div className="text-xs text-red-600 dark:text-red-400">Wrong</div>
               </div>
-              <div className="p-3 bg-orange-50 rounded-xl border border-orange-200">
-                <div className="text-2xl font-bold text-orange-700">{timedOutCount}</div>
-                <div className="text-xs text-orange-600">Timed Out</div>
+              <div className="p-3 bg-orange-50 dark:bg-orange-900/30 rounded-xl border border-orange-200 dark:border-orange-800">
+                <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{timedOutCount}</div>
+                <div className="text-xs text-orange-600 dark:text-orange-400">Timed Out</div>
               </div>
             </div>
 
@@ -260,8 +260,8 @@ function SpeedRound() {
                     key={i}
                     className={`p-3 rounded-xl border text-sm ${
                       r?.correct
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
+                        ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'
                     }`}
                   >
                     <div className="flex items-start gap-2">
@@ -410,9 +410,9 @@ function SpeedRound() {
 
               if (selected !== null) {
                 if (optIdx === currentQ.correct) {
-                  style = 'bg-green-50 border-green-300 ring-1 ring-green-200';
+                  style = 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800';
                 } else if (optIdx === selected && selected !== currentQ.correct) {
-                  style = 'bg-red-50 border-red-300 ring-1 ring-red-200';
+                  style = 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-800';
                 } else {
                   style = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60';
                 }

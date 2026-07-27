@@ -39,19 +39,19 @@ function getCellOpacity(mastery, hasActivity) {
 
 function getBadge(mastery, freshness, hasActivity) {
   if (!hasActivity) {
-    return { icon: Circle, label: 'Not started', color: 'text-slate-500 bg-slate-100 dark:bg-slate-700' };
+    return { icon: Circle, label: 'Not started', color: 'text-slate-500 dark:text-slate-300 bg-slate-100 dark:bg-slate-700' };
   }
   const zone = getFreshnessZone(freshness);
   if (zone === 'fresh' && mastery >= 60) {
-    return { icon: CheckCircle, label: 'Strong', color: 'text-green-700 bg-green-50' };
+    return { icon: CheckCircle, label: 'Strong', color: 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/50' };
   }
   if (zone === 'fresh') {
-    return { icon: Circle, label: 'Growing', color: 'text-blue-700 bg-blue-50' };
+    return { icon: Circle, label: 'Growing', color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/50' };
   }
   if (zone === 'aging') {
-    return { icon: Triangle, label: 'Aging', color: 'text-yellow-700 bg-yellow-50' };
+    return { icon: Triangle, label: 'Aging', color: 'text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/50' };
   }
-  return { icon: AlertTriangle, label: 'Stale', color: 'text-orange-700 bg-orange-50' };
+  return { icon: AlertTriangle, label: 'Stale', color: 'text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/50' };
 }
 
 function findDoThisNow(skills) {
@@ -102,18 +102,18 @@ function SkillCell({ skill, isDoThisNow, onSelect, isSelected }) {
             </span>
           )}
         </div>
-        <p className="text-xs font-semibold text-ink leading-tight mb-1 line-clamp-2">
+        <p className="text-xs font-semibold text-ink dark:text-slate-100 leading-tight mb-1 line-clamp-2">
           {skill.name}
         </p>
         {skill.hasActivity ? (
           <>
-            <p className="text-[11px] text-ink/70 font-medium">{skill.mastery}% mastery</p>
-            <p className="text-[10px] text-ink/50">
+            <p className="text-[11px] text-ink/70 dark:text-slate-300 font-medium">{skill.mastery}% mastery</p>
+            <p className="text-[10px] text-ink/50 dark:text-slate-400">
               {skill.freshness === 0 ? 'Today' : `${skill.freshness}d ago`}
             </p>
           </>
         ) : (
-          <p className="text-[11px] text-ink/50">No activity yet</p>
+          <p className="text-[11px] text-ink/50 dark:text-slate-400">No activity yet</p>
         )}
       </div>
     </button>

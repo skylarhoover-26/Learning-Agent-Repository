@@ -152,8 +152,8 @@ function AiOrHuman() {
                     key={item.id}
                     className={`p-3 rounded-xl border text-sm ${
                       r?.correct
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
+                        ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'
                     }`}
                   >
                     <div className="flex items-start gap-2">
@@ -321,26 +321,26 @@ function AiOrHuman() {
                 <div
                   className={`p-4 rounded-xl border text-sm mb-4 ${
                     isCorrect
-                      ? 'bg-green-50 border-green-200'
-                      : 'bg-red-50 border-red-200'
+                      ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+                      : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     {isCorrect ? (
                       <>
                         <Check className="w-5 h-5 text-green-600" />
-                        <span className="font-semibold text-green-700">Correct!</span>
+                        <span className="font-semibold text-green-700 dark:text-green-300">Correct!</span>
                       </>
                     ) : (
                       <>
                         <X className="w-5 h-5 text-red-500" />
-                        <span className="font-semibold text-red-700">
+                        <span className="font-semibold text-red-700 dark:text-red-300">
                           Wrong -- it was {currentItem.source === 'ai' ? 'AI generated' : 'human written'}
                         </span>
                       </>
                     )}
                   </div>
-                  <p className="text-slate-600 dark:text-slate-500">{currentItem.explanation}</p>
+                  <p className="text-slate-600 dark:text-slate-300">{currentItem.explanation}</p>
                 </div>
 
                 <div className="flex justify-end">
