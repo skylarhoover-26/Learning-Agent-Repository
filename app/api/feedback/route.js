@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { saveFeedback, listFeedback, uploadFeedbackScreenshot, patchFeedback, appendFeedbackNote, appendFeedbackScreenshot } from '@/lib/feedback-store';
-import { PRIORITY_LEVELS, PAGING_PRIORITIES } from '@/lib/feedback-priority';
+import { PRIORITY_LEVELS, PAGING_PRIORITIES, WORK_STATUSES } from '@/lib/feedback-priority';
 import { FEATURE_AREAS } from '@/lib/feedback-features';
 import { notifyCriticalFeedback } from '@/lib/slack-notify';
 
@@ -138,6 +138,13 @@ export async function PATCH(request) {
       patch.feature = body.feature;
       // Same as priority: a manual tag is authoritative and won't be re-triaged.
       patch.featureIsAiAssigned = false;
+    }
+    if ('workStatus' in body) {
+      // null clears it; otherwise it must be one of the known workflow statuses.
+      if (body.workStatus !== null && !WORK_STATUSES.includes(body.workStatus)) {
+        return NextResponse.json({ error: 'Invalid work status' }, { status: 400 });
+      }
+      patch.workStatus = body.workStatus;
     }
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });

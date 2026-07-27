@@ -8,7 +8,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote, DatabaseZap } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
-import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS } from '@/lib/feedback-priority';
+import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS, WORK_STATUSES } from '@/lib/feedback-priority';
 import { FEATURE_AREAS } from '@/lib/feedback-features';
 
 // Category → pill color, so bugs/ideas/praise are scannable at a glance.
@@ -47,6 +47,16 @@ const PRIORITY_STYLES = {
 const PRIORITY_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
 // Skipped: a muted, struck-through-feeling slate so it reads as "set aside".
 const SKIPPED_STYLE = 'bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:border-slate-500';
+
+// Workflow-status pill colors: In Progress reads yellow, Blocked light red;
+// Needs Review a calm blue, Not Started neutral slate.
+const WORK_STATUS_STYLES = {
+  'Not Started': 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
+  'In Progress': 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800',
+  'Needs Review': 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800',
+  Blocked: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+};
+const WORK_STATUS_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
 
 // Feature-area tag: neutral indigo pill, distinct from the category/priority
 // colors so the three buckets stay visually separable on a card.
@@ -751,7 +761,20 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
               Add
             </button>
           </div>
-          <div className="flex justify-end mt-3">
+          <div className="flex items-center justify-between gap-2 mt-3">
+            <select
+              value={f.workStatus || ''}
+              onChange={(e) => onPatch(f.id, { workStatus: e.target.value || null })}
+              disabled={busy}
+              aria-label="Work status"
+              title="Where this stands in the work"
+              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${f.workStatus ? (WORK_STATUS_STYLES[f.workStatus] || WORK_STATUS_UNSET) : WORK_STATUS_UNSET}`}
+            >
+              <option value="">Status…</option>
+              {WORK_STATUSES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
             <button
               onClick={() => onPatch(f.id, { status: resolved ? 'open' : 'done' })}
               disabled={busy}
