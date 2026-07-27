@@ -29,7 +29,7 @@ import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import PausedLessonsBox from '@/components/paused-lessons-box';
-import { listPausedLessons, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
+import { getPausedLesson, listPausedLessons, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import { QUESTS } from '@/lib/quest-data';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { prefetchPlan } from '@/lib/lesson-prefetch';
@@ -824,18 +824,32 @@ function LessonContent() {
   // topic matches a curated quest we pass its id so the narration walks the
   // quest's REAL steps (matching the read version); custom topics stay generic.
   const launchVideo = useCallback((t, fmt = format) => {
-    videoStartedAt.current = new Date().toISOString();
     videoCompletedRef.current = false;
-    setVideoResume(null); // fresh launch → generate a new script
     const norm = (s) => (s || '').trim().toLowerCase();
     const quest = fmt === 'project_quest'
       ? QUESTS.find((q) => norm(q.title) === norm(t))
       : null;
     setVideoQuestId(quest ? quest.id : null);
+
+    // RESUME, don't regenerate: if this narrated lesson was paused earlier and we
+    // saved its script, reuse it (same lesson, at the saved scene) — matches how
+    // re-opening a read lesson resumes. This is the path most people take (re-pick
+    // the lesson / Today's Pick / Surprise me) rather than the "Continue" box, so
+    // without this a narrated lesson always came back as a brand-new script.
+    const saved = getPausedLesson(fmt, t)?.state;
+    if (saved?.learnMode === 'watch' && saved.videoScript?.scenes?.length) {
+      videoStartedAt.current = saved.lessonStartedAt || new Date().toISOString();
+      setVideoResume({ script: saved.videoScript, scene: saved.videoScene || 0 });
+      setVideoTopic(t);
+      return;
+    }
+
+    // No saved script → genuinely new narrated lesson.
+    videoStartedAt.current = new Date().toISOString();
+    setVideoResume(null);
     setVideoTopic(t);
     // Seed a paused entry immediately so it shows up in the resume list; the
-    // player's onProgress then upgrades it with the real script + scene so a
-    // reopen resumes the SAME lesson instead of regenerating a new one.
+    // player's onProgress then upgrades it with the real script + scene.
     try {
       upsertPausedLesson({
         format: fmt,
