@@ -819,14 +819,13 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
           </div>
           <div className="flex items-center justify-between gap-2 mt-3">
             <select
-              value={f.workStatus || ''}
+              value={f.workStatus || 'Not Started'}
               onChange={(e) => onPatch(f.id, { workStatus: e.target.value || null })}
               disabled={busy}
               aria-label="Work status"
               title="Where this stands in the work"
-              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${f.workStatus ? (WORK_STATUS_STYLES[f.workStatus] || WORK_STATUS_UNSET) : WORK_STATUS_UNSET}`}
+              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${WORK_STATUS_STYLES[f.workStatus || 'Not Started'] || WORK_STATUS_UNSET}`}
             >
-              <option value="">Status…</option>
               {WORK_STATUSES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
