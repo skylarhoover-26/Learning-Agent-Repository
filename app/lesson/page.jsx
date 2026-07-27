@@ -61,6 +61,16 @@ const DEPTH_OPTIONS = [
   { key: 'project_quest', icon: Trophy, label: 'Project Quest', duration: '20-60 min', desc: 'Build something real start to finish, guided the whole way.', tone: 'red' },
 ];
 
+// Rough BUILD time per depth (how long generation takes, not the lesson length)
+// — heavier formats take longer, so the "keep this tab open" heads-up scales.
+// Mirrors the loader estimates in plan-lesson-player / video-lesson-player.
+const BUILD_ESTIMATE = {
+  quick_tip: '10–20 seconds',
+  standard: '15–30 seconds',
+  deep_dive: 'a minute or two',
+  project_quest: '1–3 minutes',
+};
+
 // Static class strings per tone (kept whole so Tailwind's JIT sees them). `glow`
 // feeds the inline boxShadow on the selected card.
 const DEPTH_TONES = {
@@ -1287,7 +1297,7 @@ function LessonContent() {
             {/* Heads-up before they generate: building takes a moment and the tab
                 must stay open. */}
             <p className="mt-4 text-center text-sm font-bold text-amber-600 dark:text-amber-400">
-              ⚠️ Building takes 10s–2 min — keep this tab open while your lesson builds.
+              ⚠️ Building takes {BUILD_ESTIMATE[format] || '15–30 seconds'} — keep this tab open while your lesson builds.
             </p>
           </div>
         </div>
