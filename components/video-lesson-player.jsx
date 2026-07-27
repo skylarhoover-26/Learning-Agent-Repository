@@ -369,18 +369,25 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   const loadEstimate = NARRATED_ESTIMATE[format] || NARRATED_ESTIMATE.standard;
   const loadPct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / 14))));
   const prepPct = prepProgress.total ? Math.round((prepProgress.done / prepProgress.total) * 100) : loadPct;
+  // While the lesson is still generating we use the same light background as the
+  // read-lesson loader; only the ready-to-play start screen + playback get the
+  // dark "cinematic" scrim.
+  const cinematic = (script && prepared) || hasStarted;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto ${cinematic ? 'bg-slate-950/90 backdrop-blur-sm' : 'bg-bg-warm dark:bg-slate-900'}`}>
       <div className="relative w-full max-w-3xl my-auto">
-        {/* Close */}
-        <button
-          onClick={handleClose}
-          className="absolute -top-2 right-0 -translate-y-full sm:translate-y-0 sm:-top-12 text-slate-300 hover:text-white flex items-center gap-1.5 text-sm font-medium"
-          aria-label="Close narrated lesson"
-        >
-          <X className="w-5 h-5" /> Close
-        </button>
+        {/* Close — hidden while loading (matches the read loader, which has no
+            cancel mid-generation); shown once the lesson is ready to play. */}
+        {cinematic && (
+          <button
+            onClick={handleClose}
+            className="absolute -top-2 right-0 -translate-y-full sm:translate-y-0 sm:-top-12 text-slate-300 hover:text-white flex items-center gap-1.5 text-sm font-medium"
+            aria-label="Close narrated lesson"
+          >
+            <X className="w-5 h-5" /> Close
+          </button>
+        )}
 
         {/* Loading the script — same look as the read-lesson loader. */}
         {!script && !loadError && (
@@ -393,17 +400,20 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <p className="mt-2 text-center text-xs text-slate-400">
                 Writing the script and narration — this usually takes {loadEstimate}.
               </p>
+              <p className="mt-1 text-center text-[11px] text-slate-400">
+                Keep this tab open while it builds.
+              </p>
             </div>
           </div>
         )}
 
         {/* Error */}
         {loadError && (
-          <div className="bg-slate-900 rounded-2xl p-10 border border-slate-800 text-center">
-            <p className="text-red-400 font-medium mb-4">{loadError}</p>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-10 border border-slate-200 dark:border-slate-700 shadow-card text-center">
+            <p className="text-red-600 dark:text-red-400 font-medium mb-4">{loadError}</p>
             <button
               onClick={handleClose}
-              className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-200 font-medium hover:bg-slate-700 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-ink dark:text-slate-200 font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
             >
               Close
             </button>
@@ -422,6 +432,9 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <p className="mt-2 text-center text-xs text-slate-400">
                 Preparing the narration so playback never stops to load
                 {prepProgress.total ? ` · ${prepProgress.done}/${prepProgress.total} scenes` : '…'}
+              </p>
+              <p className="mt-1 text-center text-[11px] text-slate-400">
+                Keep this tab open while it builds.
               </p>
             </div>
           </div>
