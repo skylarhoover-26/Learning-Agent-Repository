@@ -139,6 +139,7 @@ function AdminFeedbackInner() {
   // Multi-select filters: arrays of chosen values. Empty = no filter (All).
   const [priorityFilter, setPriorityFilter] = useState([]);
   const [featureFilter, setFeatureFilter] = useState([]);
+  const [statusFilter, setStatusFilter] = useState([]);
   const [updatingId, setUpdatingId] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -246,7 +247,7 @@ function AdminFeedbackInner() {
   // always snap back to page 1 when any of them change.
   useEffect(() => {
     setPage(1);
-  }, [tab, sortBy, priorityFilter, featureFilter, search]);
+  }, [tab, sortBy, priorityFilter, featureFilter, statusFilter, search]);
 
   if (!loaded) {
     return (
@@ -342,6 +343,7 @@ function AdminFeedbackInner() {
             // match one of the chosen values; NONE matches untagged items.
             if (priorityFilter.length > 0 && !priorityFilter.includes(f.priority || NONE)) return false;
             if (featureFilter.length > 0 && !featureFilter.includes(f.feature || NONE)) return false;
+            if (statusFilter.length > 0 && !statusFilter.includes(f.workStatus || NONE)) return false;
             if (q) {
               const hay = `${f.text || ''} ${f.name || ''} ${f.email || ''} ${f.page || ''}`.toLowerCase();
               if (!hay.includes(q)) return false;
@@ -417,6 +419,12 @@ function AdminFeedbackInner() {
                   onChange={setFeatureFilter}
                   options={[...FEATURE_AREAS.map((a) => ({ value: a, label: a })), { value: NONE, label: 'No feature' }]}
                 />
+                <MultiSelect
+                  label="Status"
+                  selected={statusFilter}
+                  onChange={setStatusFilter}
+                  options={[...WORK_STATUSES.map((s) => ({ value: s, label: s })), { value: NONE, label: 'No status' }]}
+                />
                 <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   Sort
                   <select
@@ -461,7 +469,7 @@ function AdminFeedbackInner() {
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-10 text-center">
                   {q
                     ? `No feedback matches "${search.trim()}" in ${tab}.`
-                    : (priorityFilter.length > 0 || featureFilter.length > 0) && base.length > 0
+                    : (priorityFilter.length > 0 || featureFilter.length > 0 || statusFilter.length > 0) && base.length > 0
                     ? `No items match the current filters in ${tab}.`
                     : tab === 'praise'
                     ? 'No praise yet.'
