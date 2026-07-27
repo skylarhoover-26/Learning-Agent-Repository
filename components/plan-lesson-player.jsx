@@ -217,11 +217,15 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // before we ever show an error.
       let planData = null;
       let planErr = null;
-      // Per-attempt timeout so a hung server call (the route's own budget is 120s
-      // via maxDuration) can't leave the learner spinning on the browser default
-      // forever — it falls into the retry, then the existing error UI. Generous
-      // enough (90s) that a normal deep-dive generation is never aborted.
-      const PLAN_TIMEOUT_MS = 90000;
+      // Per-attempt timeout so a hung server call can't leave the learner
+      // spinning on the browser default forever — it falls into the retry, then
+      // the friendly error UI below. The budget MUST exceed real generation
+      // time, or we abort a still-working request and strand the learner: a
+      // Project Quest plan (~8000 tokens on Sonnet) legitimately runs past two
+      // minutes, so heavier formats get a much longer client budget (and the
+      // server route's maxDuration is 300s to match).
+      const heavyFormat = format === 'project_quest' || format === 'deep_dive';
+      const PLAN_TIMEOUT_MS = heavyFormat ? 240000 : 100000;
       for (let attempt = 1; attempt <= 2 && active; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), PLAN_TIMEOUT_MS);
@@ -255,7 +259,15 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           body: JSON.stringify({ plan: planData, topic, format, tool: toolLabel }),
         }).catch(() => {});
       } else {
-        setError(planErr?.message || 'Failed to design the lesson. Please try again.');
+        // An aborted request (our timeout fired) is a "took too long", not a
+        // real server error — never surface the raw "signal is aborted without
+        // reason" text to the learner.
+        const aborted = planErr?.name === 'AbortError' || /abort/i.test(planErr?.message || '');
+        setError(
+          aborted
+            ? 'This lesson is taking longer than usual to build. Please try again.'
+            : (planErr?.message || 'Failed to design the lesson. Please try again.')
+        );
         setLoading(false);
       }
     })();
@@ -439,7 +451,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // ---- Lazily generate teach content for the current step -------------------
   useEffect(() => {
     if (!step || step.kind !== 'teach') return;
-    if (teachContent[step.id]) return;
+    // Only skip regeneration when there's REAL content — an empty object (e.g.
+    // rehydrated from a paused lesson that never finished generating this step)
+    // must not block a fresh attempt, or the learner is stuck on a blank step.
+    if (teachContent[step.id]?.message) return;
     let active = true;
     setTeachLoading(true);
     setTeachError((prev) => ({ ...prev, [step.id]: false }));
@@ -467,7 +482,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     // stranding the learner on "Preparing…" until they hit Retry.
     (async () => {
       const MAX_ATTEMPTS = 3;
-      const TIMEOUT_MS = 30000;
+      const TIMEOUT_MS = 45000;
       for (let attempt = 1; active && attempt <= MAX_ATTEMPTS; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -1144,9 +1159,12 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         )}
 
         {(step?.kind === 'teach' || step?.kind === 'qa') && (
-          teachLoading && !teach ? (
+          // No usable content yet (no message and no blocks): show the loader
+          // while it generates, or a retry once it's errored — NEVER fall through
+          // to the content branch and render a blank step.
+          !(teach?.message || teach?.blocks?.length) && !teachError[step.id] ? (
             <div className="py-6"><BookLoader message="Preparing…" size="sm" /></div>
-          ) : (!teach && teachError[step.id]) ? (
+          ) : !(teach?.message || teach?.blocks?.length) ? (
             <div className="text-center py-6">
               <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">This step didn’t load. Let’s try again.</p>
               <button

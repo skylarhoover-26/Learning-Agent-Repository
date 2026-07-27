@@ -4,9 +4,11 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonPlan } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
 
-// Plan generation can run long (large model output) and now retries internally,
-// so give the function room rather than letting it be cut short mid-generation.
-export const maxDuration = 120;
+// Plan generation can run long — a Project Quest plan is up to ~8000 output
+// tokens on Sonnet, which alone can take well over 2 minutes, plus internal
+// grounding/retries. 120s was cutting quests off mid-generation (the client
+// then saw an aborted request), so give the function the full budget.
+export const maxDuration = 300;
 
 export async function POST(request) {
   try {

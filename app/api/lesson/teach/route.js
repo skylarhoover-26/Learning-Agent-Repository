@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateTeachStep, generateLessonAnswer } from '@/lib/ai';
 
-export const maxDuration = 60;
+// A single teach step is a smaller call, but cold starts + a deep-dive step
+// (~2400 tokens) can still push past 60s, so give it headroom.
+export const maxDuration = 120;
 
 // Generates the teaching content for one planned teach step, or answers a
 // learner's free-form question (mode: 'answer').
