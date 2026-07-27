@@ -215,7 +215,7 @@ export default function FeedbackModal({ open, onClose }) {
 
             <div className="mt-3">
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">
-                Or record your screen (with audio) — great for showing a bug in action.
+                Or attach a video — great for showing a bug in action.
               </p>
               <MediaCapture
                 disabled={status === 'sending'}
