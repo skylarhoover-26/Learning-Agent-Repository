@@ -216,7 +216,14 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     if (!startedSpeakingRef.current) return; // hasn't spoken yet this scene
     setIsPlaying(false);
     setNarrationDone(true);
-  }, [isSpeaking, ttsLoading, isPlaying]);
+    // Heard this scene in full → save the NEXT scene as the resume point, so
+    // reopening never replays a scene you already finished. (A mid-scene pause
+    // leaves the current scene saved via the onProgress effect, so you don't
+    // skip a scene you only partly heard.)
+    if (script?.scenes?.length && typeof onProgress === 'function') {
+      onProgress(script, Math.min(sceneIdx + 1, script.scenes.length - 1));
+    }
+  }, [isSpeaking, ttsLoading, isPlaying, sceneIdx, script, onProgress]);
 
   // --- Completion: award XP the same way the read version does ---
   const award = useCallback((correctness, quizCorrect) => {
@@ -545,21 +552,27 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                   </div>
                 </div>
               ) : (
-                <>
+                // Keyed on the scene so it re-animates on every scene change.
+                <div key={sceneIdx}>
                   {scene.title && (
-                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-5 leading-tight">{scene.title}</h2>
+                    <h2 className="cine-rise text-2xl sm:text-3xl font-bold text-white mb-5 leading-tight">{scene.title}</h2>
                   )}
                   {scene.keyPoints && scene.keyPoints.length > 0 && (
                     <ul className="space-y-2.5">
                       {scene.keyPoints.map((pt, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-slate-200 text-lg">
+                        // Stagger the bullets in one-by-one after the title.
+                        <li
+                          key={i}
+                          className="cine-rise flex items-start gap-2.5 text-slate-200 text-lg"
+                          style={{ animationDelay: `${140 + i * 110}ms` }}
+                        >
                           <CheckCircle className="w-5 h-5 text-brand-400 mt-1 shrink-0" />
                           <span>{pt}</span>
                         </li>
                       ))}
                     </ul>
                   )}
-                </>
+                </div>
               )}
             </div>
 
@@ -569,7 +582,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                 the full scene.narration string. */}
             {!showDone && scene && (
               <div className="px-8 sm:px-14 pb-2">
-                <div className="text-slate-300 text-sm leading-relaxed bg-slate-950/40 rounded-xl px-4 py-3 min-h-[3.5rem] space-y-1.5">
+                <div key={sceneIdx} className="cine-rise text-slate-300 text-sm leading-relaxed bg-slate-950/40 rounded-xl px-4 py-3 min-h-[3.5rem] space-y-1.5" style={{ animationDelay: '120ms' }}>
                   {splitIntoLines(scene.narration).map((line, idx) => (
                     <p key={idx}>{line}</p>
                   ))}
@@ -584,7 +597,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                   <div
                     key={i}
                     className={`h-1 flex-1 rounded-full transition-all ${
-                      i < sceneIdx || finished ? 'bg-brand' : i === sceneIdx ? 'bg-brand-400' : 'bg-slate-700'
+                      i < sceneIdx || finished ? 'bg-brand' : i === sceneIdx ? 'bg-brand-400 animate-pulse' : 'bg-slate-700'
                     }`}
                   />
                 ))}
