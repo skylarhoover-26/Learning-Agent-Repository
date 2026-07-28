@@ -229,9 +229,12 @@ export function TourProvider({ children }) {
     const d = driver({
       showProgress: true,
       allowClose: true,
-      // Glide to each section and frame it, so the tour reads as a walkthrough of
-      // the real page rather than a stack of definition cards.
-      smoothScroll: true,
+      // Instant (not smooth) scroll between steps. smoothScroll animates the page
+      // move, which hid the popover and left a visible pause/lag on any step that
+      // moved a real distance. The steps are ordered top-to-bottom so each hop is
+      // short and downward; the padded, rounded spotlight still frames each real
+      // section, so it reads as a walkthrough — it just snaps in without a gap.
+      smoothScroll: false,
       stagePadding: 10,
       stageRadius: 16,
       overlayColor: 'rgba(15,23,42,0.7)',
