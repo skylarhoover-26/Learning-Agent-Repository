@@ -360,7 +360,9 @@ function AdminFeedbackInner() {
           const matchesFilters = (f) => {
             // Empty selection = no constraint (All). Otherwise the record must
             // match one of the chosen values; NONE matches untagged items.
-            if (priorityFilter.length > 0 && !priorityFilter.includes(f.priority || NONE)) return false;
+            // Match the same "effective priority" the card shows: a skipped item
+            // reads as Skipped regardless of the priority still stored under it.
+            if (priorityFilter.length > 0 && !priorityFilter.includes(isSkipped(f) ? SKIPPED : (f.priority || NONE))) return false;
             if (featureFilter.length > 0 && !featureFilter.includes(f.feature || NONE)) return false;
             // Match the same "effective status" the card shows: a done item
             // reads as Done, an item with no workStatus set reads as "No status"
@@ -433,7 +435,7 @@ function AdminFeedbackInner() {
                   label="Priority"
                   selected={priorityFilter}
                   onChange={setPriorityFilter}
-                  options={[...PRIORITY_LEVELS.map((p) => ({ value: p, label: p })), { value: NONE, label: 'No priority' }]}
+                  options={[...PRIORITY_LEVELS.map((p) => ({ value: p, label: p })), { value: SKIPPED, label: 'Skipped' }, { value: NONE, label: 'No priority' }]}
                 />
                 <MultiSelect
                   label="Feature"
