@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
@@ -86,6 +86,16 @@ export default function CinematicHome() {
   const { profile } = useProfile();
   const prog = useProgression();
   const todaysPick = useTodaysPick();
+
+  // Warm-on-open: once today's pick is known, pre-generate its lesson in the
+  // background (fire-and-forget) so clicking the card — or the Slack link —
+  // opens instantly instead of cold-generating. Once per mount, real topics only.
+  const warmedRef = useRef(false);
+  useEffect(() => {
+    if (warmedRef.current || !todaysPick?.topic) return;
+    warmedRef.current = true;
+    fetch('/api/daily-pick/warm', { method: 'POST' }).catch(() => {});
+  }, [todaysPick?.topic]);
   const [board, setBoard] = useState(null);
   const [skills, setSkills] = useState(null);
   const [news, setNews] = useState(null);

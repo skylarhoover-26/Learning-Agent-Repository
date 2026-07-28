@@ -222,6 +222,34 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // re-enter here without remounting.
       if (active) { setLoading(true); setRevealed(false); setError(null); }
 
+      // Today's Pick fast-path: if this exact lesson was pre-generated (plan +
+      // first teach step warmed by the daily cron or warm-on-open), hydrate it
+      // instantly and skip generation entirely. A miss (every non-pick lesson,
+      // or a pick not yet warmed) just falls through to normal generation.
+      try {
+        const cr = await fetch(`/api/daily-pick/lesson?topic=${encodeURIComponent(topic)}&format=${encodeURIComponent(format)}`);
+        if (cr.ok) {
+          const cachedLesson = await cr.json();
+          if (active && cachedLesson?.plan?.steps?.length) {
+            setPlan(cachedLesson.plan);
+            setSteps(cachedLesson.plan.steps);
+            if (Array.isArray(cachedLesson.toolIds) && cachedLesson.toolIds.length) {
+              setLessonToolIds(cachedLesson.toolIds);
+              const t = (tools || []).find((x) => x.id === cachedLesson.toolIds[0]);
+              if (t) setLessonTool(t);
+            }
+            if (cachedLesson.recommendation) setRecommendation(cachedLesson.recommendation);
+            if (cachedLesson.teach && Object.keys(cachedLesson.teach).length) {
+              setTeachContent((prev) => ({ ...cachedLesson.teach, ...prev }));
+            }
+            setLoading(false);
+            return; // pre-generated — the prefetch effect fills any remaining steps
+          }
+        }
+      } catch {
+        // no cache / read failed — generate normally below
+      }
+
       // First, find the best tool for this lesson and resolve which tool the
       // lesson should be built around: the recommended one IF the learner owns
       // it, otherwise their starred/primary tool.

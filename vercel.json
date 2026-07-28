@@ -13,6 +13,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/cron/daily-pregen",
+      "schedule": "10 16 * * 1-5"
+    },
+    {
       "path": "/api/cron/daily-pick",
       "schedule": "30 16 * * 1-5"
     }
