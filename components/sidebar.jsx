@@ -172,6 +172,14 @@ export function SidebarProvider({ children }) {
     });
   }, []);
 
+  // Transient setter for non-user actions (e.g. the guided tour opening/closing
+  // the drawer as it walks the page). It changes the visible state WITHOUT
+  // persisting or marking a user decision, so temporary tour toggles never
+  // overwrite the learner's real open/closed preference.
+  const setOpenTransient = useCallback((next) => {
+    setOpenState(prev => (typeof next === 'function' ? next(prev) : next));
+  }, []);
+
   // Restore a saved choice on mount, if there is one.
   useEffect(() => {
     let stored = null;
@@ -213,7 +221,7 @@ export function SidebarProvider({ children }) {
   }, [open]);
 
   return (
-    <SidebarContext.Provider value={{ open, setOpen, toggle: () => setOpen(p => !p) }}>
+    <SidebarContext.Provider value={{ open, setOpen, setOpenTransient, toggle: () => setOpen(p => !p) }}>
       {children}
     </SidebarContext.Provider>
   );

@@ -130,8 +130,13 @@ function setNextLocked(locked) {
 
 export function TourProvider({ children }) {
   const router = useRouter();
-  const { setOpen } = useSidebar();
+  // setOpenTransient toggles the drawer WITHOUT persisting — so running the tour
+  // never overwrites the learner's real menu open/closed preference. `open` lets
+  // us snapshot that preference at start and restore it when the tour ends.
+  const { open: menuOpen, setOpenTransient } = useSidebar();
   const driverRef = useRef(null);
+  // The menu's open/closed state before the tour began, restored on exit.
+  const menuWasOpenRef = useRef(true);
   const idxRef = useRef(0);
   // Track which steps have already auto-clicked so going back then forward doesn't
   // fire a second real send (e.g. a duplicate chat message).
@@ -145,19 +150,21 @@ export function TourProvider({ children }) {
     const step = GUIDED_TOUR_STEPS[index];
     if (!step) return;
     if (step.route && window.location.pathname !== step.route) router.push(step.route);
-    // Only open the slide-over menu for the step that actually highlights it.
-    // On every other step the menu would sit OVER the home cards we're trying to
-    // spotlight, which is what made the tour feel like floating definition cards
-    // instead of a walkthrough of the real page.
     const opensSidebar = step.element === '[data-tour="sidebar"]';
-    setOpen(opensSidebar);
+    // Keep the menu docked-open throughout the tour on desktop, where it sits
+    // beside the content (content shifts via md:pl-80, no overlap or dimming) —
+    // this is the persistent open menu learners want. On narrow screens the
+    // drawer overlays and dims the page, so there we only open it for the step
+    // that actually highlights the menu, to avoid hiding the cards we spotlight.
+    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+    setOpenTransient(isDesktop || opensSidebar);
     if (step.profileMenu) setProfileMenu(step.profileMenu);
     // Shorter ceiling: if an anchor genuinely isn't there we fall back to a
     // centered popover quickly instead of stalling ~4s per step (the poll still
     // resolves instantly the moment the element appears).
     if (opensSidebar) await waitForOnScreen(step.element, 1200);
     else await waitForElement(step.element, 1800);
-  }, [router, setOpen]);
+  }, [router, setOpenTransient]);
 
   // After a step is spotlighted, run its demo actions: animate typing into a box,
   // auto-click the real button, and lock Next until the generated result appears.
@@ -197,6 +204,9 @@ export function TourProvider({ children }) {
     idxRef.current = 0;
     clickedRef.current = new Set();
     lockedRef.current = false;
+    // Remember the learner's menu state so we can put it back exactly as it was
+    // when the tour ends (the tour only toggles it transiently in between).
+    menuWasOpenRef.current = menuOpen;
     const steps = GUIDED_TOUR_STEPS.map(s => ({
       element: s.element,
       popover: { title: s.popover.title, description: s.popover.description },
@@ -258,6 +268,9 @@ export function TourProvider({ children }) {
       onDestroyed: () => {
         driverRef.current = null;
         setProfileMenu('close');
+        // Restore the menu exactly as the learner had it before the tour, without
+        // persisting — their saved preference was never touched.
+        setOpenTransient(menuWasOpenRef.current);
         hideClickShield();
         try { window.sessionStorage.removeItem('tourActive'); } catch {}
       },
@@ -268,12 +281,12 @@ export function TourProvider({ children }) {
     // instead of the learner's real saved data.
     try { window.sessionStorage.setItem('tourActive', '1'); } catch {}
     showClickShield();
-    // prepareStep(0) sets the correct sidebar state for the first step (home →
-    // closed). A short settle lets the route/render land before we spotlight.
+    // prepareStep(0) sets the correct menu state for the first step. A short
+    // settle lets the route/render land before we spotlight.
     await new Promise(r => setTimeout(r, 120));
     await prepareStep(0);
     if (driverRef.current) d.drive(0);
-  }, [prepareStep, runStepActions, setOpen]);
+  }, [prepareStep, runStepActions, menuOpen, setOpenTransient]);
 
   return (
     <TourContext.Provider value={{ startTour }}>
