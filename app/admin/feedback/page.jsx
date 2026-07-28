@@ -409,24 +409,29 @@ function AdminFeedbackInner() {
           const shown = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
           return (
             <>
-              <div className="relative mb-4">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by #number, text, name, or page…"
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-sm pl-9 pr-9 py-2 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch('')}
-                    aria-label="Clear search"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400 hover:text-ink dark:hover:text-slate-200"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+              <div className="mb-4">
+                {/* Icon + input + clear live in their own relative box so the
+                    magnifying glass centers on the input, not the taller wrapper
+                    once the match-count line appears below it. */}
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search by #number, text, name, or page…"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-sm pl-9 pr-9 py-2 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      aria-label="Clear search"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400 hover:text-ink dark:hover:text-slate-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
                 {q && (
                   <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                     {sorted.length} match{sorted.length === 1 ? '' : 'es'} in {tab}
