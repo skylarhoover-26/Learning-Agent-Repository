@@ -362,7 +362,9 @@ function AdminFeedbackInner() {
             // match one of the chosen values; NONE matches untagged items.
             if (priorityFilter.length > 0 && !priorityFilter.includes(f.priority || NONE)) return false;
             if (featureFilter.length > 0 && !featureFilter.includes(f.feature || NONE)) return false;
-            if (statusFilter.length > 0 && !statusFilter.includes(f.workStatus || NONE)) return false;
+            // Match the same "effective status" the card shows: a done item
+            // reads as Done regardless of its prior workStatus.
+            if (statusFilter.length > 0 && !statusFilter.includes(isDone(f) ? DONE_STATUS : (f.workStatus || NONE))) return false;
             if (q) {
               const hay = `${f.text || ''} ${f.name || ''} ${f.email || ''} ${f.page || ''}`.toLowerCase();
               if (!hay.includes(q)) return false;
@@ -442,7 +444,7 @@ function AdminFeedbackInner() {
                   label="Status"
                   selected={statusFilter}
                   onChange={setStatusFilter}
-                  options={[...WORK_STATUSES.map((s) => ({ value: s, label: s })), { value: NONE, label: 'No status' }]}
+                  options={[...WORK_STATUSES.map((s) => ({ value: s, label: s })), { value: DONE_STATUS, label: 'Done' }, { value: NONE, label: 'No status' }]}
                 />
                 <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   Sort
