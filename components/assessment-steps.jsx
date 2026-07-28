@@ -25,7 +25,11 @@ export const SKILL_ICONS = {
 
 // Small (i) affordance that reveals plain-language help text on hover or keyboard
 // focus. Reused for competency definitions and for the self-vs-measured verdict.
-function InfoTip({ text, label = 'More info' }) {
+// `align` sets which edge the bubble anchors to: 'right' (default) extends the
+// tooltip LEFT from the icon — correct for icons near the RIGHT edge (the verdict
+// badge). 'left' extends it RIGHT — correct for icons near the LEFT edge (the
+// competency labels), which otherwise pushed the bubble off the card and clipped it.
+function InfoTip({ text, label = 'More info', align = 'right' }) {
   if (!text) return null;
   return (
     <span className="group relative inline-flex items-center">
@@ -36,7 +40,7 @@ function InfoTip({ text, label = 'More info' }) {
       />
       <span
         role="tooltip"
-        className="pointer-events-none absolute right-0 top-full z-30 mt-2 w-64 rounded-lg bg-slate-900 dark:bg-slate-700 px-3 py-2 text-xs font-normal leading-snug text-white text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+        className={`pointer-events-none absolute ${align === 'left' ? 'left-0' : 'right-0'} top-full z-30 mt-2 w-64 max-w-[min(16rem,calc(100vw-2rem))] rounded-lg bg-slate-900 dark:bg-slate-700 px-3 py-2 text-xs font-normal leading-snug text-white text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100`}
       >
         {text}
       </span>
@@ -47,7 +51,7 @@ function InfoTip({ text, label = 'More info' }) {
 // Definition tooltip for a competency (e.g. what "AI Evaluation" covers), shown
 // next to each skill so people know what they mean before rating themselves.
 function SkillInfo({ skillKey }) {
-  return <InfoTip text={SKILL_DEFINITIONS[skillKey]} label={`What ${SKILL_LABELS[skillKey]} means`} />;
+  return <InfoTip text={SKILL_DEFINITIONS[skillKey]} label={`What ${SKILL_LABELS[skillKey]} means`} align="left" />;
 }
 
 // The self-vs-measured verdict for one competency, plus a plain-language note on
