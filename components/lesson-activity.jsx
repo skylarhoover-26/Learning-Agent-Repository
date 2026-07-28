@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
-import { Check, X, Loader2, PencilLine, ListChecks, Shuffle, Lightbulb, ArrowUpDown, FolderTree, GripVertical, MessageSquare, RotateCcw } from 'lucide-react';
+import { Check, X, Loader2, PencilLine, ListChecks, Shuffle, Lightbulb, ArrowUpDown, FolderTree, GripVertical, MessageSquare, RotateCcw, AlertTriangle } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import { mentionsOpenTool } from '@/components/open-tool-link';
 
@@ -61,7 +61,19 @@ export default function LessonActivity({ activityType, activity, objective, onRe
 function AttemptHint({ attempts }) {
   const left = MAX_ATTEMPTS - attempts;
   if (left <= 0) return null;
-  return <p className="text-[11px] text-slate-400 mt-2">{left} {left === 1 ? 'try' : 'tries'} left</p>;
+  // Prominent, color-coded so it can't be missed (was a faint gray line before):
+  // amber while there's room, red on the final try.
+  const urgent = left <= 1;
+  return (
+    <div className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+      urgent
+        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+        : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+    }`}>
+      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+      {left} of {MAX_ATTEMPTS} {left === 1 ? 'try' : 'tries'} left
+    </div>
+  );
 }
 
 function Mcq({ activity, onResolve, resolved, passed }) {
@@ -204,10 +216,6 @@ function Write({ activity, onResolve, resolved, passed, toolLabel, onAskCoach })
         )}
       </div>
       {showAttempts && <AttemptHint attempts={attempts} />}
-
-      {resolved && !passed && (
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">You can keep refining above to raise your score — keep this in mind: {activity?.gradingCriteria}</p>
-      )}
     </div>
   );
 }

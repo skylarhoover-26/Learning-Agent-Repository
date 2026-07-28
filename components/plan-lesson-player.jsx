@@ -18,7 +18,7 @@ import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
 import {
   Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare, RefreshCw,
-  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowUp, MousePointerClick,
+  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowUp, MousePointerClick, AlertTriangle,
 } from 'lucide-react';
 
 const FORMAT_LABEL = { quick_tip: 'Quick Tip', standard: 'Quick Lesson', deep_dive: 'Deep Dive', project_quest: 'Project Quest' };
@@ -156,6 +156,12 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // End-of-lesson: claim XP first, THEN run the "did this help?" checkpoint.
   const [claimed, setClaimed] = useState(false);      // XP recorded, lesson done
   const [award, setAward] = useState(null);           // result of onLessonComplete
+  // Shown when a learner exhausts all 3 tries on an activity: a pop-up that sends
+  // them back to the start of the lesson (no XP for the failed run).
+  const [restartPrompt, setRestartPrompt] = useState(false);
+  // Bumps on every restart/retake so the activity components remount and their
+  // internal attempt counters reset (otherwise a re-entered step keeps "0 left").
+  const [runNonce, setRunNonce] = useState(0);
   const [helpful, setHelpful] = useState(null);       // null | 'yes' | 'no'
   const [stillUnclear, setStillUnclear] = useState('');
   const [nextSteps, setNextSteps] = useState(null);   // { intro, steps, prompt }
@@ -574,6 +580,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   }, [step, stepIdx, retryTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function resolveActivity(id, passed) {
+    // Failing an activity means all 3 tries were used. Rather than mark it failed
+    // and let the learner continue (which earned no XP but felt broken), prompt
+    // them back to the start of the lesson — a clean run is the only way forward,
+    // and finishing that run is what earns the XP.
+    if (!passed) { setRestartPrompt(true); return; }
     setResolved((prev) => {
       if (id in prev) return prev;
       const next = { ...prev, [id]: passed };
@@ -933,6 +944,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     setClaimed(false);
     setHelpful(null);
     setAward(null);
+    setRestartPrompt(false);
+    setPanelIdx(0);
+    // Remount activities so their attempt counters reset for the fresh run.
+    setRunNonce((n) => n + 1);
     persist({ stepIdx: 0, resolved: {} });
   }
 
@@ -1108,6 +1123,37 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   return (
     <div className="space-y-5">
       {showConfetti && <ConfettiBurst onDone={() => setShowConfetti(false)} />}
+
+      {/* Tries exhausted → send the learner back to the start of the lesson.
+          Non-dismissible (no click-away / X): the only ways out are to restart
+          or leave, so a failed run can't quietly continue for partial credit. */}
+      {restartPrompt && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl p-6 text-center">
+            <div className="mx-auto mb-4 w-12 h-12 rounded-full grid place-items-center bg-amber-100 dark:bg-amber-900/40">
+              <RotateCcw className="w-6 h-6 text-amber-600 dark:text-amber-300" />
+            </div>
+            <h3 className="text-lg font-bold text-ink dark:text-white mb-1.5">Let&rsquo;s start this lesson over</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">
+              That was your last try on this one, so this run won&rsquo;t earn XP. Head back to the beginning and work through the lesson — finish it and you&rsquo;ll earn the full XP.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={retakeLesson}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all"
+              >
+                <RotateCcw className="w-4 h-4" /> Restart from the beginning
+              </button>
+              <button
+                onClick={() => { setRestartPrompt(false); if (onExit) onExit(); else router.push('/'); }}
+                className="inline-flex items-center justify-center px-5 py-2 rounded-pill text-slate-600 dark:text-slate-300 font-medium text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                Exit lesson
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Refinement ready — prominent confirm at the top so it isn't missed at
           the bottom of a long lesson. */}
@@ -1321,6 +1367,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
               </div>
             )}
           <LessonActivity
+            key={`${step.id}-${runNonce}`}
             activityType={step.activityType}
             activity={step.activity}
             objective={objectives.find((o) => o.id === step.objectiveId)?.text}
