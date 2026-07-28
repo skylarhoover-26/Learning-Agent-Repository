@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
@@ -155,6 +155,21 @@ function AdminFeedbackInner() {
   // One-click Supabase re-sync (replaces the browser-console backfill).
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
+
+  // Stable reference number per record: number every item by the order it was
+  // received (oldest = #1), so each card has a fixed ID to reference. Computed
+  // globally from all items — independent of the current tab, sort, or page —
+  // so a given feedback always shows the same number for every admin. New
+  // submissions have the latest timestamp, so they get the next number and
+  // never renumber existing ones.
+  const refMap = useMemo(() => {
+    const m = {};
+    if (!items) return m;
+    [...items]
+      .sort((a, b) => (a.at || '').localeCompare(b.at || '') || (a.id || '').localeCompare(b.id || ''))
+      .forEach((f, i) => { m[f.id] = i + 1; });
+    return m;
+  }, [items]);
 
   useEffect(() => {
     if (loaded && !isAdmin) router.replace('/');
@@ -502,6 +517,7 @@ function AdminFeedbackInner() {
                       <FeedbackCard
                         key={f.id}
                         feedback={f}
+                        refNumber={refMap[f.id]}
                         busy={updatingId === f.id}
                         onPatch={patchItem}
                       />
@@ -637,7 +653,7 @@ function fileToDataUrl(file) {
   });
 }
 
-function FeedbackCard({ feedback: f, busy, onPatch }) {
+function FeedbackCard({ feedback: f, refNumber, busy, onPatch }) {
   const done = isDone(f);
   const skipped = isSkipped(f);
   const resolved = done || skipped; // done or set-aside → the button offers "Reopen"
@@ -671,6 +687,9 @@ function FeedbackCard({ feedback: f, busy, onPatch }) {
   return (
     <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
       <div className="flex items-center gap-2 flex-wrap mb-2">
+        {refNumber != null && (
+          <span className="text-sm font-bold text-ink dark:text-slate-100">#{refNumber}</span>
+        )}
         {f.category && (
           <span className={`inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-bold uppercase tracking-wide border ${CATEGORY_STYLES[f.category] || CATEGORY_STYLES.Other}`}>
             {f.category}
