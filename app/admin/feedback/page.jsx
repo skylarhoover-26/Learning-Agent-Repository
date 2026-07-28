@@ -255,11 +255,15 @@ function AdminFeedbackInner() {
     }
   }
 
-  // Copy the backlog as a compact JSON array (triage-relevant fields only) to the
-  // clipboard, so it can be handed off for a "which of these are already fixed?"
-  // pass. Excludes screenshots/recordings/PII beyond the reporter's name.
+  // Build the backlog as a compact JSON array (triage-relevant fields only) so it
+  // can be handed off for a "which of these are already fixed?" pass. Excludes
+  // screenshots/recordings/PII beyond the reporter's name. We show it in a
+  // selectable box (reliable regardless of clipboard permissions) AND try to copy
+  // to the clipboard as a convenience.
   const [exported, setExported] = useState(false);
-  function exportBacklog() {
+  const [exportJson, setExportJson] = useState(null);
+  const exportRef = useRef(null);
+  async function exportBacklog() {
     if (!items) return;
     const rows = [...items]
       .map((f) => ({
@@ -276,20 +280,29 @@ function AdminFeedbackInner() {
       }))
       .sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
     const json = JSON.stringify(rows, null, 2);
+    setExportJson(json);
+    // Best-effort clipboard copy (awaited so a rejection doesn't slip through).
     try {
-      navigator.clipboard.writeText(json);
+      await navigator.clipboard?.writeText(json);
       setExported(true);
       setTimeout(() => setExported(false), 2500);
     } catch {
-      // Clipboard blocked — fall back to a download.
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'feedback-backlog.json';
-      a.click();
-      URL.revokeObjectURL(url);
+      // Clipboard blocked — the selectable box below is the fallback.
     }
+    // Auto-select the text so the user can just Cmd/Ctrl+C.
+    setTimeout(() => { exportRef.current?.select(); }, 50);
+  }
+  function downloadBacklog() {
+    if (!exportJson) return;
+    const blob = new Blob([exportJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'feedback-backlog.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   useEffect(() => {
@@ -314,6 +327,36 @@ function AdminFeedbackInner() {
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
+      {/* Export backlog — a selectable box so the JSON can always be copied by
+          hand even if the clipboard API is blocked. */}
+      {exportJson !== null && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
+          <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-ink dark:text-white">Backlog JSON — select all &amp; copy</h3>
+              <button onClick={() => setExportJson(null)} aria-label="Close" className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <textarea
+              ref={exportRef}
+              readOnly
+              value={exportJson}
+              onFocus={(e) => e.target.select()}
+              className="w-full h-72 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-ink dark:text-slate-100 text-xs font-mono p-3 outline-none focus:ring-2 focus:ring-brand resize-none"
+            />
+            <div className="flex items-center justify-between mt-3">
+              <span className="text-xs text-slate-500 dark:text-slate-400">{exported ? 'Copied to clipboard ✓' : 'Click the box, then Cmd/Ctrl+A, Cmd/Ctrl+C'}</span>
+              <div className="flex items-center gap-2">
+                <button onClick={downloadBacklog} className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Download .json</button>
+                <button onClick={() => { exportRef.current?.select(); navigator.clipboard?.writeText(exportJson).then(() => { setExported(true); setTimeout(() => setExported(false), 2500); }).catch(() => {}); }} className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-brand text-white font-semibold hover:bg-brand-600">
+                  <ClipboardCopy className="w-4 h-4" /> Copy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <PageHeader icon={MessageSquarePlus} title="Feedback" subtitle="What people are telling us through the in-app Send feedback form" />
 
       <main className="max-w-3xl mx-auto px-6 py-6">
@@ -333,7 +376,7 @@ function AdminFeedbackInner() {
               className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
             >
               <ClipboardCopy className="w-4 h-4" />
-              {exported ? 'Copied!' : 'Export backlog'}
+              Export backlog
             </button>
             <button
               type="button"
