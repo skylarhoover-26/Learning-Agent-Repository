@@ -622,12 +622,12 @@ function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfi
         This comes straight from your Housecall Pro record, so it isn&rsquo;t editable here. If your
         name, title, team, or manager looks wrong, let us know in{' '}
         <a
-          href="https://housecall.slack.com/archives/C04BU29V4TH"
+          href="https://housecall.slack.com/archives/C02CDBABC1M"
           target="_blank"
           rel="noopener noreferrer"
           className="font-semibold text-brand hover:underline"
         >
-          HCP Skill Shop Help
+          #hcp_help
         </a>{' '}
         and we&rsquo;ll get it corrected.
       </p>
