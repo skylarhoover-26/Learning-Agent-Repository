@@ -142,65 +142,37 @@ function isChromeHiddenRoute(pathname) {
 
 const SidebarContext = createContext(null);
 
-const SIDEBAR_KEY = 'sidebar_open';
-// Bump this key's suffix to force another one-time clear of a stale SIDEBAR_KEY.
-const SIDEBAR_RESET_KEY = 'sidebar_open_reset_v1';
-
 export function SidebarProvider({ children }) {
-  // Open by default and persisted. The menu stays open across reloads and
-  // navigation; once the user opens or closes it we remember that choice in
-  // localStorage and stop auto-managing it. The one exception is the first-run
-  // onboarding welcome — we keep the menu closed while that card is up so it
-  // doesn't compete for attention. Starts closed for SSR so the first client
-  // render matches the server; the effects below settle the real state right
-  // after mount (the panel slides in via its transform transition).
+  // Always OPEN on every load / sign-in. We intentionally do NOT persist a
+  // closed state across reloads — the menu is meant to be open at all times, so
+  // a fresh load (or a new tab, or signing back in) always shows it open. Within
+  // a session the user can still close it (hamburger ✕ / backdrop / Escape) and
+  // it stays closed until the next load. The one exception is the first-run
+  // onboarding welcome — we keep it closed while that card is up so it doesn't
+  // compete for attention.
   const [open, setOpenState] = useState(true);
   const pathname = usePathname();
   const profileCtx = useProfile();
   const profile = profileCtx?.profile;
 
-  // Once the user makes an explicit choice (or we restore a saved one), the
-  // auto-default effect stops touching the menu.
+  // Once the user makes an explicit choice, the auto-default effect stops
+  // touching the menu for the rest of this session (the ref resets on reload,
+  // so the next load defaults open again).
   const userDecidedRef = useRef(false);
 
-  // Setter for explicit user actions (hamburger, ✕, backdrop, Escape) — it
-  // records the choice so it persists and isn't overridden by the default.
+  // Setter for explicit user actions (hamburger, ✕, backdrop, Escape). It records
+  // the choice for this session but deliberately does NOT persist it — see the
+  // provider comment above (open-at-all-times on every load).
   const setOpen = useCallback((next) => {
     userDecidedRef.current = true;
-    setOpenState(prev => {
-      const value = typeof next === 'function' ? next(prev) : next;
-      try { localStorage.setItem(SIDEBAR_KEY, value ? 'true' : 'false'); } catch {}
-      return value;
-    });
-  }, []);
-
-  // Transient setter for non-user actions (e.g. the guided tour opening/closing
-  // the drawer as it walks the page). It changes the visible state WITHOUT
-  // persisting or marking a user decision, so temporary tour toggles never
-  // overwrite the learner's real open/closed preference.
-  const setOpenTransient = useCallback((next) => {
     setOpenState(prev => (typeof next === 'function' ? next(prev) : next));
   }, []);
 
-  // Restore a saved choice on mount, if there is one.
-  useEffect(() => {
-    let stored = null;
-    try {
-      // One-time repair: an earlier build's guided tour toggled the menu with the
-      // persisting setter, so it wrote sidebar_open=false and left the menu stuck
-      // closed on every sign-in. Clear that stale value once (guarded by a version
-      // flag) so affected users revert to the default-open menu; any open/close
-      // they make from here still persists normally.
-      if (localStorage.getItem(SIDEBAR_RESET_KEY) !== '1') {
-        localStorage.removeItem(SIDEBAR_KEY);
-        localStorage.setItem(SIDEBAR_RESET_KEY, '1');
-      }
-      stored = localStorage.getItem(SIDEBAR_KEY);
-    } catch {}
-    if (stored === 'true' || stored === 'false') {
-      userDecidedRef.current = true;
-      setOpenState(stored === 'true');
-    }
+  // Transient setter for non-user actions (e.g. the guided tour opening/closing
+  // the drawer as it walks the page). It changes the visible state WITHOUT even
+  // marking a user decision, so the default-open behavior resumes afterward.
+  const setOpenTransient = useCallback((next) => {
+    setOpenState(prev => (typeof next === 'function' ? next(prev) : next));
   }, []);
 
   // Default-open behavior, active only until the user decides for themselves:
