@@ -369,8 +369,14 @@ function AdminFeedbackInner() {
             // (NONE) — distinct from an item explicitly set to Not Started.
             if (statusFilter.length > 0 && !statusFilter.includes(isDone(f) ? DONE_STATUS : (f.workStatus || NONE))) return false;
             if (q) {
-              const hay = `${f.text || ''} ${f.name || ''} ${f.email || ''} ${f.page || ''}`.toLowerCase();
-              if (!hay.includes(q)) return false;
+              // A bare number (optionally #-prefixed) searches by feedback number
+              // exactly; anything else is free-text over the card's content.
+              if (/^#?\d+$/.test(q)) {
+                if (String(refMap[f.id]) !== q.replace('#', '')) return false;
+              } else {
+                const hay = `${f.text || ''} ${f.name || ''} ${f.email || ''} ${f.page || ''}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+              }
             }
             return true;
           };
@@ -409,7 +415,7 @@ function AdminFeedbackInner() {
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search feedback by text, name, or page…"
+                  placeholder="Search by #number, text, name, or page…"
                   className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-sm pl-9 pr-9 py-2 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40"
                 />
                 {search && (
