@@ -189,7 +189,11 @@ function Drawer({ open, onClose }) {
                   ) : item.walkthrough ? (
                     <button
                       key="tour"
-                      onClick={() => { onClose(); startTour(); }}
+                      // Don't onClose() here — that used the persisting setter, which
+                      // both wrote sidebar_open=false and fought the tour reopening the
+                      // menu (open→close→open glitch). The tour manages the drawer itself
+                      // (transient, restored on exit), so just start it.
+                      onClick={() => startTour()}
                       className="cine-lift w-full flex items-center gap-3 mx-2 px-3 py-1.5 rounded-xl text-left"
                       style={{ color: 'var(--ink)' }}
                     >
@@ -199,7 +203,9 @@ function Drawer({ open, onClose }) {
                   ) : item.feedback ? (
                     <button
                       key="feedback"
-                      onClick={() => { onClose(); openFeedback(); }}
+                      // Feedback opens as a modal over the page — no need to close (and
+                      // persist-close) the menu, which made the whole drawer disappear.
+                      onClick={() => openFeedback()}
                       className="cine-lift w-full flex items-center gap-3 mx-2 px-3 py-1.5 rounded-xl text-left"
                       style={{ color: 'var(--ink)' }}
                     >
