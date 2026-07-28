@@ -433,7 +433,7 @@ function PromptBattle() {
             </label>
             <textarea
               id="user-prompt"
-              className="w-full h-36 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-ink dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
+              className="w-full h-36 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-ink dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none"
               placeholder="Type the prompt you would give to an AI..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
