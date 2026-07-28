@@ -26,11 +26,17 @@ const FORMAT_LABEL = { quick_tip: 'Quick Tip', standard: 'Quick Lesson', deep_di
 // Loading copy per format — heavier formats legitimately take much longer to
 // generate, so the "this usually takes…" estimate and the point at which we
 // switch to "taking a little longer than usual" (slow, in seconds) both scale.
+// The loader stays up until the lesson is READABLE, which spans three sequential
+// model calls: tool recommendation (Haiku, fast) → the plan (Sonnet, up to ~4k
+// tokens) → the FIRST teach step (Sonnet). The estimates below reflect that full
+// end-to-end wait, not just the plan — earlier numbers only covered the plan and
+// so read as "broken" on perfectly normal ~50s runs. `tau` shapes the progress
+// bar so it approaches full near the slow threshold instead of pegging at 95%.
 const FORMAT_LOAD = {
-  quick_tip:     { estimate: '10–20 seconds', slow: 30 },
-  standard:      { estimate: '15–30 seconds', slow: 45 },
-  deep_dive:     { estimate: 'a minute or two', slow: 120 },
-  project_quest: { estimate: '1–3 minutes', slow: 180 },
+  quick_tip:     { estimate: '20–40 seconds', slow: 55,  tau: 18 },
+  standard:      { estimate: '30–60 seconds', slow: 90,  tau: 28 },
+  deep_dive:     { estimate: '1–2 minutes',   slow: 150, tau: 50 },
+  project_quest: { estimate: '2–4 minutes',   slow: 240, tau: 80 },
 };
 
 // The concrete terms/items an activity will quiz, so the preceding teach step
@@ -974,7 +980,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     // Asymptotic bar: climbs quickly then eases toward ~95% (we can't show true
     // progress for a single model call, so this just signals "still working").
     const load = FORMAT_LOAD[format] || FORMAT_LOAD.standard;
-    const pct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / 14))));
+    const pct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / (load.tau || 14)))));
     const message =
       elapsed < 8 ? `Designing your lesson on ${topic}…`
       : elapsed < 20 ? 'Writing the steps and activities…'
