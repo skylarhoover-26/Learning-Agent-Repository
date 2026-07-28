@@ -24,6 +24,12 @@ const FEUD_ROUNDS = 4;
 const TRUTHS_ROUNDS = 5;
 const MILLIONAIRE_COUNT = 10;
 
+// Ground EVERY generated game in Housecall Pro's world so scenarios, examples,
+// and survey answers fit the audience instead of generic corporate/retail
+// references (feedback #67: Family Feud suggested "incorrect SKUs" — HCP has no
+// SKUs). Prepended to each game's system prompt below.
+const HCP_CONTEXT = `AUDIENCE CONTEXT: The players work at Housecall Pro (HCP), the field-service management software for home-service businesses (plumbing, HVAC, electrical, cleaning, landscaping, pest control, etc.). HCP's customers are contractors and their teams — owners, office/CSR staff, dispatchers, sales reps, and technicians in the field. Ground every scenario, example, and answer in THIS world: jobs, estimates, invoices, scheduling and dispatch, customer/service calls, price quotes, work orders, technicians, reviews. Do NOT use retail, e-commerce, or manufacturing references that don't apply here — never mention "SKUs", inventory units, warehouses, or product catalogs. Keep everything realistic for home-service work and internal HCP roles.`;
+
 const GENERATORS = {
   speed: {
     maxTokens: 3000,
@@ -241,7 +247,7 @@ export async function POST(request) {
     const response = await getClient().messages.create({
       model: MODELS.sonnet,
       max_tokens: gen.maxTokens,
-      system: gen.system,
+      system: `${HCP_CONTEXT}\n\n${gen.system}`,
       messages: [{ role: 'user', content: `TOPIC: ${topic}\n\nWrite the full round now.` }],
     });
 

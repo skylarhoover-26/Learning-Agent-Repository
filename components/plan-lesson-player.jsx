@@ -1319,6 +1319,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             </ul>
           </div>
         )}
+        {/* Persistent "open your tool" affordance + short how-to, available on
+            EVERY step (not just prompt-writing activities) — learners couldn't
+            find how to open their tool from within a lesson otherwise. */}
+        {(lessonTool || primaryTool)?.url && (
+          <div className="mt-4 pt-4 border-t border-brand-200/60 dark:border-slate-700">
+            <p className="text-sm text-ink dark:text-slate-300 mb-2">
+              You&rsquo;ll practice in <span className="font-semibold">{(lessonTool || primaryTool).emoji} {(lessonTool || primaryTool).label}</span>. Open it in a separate window, try the prompts and ideas from this lesson there, then come back — your place here is saved.
+            </p>
+            <OpenToolLink tool={lessonTool || primaryTool} onOpened={() => setToolOpened(true)} />
+          </div>
+        )}
       </div>
 
       {/* Step body */}

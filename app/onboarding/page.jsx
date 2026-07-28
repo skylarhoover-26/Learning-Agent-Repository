@@ -605,7 +605,7 @@ function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfi
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700 mb-6">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700 mb-4">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between px-4 py-3">
             <span className="text-sm text-slate-500 dark:text-slate-400">{r.label}</span>
@@ -613,6 +613,24 @@ function StepConfirmDetails({ displayName, prefill, department, subTeam, onConfi
           </div>
         ))}
       </div>
+
+      {/* These come from the HCP/Namely record and can't be edited here — if
+          they're wrong, it has to be corrected at the source, so point people to
+          HCP Help rather than letting them type over it (which would drift from
+          reporting). */}
+      <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+        This comes straight from your Housecall Pro record, so it isn&rsquo;t editable here. If your
+        name, title, team, or manager looks wrong, let us know in{' '}
+        <a
+          href="https://housecall.slack.com/archives/C04BU29V4TH"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-brand hover:underline"
+        >
+          HCP Skill Shop Help
+        </a>{' '}
+        and we&rsquo;ll get it corrected.
+      </p>
 
       <button
         onClick={onConfirm}
