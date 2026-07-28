@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote, DatabaseZap } from 'lucide-react';
+import { MessageSquarePlus, ArrowLeft, Check, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, Search, X, Sparkles, GitPullRequestDraft, Paperclip, StickyNote, DatabaseZap, ClipboardCopy } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import MediaCapture from '@/components/media-capture';
@@ -255,6 +255,43 @@ function AdminFeedbackInner() {
     }
   }
 
+  // Copy the backlog as a compact JSON array (triage-relevant fields only) to the
+  // clipboard, so it can be handed off for a "which of these are already fixed?"
+  // pass. Excludes screenshots/recordings/PII beyond the reporter's name.
+  const [exported, setExported] = useState(false);
+  function exportBacklog() {
+    if (!items) return;
+    const rows = [...items]
+      .map((f) => ({
+        number: numberById.get(f.id) ?? null,
+        category: f.category || null,
+        feature: f.feature || null,
+        page: f.page || null,
+        priority: f.priority || null,
+        status: f.workStatus || f.status || 'New',
+        reporter: f.name || null,
+        at: f.at || null,
+        text: f.text || '',
+        notes: Array.isArray(f.notes) ? f.notes.map((n) => (typeof n === 'string' ? n : n?.text)).filter(Boolean) : [],
+      }))
+      .sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
+    const json = JSON.stringify(rows, null, 2);
+    try {
+      navigator.clipboard.writeText(json);
+      setExported(true);
+      setTimeout(() => setExported(false), 2500);
+    } catch {
+      // Clipboard blocked — fall back to a download.
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'feedback-backlog.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
   useEffect(() => {
     if (!loaded || !isAdmin) return;
     loadFeedback();
@@ -288,6 +325,16 @@ function AdminFeedbackInner() {
             {syncResult && (
               <span className="text-xs text-green-600 dark:text-green-400">{syncResult}</span>
             )}
+            <button
+              type="button"
+              onClick={exportBacklog}
+              disabled={!items || !items.length}
+              title="Copy the backlog as JSON (triage-relevant fields) to the clipboard"
+              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+            >
+              <ClipboardCopy className="w-4 h-4" />
+              {exported ? 'Copied!' : 'Export backlog'}
+            </button>
             <button
               type="button"
               onClick={syncToSupabase}
