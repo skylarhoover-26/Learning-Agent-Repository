@@ -150,6 +150,7 @@ function Drawer({ open, onClose }) {
           `will-change: transform` promotes it to its own layer so the slide
           composites on the GPU instead of repainting each frame. */}
       <aside
+        data-tour="sidebar"
         className="fixed top-16 left-0 z-40 h-[calc(100dvh-4rem)] w-80 max-w-[86vw] overflow-y-auto overscroll-contain transition-transform duration-300"
         style={{ transform: open ? 'translateX(0)' : 'translateX(-104%)', willChange: 'transform', background: 'var(--navbg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRight: '1px solid var(--line)', boxShadow: '0 0 60px -10px rgba(0,0,0,.35)' }}
       >

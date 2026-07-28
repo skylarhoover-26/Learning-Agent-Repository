@@ -28,6 +28,22 @@ function waitForElement(selector, timeout = 4000) {
   });
 }
 
+// The slide-over drawer is always mounted and just translated off-screen, so
+// waitForElement finds it instantly — before it has slid in. Poll until its left
+// edge is actually on-screen (transform transition ~300ms) so driver spotlights
+// the settled panel instead of catching it mid-slide off to the left.
+function waitForOnScreen(selector, timeout = 1200) {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    (function check() {
+      const el = document.querySelector(selector);
+      if (el && el.getBoundingClientRect().left >= -2) return resolve(el);
+      if (performance.now() - start > timeout) return resolve(el || null);
+      requestAnimationFrame(check);
+    })();
+  });
+}
+
 // Push a value into a controlled React input/textarea so its onChange fires and
 // state updates. We must use the prototype's native value setter (React tracks the
 // node's value internally; assigning el.value directly is ignored).
@@ -133,12 +149,14 @@ export function TourProvider({ children }) {
     // On every other step the menu would sit OVER the home cards we're trying to
     // spotlight, which is what made the tour feel like floating definition cards
     // instead of a walkthrough of the real page.
-    setOpen(step.element === '[data-tour="sidebar"]');
+    const opensSidebar = step.element === '[data-tour="sidebar"]';
+    setOpen(opensSidebar);
     if (step.profileMenu) setProfileMenu(step.profileMenu);
     // Shorter ceiling: if an anchor genuinely isn't there we fall back to a
     // centered popover quickly instead of stalling ~4s per step (the poll still
     // resolves instantly the moment the element appears).
-    await waitForElement(step.element, 1800);
+    if (opensSidebar) await waitForOnScreen(step.element, 1200);
+    else await waitForElement(step.element, 1800);
   }, [router, setOpen]);
 
   // After a step is spotlighted, run its demo actions: animate typing into a box,
