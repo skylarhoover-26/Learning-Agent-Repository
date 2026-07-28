@@ -118,45 +118,39 @@ function DiscoverContent() {
         />
         {!hasSearched && (
           <div>
-            <div data-tour="page-discover" className="cine-glass rounded-2xl p-6 mb-6">
-              <textarea
-                data-tour="discover-input"
-                value={workDescription}
-                onChange={(e) => setWorkDescription(e.target.value)}
-                placeholder="e.g., I'm a Director of Operations. My typical day is split between status meetings, reviewing team work, planning, and writing executive summaries..."
-                rows={6}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 focus:outline-none resize-none"
-              />
-              <div className="flex items-center justify-between mt-3">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {workDescription.length === 0 && 'Even a few sentences works.'}
-                  {workDescription.length > 0 && workDescription.length < 30 && 'A bit more detail will help me find better opportunities...'}
-                  {workDescription.length >= 30 && 'Looks good — ready to find AI opportunities'}
-                </p>
+            {/* Composer styled to match the Just Chat composer (feedback #61):
+                one solid box with the input and an inline send button. */}
+            <div data-tour="page-discover" className="mb-6">
+              <div className="flex items-end gap-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-2">
+                <textarea
+                  data-tour="discover-input"
+                  value={workDescription}
+                  onChange={(e) => setWorkDescription(e.target.value)}
+                  placeholder="Describe your typical day, a task, or something on your plate right now…"
+                  rows={3}
+                  className="flex-1 resize-none px-3 py-2 rounded-xl bg-transparent text-sm text-ink dark:text-slate-200 outline-none max-h-48 text-left"
+                />
                 <button
                   data-tour="discover-send"
                   onClick={findOpportunities}
                   disabled={!workDescription.trim() || workDescription.length < 10 || isSearching}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand text-white hover:bg-brand-600 disabled:opacity-50 transition-all shrink-0"
+                  aria-label="Find AI for me"
+                  title="Find AI for me"
                 >
-                  {isSearching ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Finding...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Find AI for me
-                    </>
-                  )}
+                  {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 px-1">
+                {workDescription.length === 0 && 'Even a few sentences works.'}
+                {workDescription.length > 0 && workDescription.length < 30 && 'A bit more detail will help me find better opportunities…'}
+                {workDescription.length >= 30 && 'Looks good — ready to find AI opportunities'}
+              </p>
               {cameFromTasks && (
                 <div className="mt-4 flex items-start gap-2 rounded-xl bg-brand-50 dark:bg-slate-700/50 px-3 py-2.5 text-xs text-slate-600 dark:text-slate-300">
                   <Lightbulb className="w-4 h-4 text-brand shrink-0 mt-0.5" />
                   <span>
-                    We pulled this from your saved tasks — update it if anything&apos;s changed, then hit <strong>Find AI for me</strong>.{' '}
+                    We pulled this from your saved tasks — update it if anything&apos;s changed, then hit the <strong>✨ button</strong> to find AI.{' '}
                     <Link href="/my-tasks?from=discover" className="text-brand font-medium hover:underline">Update your tasks</Link> to keep future trainings tailored.
                   </span>
                 </div>

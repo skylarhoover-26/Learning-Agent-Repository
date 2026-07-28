@@ -46,9 +46,10 @@ function LegendRow({ swatch, label }) {
   );
 }
 
-function StatCard({ icon: Icon, value, label, tint }) {
-  return (
-    <div className="cine-glass rounded-2xl px-4 py-3.5 flex items-center gap-3">
+function StatCard({ icon: Icon, value, label, tint, href }) {
+  const cls = 'cine-glass rounded-2xl px-4 py-3.5 flex items-center gap-3';
+  const inner = (
+    <>
       <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: `${tint}22`, color: tint }}>
         <Icon className="w-5 h-5" />
       </span>
@@ -56,8 +57,14 @@ function StatCard({ icon: Icon, value, label, tint }) {
         <p className="font-display font-extrabold text-xl">{value}</p>
         <p className="text-xs" style={{ color: 'var(--ink-dim)' }}>{label}</p>
       </div>
-    </div>
+    </>
   );
+  // When an href is given, the whole tile links to it (feedback #44 — the stat
+  // tiles read as tappable, so they should actually navigate).
+  if (href) {
+    return <Link href={href} className={`${cls} cine-tilt`}>{inner}</Link>;
+  }
+  return <div className={cls}>{inner}</div>;
 }
 
 // One Strong/Growing/Gaps column of skill pills.
@@ -185,10 +192,10 @@ export default function CinematicHome() {
       <section data-tour="page-home" className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center cine-rise">
         {/* Left: welcome */}
         <div>
-          <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-5" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--ink-dim)' }}>
+          <Link href="/achievements" className="cine-lift inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-5" style={{ background: 'var(--glass)', border: '1px solid var(--line)', color: 'var(--ink-dim)' }}>
             <span className="w-2 h-2 rounded-full" style={{ background: 'var(--good)', boxShadow: '0 0 8px var(--good)' }} />
             {streak}-day streak · {title}
-          </span>
+          </Link>
           <h1 className="font-display font-extrabold text-5xl sm:text-6xl leading-[1.03] tracking-tight">
             Welcome back,<br /><span className="cine-grad-flow">{firstName}.</span>
           </h1>
@@ -295,9 +302,9 @@ export default function CinematicHome() {
             })}
           </div>
           <div data-tour="home-xp" className="mt-4 grid grid-cols-3 gap-3">
-            <StatCard icon={Flame} value={streak} label="day streak" tint="#FF7A45" />
-            <StatCard icon={Sparkles} value={totalXp.toLocaleString()} label="total XP" tint="#3B94FF" />
-            <StatCard icon={Award} value={badgeCount} label="badges" tint="#FFB706" />
+            <StatCard icon={Flame} value={streak} label="day streak" tint="#FF7A45" href="/achievements" />
+            <StatCard icon={Sparkles} value={totalXp.toLocaleString()} label="total XP" tint="#3B94FF" href="/achievements" />
+            <StatCard icon={Award} value={badgeCount} label="badges" tint="#FFB706" href="/achievements" />
           </div>
         </div>
       </section>
