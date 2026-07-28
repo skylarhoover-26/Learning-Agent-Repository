@@ -554,6 +554,13 @@ function LessonContent() {
   function startLesson(t) {
     setTopic(t);
     setView('lesson');
+    // Mirror the active lesson into the URL (replace, so we don't stack history)
+    // so clicking "Lesson" in the menu — which goes to a bare /lesson — is a real
+    // navigation the sync effect above catches, returning to the picker.
+    const params = new URLSearchParams();
+    params.set('topic', t);
+    if (format && format !== 'standard') params.set('format', format);
+    router.replace(`/lesson?${params.toString()}`, { scroll: false });
     // All read-mode formats (Quick Tip, Quick Lesson, Deep Dive, Project Quest)
     // now use the plan-driven step player, which fetches its own plan on mount.
   }
@@ -992,6 +999,27 @@ function LessonContent() {
     }, 200);
     return () => clearTimeout(t);
   }, [pausedViewParam]);
+
+  // Keep the view in sync with the URL's topic. Clicking "Lesson" in the menu
+  // navigates to a bare /lesson (no topic) — return to the picker even if we were
+  // mid-lesson (progress is auto-saved and resumable), instead of leaving the
+  // learner stranded in the current lesson. `startLesson` mirrors the active
+  // topic into the URL, so this transition fires reliably. Resume/paused deep
+  // links manage the view themselves, so defer to them.
+  const topicParam = searchParams.get('topic');
+  useEffect(() => {
+    if (resumeParam || pausedViewParam === '1') return;
+    if (topicParam) {
+      setTopic(topicParam);
+      setView('lesson');
+    } else {
+      setView('picker');
+      setWizardStep(1);
+      setSelectedTopic(null);
+      setVideoTopic(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicParam]);
 
   // Record a narrated-lesson completion. correctness comes from the end quiz
   // (1 for quick tips, which are completion-only) — same award path as reading.
