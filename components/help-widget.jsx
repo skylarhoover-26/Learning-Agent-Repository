@@ -23,7 +23,7 @@ function loadState() {
 
 const SLACK_CHANNELS = [
   { label: 'HCP Skill Shop Help', href: 'https://housecall.slack.com/archives/C04BU29V4TH' },
-  { label: 'HCP MX Skill Shop Help', href: 'https://housecall.slack.com/archives/C04J8BRUJQY' },
+  { label: 'HCPMX Skill Shop Help', href: 'https://housecall.slack.com/archives/C04J8BRUJQY' },
 ];
 
 export default function HelpWidget() {

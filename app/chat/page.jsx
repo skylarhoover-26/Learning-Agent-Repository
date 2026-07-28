@@ -20,7 +20,7 @@ import { displayNameFromProfile } from '@/lib/display-name';
 // chat footer so learners can reach the team without leaving the conversation.
 const SLACK_CHANNELS = [
   { label: 'HCP Skill Shop Help', href: 'https://housecall.slack.com/archives/C04BU29V4TH' },
-  { label: 'HCP MX Skill Shop Help', href: 'https://housecall.slack.com/archives/C04J8BRUJQY' },
+  { label: 'HCPMX Skill Shop Help', href: 'https://housecall.slack.com/archives/C04J8BRUJQY' },
 ];
 
 const DEFAULT_SUGGESTIONS = [
