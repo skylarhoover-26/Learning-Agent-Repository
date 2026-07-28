@@ -98,7 +98,11 @@ function ProfilePageInner() {
     //    quests, lessons, goals, calibration, tutorial flag, cached profile).
     try {
       const prefixes = [
-        'lp_', 'learner_', 'ai_impact_', 'calibration_', 'tutorial_completed',
+        // `la_calibrated_<email>` is the device-local "already calibrated" marker
+        // the calibration gate honors alongside the server's calibrated_at. It
+        // must be cleared on reset, or the gate stays satisfied and the user is
+        // never re-calibrated after re-onboarding.
+        'lp_', 'learner_', 'ai_impact_', 'calibration_', 'la_calibrated', 'tutorial_completed',
       ];
       Object.keys(localStorage)
         .filter((k) => prefixes.some((p) => k === p || k.startsWith(p)))
@@ -115,7 +119,7 @@ function ProfilePageInner() {
   // on the dashboard and does NOT go back through onboarding.
   async function handleResetProgress() {
     try {
-      const prefixes = ['lp_', 'learner_', 'ai_impact_', 'calibration_', 'tutorial_completed'];
+      const prefixes = ['lp_', 'learner_', 'ai_impact_', 'calibration_', 'la_calibrated', 'tutorial_completed'];
       const keep = new Set(['learner_profile']); // the role/tasks/level cache
       Object.keys(localStorage)
         .filter((k) => !keep.has(k) && prefixes.some((p) => k === p || k.startsWith(p)))
