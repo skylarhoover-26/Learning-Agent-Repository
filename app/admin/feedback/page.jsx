@@ -271,7 +271,7 @@ function AdminFeedbackInner() {
     const rows = [...items]
       .filter((f) => !isPraise(f) && !isDone(f) && !isSkipped(f))
       .map((f) => ({
-        number: numberById.get(f.id) ?? null,
+        number: refMap[f.id] ?? null,
         category: f.category || null,
         feature: f.feature || null,
         page: f.page || null,
