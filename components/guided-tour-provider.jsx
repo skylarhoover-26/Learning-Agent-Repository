@@ -201,6 +201,12 @@ export function TourProvider({ children }) {
     const d = driver({
       showProgress: true,
       allowClose: true,
+      // Glide to each section and frame it, so the tour reads as a walkthrough of
+      // the real page rather than a stack of definition cards.
+      smoothScroll: true,
+      stagePadding: 10,
+      stageRadius: 16,
+      overlayColor: 'rgba(15,23,42,0.7)',
       nextBtnText: 'Next →',
       prevBtnText: '← Back',
       doneBtnText: 'Done',

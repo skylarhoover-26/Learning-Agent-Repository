@@ -418,14 +418,21 @@ export default function CinematicHome() {
         )}
       </section>
 
-      {/* AI NEWS */}
-      {news !== null && news.length > 0 && (
-        <section data-tour="home-news" className="cine-rise">
-          <div className="flex items-center gap-2 mb-1">
-            <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
-            <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight">AI news</h3>
+      {/* AI NEWS — always rendered (like Your skills above) so the section is a
+          stable landmark and the guided tour can always spotlight it. */}
+      <section data-tour="home-news" className="cine-rise">
+        <div className="flex items-center gap-2 mb-1">
+          <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
+          <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight">AI news</h3>
+        </div>
+        <p className="text-sm mb-4" style={{ color: 'var(--ink-dim)' }}>We scan AI developments daily and flag what changes your skills.</p>
+        {news === null ? (
+          <div className="cine-glass rounded-2xl p-6 text-sm italic" style={{ color: 'var(--ink-dim)' }}>Loading the latest AI news…</div>
+        ) : news.length === 0 ? (
+          <div className="cine-glass rounded-2xl p-6 text-sm" style={{ color: 'var(--ink-dim)' }}>
+            No fresh updates right now — we scan AI developments daily, so new items will appear here soon.
           </div>
-          <p className="text-sm mb-4" style={{ color: 'var(--ink-dim)' }}>We scan AI developments daily and flag what changes your skills.</p>
+        ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {news.map((f, i) => (
               <Link
@@ -444,8 +451,8 @@ export default function CinematicHome() {
               </Link>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <p className="text-center text-xs pb-6" style={{ color: 'var(--ink-dim)' }}>
         Cinematic preview · staging only · wired to your live data
