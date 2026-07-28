@@ -452,7 +452,10 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     return () => window.removeEventListener('keydown', onKey);
   }, [handleClose]);
 
-  const showDone = finished && (phase === 'done' || phase === 'quiz-loading');
+  const showDone = finished && phase === 'done';
+  // Between the last scene and the checkpoint quiz we build the quiz — show an
+  // honest "building your check" state, not a premature "complete" screen.
+  const quizLoading = finished && phase === 'quiz-loading';
   // Loading-bar values, matching the read-lesson loader's look.
   const load = NARRATED_LOAD[format] || NARRATED_LOAD.standard;
   const loadPct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / load.tau))));
@@ -571,24 +574,24 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <div className="flex items-center gap-2 mb-4">
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-300 bg-brand-900/40 px-2.5 py-1 rounded-full">
                   <Volume2 className={`w-3.5 h-3.5 ${isSpeaking ? 'animate-pulse' : ''}`} />
-                  {showDone ? 'Complete' : `Scene ${sceneIdx + 1} of ${total}`}
+                  {showDone ? 'Complete' : quizLoading ? 'Wrapping up' : `Scene ${sceneIdx + 1} of ${total}`}
                 </span>
               </div>
 
-              {showDone ? (
+              {quizLoading ? (
+                <div className="text-center py-6">
+                  <p className="inline-flex items-center gap-2 text-slate-300 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Nice work — building a quick check to lock it in…
+                  </p>
+                </div>
+              ) : showDone ? (
                 <div className="text-center">
                   <div className="text-5xl mb-3">🎉</div>
                   <h2 className="text-2xl font-bold text-white mb-1">Lesson complete!</h2>
                   <p className="text-slate-400 mb-2">{script.title}</p>
-                  {phase === 'quiz-loading' ? (
-                    <p className="inline-flex items-center gap-2 text-slate-400 text-sm mb-5">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Saving your progress…
-                    </p>
-                  ) : (
-                    <p className="inline-flex items-center gap-1.5 text-brand-300 text-sm font-medium mb-6">
-                      <Sparkles className="w-4 h-4" /> XP added to your profile
-                    </p>
-                  )}
+                  <p className="inline-flex items-center gap-1.5 text-brand-300 text-sm font-medium mb-6">
+                    <Sparkles className="w-4 h-4" /> XP added to your profile
+                  </p>
                   {/* Clear next steps */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button
@@ -634,7 +637,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                 step-by-step instructions read as separate lines instead of one
                 dense paragraph. This only affects display — TTS still speaks
                 the full scene.narration string. */}
-            {!showDone && scene && (
+            {!showDone && !quizLoading && scene && (
               <div className="px-8 sm:px-14 pb-2">
                 <div key={sceneIdx} className="cine-rise text-slate-300 text-sm leading-relaxed bg-slate-950/40 rounded-xl px-4 py-3 min-h-[3.5rem] space-y-1.5" style={{ animationDelay: '120ms' }}>
                   {splitIntoLines(scene.narration).map((line, idx) => (
@@ -645,7 +648,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
             )}
 
             {/* Progress dots */}
-            {!showDone && (
+            {!showDone && !quizLoading && (
               <div className="px-8 sm:px-14 pt-3 flex gap-1.5">
                 {scenes.map((_, i) => (
                   <div
@@ -659,7 +662,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
             )}
 
             {/* Scrubber — YouTube-style time bar for the current scene's audio. */}
-            {!showDone && scene && (
+            {!showDone && !quizLoading && scene && (
               <div className="px-8 sm:px-14 pt-3 flex items-center gap-3">
                 <span className="text-[11px] tabular-nums text-slate-400 w-9 text-right shrink-0">{fmtTime(currentTime)}</span>
                 <input
@@ -678,7 +681,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
             )}
 
             {/* Controls */}
-            {!showDone && (
+            {!showDone && !quizLoading && (
               <div className="px-8 sm:px-14 py-4 flex items-center justify-center gap-4">
                 <button
                   onClick={goPrev}
@@ -725,7 +728,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
             )}
 
             {/* Manual-advance hint: stays put until the learner is ready */}
-            {!showDone && (
+            {!showDone && !quizLoading && (
               <p className="px-8 sm:px-14 pb-4 -mt-1 text-center text-xs text-slate-400">
                 {narrationDone
                   ? (sceneIdx < total - 1
