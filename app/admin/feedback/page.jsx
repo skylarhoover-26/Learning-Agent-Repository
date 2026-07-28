@@ -265,7 +265,11 @@ function AdminFeedbackInner() {
   const exportRef = useRef(null);
   async function exportBacklog() {
     if (!items) return;
+    // Export the OPEN/actionable backlog — New + Not Started + In Progress +
+    // Needs Review + Blocked. Excludes Done/Skipped (already resolved/set aside)
+    // and Praise (not a to-do), which are just noise for a stale-vs-live triage.
     const rows = [...items]
+      .filter((f) => !isPraise(f) && !isDone(f) && !isSkipped(f))
       .map((f) => ({
         number: numberById.get(f.id) ?? null,
         category: f.category || null,
