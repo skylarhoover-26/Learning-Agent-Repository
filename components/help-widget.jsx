@@ -39,7 +39,11 @@ export default function HelpWidget() {
 
   useEffect(() => {
     const check = () => {
-      const present = !!document.querySelector('[role="listbox"], [role="dialog"], [aria-modal="true"]');
+      const nodes = document.querySelectorAll('[role="listbox"], [role="dialog"], [aria-modal="true"]');
+      // Ignore the guided-tour popover (driver.js renders role="dialog"): the tour
+      // needs to spotlight this help button, so it must stay mounted while the
+      // tour is running instead of hiding itself as it does for real overlays.
+      const present = Array.from(nodes).some((n) => !n.closest('.driver-popover'));
       setOverlayOpen((prev) => (prev === present ? prev : present));
     };
     check();
