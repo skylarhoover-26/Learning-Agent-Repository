@@ -107,7 +107,6 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const [revealed, setRevealed] = useState(false);
   const [elapsed, setElapsed] = useState(0); // seconds spent generating, for the loading bar
   const [error, setError] = useState(null);
-  const [teachLoading, setTeachLoading] = useState(false);
   const [teachError, setTeachError] = useState({}); // stepId -> true when generation failed
   const [retryTick, setRetryTick] = useState(0);     // bump to re-run the teach fetch
   const [question, setQuestion] = useState('');
@@ -513,77 +512,105 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       .map((s) => ({ title: s.title || '', message: teachContent[s.id].message }));
   }, [steps, teachContent]);
 
-  // ---- Lazily generate teach content for the current step -------------------
-  useEffect(() => {
-    if (!step || step.kind !== 'teach') return;
-    // Only skip regeneration when there's REAL content — an empty object (e.g.
-    // rehydrated from a paused lesson that never finished generating this step)
-    // must not block a fresh attempt, or the learner is stuck on a blank step.
-    if (teachContent[step.id]?.message) return;
-    let active = true;
-    setTeachLoading(true);
-    setTeachError((prev) => ({ ...prev, [step.id]: false }));
-    const priorTitles = steps.slice(0, stepIdx).filter((s) => s.kind === 'teach').map((s) => s.title);
-    const priorContent = buildPriorContent(stepIdx);
-    // The next activity, so the worked example can prepare the learner for
-    // exactly what they'll be asked to do (concept → example → activity). We
-    // also extract the concrete terms/items it will test ("covers") so this
-    // teach step can be told to define each one BY NAME — otherwise an activity
-    // can quiz terms (e.g. "Vector store", "Retriever", "Chunk") the lesson only
-    // implied. Only when the activity immediately follows this teach step.
-    const nextStep = steps[stepIdx + 1];
-    const nextActivity = nextStep?.kind === 'activity' ? nextStep : null;
-    const upcoming = nextActivity
-      ? {
-          activityType: nextActivity.activityType,
-          objective: objectives.find((o) => o.id === nextActivity.objectiveId)?.text || '',
-          covers: activityCovers(nextActivity),
-        }
-      : null;
+  // ---- Teach content generation (current step + background prefetch) --------
+  // Fresh mirror of teachContent so the prefetch loop reads the latest without a
+  // stale closure, and an in-flight set so the current-step effect and the
+  // prefetch loop never fetch the same step twice.
+  const teachContentRef = useRef({});
+  useEffect(() => { teachContentRef.current = teachContent; }, [teachContent]);
+  const teachInflightRef = useRef(new Set());
 
-    // Teach generation is an LLM call that can transiently fail or be slow on a
-    // cold function. Auto-retry a few times with a per-attempt timeout (the plan
-    // fetch above already does the same) so a step loads on its own instead of
-    // stranding the learner on "Preparing…" until they hit Retry.
-    (async () => {
+  // Generate one teach step's content. Idempotent + deduped: returns immediately
+  // if the step already has content or is being fetched. Used both for the step
+  // the learner is on and for silent look-ahead prefetch.
+  const generateTeach = useCallback(async (targetStep, targetIdx) => {
+    if (!targetStep || targetStep.kind !== 'teach') return;
+    if (teachContentRef.current[targetStep.id]?.message) return;
+    if (teachInflightRef.current.has(targetStep.id)) return;
+    teachInflightRef.current.add(targetStep.id);
+    try {
+      const priorTitles = steps.slice(0, targetIdx).filter((s) => s.kind === 'teach').map((s) => s.title);
+      // Prior teaching text the learner has seen (or that prefetch has already
+      // produced), read fresh from the ref so each step is grounded in the ones
+      // before it even during a background prefetch sweep.
+      const priorContent = steps.slice(0, targetIdx)
+        .filter((s) => (s.kind === 'teach' || s.kind === 'qa') && teachContentRef.current[s.id]?.message)
+        .map((s) => ({ title: s.title || '', message: teachContentRef.current[s.id].message }));
+      // The next activity, so the worked example preps the learner for exactly
+      // what they'll be asked to do (concept → example → activity), including the
+      // concrete terms it will test — only when it immediately follows this step.
+      const nextStep = steps[targetIdx + 1];
+      const nextActivity = nextStep?.kind === 'activity' ? nextStep : null;
+      const upcoming = nextActivity
+        ? {
+            activityType: nextActivity.activityType,
+            objective: objectives.find((o) => o.id === nextActivity.objectiveId)?.text || '',
+            covers: activityCovers(nextActivity),
+          }
+        : null;
       const MAX_ATTEMPTS = 3;
       const TIMEOUT_MS = 45000;
-      for (let attempt = 1; active && attempt <= MAX_ATTEMPTS; attempt++) {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
         try {
           const res = await fetch('/api/lesson/teach', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic, format, objectives, step, priorTitles, priorContent, upcoming, tools: lessonToolIds || toolIds }),
+            body: JSON.stringify({ topic, format, objectives, step: targetStep, priorTitles, priorContent, upcoming, tools: lessonToolIds || toolIds }),
             signal: controller.signal,
           });
           clearTimeout(timer);
           if (!res.ok) throw new Error('failed');
           const d = await res.json();
           if (!d?.message) throw new Error('empty');
-          if (!active) return;
           setTeachContent((prev) => {
-            const updated = { ...prev, [step.id]: { message: d.message, blocks: d.blocks || [], keyPoints: d.keyPoints || [] } };
+            const updated = { ...prev, [targetStep.id]: { message: d.message, blocks: d.blocks || [], keyPoints: d.keyPoints || [] } };
             persist({ teachContent: updated });
             return updated;
           });
-          if (active) setTeachLoading(false);
+          setTeachError((prev) => (prev[targetStep.id] ? { ...prev, [targetStep.id]: false } : prev));
           return; // success — stop retrying
         } catch {
           clearTimeout(timer);
-          if (!active) return;
           if (attempt < MAX_ATTEMPTS) {
-            await new Promise((r) => setTimeout(r, 1200 * attempt)); // backoff, keep showing "Preparing…"
+            await new Promise((r) => setTimeout(r, 1200 * attempt)); // backoff
             continue;
           }
-          setTeachError((prev) => ({ ...prev, [step.id]: true }));
-          setTeachLoading(false);
+          setTeachError((prev) => ({ ...prev, [targetStep.id]: true }));
         }
       }
+    } finally {
+      teachInflightRef.current.delete(targetStep.id);
+    }
+  }, [steps, topic, format, objectives, lessonToolIds, toolIds, persist]);
+
+  // The step the learner is on: make sure its content exists (retryTick re-fires
+  // after a manual "Retry this step"). The dedup guard means this cooperates with
+  // any prefetch already in flight for the same step.
+  useEffect(() => {
+    if (!step || step.kind !== 'teach') return;
+    if (teachContent[step.id]?.message) return;
+    generateTeach(step, stepIdx);
+  }, [step, stepIdx, retryTick, generateTeach]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Background prefetch: once the lesson is revealed, generate every teach step
+  // ahead of the learner — one at a time, in order — so advancing pages lands on
+  // ready content instead of a "Preparing…" loader. Sequential keeps each step's
+  // prior-content grounding correct and avoids hammering the model at once.
+  useEffect(() => {
+    if (!revealed || !steps.length) return;
+    let cancelled = false;
+    (async () => {
+      for (let i = 0; i < steps.length && !cancelled; i++) {
+        const s = steps[i];
+        if (s.kind !== 'teach') continue;
+        if (teachContentRef.current[s.id]?.message) continue;
+        await generateTeach(s, i);
+      }
     })();
-    return () => { active = false; };
-  }, [step, stepIdx, retryTick]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { cancelled = true; };
+  }, [revealed, steps, generateTeach]);
 
   function resolveActivity(id, passed) {
     // Failing an activity means all 3 tries were used. Rather than mark it failed
