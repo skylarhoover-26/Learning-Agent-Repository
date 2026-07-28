@@ -143,6 +143,8 @@ function isChromeHiddenRoute(pathname) {
 const SidebarContext = createContext(null);
 
 const SIDEBAR_KEY = 'sidebar_open';
+// Bump this key's suffix to force another one-time clear of a stale SIDEBAR_KEY.
+const SIDEBAR_RESET_KEY = 'sidebar_open_reset_v1';
 
 export function SidebarProvider({ children }) {
   // Open by default and persisted. The menu stays open across reloads and
@@ -183,7 +185,18 @@ export function SidebarProvider({ children }) {
   // Restore a saved choice on mount, if there is one.
   useEffect(() => {
     let stored = null;
-    try { stored = localStorage.getItem(SIDEBAR_KEY); } catch {}
+    try {
+      // One-time repair: an earlier build's guided tour toggled the menu with the
+      // persisting setter, so it wrote sidebar_open=false and left the menu stuck
+      // closed on every sign-in. Clear that stale value once (guarded by a version
+      // flag) so affected users revert to the default-open menu; any open/close
+      // they make from here still persists normally.
+      if (localStorage.getItem(SIDEBAR_RESET_KEY) !== '1') {
+        localStorage.removeItem(SIDEBAR_KEY);
+        localStorage.setItem(SIDEBAR_RESET_KEY, '1');
+      }
+      stored = localStorage.getItem(SIDEBAR_KEY);
+    } catch {}
     if (stored === 'true' || stored === 'false') {
       userDecidedRef.current = true;
       setOpenState(stored === 'true');
