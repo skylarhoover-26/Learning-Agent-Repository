@@ -1233,7 +1233,7 @@ function LessonContent() {
                   key={i}
                   onClick={() => setSelectedTopic(s.topic)}
                   aria-pressed={selected}
-                  className={`group relative overflow-hidden flex items-center gap-3 p-4 cine-glass cine-lift rounded-2xl transition-all text-left ${
+                  className={`group relative overflow-hidden flex items-start gap-3 p-4 cine-glass cine-lift rounded-2xl transition-all text-left ${
                     selected ? `ring-2 ${tone.ring} scale-[1.02]` : ''
                   }`}
                   style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
@@ -1246,11 +1246,11 @@ function LessonContent() {
                   </span>
                   <div className="relative flex-1">
                     <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.topic}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{s.topic}</div>
                   </div>
                   {selected
-                    ? <span className={`relative inline-flex items-center justify-center w-6 h-6 rounded-full text-white shadow-sm ${tone.badge}`}><Check className="w-4 h-4" /></span>
-                    : <ChevronRight className={`relative w-5 h-5 ${tone.chevron} opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all`} />}
+                    ? <span className={`relative self-center inline-flex items-center justify-center w-6 h-6 rounded-full text-white shadow-sm ${tone.badge}`}><Check className="w-4 h-4" /></span>
+                    : <ChevronRight className={`relative self-center w-5 h-5 ${tone.chevron} opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all`} />}
                 </button>
               );
             })}
