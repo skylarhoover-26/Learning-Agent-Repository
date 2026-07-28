@@ -363,9 +363,9 @@ function AdminFeedbackInner() {
             if (priorityFilter.length > 0 && !priorityFilter.includes(f.priority || NONE)) return false;
             if (featureFilter.length > 0 && !featureFilter.includes(f.feature || NONE)) return false;
             // Match the same "effective status" the card shows: a done item
-            // reads as Done, and an unset workStatus reads as Not Started (the
-            // card's default), so "Not Started" catches un-statused items too.
-            if (statusFilter.length > 0 && !statusFilter.includes(isDone(f) ? DONE_STATUS : (f.workStatus || 'Not Started'))) return false;
+            // reads as Done, an item with no workStatus set reads as "No status"
+            // (NONE) — distinct from an item explicitly set to Not Started.
+            if (statusFilter.length > 0 && !statusFilter.includes(isDone(f) ? DONE_STATUS : (f.workStatus || NONE))) return false;
             if (q) {
               const hay = `${f.text || ''} ${f.name || ''} ${f.email || ''} ${f.page || ''}`.toLowerCase();
               if (!hay.includes(q)) return false;
@@ -445,7 +445,7 @@ function AdminFeedbackInner() {
                   label="Status"
                   selected={statusFilter}
                   onChange={setStatusFilter}
-                  options={[...WORK_STATUSES.map((s) => ({ value: s, label: s })), { value: DONE_STATUS, label: 'Done' }]}
+                  options={[...WORK_STATUSES.map((s) => ({ value: s, label: s })), { value: DONE_STATUS, label: 'Done' }, { value: NONE, label: 'No status' }]}
                 />
                 <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   Sort
@@ -846,20 +846,21 @@ function FeedbackCard({ feedback: f, refNumber, busy, onPatch }) {
           </div>
           <div className="flex items-center justify-between gap-2 mt-3">
             <select
-              value={done ? DONE_STATUS : (f.workStatus || 'Not Started')}
+              value={done ? DONE_STATUS : (f.workStatus || '')}
               onChange={(e) => {
                 const val = e.target.value;
                 // Choosing "Done" marks it done instantly (same as the button).
                 if (val === DONE_STATUS) { onPatch(f.id, { status: 'done' }); return; }
                 // Picking a pipeline status on a done item reopens it into that status.
-                if (done) { onPatch(f.id, { status: 'open', workStatus: val }); return; }
+                if (done) { onPatch(f.id, { status: 'open', workStatus: val || null }); return; }
                 onPatch(f.id, { workStatus: val || null });
               }}
               disabled={busy}
               aria-label="Work status"
               title={done ? 'Marked done — pick a status to reopen it' : 'Where this stands in the work'}
-              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${done ? WORK_STATUS_DONE_STYLE : (WORK_STATUS_STYLES[f.workStatus || 'Not Started'] || WORK_STATUS_UNSET)}`}
+              className={`rounded-pill text-[11px] font-semibold border px-2 py-1 disabled:opacity-50 ${done ? WORK_STATUS_DONE_STYLE : (f.workStatus ? (WORK_STATUS_STYLES[f.workStatus] || WORK_STATUS_UNSET) : WORK_STATUS_UNSET)}`}
             >
+              <option value="">No status</option>
               {WORK_STATUSES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
