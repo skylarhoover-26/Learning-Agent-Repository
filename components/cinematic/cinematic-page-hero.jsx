@@ -14,8 +14,11 @@ export default function CinematicPageHero({ eyebrow, title, subtitle, icon: Icon
       {eyebrow && (
         // Plain uppercase kicker (no pill background/border) so it reads as a
         // label, not a clickable button — testers kept trying to click the pill.
+        // `flex` (block-level) so it always sits on its OWN line above the title:
+        // with the gradient title the h1 is inline-block, and an inline-flex
+        // eyebrow flowed onto the same line, leaving the icon oddly beside it.
         <span
-          className={`inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[.18em] mb-4 ${centered ? 'mx-auto' : ''}`}
+          className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[.18em] mb-4 ${centered ? 'justify-center' : ''}`}
           style={{ color: 'var(--accent)' }}
         >
           {Icon && <Icon className="w-3.5 h-3.5" />}
