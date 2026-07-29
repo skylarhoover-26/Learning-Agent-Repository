@@ -5,6 +5,14 @@ import { generateVideoScript } from '@/lib/ai';
 import { QUESTS } from '@/lib/quest-data';
 import { logAuditEntry } from '@/lib/audit-log';
 
+// Narrated lessons are ONE script call (up to VIDEO_FORMAT_TOKENS for the format,
+// see lib/ai.js), which runs well past the platform's default function budget.
+// This route was relying on that default while every other generation route here
+// declares its own — plan is 300s, teach 120s — so a longer script could be cut
+// off by the runtime before it ever reached the audit log, making the failure look
+// like a client problem. Declare it explicitly.
+export const maxDuration = 120;
+
 export async function POST(request) {
   try {
     const { topic, format, tools, questId } = await request.json();

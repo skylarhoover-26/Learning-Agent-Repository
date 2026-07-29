@@ -4,6 +4,12 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonQuiz } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
 
+// Runs at the end of both the read and narrated lessons, and is a real Sonnet
+// call — so like the plan (300s) and teach (120s) routes it needs its own budget
+// rather than the platform default. Without this a slow quiz fails as a generic
+// client error with nothing in the audit log to explain it.
+export const maxDuration = 120;
+
 export async function POST(request) {
   try {
     const { topic, format, messages } = await request.json();
