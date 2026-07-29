@@ -4,10 +4,11 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonPlan } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
 
-// Plan generation can run long — a Project Quest plan is up to ~8000 output
-// tokens on Sonnet, which alone can take well over 2 minutes, plus internal
-// grounding/retries. 120s was cutting quests off mid-generation (the client
-// then saw an aborted request), so give the function the full budget.
+// Plan generation can run long — see PLAN_TOKENS in lib/ai.js for the per-format
+// output ceiling, plus internal grounding/retries. Keep this at 300s and keep the
+// caller's abort budget UNDER it (the player uses 280s): if the client gives up
+// first, a plan the server would have returned successfully surfaces to the
+// learner as a failure instead. generateLessonPlan caps its retries to fit here.
 export const maxDuration = 300;
 
 export async function POST(request) {

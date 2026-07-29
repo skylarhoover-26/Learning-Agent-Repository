@@ -26,17 +26,30 @@ const FORMAT_LABEL = { quick_tip: 'Quick Tip', standard: 'Quick Lesson', deep_di
 // Loading copy per format — heavier formats legitimately take much longer to
 // generate, so the "this usually takes…" estimate and the point at which we
 // switch to "taking a little longer than usual" (slow, in seconds) both scale.
-// The loader stays up until the lesson is READABLE, which spans three sequential
-// model calls: tool recommendation (Haiku, fast) → the plan (Sonnet, up to ~4k
-// tokens) → the FIRST teach step (Sonnet). The estimates below reflect that full
-// end-to-end wait, not just the plan — earlier numbers only covered the plan and
-// so read as "broken" on perfectly normal ~50s runs. `tau` shapes the progress
-// bar so it approaches full near the slow threshold instead of pegging at 95%.
+// The loader stays up until the lesson is READABLE, which spans the tool
+// recommendation (Haiku, fast, now issued alongside the cache probe) → the plan
+// (Sonnet, up to PLAN_TOKENS for the format — see lib/ai.js) → the FIRST teach
+// step (Sonnet). The estimates below reflect that full end-to-end wait, not just
+// the plan — earlier numbers only covered the plan and so read as "broken" on
+// perfectly normal ~50s runs. `tau` shapes the progress bar so it approaches
+// full near the slow threshold instead of pegging at 95%.
+// Bands are deliberately ascending and NON-OVERLAPPING — each one starts where
+// the previous ends — so the depth a learner picks visibly trades against the
+// wait. They currently sit closer together than the ladder implies, because
+// every format pays the same fixed floor (recommendation → plan → first teach
+// step) and only the plan's token count scales with depth. Splitting the plan
+// into a skeleton + lazy per-step details is what will pull the light end down
+// and make the spacing real; until then, don't pad these to look better —
+// `slow` below is where a long run is acknowledged honestly.
+// ASCII hyphens and decimals only — no en-dashes, no ½. A prior estimate shipped
+// as "1â3 minutes" when an en-dash got mis-decoded (fixed in ec5e6a8 by going
+// ASCII in video-lesson-player); these strings render straight into the loader,
+// so keep them boring rather than typographically nice.
 const FORMAT_LOAD = {
-  quick_tip:     { estimate: '20–40 seconds', slow: 55,  tau: 18 },
-  standard:      { estimate: '30–60 seconds', slow: 90,  tau: 28 },
-  deep_dive:     { estimate: '1–2 minutes',   slow: 150, tau: 50 },
-  project_quest: { estimate: '2–4 minutes',   slow: 240, tau: 80 },
+  quick_tip:     { estimate: '30-60 seconds',  slow: 75,  tau: 25 },
+  standard:      { estimate: '1-1.5 minutes',  slow: 105, tau: 35 },
+  deep_dive:     { estimate: '1.5-2 minutes',  slow: 150, tau: 50 },
+  project_quest: { estimate: '2-3 minutes',    slow: 210, tau: 70 },
 };
 
 // The concrete terms/items an activity will quiz, so the preceding teach step
@@ -222,34 +235,6 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // re-enter here without remounting.
       if (active) { setLoading(true); setRevealed(false); setError(null); }
 
-      // Today's Pick fast-path: if this exact lesson was pre-generated (plan +
-      // first teach step warmed by the daily cron or warm-on-open), hydrate it
-      // instantly and skip generation entirely. A miss (every non-pick lesson,
-      // or a pick not yet warmed) just falls through to normal generation.
-      try {
-        const cr = await fetch(`/api/daily-pick/lesson?topic=${encodeURIComponent(topic)}&format=${encodeURIComponent(format)}`);
-        if (cr.ok) {
-          const cachedLesson = await cr.json();
-          if (active && cachedLesson?.plan?.steps?.length) {
-            setPlan(cachedLesson.plan);
-            setSteps(cachedLesson.plan.steps);
-            if (Array.isArray(cachedLesson.toolIds) && cachedLesson.toolIds.length) {
-              setLessonToolIds(cachedLesson.toolIds);
-              const t = (tools || []).find((x) => x.id === cachedLesson.toolIds[0]);
-              if (t) setLessonTool(t);
-            }
-            if (cachedLesson.recommendation) setRecommendation(cachedLesson.recommendation);
-            if (cachedLesson.teach && Object.keys(cachedLesson.teach).length) {
-              setTeachContent((prev) => ({ ...cachedLesson.teach, ...prev }));
-            }
-            setLoading(false);
-            return; // pre-generated — the prefetch effect fills any remaining steps
-          }
-        }
-      } catch {
-        // no cache / read failed — generate normally below
-      }
-
       // First, find the best tool for this lesson and resolve which tool the
       // lesson should be built around: the recommended one IF the learner owns
       // it, otherwise their starred/primary tool.
@@ -258,16 +243,50 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // this one rebuild so the recommendation matches what they said.
       const preferredTool = refinePreferredToolRef.current;
       refinePreferredToolRef.current = null;
-      let recTool = null;
-      try {
-        const rr = await fetch('/api/lesson/recommend-tool', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic, preferredTool }),
-        });
-        const rd = rr.ok ? await rr.json() : null;
-        if (rd?.tool) { recTool = rd.tool; if (active) setRecommendation(rd); }
-      } catch {
-        // recommendation is best-effort
+
+      // The pre-generated-lesson probe (a storage read) and the tool
+      // recommendation (a fast Haiku call) don't depend on each other, so start
+      // both at once instead of paying two sequential round trips on the front of
+      // every lesson. On a cache hit the in-flight recommendation is simply
+      // discarded — the cached lesson carries its own.
+      const cachePromise = fetch(`/api/daily-pick/lesson?topic=${encodeURIComponent(topic)}&format=${encodeURIComponent(format)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null); // no cache / read failed — generate normally below
+      const recPromise = fetch('/api/lesson/recommend-tool', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic, preferredTool }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null); // recommendation is best-effort
+
+      // Today's Pick fast-path: if this exact lesson was pre-generated (plan +
+      // first teach step warmed by the daily cron or warm-on-open), hydrate it
+      // instantly and skip generation entirely. A miss (every non-pick lesson,
+      // or a pick not yet warmed) just falls through to normal generation.
+      const cachedLesson = await cachePromise;
+      if (!active) return;
+      if (cachedLesson?.plan?.steps?.length) {
+        setPlan(cachedLesson.plan);
+        setSteps(cachedLesson.plan.steps);
+        if (Array.isArray(cachedLesson.toolIds) && cachedLesson.toolIds.length) {
+          setLessonToolIds(cachedLesson.toolIds);
+          const t = owned.find((x) => x.id === cachedLesson.toolIds[0]);
+          if (t) setLessonTool(t);
+        }
+        if (cachedLesson.recommendation) setRecommendation(cachedLesson.recommendation);
+        if (cachedLesson.teach && Object.keys(cachedLesson.teach).length) {
+          setTeachContent((prev) => ({ ...cachedLesson.teach, ...prev }));
+        }
+        setLoading(false);
+        return; // pre-generated — the prefetch effect fills any remaining steps
       }
+
+      // Resolve the recommendation BEFORE planning (not alongside it): the plan
+      // is built around one named tool, and the on-screen callout must name that
+      // same tool rather than drifting to a different one.
+      const rd = await recPromise;
+      if (!active) return;
+      let recTool = null;
+      if (rd?.tool) { recTool = rd.tool; setRecommendation(rd); }
       // Center the ENTIRE lesson on ONE tool — the recommended one if the
       // learner owns it, otherwise their primary — so the teaching content names
       // the SAME tool as the callout instead of drifting to a different one.
@@ -276,21 +295,26 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       const lessonTools = primary ? [primary.id] : undefined;
       if (active) { setLessonToolIds(lessonTools); setLessonTool(primary); }
 
-      // Try up to twice on the client too — if the first request fails (the
-      // server already retries internally), a fresh attempt usually succeeds
-      // before we ever show an error.
       let planData = null;
       let planErr = null;
       // Per-attempt timeout so a hung server call can't leave the learner
       // spinning on the browser default forever — it falls into the retry, then
-      // the friendly error UI below. The budget MUST exceed real generation
-      // time, or we abort a still-working request and strand the learner: a
-      // Project Quest plan (~8000 tokens on Sonnet) legitimately runs past two
-      // minutes, so heavier formats get a much longer client budget (and the
-      // server route's maxDuration is 300s to match).
+      // the friendly error UI below.
+      //
+      // Two constraints the earlier numbers violated, which is how a Project
+      // Quest ended up showing "taking longer than usual" at 8m25s:
+      //  1. The client budget must sit UNDER the route's maxDuration (300s).
+      //     At 240s we aborted plans the server was still successfully working
+      //     on, turning a slow-but-fine lesson into a hard failure.
+      //  2. Heavy formats get ONE attempt, not two. The server already retries
+      //     internally, so a client retry just doubled the wall clock — 2 x 240s
+      //     plus setup is exactly the 8m25s a learner sat through before the
+      //     error appeared. Light formats are quick enough that a second try is
+      //     still cheaper than showing an error.
       const heavyFormat = format === 'project_quest' || format === 'deep_dive';
-      const PLAN_TIMEOUT_MS = heavyFormat ? 240000 : 100000;
-      for (let attempt = 1; attempt <= 2 && active; attempt++) {
+      const PLAN_TIMEOUT_MS = heavyFormat ? 280000 : 100000;
+      const maxPlanAttempts = heavyFormat ? 1 : 2;
+      for (let attempt = 1; attempt <= maxPlanAttempts && active; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), PLAN_TIMEOUT_MS);
         try {
