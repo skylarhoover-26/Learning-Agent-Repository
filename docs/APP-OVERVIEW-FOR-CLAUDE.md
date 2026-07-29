@@ -44,7 +44,8 @@ chat, progress/XP tracking, skill calibration, and manager/admin reporting.
 3. **Calibration gate.** Before using the app, a user completes a required
    full-screen **calibration** flow (self-rating + AI-scored scenarios) that
    establishes a starting skill/AI-impact baseline (`calibrated_at` flag). It
-   refreshes non-blocking every ~6 weeks. Later reachable as "My Calibration."
+   refreshes non-blocking every ~4 weeks (monthly, to match the CSC cycle).
+   Later reachable as "My Calibration."
 4. **Home.** A two-zone homepage: a "Find AI" hero (describe your work → get AI
    opportunities), Today's Pick, quick actions, live level/streak badges, a home
    leaderboard, and a live sources feed. Sidebar sections can be toggled per-user

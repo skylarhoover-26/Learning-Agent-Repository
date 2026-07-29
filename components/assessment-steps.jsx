@@ -101,7 +101,8 @@ export function IntroStep({ onNext }) {
       <div className="p-8">
         <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
           A few quick questions about how you use AI today.
-          {' '}<strong>Answer honestly</strong> — your answers shape your experience.
+          {' '}<strong>Answer honestly.</strong> That&apos;s how you get the most accurate read on
+          where you are, and lessons that actually fit.
         </p>
         <button
           onClick={onNext}
@@ -110,6 +111,39 @@ export function IntroStep({ onNext }) {
           Let&apos;s go
           <ArrowRight className="w-5 h-5" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+// --- Impact intro ----------------------------------------------------------
+// Sits between the skill self-rating and the four AI-impact questions. Those
+// questions are scored on BOTH halves (the option picked + the written example),
+// so this card sets that expectation up front. Without it people treat the
+// example box as optional and then feel penalized by the score (feedback #84).
+export function ImpactIntroStep() {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
+      <div className="bg-gradient-to-br from-brand to-brand-700 text-white p-8 rounded-t-2xl">
+        <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-pill mb-3">
+          <TrendingUp className="w-3.5 h-3.5" />
+          AI Impact &middot; 4 questions
+        </div>
+        <h2 className="text-2xl font-bold tracking-tight mb-2">
+          These last four are scored a little differently.
+        </h2>
+      </div>
+      <div className="p-8 space-y-4">
+        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+          Each one pairs a multiple choice answer with room for examples, and
+          {' '}<strong>both halves get scored.</strong> Your pick tells us where you think you are.
+          Your examples are the proof we weigh it against.
+        </p>
+        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+          Give one or two real examples with enough detail to show what actually changed: the task,
+          the tool, and the result. Left blank, there&apos;s nothing backing up your answer, so the
+          score comes out low.
+        </p>
       </div>
     </div>
   );
@@ -251,7 +285,7 @@ export function ImpactQuestionCard({ question, selectedValue, exampleText, onSel
           value={exampleText || ''}
           onChange={e => onExampleChange(e.target.value)}
           rows={3}
-          placeholder="A specific example makes your score more accurate (optional, but it helps)."
+          placeholder="Be specific: the task, the tool, and what changed."
           className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none"
         />
       </div>
@@ -329,7 +363,7 @@ export function SkillResults({ skills, selfRating }) {
           </div>
 
           <p className="mt-4 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            This is a snapshot of today. In about 6 weeks we&apos;ll invite you to recalibrate, so your scores and lessons keep pace as you grow.
+            This is a snapshot of today. In about a month we&apos;ll invite you to recalibrate, so your scores and lessons keep pace as you grow.
           </p>
         </div>
       </div>

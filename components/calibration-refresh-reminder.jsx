@@ -66,7 +66,7 @@ export default function CalibrationRefreshReminder() {
             Time to re-grade your AI competencies
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">
-            It&apos;s been about 6 weeks. Take a few minutes so your impact scores and lessons stay
+            It&apos;s been about a month. Take a few minutes so your impact scores and lessons stay
             matched to how you&apos;ve grown.
           </p>
           <div className="flex items-center gap-3">

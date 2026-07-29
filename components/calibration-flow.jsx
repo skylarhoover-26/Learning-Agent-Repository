@@ -1,9 +1,9 @@
 'use client';
 
 // The single, unified assessment: skill calibration + AI-impact competencies
-// merged into one flow. Runs intro → skill scenarios → skill self-rating → 4
-// impact questions (each: a self-claim + an optional example) → AI synthesizes
-// the competency scores + "why" → combined results.
+// merged into one flow. Runs intro → skill scenarios → skill self-rating →
+// impact intro → 4 impact questions (each: a self-claim + a written example, both
+// scored) → AI synthesizes the competency scores + "why" → combined results.
 //
 // On finish it writes BOTH the calibration profile (tunes lesson difficulty) and
 // the ai_impact_scores detail (self/measured/why per competency, which the
@@ -20,7 +20,7 @@ import { CALIBRATION_SKILL_ORDER, SCENARIO_BY_ID } from '@/lib/calibration-scena
 import { saveImpactDetail } from '@/lib/scoring-store';
 import { IMPACT_QUESTIONS } from '@/lib/impact-questions';
 import {
-  IntroStep, ScenarioStep, SelfRateStep,
+  IntroStep, ImpactIntroStep, ScenarioStep, SelfRateStep,
   ImpactQuestionCard, SkillResults, ImpactResults,
 } from '@/components/assessment-steps';
 
@@ -70,7 +70,8 @@ export default function CalibrationFlow({ onComplete, gated = false, homeOnFinis
 
   const nScen = scenarios ? scenarios.length : CALIBRATION_SKILL_ORDER.length;
   const SELF_RATE_STEP = nScen + 1;
-  const FIRST_IMPACT_STEP = nScen + 2;
+  const IMPACT_INTRO_STEP = nScen + 2;
+  const FIRST_IMPACT_STEP = nScen + 3;
   const LAST_IMPACT_STEP = FIRST_IMPACT_STEP + N_IMPACT - 1;
 
   const skills = useMemo(() => calculateSkills(answers, scenarios || []), [answers, scenarios]);
@@ -78,11 +79,12 @@ export default function CalibrationFlow({ onComplete, gated = false, homeOnFinis
   const isIntro = step === 0;
   const isScenario = step >= 1 && step <= nScen;
   const isSelfRate = step === SELF_RATE_STEP;
+  const isImpactIntro = step === IMPACT_INTRO_STEP;
   const isImpact = step >= FIRST_IMPACT_STEP && step <= LAST_IMPACT_STEP;
   const isLastImpact = step === LAST_IMPACT_STEP;
   const currentScenario = isScenario && scenarios ? scenarios[step - 1] : null;
   const currentImpact = isImpact ? IMPACT_QUESTIONS[step - FIRST_IMPACT_STEP] : null;
-  const totalSteps = 1 + nScen + 1 + N_IMPACT;
+  const totalSteps = 1 + nScen + 1 + 1 + N_IMPACT;
   const progressPercent = (step / (totalSteps - 1)) * 100;
 
   function handleStart() {
@@ -148,12 +150,14 @@ export default function CalibrationFlow({ onComplete, gated = false, homeOnFinis
     if (isIntro) return true;
     if (isScenario) return currentScenario && answers[currentScenario.id] !== undefined;
     if (isSelfRate) return true;
+    if (isImpactIntro) return true;
     if (isImpact) return !!impactAnswers[currentImpact.dimension]?.value;
     return false;
   };
 
   function onNext() {
-    if (isSelfRate) { setStep(FIRST_IMPACT_STEP); return; }
+    if (isSelfRate) { setStep(IMPACT_INTRO_STEP); return; }
+    if (isImpactIntro) { setStep(FIRST_IMPACT_STEP); return; }
     if (isLastImpact) { runScoring(); return; }
     setStep(step + 1);
   }
@@ -216,6 +220,8 @@ export default function CalibrationFlow({ onComplete, gated = false, homeOnFinis
                 />
               )}
 
+              {isImpactIntro && <ImpactIntroStep />}
+
               {isImpact && (
                 <ImpactQuestionCard
                   question={currentImpact}
@@ -234,7 +240,7 @@ export default function CalibrationFlow({ onComplete, gated = false, homeOnFinis
                   disabled={!canAdvance()}
                   className="inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
-                  {isLastImpact ? 'See my results' : isSelfRate ? 'Continue' : 'Next'}
+                  {isLastImpact ? 'See my results' : isImpactIntro ? 'Got it, start' : isSelfRate ? 'Continue' : 'Next'}
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
