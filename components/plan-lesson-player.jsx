@@ -12,7 +12,7 @@ import BookLoader from '@/components/book-loader';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
-import { onLessonComplete, normalizeTopic, PASS_THRESHOLD } from '@/lib/progression';
+import { onLessonComplete, normalizeTopic, PASS_THRESHOLD, quickTipCapReached } from '@/lib/progression';
 import { useProgression } from '@/components/progression-provider';
 import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
@@ -1199,12 +1199,26 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     </div>
   );
 
+  // Whether a quick tip finished right now would actually pay. Checked here, not
+  // after submitting, because the button below used to read "Finish & earn XP"
+  // for every non-repeat lesson — so a tip past the daily cap promised XP it was
+  // never going to award, and the learner only found out afterwards.
+  const tipCapReached = step?.kind === 'recap'
+    && format === 'quick_tip'
+    && !alreadyEarned
+    && quickTipCapReached(resolveLearnerId(profile));
+
   // Recap footer: claim XP first; once claimed, the checkpoint takes its place.
   const recapFooter = !claimed ? (
     <div className="mt-5 text-center">
       <button onClick={claimXp} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-all">
-        <Trophy className="w-4 h-4" /> {alreadyEarned ? 'Finish lesson' : 'Finish & earn XP'}
+        <Trophy className="w-4 h-4" /> {(alreadyEarned || tipCapReached) ? 'Finish lesson' : 'Finish & earn XP'}
       </button>
+      {tipCapReached && (
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          You&rsquo;ve hit the daily cap of 5 quick tips, so this one won&rsquo;t earn XP — a Quick Lesson or Deep Dive still will.
+        </p>
+      )}
       {alreadyEarned && (
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
           You already earned XP for this lesson — no new XP, but great to review!
