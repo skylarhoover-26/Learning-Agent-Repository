@@ -8,7 +8,7 @@ import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { FileText, Search, X, Copy, Check, ChevronDown, ChevronUp, Sparkles, Loader2, Star } from 'lucide-react';
 import { PROMPTS, CATEGORIES, DEPARTMENTS } from '@/lib/prompts-data';
 import { useProfile } from '@/components/profile-provider';
-import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
+import { contentDayKey, dailyPick, REFRESH_LABEL } from '@/lib/content-day';
 
 // Per-category accent (drives the card's colored outline + hover glow), matching
 // the category pill colors: analysis purple, planning orange, writing blue, etc.
@@ -51,6 +51,40 @@ function PromptsPageInner() {
     }
   }
 
+  // Daily prompts are saved by CONTENT, not id — see DailyPromptCard. Keyed on the
+  // prompt text itself, which is the thing being kept and is what makes two
+  // entries the same.
+  const savedPrompts = useMemo(
+    () => (Array.isArray(profile?.saved_prompts) ? profile.saved_prompts : []),
+    [profile],
+  );
+  const savedKeys = useMemo(
+    () => new Set(savedPrompts.map((p) => (p?.prompt || '').trim())),
+    [savedPrompts],
+  );
+
+  async function toggleSavedPrompt(p) {
+    if (!updateProfile) return;
+    const key = (p?.prompt || '').trim();
+    if (!key) return;
+    const next = savedKeys.has(key)
+      ? savedPrompts.filter((s) => (s?.prompt || '').trim() !== key)
+      : [
+          // Store only the four fields a card needs to render, plus when it was
+          // saved — not the whole API object, so a shape change upstream can't
+          // break someone's saved list.
+          { title: p.title || '', description: p.description || '', category: p.category || '', prompt: p.prompt || '', savedAt: new Date().toISOString() },
+          ...savedPrompts,
+        ];
+    try {
+      await updateProfile({ saved_prompts: next });
+    } catch {
+      // same as above — the star just doesn't move.
+    }
+  }
+
+  const starredCount = favorites.size + savedPrompts.length;
+
   // Daily, role-personalized prompts — cached per content-day (8 AM PT).
   const [daily, setDaily] = useState(null);
 
@@ -81,8 +115,22 @@ function PromptsPageInner() {
       .catch(() => setDaily([]));
   }, [profile]);
 
+  // The library reorders every content day so the page as a whole feels fresh,
+  // not just the four AI prompts at the top. dailyPick returns ALL items when the
+  // count matches the list length, so this is a day-stable SHUFFLE, not a subset —
+  // deliberately: hiding prompts would break search for anyone who remembers one
+  // exists ("the QBR one") and turn a library into a feed. Order is shared across
+  // learners rather than salted per person, so "the one at the top today" means
+  // the same thing to everyone.
+  const dayKey = contentDayKey();
+  const dailyOrdered = useMemo(
+    () => dailyPick(PROMPTS, PROMPTS.length),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dayKey], // re-shuffles if the day flips while the tab is left open
+  );
+
   const filtered = useMemo(() => {
-    return PROMPTS.filter((p) => {
+    return dailyOrdered.filter((p) => {
       if (onlyFavorites && !favorites.has(p.id)) return false;
       if (category !== 'all' && p.category !== category) return false;
       if (department !== 'all' && p.department !== department) return false;
@@ -96,7 +144,7 @@ function PromptsPageInner() {
       }
       return true;
     });
-  }, [search, category, department, onlyFavorites, favorites]);
+  }, [dailyOrdered, search, category, department, onlyFavorites, favorites]);
 
   const hasActiveFilters = search || category !== 'all' || department !== 'all' || onlyFavorites;
 
@@ -152,7 +200,12 @@ function PromptsPageInner() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {daily.map((p, i) => (
-                  <DailyPromptCard key={`daily-${i}`} prompt={p} />
+                  <DailyPromptCard
+                    key={`daily-${i}`}
+                    prompt={p}
+                    isSaved={savedKeys.has((p?.prompt || '').trim())}
+                    onToggleSaved={() => toggleSavedPrompt(p)}
+                  />
                 ))}
               </div>
             )}
@@ -237,13 +290,17 @@ function PromptsPageInner() {
                 }`}
               >
                 <Star className={`w-4 h-4 ${onlyFavorites ? 'fill-current' : ''}`} />
-                {favorites.size > 0 ? `Starred (${favorites.size})` : 'Starred'}
+                {starredCount > 0 ? `Starred (${starredCount})` : 'Starred'}
               </button>
             </div>
           </div>
           <div className="flex items-center justify-between mt-3">
+            {/* Say the order rotates. Without this, someone who remembers a prompt
+                "was third" thinks prompts went missing — all 20 are always here,
+                just in a different order each day. */}
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Showing <strong>{filtered.length}</strong> of {PROMPTS.length} prompts
+              <span className="hidden sm:inline"> · order refreshes daily at 8 AM PT</span>
             </p>
             {hasActiveFilters && (
               <button
@@ -256,14 +313,40 @@ function PromptsPageInner() {
           </div>
         </div>
 
+        {/* Saved daily prompts live outside PROMPTS, so the library filter can't
+            surface them — they get their own group when Starred is on. This is the
+            payoff: a prompt starred today is still here after tomorrow's refresh
+            replaces the four above. */}
+        {onlyFavorites && savedPrompts.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-bold text-ink dark:text-slate-200 mb-1">Saved from your daily prompts</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Kept for you — these stay here after today&rsquo;s prompts refresh.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {savedPrompts.map((p, i) => (
+                <DailyPromptCard
+                  key={`saved-${i}`}
+                  prompt={p}
+                  isSaved
+                  onToggleSaved={() => toggleSavedPrompt(p)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <div className="cine-glass rounded-2xl border-dashed p-10 text-center">
             {/* Distinguish "you have no favorites yet" from "your filters are too
-                narrow" — with the Starred filter on and nothing starred, the
-                generic message reads like the filter is broken. */}
+                narrow" — with Starred on and nothing starred at all, the generic
+                message reads like the filter is broken. Only say it when BOTH the
+                library favorites and the saved daily prompts are empty. */}
             <p className="text-slate-500 dark:text-slate-400">
-              {onlyFavorites && favorites.size === 0
-                ? 'You haven’t starred any prompts yet. Tap the star on a prompt to save it here.'
+              {onlyFavorites && starredCount === 0
+                ? 'You haven’t starred any prompts yet. Tap the star on any prompt — including today’s — to save it here.'
+                : onlyFavorites
+                ? 'No library prompts starred yet. Your saved daily prompts are above.'
                 : 'No prompts match your filters. Try clearing some.'}
             </p>
           </div>
@@ -285,7 +368,7 @@ function PromptsPageInner() {
 }
 
 // A self-contained card for the AI-generated daily prompts (no department/tags).
-function DailyPromptCard({ prompt }) {
+function DailyPromptCard({ prompt, isSaved = false, onToggleSaved }) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const cat = CATEGORIES[prompt.category] || { label: prompt.category || 'Prompt', color: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300' };
@@ -303,6 +386,24 @@ function DailyPromptCard({ prompt }) {
       <div className="p-5">
         <div className="flex items-center gap-2 mb-1.5">
           <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${cat.color}`}>{cat.label}</span>
+          {/* Starring a DAILY prompt saves its content, not a reference: these are
+              AI-generated per learner per content-day and rotate out tomorrow, so
+              there is no id to point at. Saving the text is the only way a prompt
+              survives the refresh — which is the whole point of #89. */}
+          {onToggleSaved && (
+            <button
+              type="button"
+              onClick={onToggleSaved}
+              aria-pressed={isSaved}
+              aria-label={isSaved ? `Remove ${prompt.title} from favorites` : `Save ${prompt.title} to favorites`}
+              title={isSaved ? 'Remove from favorites' : 'Save to favorites — keeps it after tomorrow’s refresh'}
+              className={`ml-auto shrink-0 -mr-1 p-1 rounded-md transition-colors ${
+                isSaved ? 'text-amber-500 hover:text-amber-600' : 'text-slate-300 hover:text-amber-500 dark:text-slate-600'
+              }`}
+            >
+              <Star className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+            </button>
+          )}
         </div>
         <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1">{prompt.title}</h3>
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{prompt.description}</p>
