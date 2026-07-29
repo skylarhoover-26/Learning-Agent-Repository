@@ -14,7 +14,7 @@
 // first-run, full screen).
 
 import { useState, useMemo, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { ChevronRight, ArrowRight, Loader2 } from 'lucide-react';
 import { saveCalibrationData, calculateSkills, appendCalibrationRun } from '@/lib/calibration-store';
 import { CALIBRATION_SKILL_ORDER, SCENARIO_BY_ID } from '@/lib/calibration-scenarios';
 import { saveImpactDetail } from '@/lib/scoring-store';
@@ -183,13 +183,8 @@ export default function CalibrationFlow({ onComplete, gated = false, homeOnFinis
           <div className="h-1 bg-bg-subtle dark:bg-slate-700 rounded-full overflow-hidden my-3">
             <div className="h-full bg-brand rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
           </div>
-          <div className="flex items-center justify-between pb-3">
+          <div className="pb-3">
             <p className="text-xs text-slate-500 dark:text-slate-400">Step {step + 1} of {totalSteps}</p>
-            {step > 0 && !scoring && (
-              <button onClick={goBack} className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-brand transition-colors">
-                <ChevronLeft className="w-3 h-3" /> Back
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -234,7 +229,17 @@ export default function CalibrationFlow({ onComplete, gated = false, homeOnFinis
             </div>
 
             {step > 0 && (
-              <div className="flex justify-center mt-8">
+              // Back sits beside the primary action, matching the lesson wizard
+              // (app/lesson/page.jsx) rather than floating in the progress header.
+              <div className="flex justify-center gap-3 mt-8">
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="inline-flex items-center gap-1.5 px-5 py-3 rounded-pill cine-glass text-slate-600 dark:text-slate-300 font-semibold text-sm hover:opacity-80 transition-all"
+                >
+                  <ChevronRight className="w-4 h-4 rotate-180" />
+                  Back
+                </button>
                 <button
                   onClick={onNext}
                   disabled={!canAdvance()}
