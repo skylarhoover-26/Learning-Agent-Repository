@@ -154,11 +154,12 @@ function Drawer({ open, onClose }) {
         className="fixed top-16 left-0 z-40 h-[calc(100dvh-4rem)] w-80 max-w-[86vw] overflow-y-auto overscroll-contain transition-transform duration-300"
         style={{ transform: open ? 'translateX(0)' : 'translateX(-104%)', willChange: 'transform', background: 'var(--navbg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRight: '1px solid var(--line)', boxShadow: '0 0 60px -10px rgba(0,0,0,.35)' }}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3" style={{ background: 'var(--navbg)', borderBottom: '1px solid var(--line)' }}>
-          <div className="flex items-center gap-2.5">
-            <img src="/brand/ai-learning-coach.png" alt="" className="w-8 h-8" />
-            <p className="font-display font-bold text-sm">Menu</p>
-          </div>
+        {/* Just the close control. The emblem and the word "Menu" both used to sit
+            here, which put a second copy of the brand mark directly under the one
+            in the page header and read as clutter (feedback #132). The drawer's
+            own section headings say what it is, and the close button carries an
+            aria-label, so nothing is lost by dropping the label. */}
+        <div className="sticky top-0 z-10 flex items-center justify-end px-4 py-3" style={{ background: 'var(--navbg)', borderBottom: '1px solid var(--line)' }}>
           <button onClick={onClose} aria-label="Close menu" className="cine-lift w-8 h-8 rounded-full grid place-items-center" style={{ color: 'var(--ink-dim)' }}>
             <X className="w-4 h-4" />
           </button>

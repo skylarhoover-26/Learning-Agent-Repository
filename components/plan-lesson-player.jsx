@@ -119,6 +119,12 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // advancing to a not-yet-loaded later step shows the inline loader, not this.
   const [revealed, setRevealed] = useState(false);
   const [elapsed, setElapsed] = useState(0); // seconds spent generating, for the loading bar
+  // Whether the full-screen builder is allowed to paint yet. A pre-generated
+  // lesson (Today's Pick, opened from Slack) resolves its cache probe in a few
+  // hundred ms, so painting the builder immediately made it flash up and vanish
+  // (feedback #138). Hold it back briefly: a real build runs 25s+, so the delay
+  // is invisible there, while a cache hit never shows it at all.
+  const [showLoader, setShowLoader] = useState(false);
   const [error, setError] = useState(null);
   const [teachError, setTeachError] = useState({}); // stepId -> true when generation failed
   const [retryTick, setRetryTick] = useState(0);     // bump to re-run the teach fetch
@@ -371,6 +377,15 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     const id = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [revealed]);
+
+  // Arm the builder only if we're still not revealed a beat after mount/rebuild —
+  // see showLoader above. Re-armed per rebuild so a refine/regenerate gets the
+  // same treatment.
+  useEffect(() => {
+    if (revealed) { setShowLoader(false); return; }
+    const id = setTimeout(() => setShowLoader(true), 400);
+    return () => clearTimeout(id);
+  }, [revealed, topic, format, rebuildNonce]);
 
   // Reveal the lesson only once the CURRENT step is genuinely ready: the plan
   // has loaded AND (the step isn't a teach/qa step, or its content has arrived,
@@ -1056,6 +1071,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // plan generation and the first step's content — so it never appears with a
   // "Preparing…" placeholder step.
   if (!revealed) {
+    // Cache probe still in flight — render nothing rather than flashing the
+    // builder at a lesson that turns out to be already built (see showLoader).
+    if (!showLoader) return null;
     // Asymptotic bar: climbs quickly then eases toward ~95% (we can't show true
     // progress for a single model call, so this just signals "still working").
     const load = FORMAT_LOAD[format] || FORMAT_LOAD.standard;
