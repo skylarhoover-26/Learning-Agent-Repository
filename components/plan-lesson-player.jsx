@@ -1118,9 +1118,18 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     <div className="mt-5 border-t border-slate-100 dark:border-slate-700 pt-5">
       {helpful !== 'no' ? (
         <>
-          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400 mb-3">
-            <Trophy className="w-4 h-4" /> {alreadyEarned ? 'Already earned — nice refresher!' : 'XP earned — nice work!'}
-          </p>
+          {/* Say what actually happened. This line used to read "XP earned — nice
+              work!" for anything that wasn't a repeat, which meant a quick tip
+              blocked by the daily cap claimed XP it never awarded. */}
+          {award?.dailyCapReached ? (
+            <p className="text-center text-sm font-semibold text-amber-600 dark:text-amber-400 mb-3">
+              Nice work finishing this one. You&rsquo;ve hit the daily cap of {award.dailyCap} quick tips, so it didn&rsquo;t earn XP. Try a Quick Lesson or Deep Dive to keep earning today.
+            </p>
+          ) : (
+            <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400 mb-3">
+              <Trophy className="w-4 h-4" /> {alreadyEarned ? 'Already earned — nice refresher!' : 'XP earned — nice work!'}
+            </p>
+          )}
           <p className="text-center text-sm font-semibold text-ink dark:text-slate-200 mb-1">
             One more thing — did this help with what you came to learn?
           </p>
