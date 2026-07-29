@@ -7,6 +7,7 @@ import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, Pane
 import { useProfile } from '@/components/profile-provider';
 import PausedLessonsBell from '@/components/paused-lessons-bell';
 import Avatar from '@/components/avatar';
+import XpMeter from '@/components/xp-meter';
 import { useChampions } from '@/components/champion-provider';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
@@ -95,6 +96,8 @@ export default function UserMenu() {
 
   return (
     <div className="flex items-center gap-2">
+      <XpMeter />
+
       <Link
         href="/"
         data-tour="home-link"
