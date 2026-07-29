@@ -12,7 +12,7 @@ import BookLoader from '@/components/book-loader';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
-import { onLessonComplete, normalizeTopic, PASS_THRESHOLD, quickTipCapReached } from '@/lib/progression';
+import { onLessonComplete, normalizeTopic, PASS_THRESHOLD, quickTipCapReached, DAILY_CAPS } from '@/lib/progression';
 import { useProgression } from '@/components/progression-provider';
 import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
@@ -1118,14 +1118,14 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     <div className="mt-5 border-t border-slate-100 dark:border-slate-700 pt-5">
       {helpful !== 'no' ? (
         <>
-          {/* Say what actually happened. This line used to read "XP earned — nice
-              work!" for anything that wasn't a repeat, which meant a quick tip
-              blocked by the daily cap claimed XP it never awarded. */}
-          {award?.dailyCapReached ? (
-            <p className="text-center text-sm font-semibold text-amber-600 dark:text-amber-400 mb-3">
-              Nice work finishing this one. You&rsquo;ve hit the daily cap of {award.dailyCap} quick tips, so it didn&rsquo;t earn XP. Try a Quick Lesson or Deep Dive to keep earning today.
-            </p>
-          ) : (
+          {/* Only claim XP when XP was actually awarded — this line used to read
+              "XP earned — nice work!" for anything that wasn't a repeat, so a tip
+              blocked by the daily cap claimed XP it never got.
+              Nothing is shown for the capped case on purpose: the recap footer
+              already explained it before they pressed Finish, and repeating it
+              here in near-identical words read as nagging. Say it once, at the
+              point of decision. */}
+          {!award?.dailyCapReached && (
             <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400 mb-3">
               <Trophy className="w-4 h-4" /> {alreadyEarned ? 'Already earned — nice refresher!' : 'XP earned — nice work!'}
             </p>
@@ -1216,7 +1216,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       </button>
       {tipCapReached && (
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-          You&rsquo;ve hit the daily cap of 5 quick tips, so this one won&rsquo;t earn XP — a Quick Lesson or Deep Dive still will.
+          You&rsquo;ve hit the daily cap of {DAILY_CAPS.quick_tip} quick tips, so this one won&rsquo;t earn XP — a Quick Lesson or Deep Dive still will.
         </p>
       )}
       {alreadyEarned && (
