@@ -154,26 +154,25 @@ function Drawer({ open, onClose }) {
         className="fixed top-16 left-0 z-40 h-[calc(100dvh-4rem)] w-80 max-w-[86vw] overflow-y-auto overscroll-contain transition-transform duration-300"
         style={{ transform: open ? 'translateX(0)' : 'translateX(-104%)', willChange: 'transform', background: 'var(--navbg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRight: '1px solid var(--line)', boxShadow: '0 0 60px -10px rgba(0,0,0,.35)' }}
       >
-        {/* Just the close control. The emblem and the word "Menu" both used to sit
-            here, which put a second copy of the brand mark directly under the one
-            in the page header and read as clutter (feedback #132). The drawer's
-            own section headings say what it is, and the close button carries an
-            aria-label, so nothing is lost by dropping the label.
-            Kept deliberately tight — with the label gone, the original px-4 py-3
-            row and its bottom border left a tall empty band above Home that read
-            as a rendering fault rather than a header. No divider, minimal
-            padding, so the X reads as a corner affordance and the nav starts at
-            the top. Still sticky so it stays reachable while scrolling. */}
-        <div className="sticky top-0 z-10 flex items-center justify-end px-3 pt-2 pb-1" style={{ background: 'var(--navbg)' }}>
-          <button onClick={onClose} aria-label="Close menu" className="cine-lift w-8 h-8 rounded-full grid place-items-center" style={{ color: 'var(--ink-dim)' }}>
+        {/* Home and the close control share one row. The emblem and the word
+            "Menu" used to sit up here, which put a second copy of the brand mark
+            directly under the one in the page header and read as clutter
+            (feedback #132). Removing them left the X alone on a header row with
+            Home stacked underneath — a dead band of space that looked like a
+            rendering fault. Putting Home on the same line reclaims it.
+            No horizontal padding here on purpose: NavRow brings its own mx-2, so
+            adding more would double the inset and misalign Home from the section
+            items below it. Sticky so both stay reachable while scrolling. */}
+        <div className="sticky top-0 z-10 flex items-center gap-1 pt-2 pb-1" style={{ background: 'var(--navbg)' }}>
+          <div className="flex-1 min-w-0">
+            <NavRow item={{ href: '/', icon: Home, label: 'Home' }} />
+          </div>
+          <button onClick={onClose} aria-label="Close menu" className="cine-lift w-8 h-8 rounded-full grid place-items-center shrink-0 mr-3" style={{ color: 'var(--ink-dim)' }}>
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <nav className="pb-6">
-          <div className="pt-1">
-            <NavRow item={{ href: '/', icon: Home, label: 'Home' }} />
-          </div>
 
           {NAV_SECTIONS.map((section) => (
             // Manager section is only for people-managers (direct reports) or admins
