@@ -104,6 +104,10 @@ function NotificationsAdminPageInner() {
       } else if (data.failed > 0) {
         const firstErr = (data.results || []).find((r) => !r.ok)?.error || 'unknown';
         setStatus(`partial:${data.sent}/${data.recipients}:${firstErr}`);
+      } else if (data.logged === false) {
+        // Delivered, but the send log write failed — so Recent sends below won't
+        // list it. Say so, otherwise the missing row reads as "it didn't send".
+        setStatus(`unlogged:${data.sent}/${data.recipients}`);
       } else {
         setStatus(`sent:${data.sent}/${data.recipients}`);
       }
@@ -201,6 +205,11 @@ function NotificationsAdminPageInner() {
             {status?.startsWith('partial:') && (
               <span className="text-sm text-amber-600 dark:text-amber-400">
                 Sent {status.split(':')[1]} DMs — Slack error: <code className="font-mono">{status.split(':').slice(2).join(':')}</code>
+              </span>
+            )}
+            {status?.startsWith('unlogged:') && (
+              <span className="text-sm text-amber-600 dark:text-amber-400">
+                Sent {status.slice(9)} DMs — but the send log couldn&rsquo;t be written, so this send won&rsquo;t appear in Recent sends below. Delivery was fine.
               </span>
             )}
           </div>
