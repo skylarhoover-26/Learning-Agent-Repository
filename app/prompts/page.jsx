@@ -5,7 +5,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
-import { FileText, Search, X, Copy, Check, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
+import { FileText, Search, X, Copy, Check, ChevronDown, ChevronUp, Sparkles, Loader2, Star } from 'lucide-react';
 import { PROMPTS, CATEGORIES, DEPARTMENTS } from '@/lib/prompts-data';
 import { useProfile } from '@/components/profile-provider';
 import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
@@ -23,10 +23,33 @@ export default function PromptsPage() {
 }
 
 function PromptsPageInner() {
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [department, setDepartment] = useState('all');
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+
+  // Favorites live on the PROFILE, not localStorage (feedback #89). The
+  // local-first stores in this app are hydrated from an explicit key list in
+  // progression-provider and hydrate() is local-wins, so a new key would persist
+  // but never come back on a second device — and two devices starring different
+  // prompts would silently diverge. The profile is server-authoritative and read
+  // the same everywhere, which is what "easy to access later" needs.
+  const favorites = useMemo(
+    () => new Set(Array.isArray(profile?.favorite_prompts) ? profile.favorite_prompts : []),
+    [profile],
+  );
+
+  async function toggleFavorite(id) {
+    if (!updateProfile) return;
+    const next = new Set(favorites);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    try {
+      await updateProfile({ favorite_prompts: Array.from(next) });
+    } catch {
+      // updateProfile logs and rethrows; the star just doesn't move.
+    }
+  }
 
   // Daily, role-personalized prompts — cached per content-day (8 AM PT).
   const [daily, setDaily] = useState(null);
@@ -60,6 +83,7 @@ function PromptsPageInner() {
 
   const filtered = useMemo(() => {
     return PROMPTS.filter((p) => {
+      if (onlyFavorites && !favorites.has(p.id)) return false;
       if (category !== 'all' && p.category !== category) return false;
       if (department !== 'all' && p.department !== department) return false;
       if (search.trim()) {
@@ -72,14 +96,15 @@ function PromptsPageInner() {
       }
       return true;
     });
-  }, [search, category, department]);
+  }, [search, category, department, onlyFavorites, favorites]);
 
-  const hasActiveFilters = search || category !== 'all' || department !== 'all';
+  const hasActiveFilters = search || category !== 'all' || department !== 'all' || onlyFavorites;
 
   function clearFilters() {
     setSearch('');
     setCategory('all');
     setDepartment('all');
+    setOnlyFavorites(false);
   }
 
   return (
@@ -193,6 +218,28 @@ function PromptsPageInner() {
                 ))}
               </select>
             </div>
+            {/* Favourites toggle sits with the other filters rather than above the
+                grid, so "narrow this list" controls stay in one place. Shows the
+                count so an empty result is obviously "you haven't starred any"
+                rather than a broken filter. */}
+            <div>
+              <label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-1.5 block">
+                Favorites
+              </label>
+              <button
+                type="button"
+                onClick={() => setOnlyFavorites((v) => !v)}
+                aria-pressed={onlyFavorites}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  onlyFavorites
+                    ? 'border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Star className={`w-4 h-4 ${onlyFavorites ? 'fill-current' : ''}`} />
+                {favorites.size > 0 ? `Starred (${favorites.size})` : 'Starred'}
+              </button>
+            </div>
           </div>
           <div className="flex items-center justify-between mt-3">
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -211,12 +258,24 @@ function PromptsPageInner() {
 
         {filtered.length === 0 ? (
           <div className="cine-glass rounded-2xl border-dashed p-10 text-center">
-            <p className="text-slate-500 dark:text-slate-400">No prompts match your filters. Try clearing some.</p>
+            {/* Distinguish "you have no favorites yet" from "your filters are too
+                narrow" — with the Starred filter on and nothing starred, the
+                generic message reads like the filter is broken. */}
+            <p className="text-slate-500 dark:text-slate-400">
+              {onlyFavorites && favorites.size === 0
+                ? 'You haven’t starred any prompts yet. Tap the star on a prompt to save it here.'
+                : 'No prompts match your filters. Try clearing some.'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filtered.map((p) => (
-              <PromptCard key={p.id} prompt={p} />
+              <PromptCard
+                key={p.id}
+                prompt={p}
+                isFavorite={favorites.has(p.id)}
+                onToggleFavorite={() => toggleFavorite(p.id)}
+              />
             ))}
           </div>
         )}
@@ -265,7 +324,7 @@ function DailyPromptCard({ prompt }) {
   );
 }
 
-function PromptCard({ prompt }) {
+function PromptCard({ prompt, isFavorite = false, onToggleFavorite }) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -287,7 +346,23 @@ function PromptCard({ prompt }) {
   return (
     <div className="cine-glass cine-tilt rounded-2xl transition-all overflow-hidden" style={{ '--accent': glowFor(prompt.category), border: '1px solid color-mix(in srgb, var(--accent) 42%, transparent)' }}>
       <div className="p-5">
-        <h3 className="font-bold text-ink dark:text-slate-200 leading-tight mb-1.5">{prompt.title}</h3>
+        <div className="flex items-start gap-2 mb-1.5">
+          <h3 className="flex-1 font-bold text-ink dark:text-slate-200 leading-tight">{prompt.title}</h3>
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            aria-pressed={isFavorite}
+            aria-label={isFavorite ? `Remove ${prompt.title} from favorites` : `Add ${prompt.title} to favorites`}
+            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            className={`shrink-0 -mr-1 -mt-0.5 p-1 rounded-md transition-colors ${
+              isFavorite
+                ? 'text-amber-500 hover:text-amber-600'
+                : 'text-slate-300 hover:text-amber-500 dark:text-slate-600'
+            }`}
+          >
+            <Star className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+          </button>
+        </div>
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{prompt.description}</p>
         <div className="flex items-center gap-2 flex-wrap mb-4">
           <span className={`text-xs font-medium px-2 py-0.5 rounded ${cat.color}`}>{cat.label}</span>
