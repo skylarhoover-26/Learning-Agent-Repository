@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
 import { useTodaysPick } from '@/components/use-todays-pick';
@@ -13,6 +13,17 @@ export default function TodaysPickRedirect() {
   const pick = useTodaysPick();
   const router = useRouter();
   const done = useRef(false);
+  // This page is a pass-through, so painting "Finding today's pick…" immediately
+  // makes it flash up and vanish on the way to the lesson (feedback #138 — the
+  // flash people see coming in from Slack is THIS screen, not the lesson
+  // builder). The pick is one fast API call, so hold the interstitial back and
+  // usually show nothing at all; it only appears if the lookup is genuinely slow.
+  const [showInterstitial, setShowInterstitial] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setShowInterstitial(true), 400);
+    return () => clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     if (pick && !done.current) {
@@ -20,6 +31,8 @@ export default function TodaysPickRedirect() {
       router.replace(pick.href);
     }
   }, [pick, router]);
+
+  if (!showInterstitial) return null;
 
   return (
     <div className="min-h-screen">

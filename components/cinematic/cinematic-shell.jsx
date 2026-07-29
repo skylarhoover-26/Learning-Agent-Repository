@@ -158,8 +158,13 @@ function Drawer({ open, onClose }) {
             here, which put a second copy of the brand mark directly under the one
             in the page header and read as clutter (feedback #132). The drawer's
             own section headings say what it is, and the close button carries an
-            aria-label, so nothing is lost by dropping the label. */}
-        <div className="sticky top-0 z-10 flex items-center justify-end px-4 py-3" style={{ background: 'var(--navbg)', borderBottom: '1px solid var(--line)' }}>
+            aria-label, so nothing is lost by dropping the label.
+            Kept deliberately tight — with the label gone, the original px-4 py-3
+            row and its bottom border left a tall empty band above Home that read
+            as a rendering fault rather than a header. No divider, minimal
+            padding, so the X reads as a corner affordance and the nav starts at
+            the top. Still sticky so it stays reachable while scrolling. */}
+        <div className="sticky top-0 z-10 flex items-center justify-end px-3 pt-2 pb-1" style={{ background: 'var(--navbg)' }}>
           <button onClick={onClose} aria-label="Close menu" className="cine-lift w-8 h-8 rounded-full grid place-items-center" style={{ color: 'var(--ink-dim)' }}>
             <X className="w-4 h-4" />
           </button>
