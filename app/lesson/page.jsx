@@ -1095,8 +1095,25 @@ function LessonContent() {
             </span>
           </div>
           <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight mb-2 cine-grad-flow inline-block">What do you want to learn?</h2>
-          <p className="text-slate-600 dark:text-slate-400">Pick from popular topics or type your own.</p>
+          <p className="text-slate-600 dark:text-slate-400">
+            {initialPrefill && customTopic === initialPrefill
+              ? 'Your topic is set — choose how deep to go and how you want to learn it.'
+              : 'Pick from popular topics or type your own.'}
+          </p>
         </div>
+
+        {/* Arriving from an AI news item (or anywhere else that passes ?prefill=),
+            the topic is already chosen — but the wizard opens on step 1 (Depth) and
+            the prefilled input lives on step 3, so the article was invisible for two
+            steps and the selection looked like it hadn't stuck. Pinning it at the top
+            keeps it on screen the whole way through; Edit jumps to the topic step. */}
+        {initialPrefill && customTopic === initialPrefill && wizardStep !== 3 && (
+          <LadderRow
+            label="Topic"
+            value={initialPrefill}
+            onEdit={() => setWizardStep(3)}
+          />
+        )}
 
         {/* Ladder: completed steps collapse into grayed-out summary rows that
             stack above the active step; click one to jump back and edit it. */}
