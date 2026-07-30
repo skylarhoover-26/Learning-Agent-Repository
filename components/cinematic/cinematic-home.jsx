@@ -116,12 +116,15 @@ export default function CinematicHome() {
     return () => { active = false; };
   }, []);
 
-  // AI news — same source the prod feed reads, rendered as cinematic cards.
+  // AI news, from the SHARED findings blob the daily scan actually writes.
+  // This used to read `/api/user-data?type=curriculum_findings`, a per-user path
+  // nothing ever wrote — so the card could only render its empty state. See
+  // app/api/ai-news/route.js.
   useEffect(() => {
     let active = true;
-    fetch('/api/user-data?type=curriculum_findings')
+    fetch('/api/ai-news', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (active) setNews((d?.data || []).slice(0, 3)); })
+      .then((d) => { if (active) setNews((d?.items || []).slice(0, 3)); })
       .catch(() => { if (active) setNews([]); });
     return () => { active = false; };
   }, []);
@@ -470,10 +473,6 @@ export default function CinematicHome() {
           </div>
         )}
       </section>
-
-      <p className="text-center text-xs pb-6" style={{ color: 'var(--ink-dim)' }}>
-        Cinematic preview · staging only · wired to your live data
-      </p>
     </CinematicShell>
   );
 }
