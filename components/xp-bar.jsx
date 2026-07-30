@@ -44,10 +44,13 @@ export default function XpBar({
           boxShadow: pct > 0 ? '0 0 12px rgba(255,198,51,.55), 0 0 4px rgba(59,148,255,.7)' : 'none',
         }}
       >
-        {/* Glossy top half — the single cheapest thing that makes a bar look solid. */}
+        {/* Glossy top edge — the single cheapest thing that makes a bar look solid.
+            Kept fairly sheer on purpose: at a low fill (a few percent, right after
+            a level-up) the sliver of bar is narrow enough that a heavier gloss
+            washed the blue out and the fill read as a plain white dot. */}
         <span
-          className="absolute inset-x-0 top-0 h-1/2 rounded-full"
-          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0))' }}
+          className="absolute inset-x-0 top-0 h-[45%] rounded-full"
+          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,0))' }}
         />
         {/* One-shot highlight sweep on a gain. Keyed so React remounts it. */}
         <span

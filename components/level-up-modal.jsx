@@ -163,7 +163,26 @@ export default function LevelUpModal({ result, onDismiss }) {
         </div>
 
         {/* ── Headline + title ─────────────────────────────────────────── */}
-        <h2 className="mt-3 text-[26px] font-black tracking-[.06em] cine-grad-text">LEVEL UP!</h2>
+        {/* Gradient is inlined with literal colors, NOT the .cine-grad-text
+            helper: that class builds its gradient from --accent/--accent2/--gold,
+            which are scoped to .cine / .cine-vars in globals.css. This modal
+            mounts from GlobalXpPopup in the root layout, outside any .cine
+            wrapper, so those vars resolved to nothing while the class's
+            -webkit-text-fill-color: transparent still applied — the headline
+            rendered completely invisible. Same reason xp-bar.jsx hardcodes its
+            colors: this has to work from any page. */}
+        <h2
+          className="mt-3 text-[26px] font-black tracking-[.06em]"
+          style={{
+            background: 'linear-gradient(100deg, #3B94FF 0%, #7DBFFF 45%, #FFC633 100%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            color: 'transparent',
+          }}
+        >
+          LEVEL UP!
+        </h2>
         <p className="mt-1 text-sm text-white/70">
           You&apos;re now a <span className="font-bold text-white">{title}</span>
           {level > prevLevel + 1 && (
