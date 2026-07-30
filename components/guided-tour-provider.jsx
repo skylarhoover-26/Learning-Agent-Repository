@@ -137,7 +137,7 @@ export function TourProvider({ children }) {
   const { open: menuOpen, setOpenTransient } = useSidebar();
   // Used to skip tour steps for features switched off for this viewer. Requires
   // MenuVisibilityProvider to sit OUTSIDE TourProvider (see app/layout.jsx).
-  const { isItemDisabled } = useMenuVisibility();
+  const { isItemHidden } = useMenuVisibility();
   const driverRef = useRef(null);
   // The menu's open/closed state before the tour began, restored on exit.
   const menuWasOpenRef = useRef(true);
@@ -211,10 +211,12 @@ export function TourProvider({ children }) {
     // Remember the learner's menu state so we can put it back exactly as it was
     // when the tour ends (the tour only toggles it transiently in between).
     menuWasOpenRef.current = menuOpen;
-    // Drop steps whose feature is switched off for this viewer — otherwise the
-    // spotlight lands on nothing and the popover describes something they can't see.
+    // Drop steps whose feature is HIDDEN for this viewer — nothing renders, so the
+    // spotlight would land on empty space. "Coming soon" is deliberately NOT
+    // filtered: those surfaces render a greyed ComingSoonBlock carrying the same
+    // data-tour anchor, so there's still something real to highlight.
     const steps = GUIDED_TOUR_STEPS
-      .filter((s) => !(s.requiresItem && isItemDisabled?.(s.requiresItem)))
+      .filter((s) => !(s.requiresItem && isItemHidden?.(s.requiresItem)))
       .map(s => ({
         element: s.element,
         popover: { title: s.popover.title, description: s.popover.description },
@@ -297,7 +299,7 @@ export function TourProvider({ children }) {
     await new Promise(r => setTimeout(r, 120));
     await prepareStep(0);
     if (driverRef.current) d.drive(0);
-  }, [prepareStep, runStepActions, menuOpen, setOpenTransient, isItemDisabled]);
+  }, [prepareStep, runStepActions, menuOpen, setOpenTransient, isItemHidden]);
 
   return (
     <TourContext.Provider value={{ startTour }}>

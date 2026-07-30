@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
+import ComingSoonBlock from '@/components/coming-soon-block';
 import { useProgression } from '@/components/progression-provider';
 import { useTodaysPick } from '@/components/use-todays-pick';
 import { resolveLearnerId } from '@/lib/learner-id';
@@ -95,11 +96,20 @@ export default function CinematicHome() {
   const { profile } = useProfile();
   const prog = useProgression();
   const todaysPick = useTodaysPick();
-  // /ai-news is toggleable in Admin > Menu Visibility. When it's hidden or
-  // "coming soon" for this viewer the route is gated, so the "See all" link
-  // below must go too — otherwise the card offers a dead end.
-  const { isItemDisabled } = useMenuVisibility();
-  const newsPageOpen = !isItemDisabled?.('/ai-news');
+  // Home links straight into routes that are toggleable in Admin > Menu
+  // Visibility, and a gated route behind a live card is a dead end. Every such
+  // surface below resolves through these three states:
+  //   visible     -> render normally
+  //   coming_soon -> render a greyed ComingSoonBlock teaser (the state's purpose)
+  //   hidden      -> render nothing at all
+  const { isItemHidden, isItemComingSoon } = useMenuVisibility();
+  const itemState = (href) => {
+    if (isItemHidden?.(href)) return 'hidden';
+    if (isItemComingSoon?.(href)) return 'coming_soon';
+    return 'visible';
+  };
+  const newsState = itemState('/ai-news');
+  const newsPageOpen = newsState === 'visible';
 
   // Warm-on-open: once today's pick is known, pre-generate its lesson in the
   // background (fire-and-forget) so clicking the card — or the Slack link —
@@ -336,7 +346,17 @@ export default function CinematicHome() {
         </div>
       </section>
 
-      {/* DISCOVER BANNER */}
+      {/* DISCOVER BANNER — gated: a full-bleed panel linking to a locked route is
+          the worst dead end on the page. */}
+      {itemState('/discover') === 'coming_soon' && (
+        <ComingSoonBlock
+          dataTour="home-find-ai"
+          icon={Compass}
+          title="Find AI for your actual work"
+          desc="Tell us about your day-to-day and we'll surface specific AI opportunities you can use."
+        />
+      )}
+      {itemState('/discover') === 'visible' && (
       <Link href="/discover" data-tour="home-find-ai" className="cine-tilt group block relative overflow-hidden rounded-[28px] p-10 sm:p-14" style={{ background: 'linear-gradient(135deg,#0A3AC8,#2E7BFF)', boxShadow: '0 40px 90px -60px var(--accent)' }}>
         <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.18em] px-3 py-1 rounded-full mb-5 cine-gold">
           <Compass className="w-3.5 h-3.5" /> Discover
@@ -347,12 +367,20 @@ export default function CinematicHome() {
           Discover what AI can do for you <ArrowRight className="w-4 h-4" />
         </span>
       </Link>
+      )}
 
       {/* WAYS TO LEARN */}
       <section className="cine-rise">
         <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight mb-7">Ways to learn</h3>
         <div data-tour="home-qa-chat" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {WAYS.map((w) => (
+          {/* Per-card: hidden ones drop out of the grid entirely, "coming soon" ones
+              stay as greyed teasers. A four-card row can therefore come back
+              shorter, which is correct — a card that can't be opened is worse
+              than a gap. */}
+          {WAYS.filter((w) => itemState(w.href) !== 'hidden').map((w) => (
+            itemState(w.href) === 'coming_soon' ? (
+              <ComingSoonBlock key={w.href} compact icon={w.icon} title={w.label} desc={w.desc} />
+            ) : (
             <Link key={w.href} href={w.href} className="cine-glass cine-tilt group relative overflow-hidden rounded-2xl p-5 flex flex-col gap-3" style={{ '--accent': w.tint }}>
               <span aria-hidden className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-40 transition-opacity group-hover:opacity-70" style={{ background: w.tint }} />
               <span className="w-11 h-11 rounded-xl grid place-items-center relative" style={{ background: `linear-gradient(135deg, ${w.tint}, ${w.tint}99)`, color: '#fff', boxShadow: `0 0 20px -6px ${w.tint}` }}>
@@ -363,11 +391,21 @@ export default function CinematicHome() {
                 <p className="text-xs mt-0.5" style={{ color: 'var(--ink-dim)' }}>{w.desc}</p>
               </div>
             </Link>
+            )
           ))}
         </div>
       </section>
 
-      {/* TODAY'S PICK */}
+      {/* TODAY'S PICK — gated on /daily. */}
+      {itemState('/daily') === 'coming_soon' && (
+        <ComingSoonBlock
+          dataTour="home-todays-pick"
+          icon={Sparkles}
+          title="Today's pick"
+          desc="A focused lesson aimed at your next skill, picked for you each morning."
+        />
+      )}
+      {itemState('/daily') === 'visible' && (
       <Link href={todaysPick?.href || '/daily'} data-tour="home-todays-pick" className="cine-tilt group block cine-glass rounded-3xl p-6 flex items-center gap-5" style={{ '--accent': 'var(--gold)' }}>
         <span className="w-14 h-14 rounded-2xl grid place-items-center shrink-0" style={{ background: 'linear-gradient(135deg,var(--gold),#ffce4d)', boxShadow: '0 0 24px -6px var(--gold)' }}>
           <Sparkles className="w-7 h-7" style={{ color: '#0A2443' }} />
@@ -381,6 +419,7 @@ export default function CinematicHome() {
           {todaysPick?.cta || 'Start'} <ArrowRight className="w-4 h-4" />
         </span>
       </Link>
+      )}
 
       {/* YOUR STATS: streak + leaderboard */}
       <section className="cine-rise">
@@ -412,6 +451,15 @@ export default function CinematicHome() {
 
           {/* Leaderboard — the whole card navigates to the full board (the inner
               cue is a span, not a nested <a>, so the HTML stays valid). */}
+          {itemState('/leaderboard') === 'coming_soon' && (
+            <ComingSoonBlock
+              dataTour="home-leaderboard"
+              icon={Trophy}
+              title="Top learners"
+              desc="See how you rank across your team."
+            />
+          )}
+          {itemState('/leaderboard') === 'visible' && (
           <Link href="/leaderboard" data-tour="home-leaderboard" className="cine-glass cine-tilt rounded-3xl p-6 block">
             <div className="flex items-center justify-between mb-3">
               <p className="font-display font-bold inline-flex items-center gap-2"><Trophy className="w-4 h-4" style={{ color: 'var(--gold)' }} /> Top learners</p>
@@ -440,6 +488,7 @@ export default function CinematicHome() {
               </ul>
             )}
           </Link>
+          )}
         </div>
       </section>
 
@@ -447,9 +496,13 @@ export default function CinematicHome() {
       <section data-tour="home-skills" className="cine-rise cine-glass rounded-3xl p-6">
         <div className="flex items-center justify-between mb-5">
           <p className="font-display font-bold inline-flex items-center gap-2"><TrendingUp className="w-4 h-4" style={{ color: 'var(--accent2)' }} /> Your skills</p>
-          <Link href="/heatmap" className="text-xs font-semibold group inline-flex items-center gap-1" style={{ color: 'var(--accent2)' }}>
-            <GitBranch className="w-3.5 h-3.5" /> View knowledge heatmap <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          {/* Only the LINK is gated — the skills summary itself is computed locally
+              and is still worth showing when the heatmap page isn't reachable. */}
+          {itemState('/heatmap') === 'visible' && (
+            <Link href="/heatmap" className="text-xs font-semibold group inline-flex items-center gap-1" style={{ color: 'var(--accent2)' }}>
+              <GitBranch className="w-3.5 h-3.5" /> View knowledge heatmap <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          )}
         </div>
         {skills === null ? (
           <p className="text-sm italic" style={{ color: 'var(--ink-dim)' }}>Loading your skills…</p>
@@ -467,6 +520,14 @@ export default function CinematicHome() {
           render unconditionally as a stable tour landmark; the tour now skips its
           step instead (see requiresItem in lib/guided-tour.js), because showing
           live news cards for a locked feature was the more confusing trade. */}
+      {newsState === 'coming_soon' && (
+        <ComingSoonBlock
+          dataTour="home-news"
+          icon={Rss}
+          title="AI news"
+          desc="The latest AI updates, with a lesson on any of them."
+        />
+      )}
       {newsPageOpen && (
       <section data-tour="home-news" className="cine-rise">
         <div className="flex items-center gap-2 mb-1">
