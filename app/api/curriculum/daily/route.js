@@ -6,7 +6,7 @@ import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { parseRss } from '@/lib/parse-feed';
 import { classifyFindings } from '@/lib/news-relevance';
-import { APPROVED_CATEGORIES } from '@/lib/ai-news';
+import { APPROVED_CATEGORIES, dropExcluded } from '@/lib/ai-news';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
 // This route does the heaviest work in the app — 12 feed fetches + up to three
@@ -216,7 +216,11 @@ export async function GET(request) {
     const backfilledById = new Map(backfilled.map((f) => [f.externalId, f]));
     const existingTagged = existing.map((f) => backfilledById.get(f.externalId) || f);
 
-    const merged = [...classified, ...existingTagged].slice(0, 200);
+    // Security-incident items are discarded outright rather than stored hidden —
+    // /ai-news is a normal learner page with a "show everything" toggle, so
+    // hidden-but-present was still reachable. Applied to the back-filled existing
+    // findings too, so previously-stored ones get cleaned out on this run.
+    const merged = dropExcluded([...classified, ...existingTagged]).slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
     // Stamp the scan AFTER the findings write, so a failed write can't leave a
     // fresh-looking timestamp over stale data.

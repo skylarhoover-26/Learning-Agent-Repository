@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { list } from '@vercel/blob';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
-import { splitByApproval } from '@/lib/ai-news';
+import { dropExcluded, splitByApproval } from '@/lib/ai-news';
 
 // Serves the AI-news findings to any signed-in learner for the home page's
 // "AI news" card.
@@ -54,7 +54,9 @@ export async function GET() {
       readJson(BLOB_FINDINGS_KEY),
       readJson(BLOB_SCAN_META_KEY),
     ]);
-    const items = Array.isArray(raw) ? raw : [];
+    // dropExcluded again on read: findings written before a category joined the
+    // excluded list are still in the blob until the next scan rewrites it.
+    const items = dropExcluded(Array.isArray(raw) ? raw : []);
     // Every item ships with its category so the client can filter and offer
     // "show everything" without a second request. `count` is what learners
     // actually see; `totalCount` is everything stored.
