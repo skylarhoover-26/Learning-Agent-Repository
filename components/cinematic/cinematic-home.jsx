@@ -9,6 +9,7 @@ import {
   TrendingUp, GitBranch, Rss, HelpCircle, X, BarChart3, Lock, ExternalLink,
 } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
+import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { useProgression } from '@/components/progression-provider';
 import { useTodaysPick } from '@/components/use-todays-pick';
 import { resolveLearnerId } from '@/lib/learner-id';
@@ -94,6 +95,11 @@ export default function CinematicHome() {
   const { profile } = useProfile();
   const prog = useProgression();
   const todaysPick = useTodaysPick();
+  // /ai-news is toggleable in Admin > Menu Visibility. When it's hidden or
+  // "coming soon" for this viewer the route is gated, so the "See all" link
+  // below must go too — otherwise the card offers a dead end.
+  const { isItemDisabled } = useMenuVisibility();
+  const newsPageOpen = !isItemDisabled?.('/ai-news');
 
   // Warm-on-open: once today's pick is known, pre-generate its lesson in the
   // background (fire-and-forget) so clicking the card — or the Slack link —
@@ -463,7 +469,7 @@ export default function CinematicHome() {
           <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
           <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight">AI news</h3>
           {/* "See all" only once we know there's more than the three shown. */}
-          {newsMeta.totalCount > 3 && (
+          {newsPageOpen && newsMeta.totalCount > 3 && (
             <Link
               href="/ai-news"
               className="ml-auto inline-flex items-center gap-1 text-sm font-bold shrink-0"

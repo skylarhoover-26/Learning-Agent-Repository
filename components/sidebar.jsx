@@ -10,7 +10,7 @@ import {
   Grid3X3, Gamepad2, Award, MessageCircle,
   Compass, Trophy, BookOpen, Terminal, Home, Library,
   ExternalLink, TrendingUp,
-  Settings, FileText, Sparkles, MessageSquarePlus,
+  Settings, FileText, Sparkles, MessageSquarePlus, Rss,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
@@ -69,6 +69,7 @@ export const NAV_SECTIONS = [
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
       { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
       { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
+      { href: '/ai-news', icon: Rss, label: 'AI News', desc: 'The latest AI updates — take a lesson on any of them' },
     ],
   },
   {
