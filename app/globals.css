@@ -265,6 +265,56 @@ body {
   .podium-shine::after { animation: none; }
 }
 
+/* ── XP bar + Level Up ────────────────────────────────────────────────────
+   Shared by the always-on header meter (components/xp-bar.jsx) and the
+   level-up modal, so the two celebrate in the same visual language. */
+
+/* One-shot highlight sweeping across the bar's fill when XP lands. React
+   re-triggers it by remounting the element with a new key. */
+@keyframes xp-sheen {
+  0%        { transform: translateX(-140%) skewX(-20deg); opacity: 0; }
+  15%       { opacity: .85; }
+  70%, 100% { transform: translateX(260%) skewX(-20deg); opacity: 0; }
+}
+.xp-sheen { animation: xp-sheen 1.1s ease-out both; }
+
+/* The LV chip and XP count give a short squeeze-pop on a gain. */
+@keyframes xp-bump {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+.xp-bump { animation: xp-bump .5s cubic-bezier(.22, 1, .36, 1) both; }
+
+/* Level-up modal: card lands with a slight overshoot. */
+@keyframes lu-pop {
+  0%   { opacity: 0; transform: scale(.9) translateY(14px); }
+  60%  { opacity: 1; transform: scale(1.02) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.lu-pop { animation: lu-pop .5s cubic-bezier(.16, 1, .3, 1) both; }
+
+/* Unlock rows fan in one after another (inline animation-delay per row). */
+@keyframes lu-row {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.lu-row { animation: lu-row .45s cubic-bezier(.16, 1, .3, 1) both; }
+
+/* Slow spin + breathing halo behind the level starburst. */
+@keyframes lu-spin { to { transform: rotate(360deg); } }
+.lu-spin { animation: lu-spin 14s linear infinite; }
+@keyframes lu-halo {
+  0%, 100% { opacity: .45; transform: scale(1); }
+  50%      { opacity: .85; transform: scale(1.09); }
+}
+.lu-halo { animation: lu-halo 2.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .xp-sheen, .xp-bump, .lu-spin, .lu-halo { animation: none; }
+  .lu-pop, .lu-row { animation-duration: .01s; }
+}
+
 /* The dark top bar is FIXED to the viewport so it stays put while scrolling and
    is present on every screen. Fixed (not sticky) is immune to the ancestor
    overflow/transform quirks that were letting it scroll away on some pages, and

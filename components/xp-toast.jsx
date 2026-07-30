@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Zap, Award, TrendingUp, Flame } from 'lucide-react';
-import { getLevelTitle } from '@/lib/level-titles';
+import { Zap, Award, Flame } from 'lucide-react';
 
 const BADGE_META = {
   first_lesson: { name: 'First Steps', emoji: '🎓' },
@@ -23,6 +22,9 @@ const BADGE_META = {
   level_50: { name: 'Halfway Hero', emoji: '🏔️' },
 };
 
+// The corner XP reveal for a normal award. Level-ups do NOT reach here — the
+// global popup routes those to the full-screen LevelUpModal, which shows the
+// +XP, the new level, and everything unlocked in one moment.
 export default function XpToast({ result, onDismiss }) {
   const [visible, setVisible] = useState(false);
 
@@ -63,15 +65,6 @@ export default function XpToast({ result, onDismiss }) {
             </div>
           </div>
         </div>
-
-        {result.leveledUp && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-brand-50 dark:bg-brand-900/30 rounded-lg mb-2">
-            <TrendingUp className="w-4 h-4 text-brand" />
-            <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">
-              Level Up! You&apos;re now {getLevelTitle(result.level)} (Level {result.level})
-            </span>
-          </div>
-        )}
 
         {result.streak >= 2 && (
           <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-2">
