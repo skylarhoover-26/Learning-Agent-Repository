@@ -154,9 +154,11 @@ function AiNewsInner() {
   // filter is active rather than sitting under an unrelated heading.
   const research = activeCategory ? [] : shown.filter((i) => isResearchSource(i.sourceName));
 
+  // No "next check" here either — it implied repeated scanning. The scan runs once
+  // a day; "updated Nh ago" is the honest signal and still exposes a dead cron.
   const subtitle = data?.scannedAt
-    ? `${approved.length} of ${all.length} items · updated ${freshnessLabel(data.scannedAt)} · next check ${SCAN_TIME_LABEL}`
-    : `Checked every morning at ${SCAN_TIME_LABEL}`;
+    ? `${all.length} items · updated ${freshnessLabel(data.scannedAt)}`
+    : 'Check out the latest in AI News and take a lesson if you\'d like to learn more.';
 
   return (
     <div className="min-h-screen">

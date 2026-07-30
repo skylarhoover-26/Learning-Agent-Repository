@@ -16,7 +16,7 @@ import { getLevelTitle } from '@/lib/level-titles';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
-import { freshnessLabel, lessonHref, splitByApproval, SCAN_TIME_LABEL } from '@/lib/ai-news';
+import { freshnessLabel, lessonHref, splitByApproval } from '@/lib/ai-news';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -475,12 +475,12 @@ export default function CinematicHome() {
           )}
         </div>
         <p className="text-sm mb-4" style={{ color: 'var(--ink-dim)' }}>
-          We scan AI developments daily and flag what changes your skills.
-          {/* Real freshness, not a promise. If this ever reads "6d ago" the cron
-              has stopped — which is exactly how this feature sat broken unnoticed. */}
-          {newsMeta.scannedAt
-            ? <> · Updated {freshnessLabel(newsMeta.scannedAt)} · next check {SCAN_TIME_LABEL}</>
-            : <> · Checked every morning at {SCAN_TIME_LABEL}</>}
+          Check out the latest in AI News and take a lesson if you&apos;d like to learn more.
+          {/* Freshness kept as a measurement, but the "next check" schedule is gone:
+              it read as though scanning happened repeatedly. It runs once a day.
+              If this ever says "6d ago" the cron has stopped — which is exactly how
+              this feature sat broken unnoticed for weeks. */}
+          {newsMeta.scannedAt && <> · Updated {freshnessLabel(newsMeta.scannedAt)}</>}
         </p>
         {news === null ? (
           <div className="cine-glass rounded-2xl p-6 text-sm italic" style={{ color: 'var(--ink-dim)' }}>Loading the latest AI news…</div>
