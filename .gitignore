@@ -33,5 +33,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Claude Code
-.claude/
+# Claude Code — share the project config, keep personal overrides local.
+# settings.json is committed so every contributor's Claude starts with the same
+# permission rules (incl. "ask before pushing to prod"); settings.local.json is
+# for your own machine and stays out of git.
+.claude/*
+!.claude/settings.json
+.claude/settings.local.json

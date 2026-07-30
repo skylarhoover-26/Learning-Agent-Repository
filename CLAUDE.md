@@ -10,6 +10,25 @@ This is the **learning-agent** (AI Learning Platform) project. It is completely 
 
 Use `npm run deploy:prod` to deploy to production with verification.
 
+## Pushing to prod requires a sign-off
+
+**Pushing to `main` IS deploying to production** — Vercel's git integration builds
+every push automatically, and there is no staging branch. So a push is a release,
+and nobody releases on their own initiative.
+
+**If you are Claude: never push or deploy without the human explicitly asking in
+that turn.** Not "it seems ready", not "the checklist passed" — an actual request.
+Run the checklist below, show the summary, and stop. Committing locally is always
+fine; pushing is not.
+
+Contributors: the same rule in human terms — commit and share what you've got,
+then ask before it goes to prod.
+
+This is why `.claude/settings.json` puts `git push`, `npm run deploy*`, and the
+`vercel` deploy/alias/promote/rollback commands in the `ask` list. That project
+rule overrides a broader personal allowlist, so the prompt still appears even if
+your own global settings would have allowed it.
+
 ## Pre-push checklist (MANDATORY before any git push)
 
 When the user says "push to GitHub", "push it up", "push to git hub", or anything similar, run through ALL of these steps before pushing:
@@ -35,6 +54,8 @@ ESLint 9 flat config in `eslint.config.mjs`, extending `next/core-web-vitals`.
 - `npm run lint:strict` — `--max-warnings 0`, for driving the remaining warnings down.
 
 `next lint` is gone (deprecated in Next 15, removed in 16) — it never worked here anyway, since there was no config and it dropped into an interactive setup prompt.
+
+Lint also runs inside `next build`, so a lint **error** fails the Vercel production build. Warnings don't.
 
 Two things that will bite you if you edit the config:
 - ESLint 9 lints only `.js/.mjs/.cjs` by default. The `files: ['**/*.{js,mjs,cjs,jsx}']` entry is what makes it see `.jsx` — remove it and lint silently passes over nearly the whole UI.

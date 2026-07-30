@@ -21,10 +21,12 @@ needs, or this README. Project notes and exports live under `docs/` and `n8n/`.
 | **`scripts/`** | Helper scripts. `deploy-prod.sh` is the verified production deploy (run via `npm run deploy:prod`). |
 | **`n8n/`** | Exported [n8n](https://n8n.io) workflow definitions (Snowflake org pull, Slack notifications, manager-dashboard + daily-digest webhooks). Reference copies of the automations that feed the app. |
 | **`prototypes/`** | Early standalone prototypes (Brian's, Rachel's) kept for reference only. **Not** part of the live app. |
-| **`docs/`** | All project documentation — backlog, feedback, deleted-feature notes, dated handoffs (`docs/handoffs/`), and QA scripts/results (`docs/qa/`). |
+| **`docs/`** | All project documentation — backlog, feedback, deleted-feature notes, dated handoffs (`docs/handoffs/`), and QA scripts/results (`docs/qa/`). Start with **`docs/GOTCHAS.md`** — the traps that have already cost someone hours. |
 | **`CLAUDE.md`** | Rules for the AI assistant (Claude Code) — how to deploy, the pre-push checklist, and what never to do. |
+| **`.claude/settings.json`** | Shared Claude Code permissions, so everyone's assistant behaves the same here (and always asks before pushing to prod). Personal overrides go in `.claude/settings.local.json`, which stays out of git. |
 | **`README.md`** | This file. |
 | **`auth.js`, `middleware.js`** | Authentication setup and request middleware. Next.js requires these at the root — don't move them. |
+| **`public/`** | Files served publicly at the site root, e.g. `brand/`. Anything you put here is reachable by URL, so don't park working files in it. |
 | **Config files** | `next.config.mjs`, `package.json`, `vercel.json` (incl. cron schedules), `tailwind.config.mjs`, `postcss.config.mjs`, `jsconfig.json`, `.gitignore`. Build/deploy depend on these living at the root. |
 
 ### Inside `app/`
@@ -85,6 +87,12 @@ npm run dev
 Then open the URL it prints (usually `http://localhost:3000`).
 
 ## Making changes and deploying
+
+> **Pushing to `main` deploys to production.** There's no staging branch and no
+> review step — the moment you push, it's live for everyone. So **check with
+> Skylar before you push**, and never let an AI assistant push on your behalf
+> without you asking it to in that moment. Commit as often as you like; that part
+> is free and local. It's the push that's the release.
 
 All commands run in your terminal, from inside the project folder.
 
