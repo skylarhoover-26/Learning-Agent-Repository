@@ -141,8 +141,13 @@ export function ImpactIntroStep() {
         </p>
         <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
           Give one or two real examples with enough detail to show what actually changed: the task,
-          the tool, and the result. Left blank, there&apos;s nothing backing up your answer, so the
-          score comes out low.
+          the tool, and the result.{' '}
+          {/* Bolded per feedback #84: learners were leaving example boxes empty and then
+              being surprised by a low score in that category. This is the consequence,
+              so it has to carry the same weight as "both halves get scored" above. */}
+          <strong>
+            Left blank, there&apos;s nothing backing up your answer, so the score comes out low.
+          </strong>
         </p>
       </div>
     </div>
