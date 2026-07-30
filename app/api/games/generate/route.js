@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODELS } from '@/lib/models';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { logAuditEntry } from '@/lib/audit-log';
+import { GAME_AUDIENCE, playerRoleContext } from '@/lib/game-audience';
 
 // LLM generation of a full custom round can take a while — give it room so the
 // route doesn't time out before responding (see the maxDuration gotcha).
@@ -24,15 +25,17 @@ const FEUD_ROUNDS = 4;
 const TRUTHS_ROUNDS = 5;
 const MILLIONAIRE_COUNT = 10;
 
-// Ground EVERY generated game in Housecall Pro's world so scenarios, examples,
-// and survey answers fit the audience instead of generic corporate/retail
-// references (feedback #67: Family Feud suggested "incorrect SKUs" — HCP has no
-// SKUs). Prepended to each game's system prompt below.
-const HCP_CONTEXT = `AUDIENCE CONTEXT: The players work at Housecall Pro (HCP), the field-service management software for home-service businesses (plumbing, HVAC, electrical, cleaning, landscaping, pest control, etc.). HCP's customers are contractors and their teams — owners, office/CSR staff, dispatchers, sales reps, and technicians in the field. Ground every scenario, example, and answer in THIS world: jobs, estimates, invoices, scheduling and dispatch, customer/service calls, price quotes, work orders, technicians, reviews. Do NOT use retail, e-commerce, or manufacturing references that don't apply here — never mention "SKUs", inventory units, warehouses, or product catalogs. Keep everything realistic for home-service work and internal HCP roles.`;
+// Audience framing (who's playing vs who HCP sells to) lives in
+// lib/game-audience.js and is prepended to every game's system prompt below.
+// `roleAnchored` games additionally get the player's own role/tasks — those are
+// the scenario-shaped games, where a generic persona is what made feedback #141
+// land wrong. Wheel of Fortune and Two Truths are concept/trivia: role framing
+// would only distort the phrases and facts, so they stay off.
 
 const GENERATORS = {
   speed: {
     maxTokens: 3000,
+    roleAnchored: true,
     system: `You are writing a "Speed Round" quiz for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${SPEED_COUNT} rapid-fire multiple-choice questions that teach and test genuinely useful, practical knowledge about that topic.
 
 Rules:
@@ -62,6 +65,7 @@ Return ONLY valid JSON (no markdown fences):
 
   halluc: {
     maxTokens: 4000,
+    roleAnchored: true,
     system: `You are writing "Hallucination Hunt" rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${HALLUC_ROUNDS} rounds. Each round is a realistic AI-generated answer about the topic that contains a few PLANTED factual errors ("hallucinations") the player must spot.
 
 Rules per round:
@@ -91,6 +95,7 @@ Return ONLY valid JSON (no markdown fences):
 
   prompt: {
     maxTokens: 2500,
+    roleAnchored: true,
     system: `You are writing "Prompt Battle" scenarios for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${PROMPT_COUNT} realistic workplace scenarios where the player must write a good prompt for an AI tool, all connected to the topic.
 
 Rules per scenario:
@@ -144,10 +149,11 @@ Return ONLY valid JSON (no markdown fences):
 
   feud: {
     maxTokens: 3000,
-    system: `You are writing "Family Feud"-style survey rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${FEUD_ROUNDS} rounds. Each round is a survey-style question about how people use or think about AI (relevant to the topic), with the top answers a group of professionals might give.
+    roleAnchored: true,
+    system: `You are writing "Family Feud"-style survey rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${FEUD_ROUNDS} rounds. Each round is a survey-style question about how people in the PLAYER'S OWN line of work use or think about AI (relevant to the topic), with the top answers their coworkers might give.
 
 Rules per round:
-- "question": a survey prompt, e.g. "Name a task people use AI for when handling customer emails."
+- "question": a survey prompt aimed at the player's own work, e.g. "Name a task people on your team use AI for when handling customer emails." Never ask what a customer, contractor, or "home services professional" would do.
 - "answers": 5–6 plausible top answers, RANKED by how common they'd be. Each answer has:
   - "text": the answer (a few words).
   - "points": popularity points; the answers' points should sum to about 100, with the most common answer highest.
@@ -205,6 +211,7 @@ Return ONLY valid JSON (no markdown fences):
 
   millionaire: {
     maxTokens: 3500,
+    roleAnchored: true,
     system: `You are writing a "Who Wants to Be a Millionaire"-style question ladder for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${MILLIONAIRE_COUNT} multiple-choice questions, ORDERED from easiest (question 1) to hardest (question ${MILLIONAIRE_COUNT}).
 
 Rules:
@@ -244,10 +251,16 @@ export async function POST(request) {
     if (!gen) return NextResponse.json({ error: 'Unknown game type.' }, { status: 400 });
     if (!topic) return NextResponse.json({ error: 'A topic is required.' }, { status: 400 });
 
+    const system = [
+      GAME_AUDIENCE,
+      gen.roleAnchored ? playerRoleContext(profile) : null,
+      gen.system,
+    ].filter(Boolean).join('\n\n');
+
     const response = await getClient().messages.create({
       model: MODELS.sonnet,
       max_tokens: gen.maxTokens,
-      system: `${HCP_CONTEXT}\n\n${gen.system}`,
+      system,
       messages: [{ role: 'user', content: `TOPIC: ${topic}\n\nWrite the full round now.` }],
     });
 

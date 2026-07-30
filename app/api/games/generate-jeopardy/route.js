@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODELS } from '@/lib/models';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { logAuditEntry } from '@/lib/audit-log';
+import { GAME_AUDIENCE, playerRoleContext } from '@/lib/game-audience';
 
 // LLM generation can take a while for a full 20-clue board — give it room so the
 // route doesn't time out before responding (see the maxDuration gotcha).
@@ -17,13 +18,9 @@ function getClient() {
 const CATEGORIES = 5;
 const VALUES = [200, 400, 600, 800];
 
-// See feedback #67 — keep game content grounded in Housecall Pro's field-service
-// world (no retail "SKUs" etc.).
-const HCP_CONTEXT = `AUDIENCE CONTEXT: The players work at Housecall Pro (HCP), the field-service management software for home-service businesses (plumbing, HVAC, electrical, cleaning, landscaping, etc.). Customers are contractors and their teams — owners, office/CSR staff, dispatchers, sales reps, and field technicians. Ground clues and answers in THIS world (jobs, estimates, invoices, dispatch, service calls, quotes, work orders); never use retail/e-commerce/manufacturing terms like "SKUs", inventory, or warehouses.`;
-
-const SYSTEM_PROMPT = `${HCP_CONTEXT}
-
-You are the writer for a Jeopardy!-style quiz game on a corporate AI-learning platform. Given a TOPIC, write a full game board that teaches and tests real, useful knowledge about that topic — practical AI skills people can apply at work.
+// Audience framing (who's playing vs who HCP sells to) plus the player's own
+// role are prepended per request — see lib/game-audience.js.
+const BOARD_RULES = `You are the writer for a Jeopardy!-style quiz game on a corporate AI-learning platform. Given a TOPIC, write a full game board that teaches and tests real, useful knowledge about that topic — practical AI skills people can apply at work.
 
 Return a board with EXACTLY ${CATEGORIES} categories. Each category has EXACTLY ${VALUES.length} clues, one for each dollar value: ${VALUES.join(', ')}. Difficulty MUST increase with the dollar value (200 = easy/foundational, 800 = advanced/nuanced).
 
@@ -55,10 +52,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'A topic is required.' }, { status: 400 });
     }
 
+    const system = [GAME_AUDIENCE, playerRoleContext(profile), BOARD_RULES].join('\n\n');
+
     const response = await getClient().messages.create({
       model: MODELS.sonnet,
       max_tokens: 4000,
-      system: SYSTEM_PROMPT,
+      system,
       messages: [{ role: 'user', content: `TOPIC: ${topic}\n\nWrite the full ${CATEGORIES}-category board now.` }],
     });
 

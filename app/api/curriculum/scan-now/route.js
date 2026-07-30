@@ -91,7 +91,10 @@ async function generateDailyLessonsFromFindings(client, findings) {
     system: `You are a learning experience designer for Housecall Pro's AI Academy.
 
 Given recent AI news and research, generate 4-5 daily micro-lessons that would be
-valuable for home service professionals learning about AI. Each lesson should connect
+valuable for Housecall Pro EMPLOYEES learning to apply AI to their own jobs — product,
+marketing, engineering, support, sales, ops, and enablement people at a software company.
+Home-service businesses are their CUSTOMERS, not their own line of work, so never frame a
+lesson as what a contractor or technician would do. Each lesson should connect
 real-world AI developments to practical workplace applications.
 
 Mix difficulty levels and categories. Make topics specific and actionable, not generic.
