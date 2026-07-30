@@ -16,7 +16,7 @@ import { getLevelTitle } from '@/lib/level-titles';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
-import { freshnessLabel, SCAN_TIME_LABEL } from '@/lib/ai-news';
+import { freshnessLabel, splitByApproval, SCAN_TIME_LABEL } from '@/lib/ai-news';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -108,7 +108,7 @@ export default function CinematicHome() {
   const [skills, setSkills] = useState(null);
   const [news, setNews] = useState(null);
   // Total found + when the scan last ran, for the freshness line and "See all".
-  const [newsMeta, setNewsMeta] = useState({ count: 0, scannedAt: null });
+  const [newsMeta, setNewsMeta] = useState({ count: 0, totalCount: 0, scannedAt: null });
 
   useEffect(() => {
     let active = true;
@@ -129,8 +129,19 @@ export default function CinematicHome() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!active) return;
-        setNews((d?.items || []).slice(0, 3));
-        setNewsMeta({ count: d?.count || 0, scannedAt: d?.scannedAt || null });
+        // Only categories that passed the relevance guardrail reach the home
+        // page — model/tool/practice news, never market commentary or security
+        // scares. See APPROVED_CATEGORIES in lib/ai-news.js.
+        const { approved } = splitByApproval(d?.items || []);
+        setNews(approved.slice(0, 3));
+        setNewsMeta({
+          count: d?.count ?? approved.length,
+          // Total stored, used only to decide whether the browse page is worth a
+          // link — the guardrail can approve fewer than 3 while plenty sits
+          // behind the page's "show everything" toggle.
+          totalCount: d?.totalCount ?? (d?.items || []).length,
+          scannedAt: d?.scannedAt || null,
+        });
       })
       .catch(() => { if (active) setNews([]); });
     return () => { active = false; };
@@ -452,7 +463,7 @@ export default function CinematicHome() {
           <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
           <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight">AI news</h3>
           {/* "See all" only once we know there's more than the three shown. */}
-          {newsMeta.count > 3 && (
+          {newsMeta.totalCount > 3 && (
             <Link
               href="/ai-news"
               className="ml-auto inline-flex items-center gap-1 text-sm font-bold shrink-0"

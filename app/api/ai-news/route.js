@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { list } from '@vercel/blob';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
+import { splitByApproval } from '@/lib/ai-news';
 
 // Serves the AI-news findings to any signed-in learner for the home page's
 // "AI news" card.
@@ -54,9 +55,14 @@ export async function GET() {
       readJson(BLOB_SCAN_META_KEY),
     ]);
     const items = Array.isArray(raw) ? raw : [];
+    // Every item ships with its category so the client can filter and offer
+    // "show everything" without a second request. `count` is what learners
+    // actually see; `totalCount` is everything stored.
+    const { approved } = splitByApproval(items);
     return NextResponse.json({
       items,
-      count: items.length,
+      count: approved.length,
+      totalCount: items.length,
       // null until the next scan runs and writes the meta blob.
       scannedAt: meta?.scannedAt || null,
     });
@@ -64,6 +70,6 @@ export async function GET() {
     console.error('GET /api/ai-news error:', error);
     // An empty feed renders the card's normal "no fresh updates" state, which is
     // a better failure than breaking the home page.
-    return NextResponse.json({ items: [], count: 0, scannedAt: null });
+    return NextResponse.json({ items: [], count: 0, totalCount: 0, scannedAt: null });
   }
 }

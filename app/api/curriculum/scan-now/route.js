@@ -5,6 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { parseRss } from '@/lib/parse-feed';
+import { classifyFindings } from '@/lib/news-relevance';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
@@ -189,7 +190,12 @@ export async function POST() {
 
     const safeFindings = await filterUnsafeContent(newFindings);
 
-    const merged = [...safeFindings, ...existing].slice(0, 200);
+    // Same relevance guardrail as the cron (see api/curriculum/daily). The
+    // back-fill of older untagged findings lives only in the cron, so an admin
+    // re-scan stays fast.
+    const classified = await classifyFindings(safeFindings);
+
+    const merged = [...classified, ...existing].slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
     await writeBlob(BLOB_SCAN_META_KEY, {
       scannedAt: new Date().toISOString(),

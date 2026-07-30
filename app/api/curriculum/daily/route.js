@@ -5,6 +5,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { parseRss } from '@/lib/parse-feed';
+import { classifyFindings } from '@/lib/news-relevance';
+import { APPROVED_CATEGORIES } from '@/lib/ai-news';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
 // This route does the heaviest work in the app — 12 feed fetches + up to three
@@ -199,7 +201,22 @@ export async function GET(request) {
 
     const safeFindings = await filterUnsafeContent(newFindings);
 
-    const merged = [...safeFindings, ...existing].slice(0, 200);
+    // Relevance guardrail: tag every new finding so the learner-facing surfaces
+    // can show only model/tool/practice news. Nothing is dropped here — the
+    // category is stored and the display layer filters (lib/ai-news.js), so the
+    // rubric can be retuned later without re-scanning.
+    const classified = await classifyFindings(safeFindings);
+
+    // Back-fill anything stored before categorisation existed, so the guardrail
+    // applies to the whole list rather than only to items added from now on.
+    // Untagged findings are treated as NOT approved, so without this the card
+    // would sit empty on top of a full backlog.
+    const untagged = existing.filter((f) => !f.category);
+    const backfilled = untagged.length ? await classifyFindings(untagged) : [];
+    const backfilledById = new Map(backfilled.map((f) => [f.externalId, f]));
+    const existingTagged = existing.map((f) => backfilledById.get(f.externalId) || f);
+
+    const merged = [...classified, ...existingTagged].slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
     // Stamp the scan AFTER the findings write, so a failed write can't leave a
     // fresh-looking timestamp over stale data.
@@ -282,11 +299,21 @@ Output ONLY a JSON array. No prose. If no updates are warranted, return [].`,
     }
     }
 
+    // Category breakdown is reported so the relevance rubric can be judged from
+    // the response alone — without it, tuning the guardrail means guessing.
+    const byCategory = {};
+    for (const f of merged) {
+      const c = f.category || 'unclassified';
+      byCategory[c] = (byCategory[c] || 0) + 1;
+    }
+
     return NextResponse.json({
       ok: true,
       scannedAt: new Date().toISOString(),
       newFindings: safeFindings.length,
       totalFindings: merged.length,
+      shownToLearners: merged.filter((f) => APPROVED_CATEGORIES.includes(f.category)).length,
+      byCategory,
       newProposals: newProposals.length,
       dailyLessons: dailyLessonCount,
       errors,
