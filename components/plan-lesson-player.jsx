@@ -255,9 +255,19 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // both at once instead of paying two sequential round trips on the front of
       // every lesson. On a cache hit the in-flight recommendation is simply
       // discarded — the cached lesson carries its own.
-      const cachePromise = fetch(`/api/daily-pick/lesson?topic=${encodeURIComponent(topic)}&format=${encodeURIComponent(format)}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null); // no cache / read failed — generate normally below
+      //
+      // A REBUILD must never consult that cache. The pre-generated pick is keyed
+      // on date + topic + format only — there is no tool in the key — so on a
+      // Today's Pick the cache hit below re-served the identical lesson and
+      // "Rebuild for <tool>" silently did nothing: same content, same baked-in
+      // tool, and the mismatch banner reappeared immediately. It stayed broken
+      // until the content-day rolled over.
+      const isRebuild = rebuildNonce > 0;
+      const cachePromise = isRebuild
+        ? Promise.resolve(null)
+        : fetch(`/api/daily-pick/lesson?topic=${encodeURIComponent(topic)}&format=${encodeURIComponent(format)}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null); // no cache / read failed — generate normally below
       const recPromise = fetch('/api/lesson/recommend-tool', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic, preferredTool }),
       })
@@ -270,7 +280,22 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // or a pick not yet warmed) just falls through to normal generation.
       const cachedLesson = await cachePromise;
       if (!active) return;
-      if (cachedLesson?.plan?.steps?.length) {
+      // The pick is pre-generated around whatever tool was primary at pre-gen time
+      // (the 8:10 AM cron, or warm-on-open). If the learner has since changed
+      // tools — or re-onboarded onto different ones — that baked tool may not even
+      // be in their list any more, and serving it just puts them straight into the
+      // "this lesson was built for a different tool" banner. Generate fresh
+      // instead; a stale-tool cache hit is worse than the wait.
+      //
+      // Only second-guess the cache when we actually KNOW their tools. `owned` is
+      // empty both before the profile loads and for the many learners who picked
+      // no tool at all (My AI Tools has no default) — treating either as "stale"
+      // would throw away the fast path for exactly those people. With no tools
+      // there's no mismatch banner either, so there's nothing to protect them from.
+      const cachedToolId = cachedLesson?.toolIds?.[0] || null;
+      const cachedToolOwned =
+        !cachedToolId || owned.length === 0 || owned.some((t) => t.id === cachedToolId);
+      if (cachedLesson?.plan?.steps?.length && cachedToolOwned) {
         setPlan(cachedLesson.plan);
         setSteps(cachedLesson.plan.steps);
         if (Array.isArray(cachedLesson.toolIds) && cachedLesson.toolIds.length) {
@@ -465,6 +490,12 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
 
   // Fresh rebuild on the learner's current tool (same topic).
   function rebuildForCurrentTool() {
+    // Pin the rebuild to the tool the button actually names. Without this the
+    // rebuild re-resolves the tool from a fresh recommendation, which can land
+    // right back on the tool the lesson was already built for — so "Rebuild for
+    // Claude" could hand back another ChatGPT lesson and re-show the banner.
+    // generateToolRecommendation honors preferredTool verbatim (lib/ai.js).
+    if (currentPrimary?.label) refinePreferredToolRef.current = currentPrimary.label;
     resetForRebuild();
   }
 
