@@ -4,35 +4,13 @@ import { put, list, del } from '@vercel/blob';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
+import { parseRss } from '@/lib/parse-feed';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
 const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
-
-function parseRss(xml, sourceName) {
-  const items = [];
-  const itemRe = /<item>([\s\S]*?)<\/item>/g;
-  let m;
-  while ((m = itemRe.exec(xml))) {
-    const block = m[1];
-    const title = (block.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/) || [])[1]?.trim();
-    const link = (block.match(/<link>([\s\S]*?)<\/link>/) || [])[1]?.trim();
-    const guid = (block.match(/<guid[^>]*>([\s\S]*?)<\/guid>/) || [])[1]?.trim() || link;
-    const pub = (block.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1]?.trim();
-    if (title && link) {
-      items.push({
-        sourceName,
-        externalId: guid || link,
-        title: title.replace(/<[^>]+>/g, '').trim(),
-        url: link,
-        publishedAt: pub || null,
-      });
-    }
-  }
-  return items;
-}
 
 async function readBlob(key) {
   try {
