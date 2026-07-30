@@ -5,8 +5,8 @@ import PageHeader from '../../components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
-  BarChart3, Users, BookOpen, TrendingUp, Award, Activity,
-  Search, Loader2, Mail, Building2, XCircle, Check, X,
+  BarChart3, Users, BookOpen, TrendingUp, Activity,
+  Search, Loader2, Mail, Building2, XCircle,
   ChevronDown, Save,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';

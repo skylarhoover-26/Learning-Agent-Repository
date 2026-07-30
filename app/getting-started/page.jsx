@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft, X,
-  Zap, BookOpen, Crosshair, BarChart3,
+  Zap, BookOpen, Crosshair,
   MessageCircle, Trophy, GraduationCap,
-  ArrowRight, Check, Lightbulb,
+  ArrowRight, Lightbulb,
 } from 'lucide-react';
 
 const TUTORIAL_STEPS = [

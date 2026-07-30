@@ -16,7 +16,7 @@ import CalibrationRefreshReminder from '@/components/calibration-refresh-reminde
 import HomeQuickActions from '@/components/home-quick-action';
 import GatedHomeSection from '@/components/gated-home-section';
 import {
-  getCurrentLearner, getAggregatedSkills,
+  getAggregatedSkills,
 } from '@/lib/data';
 import { ArrowRight } from 'lucide-react';
 

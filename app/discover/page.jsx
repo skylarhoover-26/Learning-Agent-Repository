@@ -51,7 +51,7 @@ function DiscoverContent() {
       setWorkDescription(q);
       setCameFromTasks(true);
     }
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function fetchOpportunities(text) {
     const res = await fetch('/api/discover', {

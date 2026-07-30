@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CalendarDays, ChevronRight, Zap, Clock, BookOpen, ArrowRight } from 'lucide-react';
+import { CalendarDays, ChevronRight, Clock } from 'lucide-react';
 import { difficultyPillBase, difficultyPillClass, difficultyLabel } from '@/lib/difficulty';
 
 const CATEGORY_DOTS = {

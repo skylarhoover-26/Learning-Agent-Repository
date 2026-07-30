@@ -8,7 +8,7 @@ import { onSurpriseTip } from '@/lib/progression';
 import { emitXp } from '@/lib/xp-bus';
 import { resolveLearnerId } from '@/lib/learner-id';
 import BookLoader from '@/components/book-loader';
-import { Zap, Copy, Check, Clock, ArrowRight, RefreshCw } from 'lucide-react';
+import { Copy, Check, Clock, ArrowRight, RefreshCw } from 'lucide-react';
 
 // The "Surprise me" quick win, relocated from the retired /quick-win page. It
 // auto-picks a task for you on mount and returns a ready-to-use AI prompt with

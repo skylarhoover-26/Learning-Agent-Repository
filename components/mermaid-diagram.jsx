@@ -67,7 +67,8 @@ export default function MermaidDiagram({ code }) {
   return (
     <div
       className="mermaid-diagram my-4 flex justify-center overflow-x-auto rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 p-4"
-      // eslint-disable-next-line react/no-danger
+      // Safe: `svg` is mermaid's own render output for code we control, and
+      // mermaid runs with securityLevel 'strict' (see the render call above).
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

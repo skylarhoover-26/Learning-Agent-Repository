@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Target, Sparkles, RotateCcw, Lightbulb, RefreshCw, List } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Target, Sparkles, RotateCcw, Lightbulb, List } from 'lucide-react';
 import { FormattedContent } from '@/components/lesson-slide';
 import LessonInteractive from '@/components/lesson-interactive';
 import LessonActivity from '@/components/lesson-activity';

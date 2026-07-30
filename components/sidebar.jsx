@@ -6,11 +6,11 @@ import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import {
   Menu, X, BarChart3,
-  CalendarDays, Play, GraduationCap,
+  Play,
   Grid3X3, Gamepad2, Award, MessageCircle,
   Compass, Trophy, BookOpen, Terminal, Home, Library,
   ExternalLink, TrendingUp,
-  Settings, SlidersHorizontal, FileText, Bell, Users, Wrench, Sparkles, MessageSquarePlus,
+  Settings, FileText, Sparkles, MessageSquarePlus,
 } from 'lucide-react';
 import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';

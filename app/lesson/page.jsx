@@ -20,7 +20,7 @@ import { saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
 import BookLoader from '@/components/book-loader';
 import {
   BookOpen, ChevronRight, Zap, BookMarked, Trophy,
-  Loader2, Send, Mic, MicOff, MessageSquare, HelpCircle, PlayCircle, Sparkles,
+  Loader2, Send, Mic, MicOff, MessageSquare, PlayCircle, Sparkles,
   Target, BarChart3, Bot, CheckCircle2, MessagesSquare, Lightbulb, Search, Mail, PenLine, Brain, Rocket, Check,
 } from 'lucide-react';
 import { useStt } from '@/lib/use-stt';
@@ -427,7 +427,7 @@ function LessonContent() {
       .catch(() => {
         // fall back to the static SUGGESTED_TOPICS already shown
       });
-  }, [profile, initialTopic, view]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile, initialTopic, view]);
 
   function selectFormat(key) {
     setFormat(key);

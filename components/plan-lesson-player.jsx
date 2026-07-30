@@ -18,7 +18,7 @@ import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
 import {
   Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare, RefreshCw,
-  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowUp, MousePointerClick, AlertTriangle,
+  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowUp, MousePointerClick,
 } from 'lucide-react';
 
 const FORMAT_LABEL = { quick_tip: 'Quick Tip', standard: 'Quick Lesson', deep_dive: 'Deep Dive', project_quest: 'Project Quest' };

@@ -8,7 +8,7 @@ import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
 import { resolveLearnerId } from '@/lib/learner-id';
-import { Trophy, Sparkles, Users, Crown, Loader2, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, Users, Crown, Loader2, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
 
 const MEDAL = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };

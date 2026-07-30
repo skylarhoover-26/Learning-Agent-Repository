@@ -17,6 +17,19 @@ if [[ "$LINKED_PROJECT" != "$PROJECT_NAME" ]]; then
   exit 1
 fi
 
+# Lint before spending a build on it. This blocks on ERRORS only — warnings are
+# informational (see eslint.config.mjs) and must not stop a deploy, or the gate
+# gets routed around. Run `npm run lint` for the full list, `npm run lint:strict`
+# to hold the line at zero warnings.
+echo "Linting..."
+if ! npx eslint . --quiet; then
+  echo ""
+  echo "ERROR: lint found errors. Fix them (or run 'npm run lint:fix') before deploying."
+  exit 1
+fi
+echo "Lint clean (no errors)."
+echo ""
+
 # Capture the deployment the alias currently serves, so we can auto-roll-back to
 # a known-good build if the new one comes up unhealthy (e.g. a bad Edge middleware
 # artifact that 500s the whole site — see the middleware-500 incident).
