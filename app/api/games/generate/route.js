@@ -27,15 +27,18 @@ const MILLIONAIRE_COUNT = 10;
 
 // Audience framing (who's playing vs who HCP sells to) lives in
 // lib/game-audience.js and is prepended to every game's system prompt below.
-// `roleAnchored` games additionally get the player's own role/tasks — those are
-// the scenario-shaped games, where a generic persona is what made feedback #141
-// land wrong. Wheel of Fortune and Two Truths are concept/trivia: role framing
-// would only distort the phrases and facts, so they stay off.
+//
+// `roleAnchored` is deliberately limited to the two games that NEED a workplace
+// setting to function — Prompt Battle (you write a prompt for a situation) and
+// Family Feud (you guess how coworkers use AI). Everywhere else the content is
+// concept knowledge, and role detail only narrows it: the point of a game is to
+// teach an AI concept the player can take anywhere, not to quiz them on their own
+// job, which they already know. Even in the two that use it, the role is scenery
+// — see the flavor-only rules in playerRoleContext.
 
 const GENERATORS = {
   speed: {
     maxTokens: 3000,
-    roleAnchored: true,
     system: `You are writing a "Speed Round" quiz for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${SPEED_COUNT} rapid-fire multiple-choice questions that teach and test genuinely useful, practical knowledge about that topic.
 
 Rules:
@@ -65,7 +68,6 @@ Return ONLY valid JSON (no markdown fences):
 
   halluc: {
     maxTokens: 4000,
-    roleAnchored: true,
     system: `You are writing "Hallucination Hunt" rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${HALLUC_ROUNDS} rounds. Each round is a realistic AI-generated answer about the topic that contains a few PLANTED factual errors ("hallucinations") the player must spot.
 
 Rules per round:
@@ -211,7 +213,6 @@ Return ONLY valid JSON (no markdown fences):
 
   millionaire: {
     maxTokens: 3500,
-    roleAnchored: true,
     system: `You are writing a "Who Wants to Be a Millionaire"-style question ladder for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${MILLIONAIRE_COUNT} multiple-choice questions, ORDERED from easiest (question 1) to hardest (question ${MILLIONAIRE_COUNT}).
 
 Rules:
