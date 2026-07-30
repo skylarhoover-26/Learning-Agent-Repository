@@ -6,6 +6,7 @@ import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { useSidebar } from '@/components/sidebar';
 import { GUIDED_TOUR_STEPS } from '@/lib/guided-tour';
+import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
 const TourContext = createContext(null);
 export function useTour() {
@@ -134,6 +135,9 @@ export function TourProvider({ children }) {
   // never overwrites the learner's real menu open/closed preference. `open` lets
   // us snapshot that preference at start and restore it when the tour ends.
   const { open: menuOpen, setOpenTransient } = useSidebar();
+  // Used to skip tour steps for features switched off for this viewer. Requires
+  // MenuVisibilityProvider to sit OUTSIDE TourProvider (see app/layout.jsx).
+  const { isItemDisabled } = useMenuVisibility();
   const driverRef = useRef(null);
   // The menu's open/closed state before the tour began, restored on exit.
   const menuWasOpenRef = useRef(true);
@@ -207,10 +211,14 @@ export function TourProvider({ children }) {
     // Remember the learner's menu state so we can put it back exactly as it was
     // when the tour ends (the tour only toggles it transiently in between).
     menuWasOpenRef.current = menuOpen;
-    const steps = GUIDED_TOUR_STEPS.map(s => ({
-      element: s.element,
-      popover: { title: s.popover.title, description: s.popover.description },
-    }));
+    // Drop steps whose feature is switched off for this viewer — otherwise the
+    // spotlight lands on nothing and the popover describes something they can't see.
+    const steps = GUIDED_TOUR_STEPS
+      .filter((s) => !(s.requiresItem && isItemDisabled?.(s.requiresItem)))
+      .map(s => ({
+        element: s.element,
+        popover: { title: s.popover.title, description: s.popover.description },
+      }));
 
     // Move to the next step (shared by the Next button and auto-advance).
     // Use moveTo(index) rather than moveNext() and guard with drive() — if the
@@ -289,7 +297,7 @@ export function TourProvider({ children }) {
     await new Promise(r => setTimeout(r, 120));
     await prepareStep(0);
     if (driverRef.current) d.drive(0);
-  }, [prepareStep, runStepActions, menuOpen, setOpenTransient]);
+  }, [prepareStep, runStepActions, menuOpen, setOpenTransient, isItemDisabled]);
 
   return (
     <TourContext.Provider value={{ startTour }}>

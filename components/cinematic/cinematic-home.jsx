@@ -462,8 +462,12 @@ export default function CinematicHome() {
         )}
       </section>
 
-      {/* AI NEWS — always rendered (like Your skills above) so the section is a
-          stable landmark and the guided tour can always spotlight it. */}
+      {/* AI NEWS — gated on the same Menu Visibility item as the page, so setting
+          AI News to Hidden or Coming soon removes the section too. It used to
+          render unconditionally as a stable tour landmark; the tour now skips its
+          step instead (see requiresItem in lib/guided-tour.js), because showing
+          live news cards for a locked feature was the more confusing trade. */}
+      {newsPageOpen && (
       <section data-tour="home-news" className="cine-rise">
         <div className="flex items-center gap-2 mb-1">
           <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
@@ -543,6 +547,7 @@ export default function CinematicHome() {
           </div>
         )}
       </section>
+      )}
     </CinematicShell>
   );
 }

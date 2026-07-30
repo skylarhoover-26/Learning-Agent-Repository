@@ -71,8 +71,15 @@ export default function RootLayout({ children }) {
             <ProgressionProvider>
               <ChampionProvider>
               <SidebarProvider>
-                <TourProvider>
-                  <MenuVisibilityProvider>
+                {/* MenuVisibilityProvider is OUTSIDE TourProvider on purpose: the
+                    tour reads menu visibility to drop steps for features that are
+                    hidden or "coming soon" for this viewer. Nested the other way,
+                    useMenuVisibility() inside TourProvider silently fell back to the
+                    context default (isItemDisabled: () => false) and the filter did
+                    nothing. MenuVisibilityProvider has no tour dependency, and
+                    TourProvider only needs SidebarProvider, which stays outermost. */}
+                <MenuVisibilityProvider>
+                  <TourProvider>
                     <FeedbackProvider>
                     <HeaderProvider>
                       <HeaderBar />
@@ -92,11 +99,11 @@ export default function RootLayout({ children }) {
                       <PreviewModeBanner />
                     </HeaderProvider>
                     </FeedbackProvider>
-                  </MenuVisibilityProvider>
-                  <CalibrationGate />
-                  <OnboardingTour />
-                  <GlobalXpPopup />
-                </TourProvider>
+                    <CalibrationGate />
+                    <OnboardingTour />
+                    <GlobalXpPopup />
+                  </TourProvider>
+                </MenuVisibilityProvider>
               </SidebarProvider>
               </ChampionProvider>
             </ProgressionProvider>
