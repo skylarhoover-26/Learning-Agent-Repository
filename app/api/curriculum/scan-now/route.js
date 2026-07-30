@@ -53,6 +53,8 @@ async function writeBlob(key, data) {
       await del(blob.url);
     }
     await put(key, JSON.stringify(data), {
+      // REQUIRED by @vercel/blob v2 — see the note in api/curriculum/daily.
+      access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
     });

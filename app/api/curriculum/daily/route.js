@@ -56,6 +56,12 @@ async function writeBlob(key, data) {
       await del(blob.url);
     }
     await put(key, JSON.stringify(data), {
+      // REQUIRED by @vercel/blob v2 — without it put() throws "access must be
+      // 'private' or 'public'" and the catch below swallows it. This is why the
+      // scan reported "73 new findings" on every single run: the write silently
+      // failed, so the dedupe read back an empty list every time and the AI news
+      // card had nothing to show.
+      access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
     });
