@@ -214,7 +214,19 @@ export async function GET(request) {
     const untagged = existing.filter((f) => !f.category);
     const backfilled = untagged.length ? await classifyFindings(untagged) : [];
     const backfilledById = new Map(backfilled.map((f) => [f.externalId, f]));
-    const existingTagged = existing.map((f) => backfilledById.get(f.externalId) || f);
+
+    // Stored items were parsed before the feed summary was extracted, so they have
+    // no snippet. Anything still present in today's fetch can have one filled in
+    // for free — no extra request, no model call.
+    const freshSummaryById = new Map(
+      allFindings.filter((f) => f.summary).map((f) => [f.externalId, f.summary])
+    );
+    const existingTagged = existing.map((f) => {
+      const tagged = backfilledById.get(f.externalId) || f;
+      if (tagged.summary) return tagged;
+      const summary = freshSummaryById.get(tagged.externalId);
+      return summary ? { ...tagged, summary } : tagged;
+    });
 
     // Security-incident items are discarded outright rather than stored hidden —
     // /ai-news is a normal learner page with a "show everything" toggle, so

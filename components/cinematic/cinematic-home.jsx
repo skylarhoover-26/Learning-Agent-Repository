@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Sparkles, Flame, Trophy, Award, Compass, Gamepad2, MessageCircle,
   BookOpen, PenTool, ArrowRight, Play, Crown, Check,
-  TrendingUp, GitBranch, Rss, HelpCircle, X, BarChart3, Lock,
+  TrendingUp, GitBranch, Rss, HelpCircle, X, BarChart3, Lock, ExternalLink,
 } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
@@ -16,7 +16,7 @@ import { getLevelTitle } from '@/lib/level-titles';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
-import { freshnessLabel, splitByApproval, SCAN_TIME_LABEL } from '@/lib/ai-news';
+import { freshnessLabel, lessonHref, splitByApproval, SCAN_TIME_LABEL } from '@/lib/ai-news';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -491,20 +491,48 @@ export default function CinematicHome() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {news.map((f, i) => (
-              <Link
+              // A div, not one big <Link>: the card now carries TWO destinations
+              // (the lesson and the original article), and nesting an <a> inside a
+              // <Link> is invalid. The hover lift is kept via cine-tilt.
+              <div
                 key={f.externalId || i}
-                href={`/lesson?prefill=${encodeURIComponent(f.title)}`}
                 className="cine-glass cine-tilt group rounded-2xl p-5 flex flex-col"
               >
                 <span className="self-start text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full mb-3" style={{ background: 'var(--glass)', color: 'var(--accent2)', border: '1px solid var(--line)' }}>
                   {f.sourceName || 'AI update'}
                 </span>
-                <p className="font-display font-bold leading-snug flex-1">{f.title}</p>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold mt-3" style={{ color: 'var(--good)' }}>
-                  <TrendingUp className="w-3.5 h-3.5" /> Take a lesson
-                  <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </Link>
+                <p className="font-display font-bold leading-snug">{f.title}</p>
+                {/* The publisher's own blurb — enough to judge whether it's worth a
+                    lesson. Absent for sources that ship no description (Hugging
+                    Face) or only links (Hacker News), so the card must read fine
+                    without it. */}
+                {f.summary && (
+                  <p className="text-xs leading-relaxed mt-2 line-clamp-3" style={{ color: 'var(--ink-dim)' }}>
+                    {f.summary}
+                  </p>
+                )}
+                <div className="flex items-center gap-3 mt-3 pt-1 flex-1 items-end">
+                  <Link
+                    href={lessonHref(f)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold"
+                    style={{ color: 'var(--good)' }}
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" /> Take a lesson
+                    <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                  {f.url && (
+                    <a
+                      href={f.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold"
+                      style={{ color: 'var(--ink-dim)' }}
+                    >
+                      Source <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         )}

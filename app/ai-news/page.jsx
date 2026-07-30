@@ -35,7 +35,15 @@ function NewsRow({ item }) {
             {item.sourceName}
           </span>
           <p className="font-semibold leading-snug">{item.title}</p>
-          <div className="flex items-center gap-3 mt-1.5">
+          {/* Publisher's own blurb, so you can judge whether it's worth a lesson
+              without opening the article. Missing for sources that ship no
+              description, so the row has to read fine without it. */}
+          {item.summary && (
+            <p className="text-sm leading-relaxed mt-1.5" style={{ color: 'var(--ink-dim)' }}>
+              {item.summary}
+            </p>
+          )}
+          <div className="flex items-center gap-3 mt-2">
             <Link
               href={lessonHref(item)}
               className="inline-flex items-center gap-1 text-xs font-bold"
@@ -78,9 +86,45 @@ function CategorySection({ label, count, items, note }) {
   );
 }
 
+// Filter chips: All + one per category actually present in the current list, so
+// the row never offers a filter that would return nothing.
+function CategoryFilter({ groups, active, onChange, total }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onChange(null)}
+        className="cine-glass px-3 py-1.5 rounded-pill text-xs font-bold transition-colors"
+        style={active === null
+          ? { color: 'var(--accent)', boxShadow: 'inset 0 0 0 1.5px var(--accent)' }
+          : { color: 'var(--ink-dim)' }}
+      >
+        All {total}
+      </button>
+      {groups.map((g) => {
+        const on = active === g.category;
+        return (
+          <button
+            key={g.category}
+            type="button"
+            onClick={() => onChange(on ? null : g.category)}
+            className="cine-glass px-3 py-1.5 rounded-pill text-xs font-bold transition-colors"
+            style={on
+              ? { color: 'var(--accent)', boxShadow: 'inset 0 0 0 1.5px var(--accent)' }
+              : { color: 'var(--ink-dim)' }}
+          >
+            {g.label} {g.items.length}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function AiNewsInner() {
   const [data, setData] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -97,8 +141,14 @@ function AiNewsInner() {
   // arXiv is split out regardless of category — raw paper titles get their own
   // clearly-labelled home so nobody mistakes them for practical picks.
   const shown = showAll ? all : approved;
-  const research = shown.filter((i) => isResearchSource(i.sourceName));
-  const groups = groupByCategory(shown.filter((i) => !isResearchSource(i.sourceName)));
+  // Groups are computed BEFORE the category filter so the chips keep showing every
+  // available option (and its real count) while one of them is selected —
+  // otherwise picking a filter would hide the way back to the others.
+  const allGroups = groupByCategory(shown.filter((i) => !isResearchSource(i.sourceName)));
+  const groups = activeCategory ? allGroups.filter((g) => g.category === activeCategory) : allGroups;
+  // Research is its own labelled section, so it's hidden whenever a category
+  // filter is active rather than sitting under an unrelated heading.
+  const research = activeCategory ? [] : shown.filter((i) => isResearchSource(i.sourceName));
 
   const subtitle = data?.scannedAt
     ? `${approved.length} of ${all.length} items · updated ${freshnessLabel(data.scannedAt)} · next check ${SCAN_TIME_LABEL}`
@@ -145,6 +195,15 @@ function AiNewsInner() {
                 </button>
               )}
             </div>
+
+            {allGroups.length > 1 && (
+              <CategoryFilter
+                groups={allGroups}
+                active={activeCategory}
+                onChange={setActiveCategory}
+                total={shown.length}
+              />
+            )}
 
             <div className="space-y-10">
               {groups.map((g) => (
