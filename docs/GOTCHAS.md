@@ -82,10 +82,32 @@ and which value a user sees depends on which store answered.
 
 ### A wrong Blob token reads as *empty*, not as an error
 
-`BLOB_READ_WRITE_TOKEN` must belong to the store in `BLOB_STORE_ID`. A token for
-a different store returns an empty result set, not a failure — so "all the data
-is gone" and "the token points at the wrong store" look identical from the app.
-Check the store id before concluding you've lost data.
+A token for a different store returns an empty result set rather than a failure —
+so "all the data is gone" and "I'm holding the wrong token" look identical. Never
+conclude you've lost data from an empty read alone.
+
+### You cannot inspect production blobs from your laptop
+
+**`BLOB_STORE_ID` does NOT describe the store the app uses.** It says
+`store_L4ADQJeZg88H…`, but the token production actually runs with resolves to a
+*different* store. Verified on 2026-07-30: the daily scan persisted findings
+(counts accumulated 66 → 75 across runs, which is only possible if the writer and
+reader share a store), while a `vercel env pull` token showed that path as
+non-existent.
+
+Consequences:
+
+- **The app is fine.** Nothing in the code reads `BLOB_STORE_ID` — grep it. The
+  `@vercel/blob` SDK picks up `BLOB_READ_WRITE_TOKEN` from the environment, so
+  reads and writes always agree with each other.
+- **Local blob reads lie.** Pulling the token and listing blobs shows you a store
+  the app isn't using. Debug through the app (an API route, or a scan endpoint
+  that reports counts) instead of reading blobs directly.
+- **Do not "fix" it by deleting env vars.** `BLOB_STORE_ID` and
+  `BLOB_WEBHOOK_PUBLIC_KEY` are unused by the code but were created alongside
+  `BLOB_READ_WRITE_TOKEN` 52–56 days ago — the signature of a Vercel Blob
+  integration managing them. Deleting them risks re-provisioning the store
+  connection that holds all user data, for zero functional gain.
 
 ### XP and progress are local-first
 
@@ -132,3 +154,45 @@ There is **no test suite**. `npm run lint` and `npx next build` are the only
 automated gates, and neither catches a render loop or a broken effect —
 `next build` compiles a component without ever mounting it. If you change React
 state or effects, load the real page and watch it before you ship.
+
+---
+
+## The AI-news relevance classifier
+
+`lib/news-relevance.js` decides what reaches learners. Two things to know before
+you tune it.
+
+### You probably can't run it locally
+
+It needs `ANTHROPIC_API_KEY`, which is marked **Sensitive** in Vercel, so
+`vercel env pull` returns it blank. Assume you cannot execute the classifier on
+your machine and will be reasoning about the prompt rather than testing it.
+
+### The scan response is the only feedback loop
+
+`GET /api/curriculum/daily` (with the `CRON_SECRET` bearer) reports
+`shownToLearners` and a full `byCategory` breakdown. That is the measurement —
+trust it over any argument about what the rubric "should" do:
+
+```bash
+curl -s -H "authorization: Bearer $CRON_SECRET" \
+  https://learning-agent-pearl.vercel.app/api/curriculum/daily | jq '.byCategory'
+```
+
+Learners can see the same split on `/ai-news` — the category chips show live
+counts, and the filters reveal exactly which items landed where.
+
+### Tuning reaches stored items only if you bump the version
+
+Findings are stamped with `catV: RUBRIC_VERSION`. The daily scan re-judges
+anything carrying an older version, so **bump `RUBRIC_VERSION` whenever you change
+the rubric** — otherwise your change only affects items added afterwards and the
+mis-filed ones already stored sit there forever.
+
+### Open question as of 2026-07-30
+
+`prompt_practice` (5 of 109) and `safety_practice` (1 of 109) are both thin. That
+may be honest — these feeds are announcement-heavy — or the rubric may be drawing
+those categories too narrowly. **Don't tune it on one day's numbers.** Watch a few
+scans, then look at what landed in `industry_news` and `research` to see whether
+genuine how-to content is being misfiled.

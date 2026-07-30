@@ -7,6 +7,7 @@
 // not-yet-calibrated) user sees. Finishing writes `calibrated_at` to the
 // profile, which unmounts the gate and lets them through.
 
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import CalibrationFlow from '@/components/calibration-flow';
@@ -52,11 +53,28 @@ export default function CalibrationGate() {
   const pathname = usePathname();
   const { profile, updateProfile } = useProfile();
 
+  // Whether the gate will actually cover the screen. Computed before any early
+  // return so the effect below can be unconditional (hooks can't be).
+  const showing = !!profile
+    && !profile.calibrated_at
+    && !isExempt(pathname)
+    && !hasLocalCalibrated(profile.email);
+
+  // Tell the rest of the app that a full-screen overlay is up. The feedback form
+  // records window.location's pathname, but this gate renders OVER whatever route
+  // the user happens to be on — so a report filed here was stamped with e.g.
+  // "/leaderboard" while the person was plainly looking at calibration (that is
+  // exactly what happened on feedback #84, and it cost real triage time).
+  useEffect(() => {
+    if (!showing) return undefined;
+    document.documentElement.dataset.overlay = 'calibration';
+    return () => { delete document.documentElement.dataset.overlay; };
+  }, [showing]);
+
   // Wait until we have a profile (ProfileProvider redirects to onboarding if
   // there isn't one). Once calibrated — by the profile flag OR the local marker
   // — the gate never shows again.
-  if (!profile || profile.calibrated_at || isExempt(pathname)) return null;
-  if (hasLocalCalibrated(profile.email)) return null;
+  if (!showing) return null;
 
   function handleComplete() {
     // Mark locally FIRST so a stale profile refetch can't re-open the gate.

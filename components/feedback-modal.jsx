@@ -22,6 +22,17 @@ function fileToDataUrl(file) {
   });
 }
 
+// The page value stored on a report. Prefers the visible overlay over the URL.
+function reportedPage(pathname) {
+  try {
+    const overlay = document.documentElement.dataset.overlay;
+    if (overlay) return `${overlay} (over ${pathname})`;
+  } catch {
+    /* SSR or no DOM — fall back to the route */
+  }
+  return pathname;
+}
+
 export default function FeedbackModal({ open, onClose }) {
   const pathname = usePathname();
   const [category, setCategory] = useState('');
@@ -128,7 +139,12 @@ export default function FeedbackModal({ open, onClose }) {
           text: text.trim(),
           screenshots: shots.map((s) => s.dataUrl),
           recordings,
-          page: pathname,
+          // A full-screen overlay (the calibration gate) renders OVER the current
+          // route, so the bare pathname describes the page UNDERNEATH rather than
+          // what the reporter was looking at. Feedback #84 came in stamped
+          // "/leaderboard" from someone plainly in calibration. Name the overlay
+          // when one is up, and keep the route for context.
+          page: reportedPage(pathname),
         }),
       });
       if (!res.ok) {
