@@ -123,7 +123,11 @@ function CategoryFilter({ groups, active, onChange, total }) {
 
 function AiNewsInner() {
   const [data, setData] = useState(null);
-  const [showAll, setShowAll] = useState(false);
+  // Defaults to EVERYTHING. The guardrail's job is keeping the HOME page focused;
+  // this page is the browse surface, so showing all of it and letting the category
+  // chips narrow is the more useful default than hiding 85 of 109 items behind a
+  // toggle nobody knows to press.
+  const [showAll, setShowAll] = useState(true);
   const [activeCategory, setActiveCategory] = useState(null);
 
   useEffect(() => {
@@ -180,7 +184,7 @@ function AiNewsInner() {
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <p className="text-sm" style={{ color: 'var(--ink-dim)' }}>
                 {showAll
-                  ? `Showing all ${all.length} items, including ${rejected.length} filtered out as not directly useful.`
+                  ? `All ${all.length} items — pick a category below to narrow it down.`
                   : `Showing the ${approved.length} items about models, tools, and how to work with them.`}
               </p>
               {rejected.length > 0 && (

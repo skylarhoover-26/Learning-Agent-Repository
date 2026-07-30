@@ -5,7 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { parseRss } from '@/lib/parse-feed';
-import { classifyFindings } from '@/lib/news-relevance';
+import { classifyFindings, RUBRIC_VERSION } from '@/lib/news-relevance';
 import { APPROVED_CATEGORIES, dropExcluded } from '@/lib/ai-news';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
@@ -211,22 +211,32 @@ export async function GET(request) {
     // applies to the whole list rather than only to items added from now on.
     // Untagged findings are treated as NOT approved, so without this the card
     // would sit empty on top of a full backlog.
-    const untagged = existing.filter((f) => !f.category);
-    const backfilled = untagged.length ? await classifyFindings(untagged) : [];
-    const backfilledById = new Map(backfilled.map((f) => [f.externalId, f]));
-
     // Stored items were parsed before the feed summary was extracted, so they have
     // no snippet. Anything still present in today's fetch can have one filled in
-    // for free — no extra request, no model call.
-    const freshSummaryById = new Map(
-      allFindings.filter((f) => f.summary).map((f) => [f.externalId, f.summary])
-    );
-    const existingTagged = existing.map((f) => {
-      const tagged = backfilledById.get(f.externalId) || f;
-      if (tagged.summary) return tagged;
-      const summary = freshSummaryById.get(tagged.externalId);
-      return summary ? { ...tagged, summary } : tagged;
+    // for free — no extra request, no model call. Do this BEFORE re-classifying, so
+    // the classifier gets the blurb (which is what makes a vendor pitch obvious).
+    // Titles are refreshed alongside summaries because the parser now decodes HTML
+    // entities — stored titles still read literally as "OpenAI president says
+    // it&#8217;s &#8216;building a family of devices&#8217;" until they're replaced.
+    const freshById = new Map(allFindings.map((f) => [f.externalId, f]));
+    const existingWithSummaries = existing.map((f) => {
+      const fresh = freshById.get(f.externalId);
+      if (!fresh) return f;
+      return {
+        ...f,
+        title: fresh.title || f.title,
+        summary: f.summary || fresh.summary || '',
+      };
     });
+
+    // Re-judge anything never classified OR classified under an older rubric.
+    // Without the version check, tuning the rubric would only ever affect items
+    // added afterwards — the mis-filed ones already stored would sit on the home
+    // page forever.
+    const stale = existingWithSummaries.filter((f) => !f.category || f.catV !== RUBRIC_VERSION);
+    const rejudged = stale.length ? await classifyFindings(stale) : [];
+    const rejudgedById = new Map(rejudged.map((f) => [f.externalId, f]));
+    const existingTagged = existingWithSummaries.map((f) => rejudgedById.get(f.externalId) || f);
 
     // Security-incident items are discarded outright rather than stored hidden —
     // /ai-news is a normal learner page with a "show everything" toggle, so
