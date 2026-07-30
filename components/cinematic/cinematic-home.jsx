@@ -16,6 +16,7 @@ import { getLevelTitle } from '@/lib/level-titles';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
+import { freshnessLabel, SCAN_TIME_LABEL } from '@/lib/ai-news';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -106,6 +107,8 @@ export default function CinematicHome() {
   const [board, setBoard] = useState(null);
   const [skills, setSkills] = useState(null);
   const [news, setNews] = useState(null);
+  // Total found + when the scan last ran, for the freshness line and "See all".
+  const [newsMeta, setNewsMeta] = useState({ count: 0, scannedAt: null });
 
   useEffect(() => {
     let active = true;
@@ -124,7 +127,11 @@ export default function CinematicHome() {
     let active = true;
     fetch('/api/ai-news', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (active) setNews((d?.items || []).slice(0, 3)); })
+      .then((d) => {
+        if (!active) return;
+        setNews((d?.items || []).slice(0, 3));
+        setNewsMeta({ count: d?.count || 0, scannedAt: d?.scannedAt || null });
+      })
       .catch(() => { if (active) setNews([]); });
     return () => { active = false; };
   }, []);
@@ -444,8 +451,26 @@ export default function CinematicHome() {
         <div className="flex items-center gap-2 mb-1">
           <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
           <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight">AI news</h3>
+          {/* "See all" only once we know there's more than the three shown. */}
+          {newsMeta.count > 3 && (
+            <Link
+              href="/ai-news"
+              className="ml-auto inline-flex items-center gap-1 text-sm font-bold shrink-0"
+              style={{ color: 'var(--accent2)' }}
+            >
+              See all {newsMeta.count}
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
         </div>
-        <p className="text-sm mb-4" style={{ color: 'var(--ink-dim)' }}>We scan AI developments daily and flag what changes your skills.</p>
+        <p className="text-sm mb-4" style={{ color: 'var(--ink-dim)' }}>
+          We scan AI developments daily and flag what changes your skills.
+          {/* Real freshness, not a promise. If this ever reads "6d ago" the cron
+              has stopped — which is exactly how this feature sat broken unnoticed. */}
+          {newsMeta.scannedAt
+            ? <> · Updated {freshnessLabel(newsMeta.scannedAt)} · next check {SCAN_TIME_LABEL}</>
+            : <> · Checked every morning at {SCAN_TIME_LABEL}</>}
+        </p>
         {news === null ? (
           <div className="cine-glass rounded-2xl p-6 text-sm italic" style={{ color: 'var(--ink-dim)' }}>Loading the latest AI news…</div>
         ) : news.length === 0 ? (

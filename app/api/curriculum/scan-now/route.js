@@ -11,6 +11,9 @@ import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
 const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
+// See the note in api/curriculum/daily — an admin-run scan stamps the same
+// timestamp the home page reads, so "Updated just now" is true after a manual run.
+const BLOB_SCAN_META_KEY = 'shared/curriculum_scan_meta.json';
 
 async function readBlob(key) {
   try {
@@ -188,6 +191,11 @@ export async function POST() {
 
     const merged = [...safeFindings, ...existing].slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
+    await writeBlob(BLOB_SCAN_META_KEY, {
+      scannedAt: new Date().toISOString(),
+      findingCount: merged.length,
+      feedErrors: errors.length,
+    });
 
     const client = new Anthropic();
 

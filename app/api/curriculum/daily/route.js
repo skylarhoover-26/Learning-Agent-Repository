@@ -14,6 +14,12 @@ export const maxDuration = 60;
 
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
 const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
+// When the scan last ran. Kept in its OWN blob rather than added to the findings
+// array, because the findings blob is read as a plain array by the proposals
+// route and the curriculum-pipeline page — changing its shape would break both.
+// Surfaced on the home page so a cron that stops running becomes visible
+// ("Updated 6 days ago") instead of silently serving stale news forever.
+const BLOB_SCAN_META_KEY = 'shared/curriculum_scan_meta.json';
 
 async function readBlob(key) {
   try {
@@ -195,6 +201,13 @@ export async function GET(request) {
 
     const merged = [...safeFindings, ...existing].slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
+    // Stamp the scan AFTER the findings write, so a failed write can't leave a
+    // fresh-looking timestamp over stale data.
+    await writeBlob(BLOB_SCAN_META_KEY, {
+      scannedAt: new Date().toISOString(),
+      findingCount: merged.length,
+      feedErrors: errors.length,
+    });
 
     const client = new Anthropic();
 

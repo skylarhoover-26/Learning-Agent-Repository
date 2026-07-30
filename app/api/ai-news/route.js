@@ -17,23 +17,23 @@ import { getAuthenticatedUser } from '@/lib/auth-helpers';
 // middleware's SSO exclusion list so the cron can reach it, which would have
 // made this readable without signing in.
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
+const BLOB_SCAN_META_KEY = 'shared/curriculum_scan_meta.json';
 
 // The findings blob is overwritten in place and a Vercel blob keeps the same URL
 // across writes, so a plain fetch can serve the pre-overwrite copy from cache.
 // Cache-bust + no-store, the same way lib/blob-store.js does (skipping it there
 // is why admin XP grants once appeared to do nothing).
-async function readFindings() {
+async function readJson(key) {
   try {
-    const { blobs } = await list({ prefix: BLOB_FINDINGS_KEY, limit: 1 });
-    if (blobs.length === 0) return [];
+    const { blobs } = await list({ prefix: key, limit: 1 });
+    if (blobs.length === 0) return null;
     const base = blobs[0].downloadUrl;
     const url = `${base}${base.includes('?') ? '&' : '?'}_=${Date.now()}`;
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    if (!res.ok) return null;
+    return await res.json();
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -49,12 +49,21 @@ export async function GET() {
 
     // Stored newest-first by the scan's merge, so no re-sort — the caller slices
     // to however many it wants to show.
-    const items = await readFindings();
-    return NextResponse.json({ items, count: items.length });
+    const [raw, meta] = await Promise.all([
+      readJson(BLOB_FINDINGS_KEY),
+      readJson(BLOB_SCAN_META_KEY),
+    ]);
+    const items = Array.isArray(raw) ? raw : [];
+    return NextResponse.json({
+      items,
+      count: items.length,
+      // null until the next scan runs and writes the meta blob.
+      scannedAt: meta?.scannedAt || null,
+    });
   } catch (error) {
     console.error('GET /api/ai-news error:', error);
     // An empty feed renders the card's normal "no fresh updates" state, which is
     // a better failure than breaking the home page.
-    return NextResponse.json({ items: [], count: 0 });
+    return NextResponse.json({ items: [], count: 0, scannedAt: null });
   }
 }
