@@ -16,17 +16,29 @@ function normalize(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
 }
 
-// Match a guess to an answer: exact-ish text match, keyword hit, or clean
-// containment either way. Lenient so near-misses still count.
+// Does `needle` appear in `haystack` as whole words? Raw substring matching made
+// a keyword like "may" fire on "maybe" and "cite" fire on "excited", handing out
+// answers the player never gave.
+function containsPhrase(haystack, needle) {
+  if (!needle) return false;
+  return new RegExp(`(^|\\s)${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\s)`).test(haystack);
+}
+
+// Match a guess to an answer locally: exact text, whole-phrase containment either
+// way, or a keyword hit. Lenient about phrasing but literal about words — a guess
+// that means the same thing in different words is handled by the model check in
+// submitGuess, not here.
 function matches(guess, answer) {
   const g = normalize(guess);
   if (!g) return false;
   const text = normalize(answer.text);
   if (g === text) return true;
-  if (text.length > 3 && (g.includes(text) || text.includes(g))) return true;
+  if (text.length > 3 && (containsPhrase(g, text) || containsPhrase(text, g))) return true;
   return (answer.keywords || []).some((k) => {
     const nk = normalize(k);
-    return nk.length > 2 && (g.includes(nk) || nk.includes(g));
+    // 4+ characters: "may", "ask", "use" are too generic to stand alone as
+    // evidence the player meant a particular answer.
+    return nk.length >= 4 && (containsPhrase(g, nk) || containsPhrase(nk, g));
   });
 }
 
@@ -43,6 +55,7 @@ function FamilyFeud() {
   const [found, setFound] = useState(() => new Set());   // indices of revealed answers
   const [strikes, setStrikes] = useState(0);
   const [guess, setGuess] = useState('');
+  const [checking, setChecking] = useState(false);   // model is judging a near-miss
   const [message, setMessage] = useState('Guess the top answers!');
   const [flash, setFlash] = useState(null);              // 'strike' | 'hit'
   const [roundDone, setRoundDone] = useState(false);
@@ -70,7 +83,20 @@ function FamilyFeud() {
   useEffect(() => {
     if (!gameOver || savedRef.current) return;
     savedRef.current = true;
-    try { saveGameResult('family-feud', { score: total, total: rounds?.length || 0, custom: true, topic }); } catch { /* no localStorage */ }
+    // The score is survey points, so XP scales against every point on every
+    // board — not the round count, which would read 109/4 as a perfect game.
+    const pointsAvailable = (rounds || []).reduce(
+      (sum, r) => sum + (r.answers || []).reduce((s, a) => s + (a.points || 0), 0), 0
+    );
+    try {
+      saveGameResult('family-feud', {
+        score: total,
+        total: rounds?.length || 0,
+        fraction: pointsAvailable > 0 ? total / pointsAvailable : 1,
+        custom: true,
+        topic,
+      });
+    } catch { /* no localStorage */ }
   }, [gameOver, total, rounds, topic]);
 
   function endRound(revealAll) {
@@ -79,24 +105,63 @@ function FamilyFeud() {
     else setMessage('Board cleared! Nice work.');
   }
 
-  function submitGuess() {
-    if (roundDone || !guess.trim()) return;
-    const hitIdx = answers.findIndex((a, i) => !found.has(i) && matches(guess, a));
+  // Credit a hit. `via` carries the player's own wording when the model matched a
+  // synonym, so the tile shows what we counted it as.
+  function awardHit(hitIdx, via) {
+    const next = new Set(found); next.add(hitIdx);
+    setFound(next);
+    setTotal((t) => t + answers[hitIdx].points);
+    setFlash('hit'); setTimeout(() => setFlash(null), 500);
+    if (next.size === answers.length) { endRound(false); return; }
+    setMessage(via
+      ? `Counted “${via}” as “${answers[hitIdx].text}” — ${answers[hitIdx].points} points!`
+      : `Got it — “${answers[hitIdx].text}” for ${answers[hitIdx].points}!`);
+  }
+
+  function chargeStrike() {
+    const s = strikes + 1;
+    setStrikes(s);
+    setFlash('strike'); setTimeout(() => setFlash(null), 500);
+    if (s >= MAX_STRIKES) { endRound(true); return; }
+    setMessage(`That's not on the board. Strike ${s} of ${MAX_STRIKES}.`);
+  }
+
+  // Local match first — instant, and it handles most guesses. Only a would-be
+  // strike goes to the model, which decides whether the guess means an answer in
+  // different words. That way a synonym never costs a strike, and a hit never
+  // waits on the network.
+  async function submitGuess() {
+    if (roundDone || checking || !guess.trim()) return;
+    const attempt = guess.trim();
+    const hitIdx = answers.findIndex((a, i) => !found.has(i) && matches(attempt, a));
     setGuess('');
-    if (hitIdx >= 0) {
-      const next = new Set(found); next.add(hitIdx);
-      setFound(next);
-      setTotal((t) => t + answers[hitIdx].points);
-      setFlash('hit'); setTimeout(() => setFlash(null), 500);
-      if (next.size === answers.length) { endRound(false); return; }
-      setMessage(`Got it — “${answers[hitIdx].text}” for ${answers[hitIdx].points}!`);
-    } else {
-      const s = strikes + 1;
-      setStrikes(s);
-      setFlash('strike'); setTimeout(() => setFlash(null), 500);
-      if (s >= MAX_STRIKES) { endRound(true); return; }
-      setMessage(`That's not on the board. Strike ${s} of ${MAX_STRIKES}.`);
+
+    if (hitIdx >= 0) { awardHit(hitIdx); return; }
+
+    setChecking(true);
+    setMessage('Checking that one…');
+    try {
+      const res = await fetch('/api/games/match-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guess: attempt,
+          question: round?.question || '',
+          answers: answers.map((a) => a.text),
+        }),
+      });
+      const data = await res.json();
+      const idxFromModel = Number(data?.index);
+      if (Number.isInteger(idxFromModel) && idxFromModel >= 0 && idxFromModel < answers.length && !found.has(idxFromModel)) {
+        awardHit(idxFromModel, attempt);
+        return;
+      }
+    } catch {
+      // Network/route failure: fall through to the strike the local match implied.
+    } finally {
+      setChecking(false);
     }
+    chargeStrike();
   }
 
   function nextRound() {
@@ -224,10 +289,17 @@ function FamilyFeud() {
             onChange={(e) => setGuess(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') submitGuess(); }}
             placeholder="Type an answer…"
-            className="flex-1 min-w-0 rounded-xl px-4 py-3 text-sm text-ink dark:text-slate-100 bg-transparent outline-none focus:ring-4"
+            disabled={checking}
+            className="flex-1 min-w-0 rounded-xl px-4 py-3 text-sm text-ink dark:text-slate-100 bg-transparent outline-none focus:ring-4 disabled:opacity-60"
             style={{ border: '1px solid var(--line)', '--tw-ring-color': 'color-mix(in srgb, var(--accent) 18%, transparent)' }}
           />
-          <button onClick={submitGuess} className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-6 font-semibold"><Check className="w-4 h-4" /> Guess</button>
+          <button
+            onClick={submitGuess}
+            disabled={checking}
+            className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-6 font-semibold disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <Check className="w-4 h-4" /> {checking ? 'Checking…' : 'Guess'}
+          </button>
         </div>
       )}
     </main>

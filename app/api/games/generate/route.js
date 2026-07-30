@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODELS } from '@/lib/models';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { logAuditEntry } from '@/lib/audit-log';
-import { GAME_AUDIENCE, playerRoleContext } from '@/lib/game-audience';
+import { AUDIENCE, playerRoleContext } from '@/lib/audience';
 
 // LLM generation of a full custom round can take a while — give it room so the
 // route doesn't time out before responding (see the maxDuration gotcha).
@@ -26,7 +26,7 @@ const TRUTHS_ROUNDS = 5;
 const MILLIONAIRE_COUNT = 10;
 
 // Audience framing (who's playing vs who HCP sells to) lives in
-// lib/game-audience.js and is prepended to every game's system prompt below.
+// lib/audience.js and is prepended to every game's system prompt below.
 //
 // `roleAnchored` applies to Prompt Battle ONLY, because writing a prompt requires
 // a situation to write it for. Every other game teaches concept knowledge, where
@@ -172,7 +172,7 @@ Rules per round:
 - "answers": 5–6 answers, RANKED by how commonly a practitioner would name them. Each answer has:
   - "text": the answer, a few words (e.g. "Check it against the source").
   - "points": popularity points; the answers' points should sum to about 100, with the most commonly named answer highest.
-  - "keywords": 1–3 lowercase words/phrases a player's guess might contain if they mean this answer (for lenient matching).
+  - "keywords": 4–8 lowercase words/phrases for matching a player's typed guess. Cover the DIFFERENT WAYS someone might say this answer, not restatements of it — for "ask for citations" give ["citations","citation","sources","source","references","cite","where it got that"]. Every keyword must be at least 4 characters and specific enough that it could only mean this answer: never generic words like "ask", "use", "may", "check" on their own.
   - "why": ONE short sentence — up to about 15 words — saying why this answer matters or how to do it. This is what the player reads when the tile flips, so make it teach, not restate the answer.
 - Every answer must be genuinely correct practice. No filler entries to pad the board.
 
@@ -270,7 +270,7 @@ export async function POST(request) {
     if (!topic) return NextResponse.json({ error: 'A topic is required.' }, { status: 400 });
 
     const system = [
-      GAME_AUDIENCE,
+      AUDIENCE,
       gen.roleAnchored ? playerRoleContext(profile) : null,
       gen.system,
     ].filter(Boolean).join('\n\n');

@@ -70,7 +70,18 @@ function WheelGame() {
   useEffect(() => {
     if (!gameOver || savedRef.current) return;
     savedRef.current = true;
-    try { saveGameResult('wheel-of-fortune', { score: total, total: puzzles?.length || 0, custom: true, topic }); } catch { /* no localStorage */ }
+    // The score is dollars, so it can't be divided by the puzzle count. Wheel has
+    // no fail state either — a puzzle is only left behind once it's solved — so
+    // finishing the set is full credit. Stated outright rather than inferred.
+    try {
+      saveGameResult('wheel-of-fortune', {
+        score: total,
+        total: puzzles?.length || 0,
+        fraction: 1,
+        custom: true,
+        topic,
+      });
+    } catch { /* no localStorage */ }
   }, [gameOver, total, puzzles, topic]);
 
   function spin() {

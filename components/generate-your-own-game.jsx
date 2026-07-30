@@ -39,7 +39,8 @@ const SAMPLES = [
 
 // The "generate your own game" flow, open to everyone. `live` games generate +
 // launch for real via their slug route; any non-live game falls back to a flow
-// preview. Custom rounds are practice — they award no XP (see saveGameResult).
+// preview. Custom rounds pay XP on the same terms as the standard games — once per
+// game per content-day (see saveGameResult).
 export default function GenerateYourOwnGame() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -175,7 +176,7 @@ export default function GenerateYourOwnGame() {
           <Sparkles className="w-4 h-4" /> Surprise me
         </button>
         <p className="text-xs mt-4" style={{ color: 'var(--ink-dim)' }}>
-          Custom rounds are for practice — they don&rsquo;t count toward the daily leaderboard.
+          Custom rounds earn XP just like the standard games — once per game each day.
         </p>
       </div>
 

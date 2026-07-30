@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODELS } from '@/lib/models';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { logAuditEntry } from '@/lib/audit-log';
-import { GAME_AUDIENCE } from '@/lib/game-audience';
+import { AUDIENCE } from '@/lib/audience';
 
 // LLM generation can take a while for a full 20-clue board — give it room so the
 // route doesn't time out before responding (see the maxDuration gotcha).
@@ -19,7 +19,7 @@ const CATEGORIES = 5;
 const VALUES = [200, 400, 600, 800];
 
 // Audience framing (who's playing vs who HCP sells to) is prepended below — see
-// lib/game-audience.js. A Jeopardy board is concept recall, so it gets no role
+// lib/audience.js. A Jeopardy board is concept recall, so it gets no role
 // detail: clues should teach transferable AI knowledge, not the player's own job.
 const BOARD_RULES = `You are the writer for a Jeopardy!-style quiz game on a corporate AI-learning platform. Given a TOPIC, write a full game board that teaches and tests real, useful knowledge about that topic — practical AI skills people can apply at work.
 
@@ -53,7 +53,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'A topic is required.' }, { status: 400 });
     }
 
-    const system = `${GAME_AUDIENCE}\n\n${BOARD_RULES}`;
+    const system = `${AUDIENCE}\n\n${BOARD_RULES}`;
 
     const response = await getClient().messages.create({
       model: MODELS.sonnet,
