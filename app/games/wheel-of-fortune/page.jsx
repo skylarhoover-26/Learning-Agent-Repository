@@ -234,6 +234,13 @@ function WheelGame() {
 
       {solved ? (
         <div className="text-center">
+          {/* Uncovering the letters only teaches the spelling — this is where the
+              phrase actually means something. Absent on older generated rounds. */}
+          {puzzle.meaning && (
+            <p className="max-w-md mx-auto mb-5 text-sm leading-relaxed cine-glass rounded-2xl px-5 py-4" style={{ color: 'var(--ink)' }}>
+              <span className="font-display font-bold">{phrase}</span> — {puzzle.meaning}
+            </p>
+          )}
           <button onClick={nextPuzzle} className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-7 font-semibold">
             {idx + 1 >= puzzles.length ? 'See results' : 'Next puzzle'} <Sparkles className="w-4 h-4" />
           </button>

@@ -181,10 +181,19 @@ function FamilyFeud() {
                 : { background: 'var(--card, #fff)', border: '1px solid var(--line)' }}
             >
               <span className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0" style={{ background: revealed && found.has(i) ? 'rgba(255,255,255,.25)' : 'var(--line)', color: revealed && found.has(i) ? '#fff' : 'var(--ink-dim)' }}>{i + 1}</span>
-              <span className="flex-1 font-display font-bold" style={!revealed ? { color: 'var(--ink-dim)', letterSpacing: '.3em' } : undefined}>
-                {revealed ? a.text : '• • • • •'}
+              <span className="flex-1 min-w-0">
+                <span className="block font-display font-bold" style={!revealed ? { color: 'var(--ink-dim)', letterSpacing: '.3em' } : undefined}>
+                  {revealed ? a.text : '• • • • •'}
+                </span>
+                {/* The teaching line — what makes a flipped tile worth more than
+                    the points. Absent on older generated rounds. */}
+                {revealed && a.why && (
+                  <span className="block text-xs mt-0.5 leading-snug" style={{ color: found.has(i) ? 'rgba(255,255,255,.85)' : 'var(--ink-dim)' }}>
+                    {a.why}
+                  </span>
+                )}
               </span>
-              {revealed && <span className="font-display font-extrabold">{a.points}</span>}
+              {revealed && <span className="font-display font-extrabold shrink-0">{a.points}</span>}
             </div>
           );
         })}

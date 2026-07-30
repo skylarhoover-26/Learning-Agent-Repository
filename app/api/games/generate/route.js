@@ -28,13 +28,18 @@ const MILLIONAIRE_COUNT = 10;
 // Audience framing (who's playing vs who HCP sells to) lives in
 // lib/game-audience.js and is prepended to every game's system prompt below.
 //
-// `roleAnchored` is deliberately limited to the two games that NEED a workplace
-// setting to function — Prompt Battle (you write a prompt for a situation) and
-// Family Feud (you guess how coworkers use AI). Everywhere else the content is
-// concept knowledge, and role detail only narrows it: the point of a game is to
-// teach an AI concept the player can take anywhere, not to quiz them on their own
-// job, which they already know. Even in the two that use it, the role is scenery
-// — see the flavor-only rules in playerRoleContext.
+// `roleAnchored` applies to Prompt Battle ONLY, because writing a prompt requires
+// a situation to write it for. Every other game teaches concept knowledge, where
+// role detail just narrows the material — players already know their own jobs;
+// they came to learn AI. Even in Prompt Battle the role is scenery, not the answer
+// (see the flavor-only rules in playerRoleContext).
+//
+// Family Feud used to be role-anchored too, until the format itself turned out to
+// be the problem: "guess what your coworkers said" polls opinion instead of
+// teaching. Its questions now have known answer sets, and each answer carries a
+// one-line "why" the board shows on reveal. Wheel of Fortune got the same
+// treatment via "meaning" — solving a phrase should teach the idea, not the
+// spelling.
 
 const GENERATORS = {
   speed: {
@@ -133,16 +138,20 @@ Return ONLY valid JSON (no markdown fences):
 Rules per puzzle:
 - "phrase": an AI concept, tool, technique, or best-practice phrase relevant to the topic. 2–4 words. Use ONLY letters A–Z and single spaces — NO punctuation, numbers, hyphens, or symbols.
 - "category": a short uppercase hint for what kind of thing it is (e.g. "AI TECHNIQUE", "TOOL", "BEST PRACTICE", "CONCEPT").
+- "meaning": ONE short sentence — up to about 20 words — saying what the phrase means and when you'd use it, in plain language. Solving the puzzle should teach the idea, not just the words, so never restate the phrase back.
 - Keep phrases recognizable and genuinely educational for the topic. Vary length.
 
 Return ONLY valid JSON (no markdown fences):
-{ "puzzles": [ { "category": "<UPPERCASE HINT>", "phrase": "<TWO TO FOUR WORDS>" } ] }`,
+{ "puzzles": [ { "category": "<UPPERCASE HINT>", "phrase": "<TWO TO FOUR WORDS>", "meaning": "<one plain-language sentence>" } ] }`,
     normalize: (parsed) => {
       const arr = Array.isArray(parsed?.puzzles) ? parsed.puzzles : null;
       if (!arr) return null;
       const clean = arr.map((p) => ({
         category: String(p?.category || 'PHRASE').toUpperCase().replace(/[^A-Z \-&]/g, '').trim() || 'PHRASE',
         phrase: String(p?.phrase || '').toUpperCase().replace(/[^A-Z ]/g, ' ').replace(/\s+/g, ' ').trim(),
+        // Optional, like the Feud "why": a missing meaning costs the teaching
+        // line, not the puzzle.
+        meaning: String(p?.meaning || '').trim(),
       })).filter((p) => p.phrase.replace(/ /g, '').length >= 3)
         .slice(0, WHEEL_COUNT);
       return clean.length >= 2 ? { puzzles: clean } : null;
@@ -150,20 +159,25 @@ Return ONLY valid JSON (no markdown fences):
   },
 
   feud: {
-    maxTokens: 3000,
-    roleAnchored: true,
-    system: `You are writing "Family Feud"-style survey rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${FEUD_ROUNDS} rounds. Each round is a survey-style question about how people in the PLAYER'S OWN line of work use or think about AI (relevant to the topic), with the top answers their coworkers might give.
+    maxTokens: 3500,
+    system: `You are writing "Family Feud"-style survey rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${FEUD_ROUNDS} rounds. The board is the teaching tool: every answer a player uncovers must be a practice, technique, or pitfall they can use afterwards.
+
+THE QUESTION IS THE WHOLE GAME. It must have a KNOWN answer set — the things a practitioner in the field would name — not a matter of taste or local habit.
+- GOOD: "Name a way to check whether an AI answer is accurate." / "Name something you should put in a prompt to get better output." / "Name something AI is genuinely bad at." / "Name a sign an AI wrote something." / "Name a kind of information you should never paste into a public AI tool."
+- BAD, never write these: what tools people prefer, which AI is most popular, what a specific team or company does, how often people use AI, opinions, feelings, or predictions. If two well-informed experts would give different answers because of taste rather than knowledge, the question is wrong.
+- The player should finish the round knowing more about the topic than when they started — not knowing more about their coworkers.
 
 Rules per round:
-- "question": a survey prompt aimed at the player's own work, e.g. "Name a task people on your team use AI for when handling customer emails." Never ask what a customer, contractor, or "home services professional" would do.
-- "answers": 5–6 plausible top answers, RANKED by how common they'd be. Each answer has:
-  - "text": the answer (a few words).
-  - "points": popularity points; the answers' points should sum to about 100, with the most common answer highest.
-  - "keywords": 1–3 lowercase words/phrases that a player's guess might contain if they mean this answer (for lenient matching).
-- Answers must be genuinely useful/plausible and teach good AI practice.
+- "question": the survey prompt, phrased as "Name a…" or "Name something…".
+- "answers": 5–6 answers, RANKED by how commonly a practitioner would name them. Each answer has:
+  - "text": the answer, a few words (e.g. "Check it against the source").
+  - "points": popularity points; the answers' points should sum to about 100, with the most commonly named answer highest.
+  - "keywords": 1–3 lowercase words/phrases a player's guess might contain if they mean this answer (for lenient matching).
+  - "why": ONE short sentence — up to about 15 words — saying why this answer matters or how to do it. This is what the player reads when the tile flips, so make it teach, not restate the answer.
+- Every answer must be genuinely correct practice. No filler entries to pad the board.
 
 Return ONLY valid JSON (no markdown fences):
-{ "rounds": [ { "question": "<survey question>", "answers": [ { "text": "<answer>", "points": <number>, "keywords": ["...","..."] } ] } ] }`,
+{ "rounds": [ { "question": "<survey question>", "answers": [ { "text": "<answer>", "points": <number>, "keywords": ["...","..."], "why": "<one teaching sentence>" } ] } ] }`,
     normalize: (parsed) => {
       const arr = Array.isArray(parsed?.rounds) ? parsed.rounds : null;
       if (!arr) return null;
@@ -174,6 +188,9 @@ Return ONLY valid JSON (no markdown fences):
             text: String(a.text).trim(),
             points: Math.max(1, Math.round(Number(a.points) || 0)) || 10,
             keywords: (Array.isArray(a.keywords) ? a.keywords : []).map((k) => String(k).toLowerCase().trim()).filter(Boolean),
+            // Optional: the board still works without it, so a missing "why"
+            // costs the teaching line rather than the whole round.
+            why: String(a.why || '').trim(),
           }))
           .sort((a, b) => b.points - a.points)
           .slice(0, 6);
