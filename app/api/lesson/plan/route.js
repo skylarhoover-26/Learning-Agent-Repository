@@ -13,7 +13,10 @@ export const maxDuration = 300;
 
 export async function POST(request) {
   try {
-    const { topic, format, tools } = await request.json();
+    // `model` is the model already chosen for this topic by /recommend-tool and
+    // shown in the lesson's on-screen hint. Passing it through means the lesson
+    // prose names the SAME model the banner does instead of picking its own.
+    const { topic, format, tools, model } = await request.json();
     const profile = await getAuthenticatedProfile();
     const profileForGen = tools ? { ...profile, preferred_tools: tools } : profile;
 
@@ -21,7 +24,7 @@ export async function POST(request) {
     let plan;
     let error;
     try {
-      plan = await generateLessonPlan(topic, profileForGen, { format });
+      plan = await generateLessonPlan(topic, profileForGen, { format, recommendedModel: model });
     } catch (err) {
       error = err;
     }

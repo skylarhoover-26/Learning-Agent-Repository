@@ -11,6 +11,7 @@ import { getPausedLesson, upsertPausedLesson, removePausedLesson } from '@/lib/p
 import BookLoader from '@/components/book-loader';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
+import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { onLessonComplete, normalizeTopic, PASS_THRESHOLD, quickTipCapReached, DAILY_CAPS } from '@/lib/progression';
 import { useProgression } from '@/components/progression-provider';
@@ -78,6 +79,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const router = useRouter();
   const { profile } = useProfile();
   const { tools, primaryTool } = useActiveTool();
+  // Live catalog — supplies the admin-editable "best for" blurb used as the
+  // fallback reason when the per-topic recommendation isn't available.
+  const { catalog } = useToolCatalog();
   const { lessonHistory } = useProgression();
   // The lesson's working topic. Starts from the prop, but the "this isn't what I
   // was looking for" flow can replace it with a sharper one and rebuild around
@@ -325,6 +329,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       const primary = match || owned[0] || null;
       const lessonTools = primary ? [primary.id] : undefined;
       if (active) { setLessonToolIds(lessonTools); setLessonTool(primary); }
+      // Only pin the prose to the recommended model when the lesson actually
+      // landed on the recommended TOOL. If we fell back to their primary instead,
+      // that model belongs to a different tool — same guard as the on-screen hint.
+      const lessonModel = match ? rd?.model || undefined : undefined;
 
       let planData = null;
       let planErr = null;
@@ -352,7 +360,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           const res = await fetch('/api/lesson/plan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic, format, tools: lessonTools }),
+            body: JSON.stringify({ topic, format, tools: lessonTools, model: lessonModel }),
             signal: controller.signal,
           });
           clearTimeout(timer);
@@ -452,6 +460,24 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const builtToolLabel = owned.find((t) => t.id === builtToolId)?.label || 'a different tool';
   const toolMismatch = !!builtToolId && !!currentToolId && builtToolId !== currentToolId;
   const showToolSwitch = toolMismatch && dismissedForToolId !== currentToolId && !loading && !!plan;
+
+  // ---- Why this tool, and which model to use --------------------------------
+  // The recommendation explains the tool it PICKED. When the lesson ended up on a
+  // different tool (the learner doesn't own the recommended one), that `why` would
+  // describe the wrong tool — so only use it when the labels actually match, and
+  // fall back to the catalog's "best for" blurb otherwise.
+  const shownTool = lessonTool || primaryTool;
+  const recMatchesShownTool = Boolean(
+    recommendation?.tool && shownTool?.label
+    && recommendation.tool.toLowerCase() === shownTool.label.toLowerCase()
+  );
+  const catalogStrengths = (shownTool && catalog?.find((c) => c.id === shownTool.id)?.strengths)
+    || shownTool?.strengths || '';
+  const toolReason = (recMatchesShownTool && recommendation.why) || '';
+  // Model hint is gated on the same label match: naming a model from a tool the
+  // learner isn't using would send them looking for a picker that isn't there.
+  const modelHint = recMatchesShownTool ? recommendation.model || '' : '';
+  const modelHintWhy = modelHint ? recommendation.modelWhy || '' : '';
 
   // Wipe this lesson's in-progress state so the load effect regenerates from
   // scratch on the next render. Shared by the tool-switch rebuild and the
@@ -1421,7 +1447,13 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         {(lessonTool || primaryTool)?.url && (
           <div className="mt-4 pt-4 border-t border-brand-200/60 dark:border-slate-700">
             <p className="text-sm text-ink dark:text-slate-300 mb-2">
-              You&rsquo;ll practice in <span className="font-semibold">{(lessonTool || primaryTool).emoji} {(lessonTool || primaryTool).label}</span>. Open it in a separate window, try the prompts and ideas from this lesson there, then come back — your place here is saved.
+              You&rsquo;ll practice in <span className="font-semibold">{shownTool.emoji} {shownTool.label}</span>
+              {/* Say WHY this tool, not just which — the per-topic reason when we
+                  have one, otherwise the catalog's "best for" blurb. */}
+              {toolReason
+                ? <> — {toolReason.replace(/\.$/, '')}.</>
+                : catalogStrengths ? <> — it&rsquo;s the strongest fit here for {catalogStrengths}.</> : '.'}
+              {' '}Open it in a separate window, try the prompts and ideas from this lesson there, then come back — your place here is saved.
             </p>
             <OpenToolLink tool={lessonTool || primaryTool} onOpened={() => setToolOpened(true)} />
           </div>
@@ -1529,8 +1561,25 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             {!toolOpened && !(step.id in resolved) && step.activityType === 'write' && (lessonTool || primaryTool)?.url && (
               <div className="mb-3 rounded-xl border border-brand-200 dark:border-slate-600 bg-brand-50/70 dark:bg-slate-800 p-3">
                 <p className="text-sm text-ink dark:text-slate-200 mb-2">
-                  This part is hands-on in <span className="font-semibold">{(lessonTool || primaryTool).emoji} {(lessonTool || primaryTool).label}</span>. Open it in a separate window and do the work there — then come back here.
+                  This part is hands-on in <span className="font-semibold">{shownTool.emoji} {shownTool.label}</span>. Open it in a separate window and do the work there — then come back here.
                 </p>
+                {/* Hands-on work is where the model choice actually matters, so name
+                    the model here. Comes from the same per-topic recommendation that
+                    picked the tool, validated against the live lineup, so it can't
+                    name a model this tool doesn't have. */}
+                {modelHint && (
+                  <p className="text-sm text-ink dark:text-slate-200 mb-2 flex items-start gap-1.5">
+                    <Sparkles className="w-4 h-4 text-brand mt-0.5 shrink-0" />
+                    <span>
+                      Use <span className="font-semibold">{modelHint}</span> for this
+                      {modelHintWhy ? <> — {modelHintWhy.replace(/\.$/, '')}.</> : '.'}
+                      {' '}
+                      <span className="text-slate-500 dark:text-slate-400">
+                        Pick it from the model menu in {shownTool.label} before you start.
+                      </span>
+                    </span>
+                  </p>
+                )}
                 <OpenToolLink tool={lessonTool} onOpened={() => setToolOpened(true)} />
               </div>
             )}
