@@ -61,15 +61,21 @@ export const NAV_SECTIONS = [
     title: 'Learn',
     icon: BookOpen,
     tour: 'section-learn',
+    // Ordered by how much we want a learner to reach for it, NOT alphabetically:
+    // find-AI-for-my-work first, then the guided lesson, then the lighter ways in,
+    // with reference material (Library, Prompts) and passive AI News last. This
+    // was alphabetical for a while — please don't re-sort it without asking.
+    // KEEP IN SYNC with the Learn group in lib/menu-catalog.js, which drives the
+    // admin menu-visibility toggles.
     items: [
-      { href: '/ai-news', icon: Rss, label: 'AI News', desc: 'The latest AI updates — take a lesson on any of them' },
+      { href: '/discover', icon: Compass, label: 'Your AI Opportunities', desc: 'Find AI for your work', tour: 'nav-discover' },
+      { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
-      { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
+      { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
       { href: '/library', icon: Library, label: 'Library', desc: 'Browse ready-to-use AI use cases', tour: 'nav-library' },
       { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
-      { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
-      { href: '/discover', icon: Compass, label: 'Your AI Opportunities', desc: 'Find AI for your work', tour: 'nav-discover' },
+      { href: '/ai-news', icon: Rss, label: 'AI News', desc: 'The latest AI updates — take a lesson on any of them' },
     ],
   },
   {
