@@ -159,7 +159,13 @@
    on a card that has one; leave it off and you get the accent. */
 .cine-tilt:hover {
   --tilt-lift: -6px;
-  box-shadow: 0 30px 70px -42px var(--tilt-accent, var(--accent));
+  /* Spread is -12px, NOT the -42px this used to be. A negative spread shrinks the
+     shadow box on every side, so -42px collapsed the glow entirely on anything
+     shorter than 84px — the Discovery examples (~56px) and chat suggestions
+     (~52px) showed a border tint on hover and no glow at all, while the tall Games
+     cards (~400px) had plenty of box left and looked right. These numbers keep a
+     visible glow at BOTH card sizes. */
+  box-shadow: 0 14px 36px -12px var(--tilt-accent, var(--accent));
   border-color: color-mix(in srgb, var(--tilt-accent, var(--accent)) 38%, transparent);
   /* Paint the hovered card above its siblings. The glow is offset 30px DOWN with
      a 70px blur, so in a tight stack (Discovery's examples sit 8px apart, the
