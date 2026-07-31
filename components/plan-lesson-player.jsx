@@ -1455,6 +1455,22 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                 : catalogStrengths ? <> — it&rsquo;s the strongest fit here for {catalogStrengths}.</> : '.'}
               {' '}Open it in a separate window, try the prompts and ideas from this lesson there, then come back — your place here is saved.
             </p>
+            {/* Which model to use, in the header rather than only on write-activity
+                steps: this renders on EVERY step, so the learner sees it whatever
+                mix of activities the lesson happens to contain. */}
+            {modelHint && (
+              <p className="text-sm text-ink dark:text-slate-300 mb-2 flex items-start gap-1.5">
+                <Sparkles className="w-4 h-4 text-brand mt-0.5 shrink-0" />
+                <span>
+                  Inside {shownTool.label}, use <span className="font-semibold">{modelHint}</span>
+                  {modelHintWhy ? <> — {modelHintWhy.replace(/\.$/, '')}.</> : '.'}
+                  {' '}
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Pick it from the model menu before you start.
+                  </span>
+                </span>
+              </p>
+            )}
             <OpenToolLink tool={lessonTool || primaryTool} onOpened={() => setToolOpened(true)} />
           </div>
         )}
@@ -1563,23 +1579,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                 <p className="text-sm text-ink dark:text-slate-200 mb-2">
                   This part is hands-on in <span className="font-semibold">{shownTool.emoji} {shownTool.label}</span>. Open it in a separate window and do the work there — then come back here.
                 </p>
-                {/* Hands-on work is where the model choice actually matters, so name
-                    the model here. Comes from the same per-topic recommendation that
-                    picked the tool, validated against the live lineup, so it can't
-                    name a model this tool doesn't have. */}
-                {modelHint && (
-                  <p className="text-sm text-ink dark:text-slate-200 mb-2 flex items-start gap-1.5">
-                    <Sparkles className="w-4 h-4 text-brand mt-0.5 shrink-0" />
-                    <span>
-                      Use <span className="font-semibold">{modelHint}</span> for this
-                      {modelHintWhy ? <> — {modelHintWhy.replace(/\.$/, '')}.</> : '.'}
-                      {' '}
-                      <span className="text-slate-500 dark:text-slate-400">
-                        Pick it from the model menu in {shownTool.label} before you start.
-                      </span>
-                    </span>
-                  </p>
-                )}
+                {/* No model line here on purpose — the lesson header carries it and
+                    is on screen for every step, so repeating it would say the same
+                    thing twice on this one. */}
                 <OpenToolLink tool={lessonTool} onOpened={() => setToolOpened(true)} />
               </div>
             )}
