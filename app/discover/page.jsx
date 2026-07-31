@@ -15,6 +15,7 @@ import {
 import {
   loadDiscoveryHistory, addDiscoverySearch, removeDiscoverySearch, describeSearchAge,
 } from '@/lib/discovery-history';
+import { SECTION_COLORS } from '@/lib/section-colors';
 import { buildDiscoveryExamples } from '@/lib/discovery-examples';
 import { useProfile } from '@/components/profile-provider';
 
@@ -241,6 +242,10 @@ function DiscoverContent() {
                     key={i}
                     onClick={() => setWorkDescription(s)}
                     className="cine-glass cine-tilt w-full text-left p-4 rounded-xl transition-all text-sm text-slate-700 dark:text-slate-300"
+                    // This section's identity colour for the hover glow — the app
+                    // accent (blue) has almost no separation from the blue-white
+                    // page background, which is why every hover looked washed out.
+                    style={{ '--tilt-accent': SECTION_COLORS.discover }}
                   >
                     {s}
                   </button>

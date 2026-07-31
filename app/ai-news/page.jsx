@@ -8,6 +8,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import BookLoader from '@/components/book-loader';
 import MultiSelect from '@/components/multi-select';
+import { SECTION_COLORS } from '@/lib/section-colors';
 import {
   freshnessLabel, groupByCategory, isApproved, isResearchSource, lessonHref,
   SCAN_TIME_LABEL,
@@ -26,8 +27,21 @@ export default function AiNewsPage() {
 
 function NewsRow({ item }) {
   return (
-    <div className="cine-glass cine-row rounded-2xl px-4 py-3">
-      <div className="flex items-start gap-3">
+    // The whole row is now the "Take a lesson" target via the stretched link
+    // below, so the hover lift/glow means something rather than decorating a
+    // container you can't click. A stretched <Link> (absolute inset-0) rather than
+    // wrapping the row, because "Read the source" is itself an <a> and nesting
+    // anchors is invalid HTML — the overlay sits under the real links instead.
+    <div
+      className="cine-glass cine-tilt rounded-2xl px-4 py-3 relative"
+      style={{ '--tilt-accent': SECTION_COLORS.aiNews }}
+    >
+      <Link
+        href={lessonHref(item)}
+        aria-label={`Take a lesson on: ${item.title}`}
+        className="absolute inset-0 rounded-2xl"
+      />
+      <div className="flex items-start gap-3 relative pointer-events-none">
         <div className="min-w-0 flex-1">
           <span
             className="inline-block text-[10px] font-bold uppercase tracking-wide mb-1.5"
@@ -45,9 +59,13 @@ function NewsRow({ item }) {
             </p>
           )}
           <div className="flex items-center gap-3 mt-2">
+            {/* pointer-events-auto: the content wrapper above is
+                pointer-events-none so clicks anywhere on the row reach the
+                stretched link, but these two must stay individually clickable —
+                especially "Read the source", which goes somewhere different. */}
             <Link
               href={lessonHref(item)}
-              className="inline-flex items-center gap-1 text-xs font-bold"
+              className="inline-flex items-center gap-1 text-xs font-bold relative pointer-events-auto"
               style={{ color: 'var(--good)' }}
             >
               Take a lesson <ArrowRight className="w-3 h-3" />
@@ -57,7 +75,7 @@ function NewsRow({ item }) {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-semibold"
+                className="inline-flex items-center gap-1 text-xs font-semibold relative pointer-events-auto"
                 style={{ color: 'var(--ink-dim)' }}
               >
                 Read the source <ExternalLink className="w-3 h-3" />

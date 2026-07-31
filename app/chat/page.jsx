@@ -15,6 +15,7 @@ import { FormattedContent } from '@/components/lesson-slide';
 import ChatLessonOffer from '@/components/chat-lesson-offer';
 import { useActiveTool } from '@/components/active-tool-provider';
 import Avatar from '@/components/avatar';
+import { SECTION_COLORS } from '@/lib/section-colors';
 import { displayNameFromProfile } from '@/lib/display-name';
 
 // Same support channels surfaced by the floating help widget, pinned in the
@@ -289,6 +290,10 @@ function ChatPageInner() {
                     // an always-on grey border, which is what made these look
                     // different from every other card.
                     className="cine-glass cine-tilt group flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl"
+                    // This section's own hover colour, so Just Chat reads as its
+                    // own place the way Lesson and Games do — rather than every
+                    // section glowing the same washed-out blue.
+                    style={{ '--tilt-accent': SECTION_COLORS.chat }}
                   >
                     <span className="text-sm font-medium text-ink dark:text-slate-200">{s}</span>
                     <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-brand shrink-0 transition-colors" />
