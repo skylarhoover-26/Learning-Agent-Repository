@@ -65,30 +65,30 @@ const DEPTH_OPTIONS = [
 // Static class strings per tone (kept whole so Tailwind's JIT sees them). `glow`
 // feeds the inline boxShadow on the selected card.
 const DEPTH_TONES = {
-  green: { ring: 'ring-green-400 dark:ring-green-500', glow: 'rgba(34,197,94,0.5)', iconOn: 'bg-green-500 text-white', iconOff: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400', badge: 'bg-green-500' },
-  amber: { ring: 'ring-amber-400 dark:ring-amber-500', glow: 'rgba(245,158,11,0.5)', iconOn: 'bg-amber-500 text-white', iconOff: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400', badge: 'bg-amber-500' },
-  orange: { ring: 'ring-orange-400 dark:ring-orange-500', glow: 'rgba(249,115,22,0.5)', iconOn: 'bg-orange-500 text-white', iconOff: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400', badge: 'bg-orange-500' },
-  red: { ring: 'ring-red-400 dark:ring-red-500', glow: 'rgba(239,68,68,0.5)', iconOn: 'bg-red-500 text-white', iconOff: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400', badge: 'bg-red-500' },
+  green: { ring: 'ring-green-400 dark:ring-green-500', glow: 'rgba(34,197,94,0.5)', solid: '#22C55E', iconOn: 'bg-green-500 text-white', iconOff: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400', badge: 'bg-green-500' },
+  amber: { ring: 'ring-amber-400 dark:ring-amber-500', glow: 'rgba(245,158,11,0.5)', solid: '#F59E0B', iconOn: 'bg-amber-500 text-white', iconOff: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400', badge: 'bg-amber-500' },
+  orange: { ring: 'ring-orange-400 dark:ring-orange-500', glow: 'rgba(249,115,22,0.5)', solid: '#F97316', iconOn: 'bg-orange-500 text-white', iconOff: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400', badge: 'bg-orange-500' },
+  red: { ring: 'ring-red-400 dark:ring-red-500', glow: 'rgba(239,68,68,0.5)', solid: '#EF4444', iconOn: 'bg-red-500 text-white', iconOff: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400', badge: 'bg-red-500' },
 };
 
 // Step 2 (format) has two cards, so each gets its own identity color and the
 // same loud selected treatment (ring + glow + check badge + scale) as the depth
 // step. Read = blue, Narrated = violet.
 const FORMAT_TONES = {
-  read: { ring: 'ring-blue-400 dark:ring-blue-500', glow: 'rgba(59,130,246,0.5)', iconOn: 'bg-blue-500 text-white', iconOff: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400', badge: 'bg-blue-500' },
-  watch: { ring: 'ring-violet-400 dark:ring-violet-500', glow: 'rgba(139,92,246,0.5)', iconOn: 'bg-violet-500 text-white', iconOff: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400', badge: 'bg-violet-500' },
+  read: { ring: 'ring-blue-400 dark:ring-blue-500', glow: 'rgba(59,130,246,0.5)', solid: '#3B82F6', iconOn: 'bg-blue-500 text-white', iconOff: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400', badge: 'bg-blue-500' },
+  watch: { ring: 'ring-violet-400 dark:ring-violet-500', glow: 'rgba(139,92,246,0.5)', solid: '#8B5CF6', iconOn: 'bg-violet-500 text-white', iconOff: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400', badge: 'bg-violet-500' },
 };
 
 // Step 3 (topics) isn't a scale, so tiles cycle through a 6-color palette by
 // position — every tile reads as its own category, and the selected one lights
 // up with a ring + glow + check badge. `tile` tints the emoji chip.
 const TOPIC_TONES = [
-  { ring: 'ring-blue-400 dark:ring-blue-500', glow: 'rgba(59,130,246,0.5)', tile: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800', badge: 'bg-blue-500', chevron: 'text-blue-400' },
-  { ring: 'ring-teal-400 dark:ring-teal-500', glow: 'rgba(20,184,166,0.5)', tile: 'bg-teal-50 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800', badge: 'bg-teal-500', chevron: 'text-teal-400' },
-  { ring: 'ring-violet-400 dark:ring-violet-500', glow: 'rgba(139,92,246,0.5)', tile: 'bg-violet-50 text-violet-600 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800', badge: 'bg-violet-500', chevron: 'text-violet-400' },
-  { ring: 'ring-amber-400 dark:ring-amber-500', glow: 'rgba(245,158,11,0.5)', tile: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800', badge: 'bg-amber-500', chevron: 'text-amber-400' },
-  { ring: 'ring-rose-400 dark:ring-rose-500', glow: 'rgba(244,63,94,0.5)', tile: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800', badge: 'bg-rose-500', chevron: 'text-rose-400' },
-  { ring: 'ring-emerald-400 dark:ring-emerald-500', glow: 'rgba(16,185,129,0.5)', tile: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800', badge: 'bg-emerald-500', chevron: 'text-emerald-400' },
+  { ring: 'ring-blue-400 dark:ring-blue-500', glow: 'rgba(59,130,246,0.5)', solid: '#3B82F6', tile: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800', badge: 'bg-blue-500', chevron: 'text-blue-400' },
+  { ring: 'ring-teal-400 dark:ring-teal-500', glow: 'rgba(20,184,166,0.5)', solid: '#14B8A6', tile: 'bg-teal-50 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800', badge: 'bg-teal-500', chevron: 'text-teal-400' },
+  { ring: 'ring-violet-400 dark:ring-violet-500', glow: 'rgba(139,92,246,0.5)', solid: '#8B5CF6', tile: 'bg-violet-50 text-violet-600 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800', badge: 'bg-violet-500', chevron: 'text-violet-400' },
+  { ring: 'ring-amber-400 dark:ring-amber-500', glow: 'rgba(245,158,11,0.5)', solid: '#F59E0B', tile: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800', badge: 'bg-amber-500', chevron: 'text-amber-400' },
+  { ring: 'ring-rose-400 dark:ring-rose-500', glow: 'rgba(244,63,94,0.5)', solid: '#F43F5E', tile: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800', badge: 'bg-rose-500', chevron: 'text-rose-400' },
+  { ring: 'ring-emerald-400 dark:ring-emerald-500', glow: 'rgba(16,185,129,0.5)', solid: '#10B981', tile: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800', badge: 'bg-emerald-500', chevron: 'text-emerald-400' },
 ];
 
 // One collapsed rung of the wizard ladder: a completed step, grayed out, showing
@@ -1164,12 +1164,14 @@ function LessonContent() {
                   className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-tilt ${
                     selected ? `ring-2 ${tone.ring}` : ''
                   }`}
-                  // --tilt-accent makes the cine-tilt hover glow use THIS card's
-                  // colour instead of the global blue accent, so Quick Tip stays
-                  // green, Deep Dive orange, and so on.
+                  // --tilt-accent gets the SOLID colour, not `glow`. cine-tilt's
+                  // hover rule mixes it at 38%, and `glow` is already rgba(...,0.5),
+                  // so passing that gave ~19% — visibly fainter than Achievements,
+                  // whose tints are solid hex. `glow` keeps its alpha for the
+                  // selected box-shadow, where the softness is wanted.
                   style={selected
-                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.glow }
-                    : { '--tilt-accent': tone.glow }}
+                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.solid }
+                    : { '--tilt-accent': tone.solid }}
                   aria-pressed={selected}
                 >
                   {selected && (
@@ -1229,12 +1231,14 @@ function LessonContent() {
                   className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-tilt ${
                     selected ? `ring-2 ${tone.ring}` : ''
                   }`}
-                  // --tilt-accent makes the cine-tilt hover glow use THIS card's
-                  // colour instead of the global blue accent, so Quick Tip stays
-                  // green, Deep Dive orange, and so on.
+                  // --tilt-accent gets the SOLID colour, not `glow`. cine-tilt's
+                  // hover rule mixes it at 38%, and `glow` is already rgba(...,0.5),
+                  // so passing that gave ~19% — visibly fainter than Achievements,
+                  // whose tints are solid hex. `glow` keeps its alpha for the
+                  // selected box-shadow, where the softness is wanted.
                   style={selected
-                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.glow }
-                    : { '--tilt-accent': tone.glow }}
+                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.solid }
+                    : { '--tilt-accent': tone.solid }}
                 >
                   {selected && (
                     <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: tone.glow }} />
@@ -1303,12 +1307,14 @@ function LessonContent() {
                   className={`group relative overflow-hidden flex items-start gap-3 p-4 cine-glass cine-tilt rounded-2xl transition-all text-left ${
                     selected ? `ring-2 ${tone.ring}` : ''
                   }`}
-                  // --tilt-accent makes the cine-tilt hover glow use THIS card's
-                  // colour instead of the global blue accent, so Quick Tip stays
-                  // green, Deep Dive orange, and so on.
+                  // --tilt-accent gets the SOLID colour, not `glow`. cine-tilt's
+                  // hover rule mixes it at 38%, and `glow` is already rgba(...,0.5),
+                  // so passing that gave ~19% — visibly fainter than Achievements,
+                  // whose tints are solid hex. `glow` keeps its alpha for the
+                  // selected box-shadow, where the softness is wanted.
                   style={selected
-                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.glow }
-                    : { '--tilt-accent': tone.glow }}
+                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.solid }
+                    : { '--tilt-accent': tone.solid }}
                 >
                   {selected && (
                     <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: tone.glow }} />

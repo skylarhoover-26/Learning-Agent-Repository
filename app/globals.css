@@ -161,6 +161,13 @@
   --tilt-lift: -6px;
   box-shadow: 0 30px 70px -42px var(--tilt-accent, var(--accent));
   border-color: color-mix(in srgb, var(--tilt-accent, var(--accent)) 38%, transparent);
+  /* Paint the hovered card above its siblings. The glow is offset 30px DOWN with
+     a 70px blur, so in a tight stack (Discovery's examples sit 8px apart, the
+     chat suggestions are a 2-column grid) the next card painted straight over it
+     and only a sliver showed — the glow looked like it vanished. `relative` with
+     no offsets changes stacking only, never layout. */
+  position: relative;
+  z-index: 1;
 }
 @media (prefers-reduced-motion: reduce) {
   .cine-tilt { transform: none; transition: none; }
