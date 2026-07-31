@@ -259,31 +259,37 @@ function ChatPageInner() {
                 {firstName ? `Hi ${firstName} — what can I help with?` : 'What can I help you with?'}
               </h2>
               <p className="text-slate-600 dark:text-slate-400 max-w-md mb-7">
-                Ask me anything about AI and I&apos;ll answer right here, teaching by example. Try one of these to get started:
+                Ask me anything about AI and I&apos;ll answer right here, teaching by example.
               </p>
 
-              <div data-tour="chat-suggestions" className="grid sm:grid-cols-2 gap-2.5 w-full max-w-xl">
-                {buildSuggestions(profile).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                    // cine-tilt = the same lift + accent glow as the Achievements
-                    // tiles, so clickable cards behave identically app-wide. The
-                    // old hover:shadow-card / hover:border-* are dropped because
-                    // cine-tilt animates those same two properties and whichever
-                    // rule loaded last would win, making the glow inconsistent.
-                    className="cine-tilt group flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-                  >
-                    <span className="text-sm font-medium text-ink dark:text-slate-200">{s}</span>
-                    <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-brand shrink-0 transition-colors" />
-                  </button>
-                ))}
+              {/* Composer FIRST, then the suggestions underneath — the same shape as
+                  Your AI Opportunities (input, then "or start from one of these"), so
+                  the two "describe what you need" screens read the same way. */}
+              <div data-tour="page-chat" className="w-full max-w-xl text-left">
+                {composerBox}
               </div>
 
-              {/* Composer sits right under the suggestions on the welcome
-                  screen, above the "Need a human?" links. */}
-              <div data-tour="page-chat" className="w-full max-w-xl mt-7 text-left">
-                {composerBox}
+              <div className="w-full max-w-xl mt-7 text-left">
+                <h3 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
+                  Or start from one of these
+                </h3>
+                <div data-tour="chat-suggestions" className="grid sm:grid-cols-2 gap-2.5">
+                  {buildSuggestions(profile).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => { setInput(s); inputRef.current?.focus(); }}
+                      // cine-tilt = the same lift + accent glow as the Achievements
+                      // tiles, so clickable cards behave identically app-wide. The
+                      // old hover:shadow-card / hover:border-* are dropped because
+                      // cine-tilt animates those same two properties and whichever
+                      // rule loaded last would win, making the glow inconsistent.
+                      className="cine-tilt group flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    >
+                      <span className="text-sm font-medium text-ink dark:text-slate-200">{s}</span>
+                      <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-brand shrink-0 transition-colors" />
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-2 mt-8">

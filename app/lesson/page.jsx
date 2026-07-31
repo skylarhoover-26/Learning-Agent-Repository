@@ -1163,7 +1163,12 @@ function LessonContent() {
                   className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-tilt ${
                     selected ? `ring-2 ${tone.ring}` : ''
                   }`}
-                  style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
+                  // --tilt-accent makes the cine-tilt hover glow use THIS card's
+                  // colour instead of the global blue accent, so Quick Tip stays
+                  // green, Deep Dive orange, and so on.
+                  style={selected
+                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.glow }
+                    : { '--tilt-accent': tone.glow }}
                   aria-pressed={selected}
                 >
                   {selected && (
@@ -1223,7 +1228,12 @@ function LessonContent() {
                   className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-tilt ${
                     selected ? `ring-2 ${tone.ring}` : ''
                   }`}
-                  style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
+                  // --tilt-accent makes the cine-tilt hover glow use THIS card's
+                  // colour instead of the global blue accent, so Quick Tip stays
+                  // green, Deep Dive orange, and so on.
+                  style={selected
+                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.glow }
+                    : { '--tilt-accent': tone.glow }}
                 >
                   {selected && (
                     <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: tone.glow }} />
@@ -1292,7 +1302,12 @@ function LessonContent() {
                   className={`group relative overflow-hidden flex items-start gap-3 p-4 cine-glass cine-tilt rounded-2xl transition-all text-left ${
                     selected ? `ring-2 ${tone.ring}` : ''
                   }`}
-                  style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
+                  // --tilt-accent makes the cine-tilt hover glow use THIS card's
+                  // colour instead of the global blue accent, so Quick Tip stays
+                  // green, Deep Dive orange, and so on.
+                  style={selected
+                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.glow }
+                    : { '--tilt-accent': tone.glow }}
                 >
                   {selected && (
                     <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: tone.glow }} />

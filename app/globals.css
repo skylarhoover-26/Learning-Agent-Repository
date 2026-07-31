@@ -152,7 +152,16 @@
   transition: transform .3s cubic-bezier(.16, 1, .3, 1), box-shadow .4s ease, border-color .3s ease;
   will-change: transform;
 }
-.cine-tilt:hover { --tilt-lift: -6px; box-shadow: 0 30px 70px -42px var(--accent); border-color: color-mix(in srgb, var(--accent) 38%, transparent); }
+/* The hover glow colour is overridable per card via --tilt-accent, defaulting to
+   the app accent. Without this every card that opts into cine-tilt glowed the same
+   blue and drowned out its own identity colour — Quick Tip's green, Deep Dive's
+   orange, the Streaks/Quiz badge tints. Set `style={{ '--tilt-accent': <colour> }}`
+   on a card that has one; leave it off and you get the accent. */
+.cine-tilt:hover {
+  --tilt-lift: -6px;
+  box-shadow: 0 30px 70px -42px var(--tilt-accent, var(--accent));
+  border-color: color-mix(in srgb, var(--tilt-accent, var(--accent)) 38%, transparent);
+}
 @media (prefers-reduced-motion: reduce) {
   .cine-tilt { transform: none; transition: none; }
   .cine-tilt:hover { --tilt-lift: 0px; }
