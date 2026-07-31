@@ -62,14 +62,14 @@ export const NAV_SECTIONS = [
     icon: BookOpen,
     tour: 'section-learn',
     items: [
-      { href: '/discover', icon: Compass, label: 'Your AI Opportunities', desc: 'Find AI for your work', tour: 'nav-discover' },
-      { href: '/library', icon: Library, label: 'Library', desc: 'Browse ready-to-use AI use cases', tour: 'nav-library' },
+      { href: '/ai-news', icon: Rss, label: 'AI News', desc: 'The latest AI updates — take a lesson on any of them' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
       { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Pick a topic and depth for a guided lesson' },
+      { href: '/library', icon: Library, label: 'Library', desc: 'Browse ready-to-use AI use cases', tour: 'nav-library' },
       { href: '/prompts', icon: Terminal, label: 'Prompts', desc: 'Ready-to-use prompts for your tasks' },
       { href: '/daily', icon: Sparkles, label: "Today's Pick", desc: 'Your personalized lesson for today', tour: 'nav-daily' },
-      { href: '/ai-news', icon: Rss, label: 'AI News', desc: 'The latest AI updates — take a lesson on any of them' },
+      { href: '/discover', icon: Compass, label: 'Your AI Opportunities', desc: 'Find AI for your work', tour: 'nav-discover' },
     ],
   },
   {
