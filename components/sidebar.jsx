@@ -62,7 +62,7 @@ export const NAV_SECTIONS = [
     icon: BookOpen,
     tour: 'section-learn',
     items: [
-      { href: '/discover', icon: Compass, label: 'Discovery', desc: 'Find AI for your work', tour: 'nav-discover' },
+      { href: '/discover', icon: Compass, label: 'Your AI Opportunities', desc: 'Find AI for your work', tour: 'nav-discover' },
       { href: '/library', icon: Library, label: 'Library', desc: 'Browse ready-to-use AI use cases', tour: 'nav-library' },
       { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn AI through quick interactive games' },
       { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask anything about AI — it can launch a lesson', tour: 'nav-chat' },
