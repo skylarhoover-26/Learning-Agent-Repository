@@ -267,7 +267,12 @@ function ChatPageInner() {
                   <button
                     key={s}
                     onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                    className="group flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-card transition-all"
+                    // cine-tilt = the same lift + accent glow as the Achievements
+                    // tiles, so clickable cards behave identically app-wide. The
+                    // old hover:shadow-card / hover:border-* are dropped because
+                    // cine-tilt animates those same two properties and whichever
+                    // rule loaded last would win, making the glow inconsistent.
+                    className="cine-tilt group flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   >
                     <span className="text-sm font-medium text-ink dark:text-slate-200">{s}</span>
                     <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-brand shrink-0 transition-colors" />

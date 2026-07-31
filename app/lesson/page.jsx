@@ -1160,8 +1160,8 @@ function LessonContent() {
                 <button
                   key={f.key}
                   onClick={() => selectFormat(f.key)}
-                  className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
-                    selected ? `ring-2 ${tone.ring} scale-[1.02]` : ''
+                  className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-tilt ${
+                    selected ? `ring-2 ${tone.ring}` : ''
                   }`}
                   style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
                   aria-pressed={selected}
@@ -1220,8 +1220,8 @@ function LessonContent() {
                   key={m.key}
                   onClick={() => setLearnMode(m.key)}
                   aria-pressed={selected}
-                  className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-lift ${
-                    selected ? `ring-2 ${tone.ring} scale-[1.02]` : ''
+                  className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-tilt ${
+                    selected ? `ring-2 ${tone.ring}` : ''
                   }`}
                   style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
                 >
@@ -1289,8 +1289,8 @@ function LessonContent() {
                   key={i}
                   onClick={() => setSelectedTopic(s.topic)}
                   aria-pressed={selected}
-                  className={`group relative overflow-hidden flex items-start gap-3 p-4 cine-glass cine-lift rounded-2xl transition-all text-left ${
-                    selected ? `ring-2 ${tone.ring} scale-[1.02]` : ''
+                  className={`group relative overflow-hidden flex items-start gap-3 p-4 cine-glass cine-tilt rounded-2xl transition-all text-left ${
+                    selected ? `ring-2 ${tone.ring}` : ''
                   }`}
                   style={selected ? { boxShadow: `0 0 34px -6px ${tone.glow}` } : undefined}
                 >

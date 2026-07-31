@@ -83,9 +83,15 @@ function SkillCell({ skill, isDoThisNow, onSelect, isSelected, outdatedMark }) {
   const BadgeIcon = badge.icon;
 
   return (
+    // cine-tilt gives this the same lift + accent glow as the Achievements tiles,
+    // so every clickable card in the app behaves the same way. Only cine-tilt, not
+    // cine-glass: these cells paint their own mastery colour underneath (below),
+    // and glass would wash it out. The old `hover:scale-[1.02]` is gone on purpose
+    // — Tailwind's scale sets `transform`, which is the same property cine-tilt
+    // animates, so the two silently fought and the lift never applied.
     <button
       onClick={() => onSelect(isSelected ? null : skill.name)}
-      className={`relative text-left rounded-xl border p-3 transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-brand ${
+      className={`cine-tilt relative text-left rounded-xl border p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
         isSelected
           ? 'border-brand ring-2 ring-brand/30 shadow-card-hover'
           : 'border-slate-200 dark:border-slate-700 shadow-card'

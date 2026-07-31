@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
@@ -15,12 +15,8 @@ import {
 import {
   loadDiscoveryHistory, addDiscoverySearch, removeDiscoverySearch, describeSearchAge,
 } from '@/lib/discovery-history';
-
-const SAMPLE_PROMPTS = [
-  "I'm an Operations Manager. My typical day: 3-4 meetings, reviewing project status updates, planning next quarter, and writing reports.",
-  "I'm in Sales. I spend mornings on prospect research, then write outreach emails, take customer calls, and update CRM in the afternoon.",
-  "Senior Director of Enablement. I lead a team that builds training. I review their content, run program launches, write executive updates, and meet with stakeholders.",
-];
+import { buildDiscoveryExamples } from '@/lib/discovery-examples';
+import { useProfile } from '@/components/profile-provider';
 
 // Colored difficulty pills — same green/amber/red scale used across the app
 // (library, games, practice) so difficulty reads the same everywhere.
@@ -35,6 +31,10 @@ const difficultyPill = 'inline-flex items-center px-2 py-0.5 rounded-pill text-[
 function DiscoverContent() {
   const searchParams = useSearchParams();
   const { tools } = useActiveTool();
+  const { profile } = useProfile();
+  // Starters built from this learner's own onboarding answers (their tasks and
+  // goals), not three generic roles. Recomputed when the profile arrives.
+  const examples = useMemo(() => buildDiscoveryExamples(profile), [profile]);
   const [workDescription, setWorkDescription] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -236,7 +236,7 @@ function DiscoverContent() {
                 Or start from one of these examples
               </h3>
               <div className="space-y-2">
-                {SAMPLE_PROMPTS.map((s, i) => (
+                {examples.map((s, i) => (
                   <button
                     key={i}
                     onClick={() => setWorkDescription(s)}
