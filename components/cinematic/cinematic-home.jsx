@@ -18,7 +18,6 @@ import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
 import { freshnessLabel, lessonHref, splitByApproval } from '@/lib/ai-news';
-import { SECTION_COLORS } from '@/lib/section-colors';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -240,21 +239,21 @@ export default function CinematicHome() {
               : <>You&apos;re at the top level — keep the streak alive.</>}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            {/* cine-tilt, not cine-lift: the same lift + glow every other
-                clickable thing has. Each takes its DESTINATION's colour — chat is
-                teal, and progress is gold because gold already means XP, levels
-                and streaks, which is exactly where this goes. */}
+            {/* cine-tilt, not cine-lift: the same lift + glow every other clickable
+                thing has. Both glow BLUE here (the app accent) — these sit on the
+                pale hero rather than inside a coloured section, and blue reads as
+                the primary path forward. The Discover panel below goes gold to
+                match its own eyebrow and button. */}
             <Link
               href="/chat"
               className="cine-pill cine-tilt inline-flex items-center gap-2 h-12 px-6 font-semibold"
-              style={{ '--tilt-accent': SECTION_COLORS.chat }}
             >
               <MessageCircle className="w-4 h-4 shrink-0" /> Chat with your coach <ArrowRight className="w-4 h-4 shrink-0" />
             </Link>
             <Link
               href="/heatmap"
               className="cine-glass cine-tilt inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold"
-              style={{ color: 'var(--ink)', '--tilt-accent': 'var(--gold)' }}
+              style={{ color: 'var(--ink)' }}
             >
               <BarChart3 className="w-4 h-4 shrink-0" /> See your progress
             </Link>
@@ -367,10 +366,13 @@ export default function CinematicHome() {
         href="/discover"
         data-tour="home-find-ai"
         className="cine-tilt group block relative overflow-hidden rounded-[28px] p-10 sm:p-14 shadow-[0_40px_90px_-60px_var(--accent)]"
-        style={{ background: 'linear-gradient(135deg,#0A3AC8,#2E7BFF)', '--tilt-accent': SECTION_COLORS.discover }}
+        // Gold, matching the panel's own eyebrow pill and CTA button, rather than
+        // the section's violet — on a blue panel the warm outline is what actually
+        // reads.
+        style={{ background: 'linear-gradient(135deg,#0A3AC8,#2E7BFF)', '--tilt-accent': 'var(--gold)' }}
       >
         <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.18em] px-3 py-1 rounded-full mb-5 cine-gold">
-          <Compass className="w-3.5 h-3.5" /> Discover
+          <Compass className="w-3.5 h-3.5" /> Your AI Opportunities
         </span>
         <h2 className="font-display font-extrabold text-4xl sm:text-5xl tracking-tight leading-[1.04] text-white max-w-xl">Find AI for your actual work</h2>
         <p className="mt-4 text-lg text-white/80 max-w-lg leading-relaxed">Tell me about your day-to-day and I&apos;ll surface specific AI opportunities you can use today — for your real work, not generic ideas.</p>
