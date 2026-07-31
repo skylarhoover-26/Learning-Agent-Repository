@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/chat-store';
 import { onChatMessage } from '@/lib/progression';
 import { emitXp } from '@/lib/xp-bus';
@@ -232,7 +233,9 @@ function ChatPageInner() {
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>
       </div>
-      <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-1.5">
+      {/* Left-aligned to sit under the box like Discovery's "Even a few sentences
+          works." hint, rather than centred under a narrow centred column. */}
+      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 px-1">
         Press Enter to send · Shift+Enter for a new line · Chats may be reviewed by admins to improve training.
       </p>
     </>
@@ -248,70 +251,73 @@ function ChatPageInner() {
 
       {/* Scrollable conversation */}
       <main ref={mainRef} className="flex-1 overflow-y-auto">
-        <div data-tour="chat-thread" className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
-          {/* Welcome / empty state */}
-          {!hasMessages && !isLoading && (
-            <div className="flex flex-col items-center text-center pt-6 pb-4">
-              <span className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand to-brand-600 text-white shadow-lg mb-5">
-                <Sparkles className="w-8 h-8" />
-              </span>
-              <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1.5">
-                {firstName ? `Hi ${firstName} — what can I help with?` : 'What can I help you with?'}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 max-w-md mb-7">
-                Ask me anything about AI and I&apos;ll answer right here, teaching by example.
-              </p>
+        {/* Welcome / empty state. Deliberately OUTSIDE the max-w-3xl thread
+            container below and built on the same CinematicPageHero as Your AI
+            Opportunities — same eyebrow, same animated gradient title, same
+            left-aligned layout, same max-w-5xl width — so the two "tell me what
+            you need" screens are the same screen with different words. The
+            conversation itself stays narrow (max-w-3xl) because long prose reads
+            better in a column. */}
+        {!hasMessages && !isLoading && (
+          <div className="max-w-5xl mx-auto px-6 pt-6 pb-12 sm:pb-16">
+            <CinematicPageHero
+              eyebrow="Just Chat"
+              title={firstName ? `Hi ${firstName} — what can I help with?` : 'What can I help you with?'}
+              subtitle="Ask me anything about AI and I'll answer right here, teaching by example."
+              icon={MessageCircle}
+              gradient
+            />
 
-              {/* Composer FIRST, then the suggestions underneath — the same shape as
-                  Your AI Opportunities (input, then "or start from one of these"), so
-                  the two "describe what you need" screens read the same way. */}
-              <div data-tour="page-chat" className="w-full max-w-xl text-left">
-                {composerBox}
-              </div>
+            {/* Composer FIRST, then the suggestions underneath — matching
+                Discovery's input-then-examples order. */}
+            <div data-tour="page-chat">
+              {composerBox}
+            </div>
 
-              <div className="w-full max-w-xl mt-7 text-left">
-                <h3 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
-                  Or start from one of these
-                </h3>
-                <div data-tour="chat-suggestions" className="grid sm:grid-cols-2 gap-2.5">
-                  {buildSuggestions(profile).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                      // cine-tilt = the same lift + accent glow as the Achievements
-                      // tiles, so clickable cards behave identically app-wide. The
-                      // old hover:shadow-card / hover:border-* are dropped because
-                      // cine-tilt animates those same two properties and whichever
-                      // rule loaded last would win, making the glow inconsistent.
-                      className="cine-tilt group flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-                    >
-                      <span className="text-sm font-medium text-ink dark:text-slate-200">{s}</span>
-                      <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-brand shrink-0 transition-colors" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
-                <span className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
-                  <LifeBuoy className="w-3.5 h-3.5" /> Need a human?
-                </span>
-                {SLACK_CHANNELS.map(c => (
-                  <a
-                    key={c.href}
-                    href={c.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium text-brand dark:text-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-all"
+            <div className="mt-7">
+              <h3 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
+                Or start from one of these examples
+              </h3>
+              <div data-tour="chat-suggestions" className="grid sm:grid-cols-2 gap-2.5">
+                {buildSuggestions(profile).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setInput(s); inputRef.current?.focus(); }}
+                    // cine-tilt = the same lift + accent glow as the Achievements
+                    // tiles, so clickable cards behave identically app-wide. The
+                    // old hover:shadow-card / hover:border-* are dropped because
+                    // cine-tilt animates those same two properties and whichever
+                    // rule loaded last would win, making the glow inconsistent.
+                    className="cine-tilt group flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   >
-                    {c.label}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                    <span className="text-sm font-medium text-ink dark:text-slate-200">{s}</span>
+                    <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-brand shrink-0 transition-colors" />
+                  </button>
                 ))}
               </div>
             </div>
-          )}
 
+            <div className="flex flex-wrap items-center gap-2 mt-8">
+              <span className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+                <LifeBuoy className="w-3.5 h-3.5" /> Need a human?
+              </span>
+              {SLACK_CHANNELS.map(c => (
+                <a
+                  key={c.href}
+                  href={c.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium text-brand dark:text-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-all"
+                >
+                  {c.label}
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div data-tour="chat-thread" className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
           {/* Conversation — oldest to newest */}
           {hasMessages && (
             <div className="space-y-5">
