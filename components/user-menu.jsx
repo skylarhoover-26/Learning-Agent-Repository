@@ -124,19 +124,20 @@ export default function UserMenu() {
           <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
+        {/* Colors here are theme-explicit Tailwind, NOT the --ink/--navbg CSS
+            vars this menu used to use. Two reasons: --navbg is translucent by
+            design (right for the top bar, wrong for a menu floating over page
+            content — the game cards read straight through it), and this component
+            renders BOTH inside the cinematic shell and in the root-layout
+            HeaderBar, which sits outside any .cine scope where those vars simply
+            don't resolve. Same opaque-overlay fix as the game picker (#146). */}
         {open && (
           <div
             role="menu"
-            className="absolute right-0 mt-2 w-60 rounded-2xl shadow-2xl py-1.5 z-[60] overflow-hidden"
-            style={{
-              background: 'var(--navbg, #fff)',
-              border: '1px solid var(--line, rgba(10,36,67,.1))',
-              backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
-              color: 'var(--ink, #0A2443)',
-            }}
+            className="absolute right-0 mt-2 w-60 rounded-2xl py-1.5 z-[60] overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl text-ink dark:text-slate-100"
           >
-            <div className="px-4 py-2.5 mb-1" style={{ borderBottom: '1px solid var(--line, rgba(10,36,67,.1))' }}>
-              <p className="text-sm font-semibold truncate" style={{ color: 'var(--ink, #0A2443)' }}>{displayName}</p>
+            <div className="px-4 py-2.5 mb-1 border-b border-slate-100 dark:border-slate-700">
+              <p className="text-sm font-semibold truncate text-ink dark:text-slate-100">{displayName}</p>
             </div>
             {PROFILE_LINKS.map(link => {
               // Admin "Profile Visibility" can hide an item (dropped) or mark it
@@ -148,8 +149,7 @@ export default function UserMenu() {
                     key={link.href}
                     role="menuitem"
                     aria-disabled="true"
-                    className="flex items-center gap-3 mx-1.5 px-3 py-2 text-sm cursor-not-allowed"
-                    style={{ color: 'var(--ink-dim, rgba(10,36,67,.6))' }}
+                    className="flex items-center gap-3 mx-1.5 px-3 py-2 text-sm cursor-not-allowed text-slate-500 dark:text-slate-400"
                   >
                     <link.icon className="w-4 h-4 shrink-0" />
                     <span className="line-through">{link.label}</span>
@@ -164,21 +164,20 @@ export default function UserMenu() {
                   onClick={() => setOpen(false)}
                   role="menuitem"
                   data-tour={link.tour}
-                  className="flex items-center gap-3 mx-1.5 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--glass)]"
-                  style={{ color: 'var(--ink, #0A2443)' }}
+                  className="flex items-center gap-3 mx-1.5 px-3 py-2 rounded-lg text-sm transition-colors text-ink dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
-                  <link.icon className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-dim, rgba(10,36,67,.6))' }} />
+                  <link.icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
                   {link.label}
                 </Link>
               );
             })}
             {isAdmin && (
-              <div className="mt-1 pt-1" style={{ borderTop: '1px solid var(--line, rgba(10,36,67,.1))' }}>
+              <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-700">
                 <button
                   onClick={() => { setPreviewAsUser(!previewAsUser); setOpen(false); }}
                   role="menuitem"
-                  className="w-full flex items-center gap-3 mx-1.5 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[var(--glass)]"
-                  style={{ color: 'var(--ink, #0A2443)', width: 'calc(100% - 0.75rem)' }}
+                  className="w-full flex items-center gap-3 mx-1.5 px-3 py-2 rounded-lg text-left text-sm transition-colors text-ink dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  style={{ width: 'calc(100% - 0.75rem)' }}
                 >
                   {previewAsUser ? (
                     <>
@@ -187,14 +186,14 @@ export default function UserMenu() {
                     </>
                   ) : (
                     <>
-                      <Eye className="w-4 h-4 shrink-0" style={{ color: 'var(--ink-dim, rgba(10,36,67,.6))' }} />
+                      <Eye className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
                       Preview as user
                     </>
                   )}
                 </button>
               </div>
             )}
-            <div className="mt-1 pt-1" style={{ borderTop: '1px solid var(--line, rgba(10,36,67,.1))' }}>
+            <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-700">
               <button
                 onClick={handleLogout}
                 role="menuitem"

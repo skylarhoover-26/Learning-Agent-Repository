@@ -100,10 +100,19 @@
    let the page bleed through and made the game picker unreadable in dark mode
    (feedback #146). Use this for anything that floats above other content;
    .cine-glass stays for cards that sit in the page flow. */
+/* The fallbacks matter: this class is also used by the profile menu, which
+   renders in the legacy top bar (header-bar.jsx, app/page.jsx) OUTSIDE any
+   .cine/.cine-vars scope, where --popover and --line are undefined. Without a
+   fallback the background would compute to nothing and the menu would go
+   transparent again — the exact bug this class exists to fix. */
 .cine-popover {
-  background: var(--popover);
-  border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+  background: var(--popover, #FFFFFF);
+  border: 1px solid var(--line, rgba(10, 36, 67, .12));
   box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .45), 0 2px 8px rgba(0, 0, 0, .12);
+}
+.dark .cine-popover {
+  background: var(--popover, #102B52);
+  border-color: var(--line, rgba(255, 255, 255, .14));
 }
 
 /* A row inside a .cine-popover. Highlights on hover/keyboard focus so it's
