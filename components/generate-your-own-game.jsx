@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useProfile } from '@/components/profile-provider';
+import { buildGameTopics } from '@/lib/game-topics';
 import {
   Zap, Search, Swords, ChevronDown, ArrowRight, Sparkles, Wand2, LayoutGrid, Disc3, Users, ScanSearch, DollarSign,
 } from 'lucide-react';
@@ -29,19 +31,15 @@ const GAME_TYPES = [
     desc: 'Spin and guess letters to uncover an AI phrase.', icon: Disc3 },
 ];
 
-const SAMPLES = [
-  'using AI to draft customer follow-up emails',
-  'spotting AI hallucinations in a pricing quote',
-  'prompt patterns for summarizing long call notes',
-  'evaluating AI output for a dispatch schedule',
-  'writing better prompts for invoice descriptions',
-];
-
 // The "generate your own game" flow, open to everyone. `live` games generate +
 // launch for real via their slug route; any non-live game falls back to a flow
 // preview. Custom rounds pay XP on the same terms as the standard games — once per
 // game per content-day (see saveGameResult).
 export default function GenerateYourOwnGame() {
+  const { profile } = useProfile();
+  // Suggestions built from the learner's own onboarding tasks, so "Surprise me"
+  // proposes a topic from THEIR job rather than a hardcoded dispatcher's one.
+  const samples = useMemo(() => buildGameTopics(profile), [profile]);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [topic, setTopic] = useState('');
@@ -62,7 +60,7 @@ export default function GenerateYourOwnGame() {
 
   function pick(g) { setSelected(g); setOpen(false); }
   function surprise() {
-    setTopic(SAMPLES[sampleIdx % SAMPLES.length]);
+    setTopic(samples[sampleIdx % samples.length]);
     setSampleIdx((i) => i + 1);
     if (!selected) setSelected(GAME_TYPES.find((g) => !g.disabled));
   }
@@ -162,7 +160,10 @@ export default function GenerateYourOwnGame() {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && canGenerate) generate(); }}
-            placeholder="e.g., 'using AI for scheduling dispatches'"
+            // Was hardcoded to 'using AI for scheduling dispatches'. Uses the
+            // learner's own first suggestion instead, so the hint reads as their
+            // job — falls back to the generic set when there's no profile.
+            placeholder={`e.g., '${samples[0]}'`}
             className="flex-1 min-w-0 rounded-xl px-4 py-3.5 text-sm text-ink dark:text-slate-100 bg-transparent outline-none focus:ring-4"
             style={{ border: '1px solid var(--line-strong, var(--line))', '--tw-ring-color': 'color-mix(in srgb, var(--accent) 18%, transparent)' }}
           />
