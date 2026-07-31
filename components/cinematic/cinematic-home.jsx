@@ -18,6 +18,7 @@ import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
 import { freshnessLabel, lessonHref, splitByApproval } from '@/lib/ai-news';
+import { SECTION_COLORS } from '@/lib/section-colors';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -239,10 +240,22 @@ export default function CinematicHome() {
               : <>You&apos;re at the top level — keep the streak alive.</>}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href="/chat" className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-6 font-semibold">
+            {/* cine-tilt, not cine-lift: the same lift + glow every other
+                clickable thing has. Each takes its DESTINATION's colour — chat is
+                teal, and progress is gold because gold already means XP, levels
+                and streaks, which is exactly where this goes. */}
+            <Link
+              href="/chat"
+              className="cine-pill cine-tilt inline-flex items-center gap-2 h-12 px-6 font-semibold"
+              style={{ '--tilt-accent': SECTION_COLORS.chat }}
+            >
               <MessageCircle className="w-4 h-4 shrink-0" /> Chat with your coach <ArrowRight className="w-4 h-4 shrink-0" />
             </Link>
-            <Link href="/heatmap" className="cine-glass cine-lift inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold" style={{ color: 'var(--ink)' }}>
+            <Link
+              href="/heatmap"
+              className="cine-glass cine-tilt inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold"
+              style={{ color: 'var(--ink)', '--tilt-accent': 'var(--gold)' }}
+            >
               <BarChart3 className="w-4 h-4 shrink-0" /> See your progress
             </Link>
           </div>
@@ -345,8 +358,17 @@ export default function CinematicHome() {
 
       {/* DISCOVER BANNER — gated: a full-bleed panel linking to a locked route is
           the worst dead end on the page. */}
+      {/* The resting shadow moved from an inline style to a Tailwind arbitrary
+          class. Inline styles outrank .cine-tilt:hover, so as an inline rule it
+          silently blocked the hover glow — this panel lifted but never lit up.
+          --tilt-accent is violet to match /discover, the page it opens. */}
       {isOn('/discover') && (
-      <Link href="/discover" data-tour="home-find-ai" className="cine-tilt group block relative overflow-hidden rounded-[28px] p-10 sm:p-14" style={{ background: 'linear-gradient(135deg,#0A3AC8,#2E7BFF)', boxShadow: '0 40px 90px -60px var(--accent)' }}>
+      <Link
+        href="/discover"
+        data-tour="home-find-ai"
+        className="cine-tilt group block relative overflow-hidden rounded-[28px] p-10 sm:p-14 shadow-[0_40px_90px_-60px_var(--accent)]"
+        style={{ background: 'linear-gradient(135deg,#0A3AC8,#2E7BFF)', '--tilt-accent': SECTION_COLORS.discover }}
+      >
         <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.18em] px-3 py-1 rounded-full mb-5 cine-gold">
           <Compass className="w-3.5 h-3.5" /> Discover
         </span>
