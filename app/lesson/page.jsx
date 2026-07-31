@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { SlideCard, RecapCard } from '@/components/lesson-slide';
 import CompletionFeedback from '@/components/completion-feedback';
 import LessonQuiz from '@/components/lesson-quiz';
@@ -1098,20 +1099,20 @@ function LessonContent() {
     return (
       <>
       <PageHeader icon={BookOpen} title={FORMAT_META[format].title} subtitle={FORMAT_META[format].subtitle} />
-      <main data-tour="lesson-main" className="max-w-4xl mx-auto px-6 pt-6 pb-10">
-        <div className="text-center mb-10">
-          <div className="flex justify-center mb-4">
-            <span className="w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--glass)', border: '1px solid var(--line)' }}>
-              <BookOpen className="w-7 h-7" style={{ color: 'var(--accent2)' }} />
-            </span>
-          </div>
-          <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight mb-2 cine-grad-flow inline-block">What do you want to learn?</h2>
-          <p className="text-slate-600 dark:text-slate-400">
-            {initialPrefill && customTopic === initialPrefill
-              ? 'Your topic is set — choose how deep to go and how you want to learn it.'
-              : 'Pick from popular topics or type your own.'}
-          </p>
-        </div>
+      {/* max-w-5xl + CinematicPageHero, matching every other framed tab, so the
+          title and content start at the same place whichever tab you click. This
+          was max-w-4xl with its own centred icon-and-h2 header, which is what made
+          the eye jump between Lesson and the other pages. */}
+      <main data-tour="lesson-main" className="max-w-5xl mx-auto px-6 pt-6 pb-10">
+        <CinematicPageHero
+          eyebrow="Lesson"
+          title="What do you want to learn?"
+          subtitle={initialPrefill && customTopic === initialPrefill
+            ? 'Your topic is set — choose how deep to go and how you want to learn it.'
+            : 'Pick from popular topics or type your own.'}
+          icon={BookOpen}
+          gradient
+        />
 
         {/* Arriving from an AI news item (or anywhere else that passes ?prefill=),
             the topic is already chosen — but the wizard opens on step 1 (Depth) and

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { useProgression } from '@/components/progression-provider';
 import { computeSkills } from '@/lib/heatmap-data';
 // From the pure module, NOT lib/skill-staleness — that one pulls in the
@@ -328,6 +329,16 @@ function HeatmapPageInner() {
       />
 
       <main className="max-w-5xl mx-auto px-6 pt-6 pb-8 space-y-8">
+        {/* Same hero as every other framed tab. Without it this page opened
+            straight into the grid, so the heading wasn't where the eye expected
+            it after clicking over from another tab. */}
+        <CinematicPageHero
+          eyebrow="Your Progress"
+          title="Knowledge Heatmap"
+          subtitle="Where you're strong, where you're rusty, and what's worth a refresher."
+          icon={Grid3X3}
+          gradient
+        />
         {!hasAnyActivity ? (
           <EmptyState />
         ) : (

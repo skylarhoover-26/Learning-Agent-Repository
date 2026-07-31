@@ -5,6 +5,7 @@ import { useProgression } from '@/components/progression-provider';
 import { getLevelTitle } from '@/lib/level-titles';
 import { Award, Flame, Sparkles, Lock } from 'lucide-react';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
+import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import EmojiIcon from '@/components/emoji-icon';
 
 const XP_SOURCE_LABELS = {
@@ -139,6 +140,16 @@ export default function CinematicAchievements() {
 
   return (
     <CinematicShell>
+      {/* This page had no title at all, so content began with the level card and
+          the eye landed somewhere different than on every other tab. Same hero as
+          the rest, so the heading sits in one place tab to tab. */}
+      <CinematicPageHero
+        eyebrow="Your Progress"
+        title="Achievements"
+        subtitle="Every badge and milestone you've earned — and what's next to unlock."
+        icon={Award}
+        gradient
+      />
       {/* Tighter internal spacing than the shell's default (space-y-20) so the
           badge categories sit close together, like the heatmap. */}
       <div className="space-y-10 sm:space-y-12">
