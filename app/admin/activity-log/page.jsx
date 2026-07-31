@@ -201,7 +201,7 @@ function getEntrySummary(entry) {
     if (type === 'discover') {
       return input?.workDescription
         ? `"${truncate(input.workDescription, 80)}"`
-        : 'Discovery search';
+        : 'AI Opportunities search';
     }
     if (type === 'grade') {
       const score = output?.score;

@@ -140,11 +140,13 @@ function DiscoverContent() {
 
   return (
     <div className="min-h-screen">
-      <PageHeader icon={Search} title="Discovery" subtitle="Find AI opportunities for your actual work" />
+      <PageHeader icon={Search} title="Your AI Opportunities" subtitle="Find AI opportunities for your actual work" />
 
       <main data-tour="discover-main" className="max-w-5xl mx-auto px-6 pt-6 pb-12 sm:pb-16">
         <CinematicPageHero
-          eyebrow="Discover"
+          // Matches the sidebar label, like every other tab's eyebrow does —
+          // that's what makes the heading read as the same place you clicked.
+          eyebrow="Your AI Opportunities"
           title="Find AI for your actual work"
           subtitle="Describe your typical day, a task, or something on your plate right now — I'll surface specific AI opportunities you can try today, tied to your real work."
           icon={Search}

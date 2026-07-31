@@ -146,7 +146,7 @@ export function ImpactIntroStep() {
               being surprised by a low score in that category. This is the consequence,
               so it has to carry the same weight as "both halves get scored" above. */}
           <strong>
-            Left blank, there&apos;s nothing backing up your answer, so the score comes out low.
+            If you have blank answers, it&apos;ll negatively impact your score.
           </strong>
         </p>
       </div>
