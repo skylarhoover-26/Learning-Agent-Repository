@@ -36,6 +36,10 @@ function DiscoverContent() {
   // Starters built from this learner's own onboarding answers (their tasks and
   // goals), not three generic roles. Recomputed when the profile arrives.
   const examples = useMemo(() => buildDiscoveryExamples(profile), [profile]);
+  // Onboarding now asks for 3 tasks, but anyone who signed up before that still
+  // has fewer — and every personalized surface stays thin until they add more.
+  const savedTaskCount = Array.isArray(profile?.top_tasks) ? profile.top_tasks.length : 0;
+  const thinTasks = Boolean(profile) && savedTaskCount > 0 && savedTaskCount < 3;
   const [workDescription, setWorkDescription] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -253,6 +257,22 @@ function DiscoverContent() {
                   </button>
                 ))}
               </div>
+              {/* Raising onboarding's task minimum only helps NEW learners — anyone
+                  who already finished with one task keeps thin examples forever.
+                  This is their way out, shown only when it applies. */}
+              {thinTasks && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 flex items-start gap-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5 text-brand" />
+                  <span>
+                    These are built from your saved tasks, and you have{' '}
+                    {savedTaskCount === 1 ? 'just one' : `only ${savedTaskCount}`}.{' '}
+                    <Link href="/my-tasks?from=discover" className="text-brand font-medium hover:underline">
+                      Add a few more
+                    </Link>{' '}
+                    to get sharper examples, lessons and games.
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         )}

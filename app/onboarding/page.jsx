@@ -33,6 +33,14 @@ const ONBOARDING_AVATAR_CTX = { level: 1, badgeIds: new Set() };
 // No cap — users can add as many tasks as they want (minimum 1).
 const MAX_TASKS = Infinity;
 
+// Minimum tasks before Continue unlocks. Was 1, which quietly capped the quality
+// of every personalized surface downstream: a one-task profile gives Discovery a
+// one-line "typical day", makes all four Games "Surprise me" topics rewordings of
+// the same task, and narrows chat suggestions. Three is the point where those
+// start reading like a real job. Safe to require — the smallest task list any
+// department/sub-team offers is 5, and learners can add their own on top.
+const MIN_TASKS = 3;
+
 export default function OnboardingPage() {
   const { data: session } = useSession();
   const { refreshProfile, profile: existingProfile } = useProfile();
@@ -204,7 +212,7 @@ export default function OnboardingPage() {
       if (SUB_TEAMS[department] && !subTeam) return false;
       return true;
     }
-    if (step === 2) return topTasks.length >= 1;
+    if (step === 2) return topTasks.length >= MIN_TASKS;
     if (step === 3) return tier.length > 0;
     if (step === 4) return goals.length > 0;
     if (step === 5) return aiTools.length > 0;
@@ -750,8 +758,18 @@ function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCus
           What are your top tasks?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm">
-          Pick the tasks you do most in {department}. We'll personalize your quick wins and learning path.
+          Pick at least {MIN_TASKS} tasks you do most in {department} — the more you add, the more your
+          lessons, examples and games get built around your actual work.
         </p>
+        {/* Continue stays disabled until MIN_TASKS, so say how many are left rather
+            than leaving a dead button unexplained. */}
+        {selected.length < MIN_TASKS && (
+          <p className="text-sm font-semibold text-brand mt-2">
+            {selected.length === 0
+              ? `Pick ${MIN_TASKS} to continue`
+              : `${MIN_TASKS - selected.length} more to continue`}
+          </p>
+        )}
       </div>
       <div className="space-y-2 max-w-lg mx-auto mb-6">
         {tasks.map(task => {
