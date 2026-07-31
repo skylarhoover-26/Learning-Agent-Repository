@@ -381,8 +381,14 @@ function DailyPromptCard({ prompt, isSaved = false, onToggleSaved }) {
     } catch { /* clipboard unavailable */ }
   }
 
+  // No inline border: cine-glass's faint hairline shows at rest and cine-tilt
+  // tints it on hover, the same as the Achievements tiles. The old inline
+  // `border: 1px solid color-mix(--accent 42%)` was always on AND, being an inline
+  // style, outranked cine-tilt's hover border-color — so these cards wore a loud
+  // category border permanently and never reacted to hover at all. --accent stays
+  // overridden so the hover tint is still the category colour.
   return (
-    <div className="cine-glass cine-tilt rounded-2xl overflow-hidden" style={{ '--accent': glowFor(prompt.category), border: '1px solid color-mix(in srgb, var(--accent) 42%, transparent)' }}>
+    <div className="cine-glass cine-tilt rounded-2xl overflow-hidden" style={{ '--accent': glowFor(prompt.category) }}>
       <div className="p-5">
         <div className="flex items-center gap-2 mb-1.5">
           <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${cat.color}`}>{cat.label}</span>
@@ -444,8 +450,10 @@ function PromptCard({ prompt, isFavorite = false, onToggleFavorite }) {
     }
   }
 
+  // Same as the compact card above — border comes from cine-glass at rest and
+  // cine-tilt on hover, not an always-on inline one.
   return (
-    <div className="cine-glass cine-tilt rounded-2xl transition-all overflow-hidden" style={{ '--accent': glowFor(prompt.category), border: '1px solid color-mix(in srgb, var(--accent) 42%, transparent)' }}>
+    <div className="cine-glass cine-tilt rounded-2xl transition-all overflow-hidden" style={{ '--accent': glowFor(prompt.category) }}>
       <div className="p-5">
         <div className="flex items-start gap-2 mb-1.5">
           <h3 className="flex-1 font-bold text-ink dark:text-slate-200 leading-tight">{prompt.title}</h3>

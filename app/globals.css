@@ -201,7 +201,13 @@
   -webkit-text-fill-color: transparent;
 }
 .cine-grad-flow {
-  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 45%, var(--gold) 100%);
+  /* PALINDROMIC ramp — starts and ends on --accent. The old ramp ran
+     accent → accent2 → gold, so where one tile ended (gold) it butted straight
+     against the next tile's start (accent): a hard gold-to-blue edge that swept
+     across the heading once per loop, while every other transition looked smooth.
+     Mirroring the ramp puts the same colour on both ends, so the seam is
+     invisible and the sweep reads continuous. */
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 25%, var(--gold) 50%, var(--accent2) 75%, var(--accent) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
