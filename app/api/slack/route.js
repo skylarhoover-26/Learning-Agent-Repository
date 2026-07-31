@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { lookupSlackEmailByUserId } from '@/lib/slack-notify';
 import { generateSlackReply } from '@/lib/slack-chat';
+import { publishHomeView } from '@/lib/slack-home';
 import {
   getLearnerSnapshot,
   buildLeaderboardBlocks,
@@ -254,6 +255,20 @@ export async function POST(request) {
 
     if (payload.type === 'event_callback') {
       const event = payload.event || {};
+
+      // App Home tab opened. Republish on every open so the view is current;
+      // deferred past the ack because views.publish plus the data reads it needs
+      // would blow Slack's 3s deadline. The event also fires for the Messages
+      // tab, so gate on tab === 'home'.
+      if (event.type === 'app_home_opened' && event.tab === 'home') {
+        after(() =>
+          publishHomeView(event.user).catch((err) =>
+            console.error('Slack home publish error:', err)
+          )
+        );
+        return Response.json({ ok: true });
+      }
+
       // Only real, human, direct messages — ignore the bot's own posts, edits/
       // deletes (subtype), and non-DM channel types.
       const isHumanDM =
@@ -277,6 +292,15 @@ export async function POST(request) {
 
   if (contentType.includes('application/x-www-form-urlencoded')) {
     const params = new URLSearchParams(rawBody);
+
+    // Interactivity payloads (block_actions) arrive here too — Slack fires one
+    // even for link-only buttons, like the ones on the Home tab. They carry a
+    // `payload` field and no `command`, so ack with an empty 200 rather than
+    // falling through to the slash-command handler and replying with help text.
+    if (params.get('payload')) {
+      return new Response('', { status: 200 });
+    }
+
     const command = params.get('command');
     const text = params.get('text') || '';
     const responseUrl = params.get('response_url') || '';
@@ -300,6 +324,7 @@ export async function GET() {
     name: 'AI Learning Coach Slack Bot',
     status: 'active',
     commands: ['/learn', '/leaderboard', '/heatmap', '/skills'],
+    events: ['message.im', 'app_home_opened'],
     configured: Boolean(SIGNING_SECRET && BOT_TOKEN),
   });
 }

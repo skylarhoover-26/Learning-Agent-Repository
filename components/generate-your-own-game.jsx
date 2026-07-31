@@ -115,8 +115,11 @@ export default function GenerateYourOwnGame() {
             <ChevronDown className={`w-5 h-5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} style={{ color: 'var(--ink-dim)' }} />
           </button>
 
+          {/* cine-popover, not cine-glass: this panel floats over the game grid,
+              so it has to be opaque or the cards behind it show through and the
+              options become unreadable in dark mode (#146). */}
           {open && (
-            <div role="listbox" className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 rounded-2xl p-1.5 cine-glass" style={{ boxShadow: '0 30px 70px -34px rgba(10,36,67,.5)' }}>
+            <div role="listbox" className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 rounded-2xl p-1.5 cine-popover max-h-[60vh] overflow-y-auto">
               {GAME_TYPES.map((g) => (
                 <button
                   key={g.id}
@@ -124,7 +127,7 @@ export default function GenerateYourOwnGame() {
                   aria-selected={selected?.id === g.id}
                   disabled={g.disabled}
                   onClick={() => !g.disabled && pick(g)}
-                  className="w-full flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed"
+                  className="cine-option w-full flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed"
                   style={{
                     background: selected?.id === g.id ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
                     opacity: g.disabled ? 0.55 : 1,

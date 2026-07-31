@@ -15,6 +15,7 @@ import { toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
 import { addBadgeEarned } from '@/lib/learner-store';
+import { isCalibrationPending } from '@/lib/calibration-local';
 import AvatarLocker from '@/components/avatar-locker';
 import { DEFAULT_AVATAR } from '@/lib/avatar-catalog';
 
@@ -53,6 +54,11 @@ export default function OnboardingPage() {
   const [aiTools, setAiTools] = useState([]);
   const [customTool, setCustomTool] = useState('');
   const [addingTool, setAddingTool] = useState(false);
+  // Whether the calibration gate is still ahead of this person, which decides
+  // whether the last step reads "Continue setup" or "Finish setup" (#135).
+  // Resolved in an effect, not during render: isCalibrationPending reads
+  // localStorage, and reading it inline would hydrate-mismatch the button label.
+  const [calibrationPending, setCalibrationPending] = useState(true);
   const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
   // A restored draft's avatar is an explicit prior choice — don't override it
   // with the Slack-photo default below.
@@ -181,6 +187,14 @@ export default function OnboardingPage() {
       .catch(() => { /* no Slack photo — keep the cartoon default */ });
     return () => { cancelled = true; };
   }, []);
+
+  // Resolve "is calibration still ahead of me?" on the client, where
+  // localStorage is readable. Re-runs if the profile arrives after mount.
+  useEffect(() => {
+    setCalibrationPending(
+      isCalibrationPending(existingProfile, session?.user?.email)
+    );
+  }, [existingProfile, session?.user?.email]);
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -514,9 +528,23 @@ export default function OnboardingPage() {
               <StepNav onBack={goBack} onNext={goNext} disabled={!canAdvance()} />
             </div>
           )}
+          {/* "Finish setup" was a lie whenever calibration was still pending:
+              the button handed you straight to the ~13-step calibration gate
+              (feedback #135). Say "Continue setup" and name what's coming, so
+              the last onboarding step doesn't read as the last step overall. */}
           {step === 6 && (
             <div className="mt-8">
-              <StepNav onBack={goBack} onNext={() => handleFinish(goals)} label="Finish setup" variant="finish" />
+              <StepNav
+                onBack={goBack}
+                onNext={() => handleFinish(goals)}
+                label={calibrationPending ? 'Continue setup' : 'Finish setup'}
+                variant="finish"
+              />
+              {calibrationPending && (
+                <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-3">
+                  Up next: a short calibration so your lessons start at the right level.
+                </p>
+              )}
             </div>
           )}
           {step === 1 && showSubTeams && (

@@ -6,6 +6,7 @@ import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { parseRss } from '@/lib/parse-feed';
 import { classifyFindings, RUBRIC_VERSION } from '@/lib/news-relevance';
+import { refreshStaleSkillMarks } from '@/lib/skill-staleness';
 import { APPROVED_CATEGORIES, dropExcluded } from '@/lib/ai-news';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 
@@ -247,6 +248,20 @@ export async function GET(request) {
     // findings too, so previously-stored ones get cleaned out on this run.
     const merged = dropExcluded([...classified, ...existingTagged]).slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
+
+    // Heatmap freshness (#54): if any of today's model/practice news actually
+    // changes how people should prompt, mark the affected skills as worth a
+    // refresh. Only today's newly-classified items are considered, so a re-judged
+    // backlog can't re-flag skills. Best-effort — a failure here must not fail the
+    // scan, since the news itself has already been written.
+    try {
+      const marks = await refreshStaleSkillMarks(classified);
+      if (marks.length) {
+        console.log(`skill staleness: flagged ${marks.map((m) => m.skill).join(', ')}`);
+      }
+    } catch (err) {
+      console.error('skill staleness refresh failed:', err?.message || err);
+    }
     // Stamp the scan AFTER the findings write, so a failed write can't leave a
     // fresh-looking timestamp over stale data.
     await writeBlob(BLOB_SCAN_META_KEY, {

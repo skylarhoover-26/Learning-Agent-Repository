@@ -72,7 +72,11 @@ const TOTAL_BADGES = BADGE_CATEGORIES.reduce((n, c) => n + c.badges.length, 0);
 
 function BadgeTile({ badge, earned, tint }) {
   return (
-    <div className="cine-glass cine-lift rounded-2xl p-4 flex flex-col items-center text-center" style={{ opacity: earned ? 1 : 0.9 }} title={badge.description}>
+    // cine-tilt, not cine-lift: matches the hover on Discovery's example cards —
+    // the accent gradient glow behind the card — which is what feedback #58 asked
+    // for. The native `title` tooltip is gone with it: the description is already
+    // printed below the name, so the browser bubble just repeated it.
+    <div className="cine-glass cine-tilt rounded-2xl p-4 flex flex-col items-center text-center" style={{ opacity: earned ? 1 : 0.9 }}>
       <div
         className="relative w-14 h-14 rounded-full grid place-items-center text-2xl mb-2"
         style={earned

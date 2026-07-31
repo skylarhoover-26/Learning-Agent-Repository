@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Grid3X3, CheckCircle, Circle, Triangle, AlertTriangle,
-  ArrowRight, Clock, TrendingDown,
+  ArrowRight, Clock, TrendingDown, Newspaper,
 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProgression } from '@/components/progression-provider';
 import { computeSkills } from '@/lib/heatmap-data';
+// From the pure module, NOT lib/skill-staleness — that one pulls in the
+// Anthropic SDK and breaks the client bundle.
+import { applyStaleMarks } from '@/lib/stale-marks';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
 
@@ -75,7 +78,7 @@ function getDiagnostics(skills) {
   return { highMasteryLowFreshness, midDrifting, recentSlips };
 }
 
-function SkillCell({ skill, isDoThisNow, onSelect, isSelected }) {
+function SkillCell({ skill, isDoThisNow, onSelect, isSelected, outdatedMark }) {
   const badge = getBadge(skill.mastery, skill.freshness, skill.hasActivity);
   const BadgeIcon = badge.icon;
 
@@ -111,6 +114,14 @@ function SkillCell({ skill, isDoThisNow, onSelect, isSelected }) {
             <p className="text-[10px] text-ink/50 dark:text-slate-400">
               {skill.freshness === 0 ? 'Today' : `${skill.freshness}d ago`}
             </p>
+            {/* AI moved since they studied this (#54). Separate from the recency
+                badge above — you can be fresh on a skill and still out of date. */}
+            {outdatedMark && (
+              <span className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200">
+                <Newspaper className="w-2.5 h-2.5" />
+                AI CHANGED
+              </span>
+            )}
           </>
         ) : (
           <p className="text-[11px] text-ink/50 dark:text-slate-400">No activity yet</p>
@@ -120,7 +131,7 @@ function SkillCell({ skill, isDoThisNow, onSelect, isSelected }) {
   );
 }
 
-function ExpandedView({ skill }) {
+function ExpandedView({ skill, outdatedMark }) {
   if (!skill) return null;
   const badge = getBadge(skill.mastery, skill.freshness, skill.hasActivity);
   const BadgeIcon = badge.icon;
@@ -157,8 +168,29 @@ function ExpandedView({ skill }) {
         </>
       ) : (
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-          You haven't explored this skill yet. Start a lesson to begin tracking your progress.
+          You haven&apos;t explored this skill yet. Start a lesson to begin tracking your progress.
         </p>
+      )}
+      {/* Always show WHAT changed and link the source, so an automatic flag is
+          something the learner can check rather than take on faith (#54). */}
+      {outdatedMark && (
+        <div className="mb-4 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50/70 dark:bg-purple-900/20 p-3">
+          <p className="flex items-start gap-2 text-sm font-semibold text-purple-900 dark:text-purple-200">
+            <Newspaper className="w-4 h-4 mt-0.5 shrink-0" />
+            AI changed since you studied this
+          </p>
+          <p className="text-xs text-purple-800 dark:text-purple-300 mt-1 ml-6">{outdatedMark.reason}</p>
+          {outdatedMark.headline && (
+            <p className="text-[11px] text-purple-700/80 dark:text-purple-400 mt-1.5 ml-6">
+              {outdatedMark.url ? (
+                <a href={outdatedMark.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                  {outdatedMark.headline}
+                </a>
+              ) : outdatedMark.headline}
+              {outdatedMark.source ? ` · ${outdatedMark.source}` : ''}
+            </p>
+          )}
+        </div>
       )}
       <Link
         href={`/lesson?topic=${encodeURIComponent(skill.name)}`}
@@ -227,7 +259,20 @@ export default function HeatmapPage() {
 
 function HeatmapPageInner() {
   const [selected, setSelected] = useState(null);
+  // Skills the AI-news scan says a release has dated (#54). Org-wide marks; which
+  // ones actually apply to THIS learner is decided below by comparing each mark's
+  // date against when they last studied that skill.
+  const [staleMarks, setStaleMarks] = useState([]);
   const prog = useProgression();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/skill-staleness')
+      .then((r) => (r.ok ? r.json() : { marks: [] }))
+      .then((d) => { if (!cancelled) setStaleMarks(d.marks || []); })
+      .catch(() => { /* no marks — the heatmap still works on recency alone */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const moduleProgress = typeof window !== 'undefined' ? getAllModuleProgress() : {};
   const calibrationSkills = typeof window !== 'undefined' ? getCalibrationSkills() : null;
@@ -237,6 +282,9 @@ function HeatmapPageInner() {
     moduleProgress,
     calibrationSkills,
   });
+
+  // { [skillName]: mark } for skills this learner studied before the release.
+  const outdatedBySkill = applyStaleMarks(skills, staleMarks);
 
   const hasAnyActivity = skills.some(s => s.hasActivity);
   const doThisNow = findDoThisNow(skills);
@@ -310,12 +358,18 @@ function HeatmapPageInner() {
                     isDoThisNow={skill.name === doThisNow}
                     onSelect={setSelected}
                     isSelected={selected === skill.name}
+                    outdatedMark={outdatedBySkill[skill.name]}
                   />
                 ))}
               </div>
             </section>
 
-            {selectedSkill && <ExpandedView skill={selectedSkill} />}
+            {selectedSkill && (
+              <ExpandedView
+                skill={selectedSkill}
+                outdatedMark={outdatedBySkill[selectedSkill.name]}
+              />
+            )}
 
             <section>
               <h2 className="font-bold text-ink dark:text-slate-200 text-lg mb-4">Diagnostics</h2>

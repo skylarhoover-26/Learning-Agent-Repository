@@ -11,6 +11,9 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import CalibrationFlow from '@/components/calibration-flow';
+// The device-local marker lives in lib/calibration-local so onboarding's last
+// step can ask the same question ("is calibration still ahead of this person?").
+import { hasLocalCalibrated, markLocalCalibrated } from '@/lib/calibration-local';
 
 // Routes that must never be gated: onboarding (you need a profile first), auth,
 // and the public token-shared report.
@@ -20,33 +23,6 @@ function isExempt(pathname) {
     pathname.startsWith('/auth') ||
     pathname.startsWith('/reporting/shared')
   );
-}
-
-// Per-user local "already calibrated" marker. The gate closes optimistically when
-// updateProfile sets calibrated_at, but a profile refetch can briefly return a
-// stale record whose calibrated_at hasn't propagated yet (reads hit Supabase
-// first, with a blob fallback). That stale read would re-open the gate and drop
-// the user back at step 0 with no way home. This device-local marker keeps the
-// gate closed once they've finished, independent of that read timing. The real
-// calibrated_at still persists server-side for cross-device.
-function calKey(email) {
-  return email ? `la_calibrated_${String(email).toLowerCase()}` : null;
-}
-function hasLocalCalibrated(email) {
-  try {
-    const k = calKey(email);
-    return !!(k && localStorage.getItem(k));
-  } catch {
-    return false;
-  }
-}
-function markLocalCalibrated(email) {
-  try {
-    const k = calKey(email);
-    if (k) localStorage.setItem(k, new Date().toISOString());
-  } catch {
-    /* storage may be unavailable — the server calibrated_at still gates */
-  }
 }
 
 export default function CalibrationGate() {

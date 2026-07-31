@@ -164,6 +164,17 @@ const SUGGESTED_TOPICS = [
   { emoji: '💬', label: 'Better Conversations', topic: 'How to have productive back-and-forth conversations with AI assistants' },
 ];
 
+// Worked examples for the "type your own" box, mirroring Discovery's "Or start
+// from one of these examples" (feedback #60). The topic cards above show WHAT you
+// can learn; these show how specific a custom topic should be, which is the thing
+// people guess wrong — a vague one gets bounced by the clarify gate. Written as
+// concrete tasks rather than roles, since the role is scenery, not the lesson.
+const TOPIC_EXAMPLES = [
+  'How to write a prompt that turns messy meeting notes into a clear list of action items.',
+  'Using AI to draft a first reply to an unhappy customer, then editing it so it still sounds like me.',
+  'How to check whether an AI answer is actually correct before I pass it on to someone else.',
+];
+
 // Monochrome line-icon (stencil) equivalents for topic emojis — the app-wide
 // preference is lucide line icons, not colorful iOS emojis. Covers the static
 // topics + common emojis the personalized-suggestion API returns; anything else
@@ -1359,6 +1370,29 @@ function LessonContent() {
               ) : 'Start'}
             </button>
           </div>
+
+          {/* Same affordance as Discovery: click an example to load it into the
+              box, then edit it. Only while the box is empty, so it never sits
+              under something they're mid-way through typing. */}
+          {!customTopic.trim() && !clarify && (
+            <div className="mt-5">
+              <h4 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-2.5">
+                Or start from one of these examples
+              </h4>
+              <div className="space-y-2">
+                {TOPIC_EXAMPLES.map((example, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setCustomTopic(example)}
+                    className="cine-glass cine-tilt w-full text-left p-4 rounded-xl transition-all text-sm text-slate-700 dark:text-slate-300"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Vague topic → clarify card: pick a sharper direction or type one. */}
           {clarify && (

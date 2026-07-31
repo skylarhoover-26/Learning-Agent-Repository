@@ -20,6 +20,10 @@
   --glass: rgba(255, 255, 255, .72);
   --card: rgba(255, 255, 255, .70);
   --navbg: rgba(255, 255, 255, .82);
+  /* Opaque surface for floating overlays (dropdowns, menus). --card is
+     translucent by design, which is right for cards sitting ON the page but
+     wrong for a panel that has to hide the content it covers. See .cine-popover. */
+  --popover: #FFFFFF;
   min-height: 100vh;
   color: var(--ink);
   font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
@@ -55,6 +59,9 @@
   --glass: rgba(255, 255, 255, .08);
   --card: rgba(255, 255, 255, .065);
   --navbg: rgba(10, 36, 67, .55);
+  /* A touch lighter than the darkest band of the page gradient, so an overlay
+     still reads as raised while being fully opaque. */
+  --popover: #102B52;
 }
 .dark .cine::before {
   background:
@@ -79,11 +86,33 @@
   --accent: #0055FF; --accent2: #3B94FF; --gold: #FFB706; --good: #1AA06A;
   --ink: #0A2443; --ink-dim: rgba(10, 36, 67, .60); --line: rgba(10, 36, 67, .10);
   --glass: rgba(255, 255, 255, .72); --card: rgba(255, 255, 255, .70); --navbg: rgba(255, 255, 255, .82);
+  --popover: #FFFFFF;
 }
 .dark .cine-vars {
   --accent: #3B94FF; --accent2: #6AABFF; --gold: #FFB706; --good: #2BB37A;
   --ink: #EAF2FF; --ink-dim: rgba(234, 242, 255, .64); --line: rgba(255, 255, 255, .14);
   --glass: rgba(255, 255, 255, .08); --card: rgba(255, 255, 255, .065); --navbg: rgba(10, 36, 67, .55);
+  --popover: #102B52;
+}
+
+/* A floating overlay panel: dropdown lists, popup menus. Same hairline and
+   radius language as .cine-glass, but an OPAQUE background — a translucent panel
+   let the page bleed through and made the game picker unreadable in dark mode
+   (feedback #146). Use this for anything that floats above other content;
+   .cine-glass stays for cards that sit in the page flow. */
+.cine-popover {
+  background: var(--popover);
+  border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .45), 0 2px 8px rgba(0, 0, 0, .12);
+}
+
+/* A row inside a .cine-popover. Highlights on hover/keyboard focus so it's
+   obvious which option you're on — the game picker rows had no hover state at
+   all, which made the unreadable panel worse. */
+.cine-option:not(:disabled):hover,
+.cine-option:not(:disabled):focus-visible {
+  background: color-mix(in srgb, var(--accent) 14%, transparent) !important;
+  outline: none;
 }
 
 .cine-glass {

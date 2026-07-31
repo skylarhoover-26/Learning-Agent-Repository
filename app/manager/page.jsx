@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, Fragment } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
+import { useSession } from 'next-auth/react';
+import { useProfile } from '@/components/profile-provider';
 import PageHeader from '../../components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
@@ -11,7 +13,10 @@ import {
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 
-function ManagerSearch({ loading, onSubmit }) {
+// The manual lookup. Now a fallback rather than the front door: the dashboard
+// auto-loads your own team from your signed-in identity (feedback #66), and this
+// only appears if that found nothing — or when you want someone else's team.
+function ManagerSearch({ loading, onSubmit, autoFailed, autoName }) {
   const [name, setName] = useState('');
 
   function handleSubmit(e) {
@@ -28,10 +33,12 @@ function ManagerSearch({ loading, onSubmit }) {
           <Search className="w-7 h-7 text-brand" />
         </div>
         <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">
-          Find Your Team
+          {autoFailed ? 'Look up a team' : 'Find Your Team'}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          Enter your name to pull your direct reports from Snowflake
+          {autoFailed
+            ? `We couldn't find direct reports${autoName ? ` for ${autoName}` : ''} in Snowflake. Search for a different name to see that person's team.`
+            : 'Enter your name to pull your direct reports from Snowflake'}
         </p>
         <form onSubmit={handleSubmit} className="flex gap-3">
           <input
@@ -596,6 +603,19 @@ function ManagerDashboardInner() {
   const [scoreData, setScoreData] = useState(null);
   const [scoresLoading, setScoresLoading] = useState(false);
   const [rating, setRating] = useState(false);
+  // The auto-lookup ran and came back without a team, so the manual search is
+  // showing as a fallback instead of as the default front door.
+  const [autoFailed, setAutoFailed] = useState(false);
+  // Has the on-open auto-lookup finished (or been ruled out)? Until it has, the
+  // page shows only a loader — flashing the "enter your name" box first, then
+  // replacing it with results a moment later, reads as a glitch.
+  const [autoResolved, setAutoResolved] = useState(false);
+
+  const { profile } = useProfile();
+  const { data: session, status: sessionStatus } = useSession();
+  // Prefer the Snowflake-shaped name: the profile's display_name comes from the
+  // same identity the lookup indexes on, and the session name is the backstop.
+  const ownName = profile?.display_name || session?.user?.name || '';
 
   // Warm the org-data cache as soon as the dashboard opens (fire-and-forget), so
   // the first lookup reads a ready cache instead of triggering the slow
@@ -623,7 +643,10 @@ function ManagerDashboardInner() {
     }
   }, []);
 
-  async function handleLookup(name) {
+  // `auto` marks the on-load lookup of your own team. It stays quiet when it
+  // misses — not being a manager isn't an error worth a red banner — and instead
+  // hands off to the manual search.
+  const handleLookup = useCallback(async (name, { auto = false } = {}) => {
     setLoading(true);
     setError(null);
     try {
@@ -634,7 +657,8 @@ function ManagerDashboardInner() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Lookup failed.');
+        if (auto) setAutoFailed(true);
+        else setError(data.error || 'Lookup failed.');
         return;
       }
       setTeamData(data);
@@ -646,11 +670,29 @@ function ManagerDashboardInner() {
         fetchTeamScores(emails);
       }
     } catch {
-      setError('Could not connect to the lookup service.');
+      if (auto) setAutoFailed(true);
+      else setError('Could not connect to the lookup service.');
     } finally {
       setLoading(false);
     }
-  }
+  }, [fetchTeamScores]);
+
+  // Auto-load your own team on open, so the Manager tab shows your team instead
+  // of asking you to type your own name (feedback #66). Runs once per mount, only
+  // once an identity is available, and never after a manual lookup or a reset.
+  const autoTriedRef = useRef(false);
+  useEffect(() => {
+    if (autoTriedRef.current) return;
+    const name = ownName.trim();
+    if (name.length >= 2) {
+      autoTriedRef.current = true;
+      handleLookup(name, { auto: true }).finally(() => setAutoResolved(true));
+      return;
+    }
+    // Identity has settled and there's still no usable name (signed out, or a
+    // profile without one) — stop waiting and let the manual search take over.
+    if (sessionStatus !== 'loading') setAutoResolved(true);
+  }, [ownName, handleLookup, sessionStatus]);
 
   function handleReset() {
     setTeamData(null);
@@ -686,8 +728,18 @@ function ManagerDashboardInner() {
         />
         {!teamData ? (
           <>
-            <ManagerSearch loading={loading} onSubmit={handleLookup} />
-            {loading && (
+            {/* While the on-open auto-lookup is still in flight, show only the
+                loader. Rendering the "enter your name" box first and replacing it
+                with results a moment later reads as a glitch. */}
+            {autoResolved && !loading && (
+              <ManagerSearch
+                loading={loading}
+                onSubmit={handleLookup}
+                autoFailed={autoFailed}
+                autoName={autoFailed ? ownName : ''}
+              />
+            )}
+            {(loading || !autoResolved) && (
               <div className="cine-glass rounded-2xl p-8">
                 <BookLoader message="Looking up your team in Snowflake..." />
               </div>

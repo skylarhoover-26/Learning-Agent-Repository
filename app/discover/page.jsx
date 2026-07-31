@@ -10,8 +10,11 @@ import { useActiveTool } from '@/components/active-tool-provider';
 import { sortByDifficulty } from '@/lib/difficulty';
 import {
   Search, Sparkles, ChevronRight, Clock, Lightbulb,
-  RefreshCw, Loader2, Library,
+  RefreshCw, Loader2, Library, History, X,
 } from 'lucide-react';
+import {
+  loadDiscoveryHistory, addDiscoverySearch, removeDiscoverySearch, describeSearchAge,
+} from '@/lib/discovery-history';
 
 const SAMPLE_PROMPTS = [
   "I'm an Operations Manager. My typical day: 3-4 meetings, reviewing project status updates, planning next quarter, and writing reports.",
@@ -37,6 +40,9 @@ function DiscoverContent() {
   const [isSearching, setIsSearching] = useState(false);
   const [opportunities, setOpportunities] = useState([]);
   const [cameFromTasks, setCameFromTasks] = useState(false);
+  // Past searches, so leaving the page and coming back doesn't throw the results
+  // away (feedback #3). Restoring one is instant — no second trip to the model.
+  const [history, setHistory] = useState([]);
   const prefilledRef = useRef(false);
   // Holds a background-generated result during the guided tour so the results
   // step is already populated when the tour "clicks" Find AI (no spinner wait).
@@ -52,6 +58,27 @@ function DiscoverContent() {
       setCameFromTasks(true);
     }
   }, [searchParams]);
+
+  // Load saved searches once on open.
+  useEffect(() => {
+    let cancelled = false;
+    loadDiscoveryHistory().then((saved) => {
+      if (!cancelled) setHistory(saved);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Bring a saved search back on screen, results and all.
+  function restoreSearch(entry) {
+    setWorkDescription(entry.workDescription || '');
+    setOpportunities(sortByDifficulty(entry.opportunities || []));
+    setHasSearched(true);
+    setCameFromTasks(false);
+  }
+
+  async function forgetSearch(id) {
+    setHistory(await removeDiscoverySearch(history, id));
+  }
 
   async function fetchOpportunities(text) {
     const res = await fetch('/api/discover', {
@@ -88,8 +115,14 @@ function DiscoverContent() {
         data = await prefetchRef.current.promise;
       }
       if (!data) data = await fetchOpportunities(text);
-      setOpportunities(sortByDifficulty(data.opportunities || []));
+      const found = sortByDifficulty(data.opportunities || []);
+      setOpportunities(found);
       setHasSearched(true);
+      // Save it so navigating away and back doesn't lose the results. Only worth
+      // keeping when the search actually found something.
+      if (found.length > 0) {
+        setHistory(await addDiscoverySearch(history, { workDescription: text, opportunities: found }));
+      }
     } catch (error) {
       console.error('Discover error:', error);
       setOpportunities([]);
@@ -156,6 +189,47 @@ function DiscoverContent() {
                 </div>
               )}
             </div>
+
+            {/* Past searches come first: someone returning to this page most
+                often wants the results they already had, not a fresh search. */}
+            {history.length > 0 && (
+              <div className="mb-8">
+                <h3 className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
+                  <History className="w-3.5 h-3.5" />
+                  Your recent searches
+                </h3>
+                <div className="space-y-2">
+                  {history.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="cine-glass cine-tilt rounded-xl flex items-center gap-2 pr-2 transition-all"
+                    >
+                      <button
+                        onClick={() => restoreSearch(entry)}
+                        className="flex-1 min-w-0 text-left p-4 pr-0"
+                      >
+                        <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">
+                          {entry.workDescription}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          {(entry.opportunities || []).length} opportunit
+                          {(entry.opportunities || []).length === 1 ? 'y' : 'ies'}
+                          {describeSearchAge(entry.searchedAt) ? ` · ${describeSearchAge(entry.searchedAt)}` : ''}
+                        </p>
+                      </button>
+                      <button
+                        onClick={() => forgetSearch(entry.id)}
+                        aria-label="Remove this saved search"
+                        title="Remove this saved search"
+                        className="shrink-0 p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <h3 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
