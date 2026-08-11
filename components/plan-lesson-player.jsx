@@ -1498,6 +1498,14 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         {format !== 'quick_tip' && (
           <div className="flex items-center gap-2 mb-3">
             <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-white text-xs font-bold">{stepIdx + 1}</span>
+            {/* "of N" belongs next to the step marker, not only in the progress bar
+                at the top of the player. Once you scroll into a step the bar is off
+                screen, so the only position indicator left was a bare number — which
+                is why Project Quest and Deep Dive both got reported as having no
+                "x of n" (feedback #164, #162) even though the bar renders it. */}
+            {total > 1 && (
+              <span className="text-xs font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap">of {total}</span>
+            )}
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
               {step?.kind === 'activity' ? 'Activity' : step?.kind === 'build' ? 'Build' : step?.kind === 'recap' ? 'Recap' : step?.kind === 'qa' ? 'Your question' : 'Step'}
               {step?.title ? ` · ${step.title}` : ''}

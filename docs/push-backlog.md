@@ -108,13 +108,28 @@ answer; raising the client budget past the route's 300s `maxDuration` is not.
 - [ ] The loader now reads "Finding a surprise &lt;Format&gt; for you…" — check it
       names the right format.
 
-### Open questions that predate any commit
+### `cce8707` — #164 (and #162) missing "x of n"
 
-- [ ] **#162 / #164 — confirm the learn mode with Andrea.** The missing "Step X of
-      Y" is explained by narrated mode falling through to the legacy streaming
-      view, but #162's wording says "Read & Practice", which is the *read*-mode
-      label. If the counter really is missing in read mode, it's a different bug
-      and the fix above it would be wrong.
+**The cluster B diagnosis in this doc was wrong for these two.** It blamed narrated
+mode falling through to the legacy streaming view. Andrea's #164 screenshot shows the
+read-mode `PlanLessonPlayer` eyebrow (`plan-lesson-player.jsx:1498`), so both reports
+are the read path, and the counter at line 1432 *does* render.
+
+The real gap: the total was only in the progress bar at the very top of the player.
+Scroll into a step and the bar is off screen, leaving a bare number badge beside the
+content. Fixed by putting "of N" next to the step marker itself.
+
+- [ ] Confirm "1 of 8" reads correctly on **Project Quest** and **Deep Dive**, and
+      that it tracks as you advance.
+- [ ] Confirm it's **hidden on Quick Tip** (single page, chrome suppressed) and on
+      any single-step lesson — the guard is `total > 1`, so "of 1" should never show.
+- [ ] Check it doesn't crowd the eyebrow on narrow/mobile widths — it sits between
+      the badge and an uppercase title that can be long.
+- [ ] **#160 is NOT fixed by this.** "Quick Lesson just says Step 1 and Step 2" is
+      the legacy streaming view in `app/lesson/page.jsx:1750`, a different file with
+      no total available. Still open.
+
+### Open questions that predate any commit
 - [ ] **Cluster C (#163/#167) — confirm against runtime logs.** Missing
       `maxDuration` is a real defect worth fixing regardless, but a timeout is not
       the only way a screen spins forever. Don't close these on the config change
