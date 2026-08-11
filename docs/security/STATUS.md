@@ -20,16 +20,43 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-11** — `lib/content-safety.js` delimits titles in `<untrusted>`, strips angle brackets, and range-checks the model's indices; `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
 | F-11 | Low | `/api/slack` GET leaks env presence | **Fixed 2026-08-11** — `configured` field removed |
 
-## F-05 is the one still open
+## F-05 is the one still open — and it is BLOCKED ON STORE CONFIGURATION
 
-Switching `access: 'public'` → `'private'` in `lib/blob-store.js` changes how
-every read works, not just the writes — existing blobs stay public, and the
-read path (`list()` + `fetch(downloadUrl)`) needs reworking for token-authorized
-access. That is a migration with a real chance of breaking all user-data reads,
-so it wants its own change and its own verification pass rather than riding
-along with the rest. Mitigating factor, unchanged since the review: blob URLs
-carry a per-store random component, so this is exposure-on-URL-leak, not open
-enumeration.
+**Read this before writing any code for F-05.** It was attempted and reverted on
+2026-08-11 (`105d587`, reverted by `62aac30`). The attempt failed for a reason no
+amount of application code can fix:
+
+```
+Vercel Blob: Cannot use private access on a public store.
+The store must be configured with private access.
+```
+
+The blob store behind this project (`xhnmqsy93cya2unk`, prod `BLOB_STORE_ID`
+`store_L4ADQJeZg88H…`) is a **public store**. Every `put(..., access: 'private')`
+against it throws. Verified directly against the production token: a public write
+succeeds, a private write fails with the error above.
+
+Neither `next build` nor `npm run lint` catches this — it is a runtime API
+rejection — and the app *appeared* fine after deploying because reads fell back to
+the public path. Only writes broke, and most write sites swallow their errors.
+
+**So F-05 is a storage-configuration task first, a code task second:**
+
+1. Determine whether Vercel can convert this store to private access, or whether a
+   new private store plus a data migration is required. Note the store is shared —
+   see the two-store note in the project memory.
+2. Only then port the code. The reverted commit's approach was sound: one
+   `lib/blob-json.js` doing private writes and authenticated `get()` reads by
+   pathname, with a legacy public-read fallback, plus a migration script for
+   existing blobs (`access` is a property of the stored object, so old blobs stay
+   public until rewritten).
+3. Feedback screenshots and recordings must stay public regardless, or gain an
+   authenticated proxy route — the admin UI renders them via `<img>`/`<video>` src.
+4. **Smoke-test against the real store before deploying**: write one private blob,
+   read it back, confirm an anonymous fetch of its URL is refused.
+
+Mitigating factor, unchanged since the review: blob URLs carry a per-store random
+component, so the residual exposure is read-if-a-URL-leaks, not enumeration.
 
 ## Cron paths and the middleware matcher
 
