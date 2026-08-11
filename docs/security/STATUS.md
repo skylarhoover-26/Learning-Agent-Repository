@@ -14,22 +14,45 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **OPEN** — `lib/blob-store.js:32`, `app/api/curriculum/daily/route.js:52`. See below |
+| F-05 | Medium | Blobs written `access: 'public'` | **Fixed for JSON 2026-08-11** — all JSON stores write private via `lib/blob-json.js` and read through the authenticated SDK. Feedback media still public — see below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-11** — `lib/content-safety.js` delimits titles in `<untrusted>`, strips angle brackets, and range-checks the model's indices; `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
 | F-11 | Low | `/api/slack` GET leaks env presence | **Fixed 2026-08-11** — `configured` field removed |
 
-## F-05 is the one still open
+## F-05 — what shipped, and what is left
 
-Switching `access: 'public'` → `'private'` in `lib/blob-store.js` changes how
-every read works, not just the writes — existing blobs stay public, and the
-read path (`list()` + `fetch(downloadUrl)`) needs reworking for token-authorized
-access. That is a migration with a real chance of breaking all user-data reads,
-so it wants its own change and its own verification pass rather than riding
-along with the rest. Mitigating factor, unchanged since the review: blob URLs
-carry a per-store random component, so this is exposure-on-URL-leak, not open
-enumeration.
+Every JSON store now writes `access: 'private'` and reads through
+`lib/blob-json.js`, which uses the authenticated `get()` SDK path. That covers
+user profiles, XP, lessons, badges, the leaderboard cache, audit entries, org
+data, daily lessons, curriculum findings/proposals, feedback records, and the
+reporting snapshot.
+
+**Two caveats, both deliberate:**
+
+1. **Existing blobs stay public until rewritten.** `access` is a property of the
+   stored object, so the switch only protects data as it is written. `readJsonBlob`
+   falls back to the legacy public fetch so nothing breaks in the meantime.
+   Run `scripts/migrate-blobs-private.mjs` (supports `--dry-run`) against the
+   real store to flip the backlog. **Until that has run, F-05 is only closed for
+   newly-written data.** Once it has, the fallback in `lib/blob-json.js` can go.
+
+2. **Feedback media is still public** — `lib/feedback-upload.js` (recordings) and
+   the screenshot write in `lib/feedback-store.js`. The admin UI renders these
+   through `<img>` / `<video>` src, which cannot carry an auth header, and the
+   recording upload happens browser-side. Closing this needs an authenticated
+   media proxy route; it is not a find-and-replace.
+
+Unchanged mitigating factor from the review: blob URLs carry a per-store random
+component, so the residual exposure is read-if-a-URL-leaks, not enumeration.
+
+## Verify F-05 on a preview deploy before trusting it
+
+This change touches every read of user data. `next build` cannot exercise it —
+the local env token points at the empty `learning-platform-data` store, not the
+`learning-agent-blob` store that holds real data. On a preview deploy, confirm:
+profile loads, XP total is correct, leaderboard renders, `/reporting` populates,
+AI news card fills, and admin feedback lists records.
 
 ## Cron paths and the middleware matcher
 

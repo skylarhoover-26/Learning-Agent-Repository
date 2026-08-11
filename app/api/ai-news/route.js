@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list } from '@vercel/blob';
+import { readJsonBlob } from '@/lib/blob-json';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { dropExcluded, splitByApproval } from '@/lib/ai-news';
 
@@ -25,17 +25,7 @@ const BLOB_SCAN_META_KEY = 'shared/curriculum_scan_meta.json';
 // Cache-bust + no-store, the same way lib/blob-store.js does (skipping it there
 // is why admin XP grants once appeared to do nothing).
 async function readJson(key) {
-  try {
-    const { blobs } = await list({ prefix: key, limit: 1 });
-    if (blobs.length === 0) return null;
-    const base = blobs[0].downloadUrl;
-    const url = `${base}${base.includes('?') ? '&' : '?'}_=${Date.now()}`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+  return readJsonBlob(key, { fresh: true });
 }
 
 // Reads mutable blob data, so it must never be cached at build time.
