@@ -6,7 +6,7 @@ import { getTotalXp, getLevel, getLevelProgress, calculateStreak, activityTimest
 import { useProfile } from '@/components/profile-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { onXp } from '@/lib/xp-bus';
-import { hydrate, reconcileLedger, saveToBlob } from '@/lib/sync-store';
+import { hydrate, reconcileLedger, saveToBlob, replaceInBlob } from '@/lib/sync-store';
 
 const ProgressionContext = createContext(null);
 
@@ -109,11 +109,13 @@ export function ProgressionProvider({ children }) {
           ].forEach((k) => localStorage.removeItem(k));
           localStorage.setItem('lp_reset_seen', String(resetAt));
           // Force the blob backup empty too, so a blob dirtied by an earlier
-          // pre-fix backup can't re-hydrate the wiped progress.
+          // pre-fix backup can't re-hydrate the wiped progress. This MUST be
+          // replaceInBlob: ledger POSTs merge by default, so a plain save of []
+          // would fold the server's copy straight back in and un-reset the wipe.
           try {
-            saveToBlob(`lp_xp_${learnerId}`, []);
-            saveToBlob(`lp_badges_${learnerId}`, []);
-            saveToBlob(`lp_lessons_${learnerId}`, []);
+            replaceInBlob(`lp_xp_${learnerId}`, []);
+            replaceInBlob(`lp_badges_${learnerId}`, []);
+            replaceInBlob(`lp_lessons_${learnerId}`, []);
           } catch { /* best-effort */ }
           resetApplied = true;
         }
