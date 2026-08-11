@@ -82,8 +82,11 @@ function JeopardyGame() {
   const maxScore = useMemo(() => (board?.categories || []).reduce((n, c) => n + c.clues.reduce((s, cl) => s + cl.value, 0), 0), [board]);
   const done = board && used.size === totalClues && totalClues > 0;
 
-  // Persist the result once the board is cleared (local stats only — custom
-  // rounds don't feed the leaderboard).
+  // Persist the result once the board is cleared. This pays XP like any other
+  // game — saveGameResult routes every finished round through onGameComplete, the
+  // event syncs to Supabase, and leaderboard_totals() sums it with everything
+  // else. A custom round ranks you up exactly like a built-in one; the only limit
+  // is the once-per-game-per-content-day gate that all the games share.
   useEffect(() => {
     if (!done || savedDone) return;
     setSavedDone(true);
