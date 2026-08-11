@@ -151,6 +151,37 @@ preselects that game in the generator and focuses the topic box. Not a direct la
 Its own comment explains it needs genuine human-written samples, so it can't be
 generated from a topic.
 
+### `<pending>` — #188 Jeopardy had no instructions
+
+**Cluster, not a one-off.** The four hand-built games (Speed Round, Prompt Battle,
+Hallucination Hunt, AI or Human) each render the shared `GameInstructions` twice —
+expanded on a start screen, collapsed on the play screen. **All five generated games
+render it zero times** and drop you straight from a spinner onto the game. That is
+#188 (Jeopardy) and #185 (Family Feud) from the same reporter.
+
+Jeopardy is done. Its start screen shows *while* the board generates, so reading the
+rules covers the ~25s wait instead of stacking a spinner and then a gate.
+
+- [ ] Start screen appears immediately on entry, with the button reading "Building
+      your board…" and disabled until the board lands, then "Start Game".
+- [ ] "How to play" is collapsed on the play screen and expands on click.
+- [ ] A generation **failure** still reaches the "Couldn't build the board" screen —
+      the start screen is gated on `!error`, so an error must win over it.
+- [ ] The old `GameGenLoading` spinner is gone from this game; confirm nothing else
+      expected it.
+
+**Still to do — the same fix for four more games:** Family Feud (#185), Millionaire,
+Two Truths, Wheel of Fortune.
+
+**Not addressed by this, do not close on it:** #188's second half — "the answers are
+not that easy to know without some context" — is clue *quality*, a generation-prompt
+issue. Instructions don't fix it.
+
+**#187 needs a check before any code.** It says Hallucination Hunt's "instructions are
+not minimized", but that game already passes `collapsible defaultOpen={false}` on its
+play screen, and its start-screen copy is expanded *by design*. Ask which screen she
+meant before changing anything.
+
 ### Open questions that predate any commit
 - [ ] **Cluster C (#163/#167) — confirm against runtime logs.** Missing
       `maxDuration` is a real defect worth fixing regardless, but a timeout is not

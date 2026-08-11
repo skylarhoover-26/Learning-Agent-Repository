@@ -3,13 +3,24 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, X, Trophy, Sparkles, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Check, X, Trophy, Sparkles, RotateCcw, ChevronRight, Loader2 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import BookLoader from '@/components/book-loader';
-import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
+import GameInstructions from '@/components/game-instructions';
 import { saveGameResult } from '@/lib/game-store';
+
+// Jeopardy had no instructions at all — you went from a loading spinner straight
+// onto a board of clues (feedback #188, and #185 for the same gap in Family Feud).
+// The four hand-built games have shown a "How to play" start screen all along; the
+// generated ones never got one.
+const HOW_TO_PLAY = [
+  'Pick any clue from the board — the higher the value, the harder the clue.',
+  'Answer in the form of a question ("What is…?") — though we accept a plain answer too.',
+  'Not sure? Skip to see the answer. You still learn it, you just score nothing for it.',
+  'Clear the whole board to finish. Your score is the total value of everything you got right.',
+];
 
 // Normalize a free-text response for lenient matching: lowercase, drop the
 // "what is / who are / the" Jeopardy framing and punctuation, collapse spaces.
@@ -47,6 +58,9 @@ function JeopardyGame() {
   const [revealed, setRevealed] = useState(null);        // { correct } once submitted
   const [score, setScore] = useState(0);
   const [savedDone, setSavedDone] = useState(false);
+  // The start screen shows WHILE the board generates, so reading the rules covers
+  // the wait instead of stacking a spinner and then a gate.
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
     if (!topic) { setLoading(false); return; }
@@ -114,8 +128,34 @@ function JeopardyGame() {
       </main>
     );
   }
-  if (loading) {
-    return <main className="max-w-2xl mx-auto px-6 pt-10"><GameGenLoading label={`Building your Jeopardy board on ${topic}…`} estimateSeconds={25} /></main>;
+  if (!started && !error) {
+    return (
+      <main className="max-w-2xl mx-auto px-6 pt-6 pb-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+            <Trophy className="w-8 h-8 text-brand-600 dark:text-brand-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1">Jeopardy</h2>
+          <p className="text-sm mb-4" style={{ color: 'var(--ink-dim)' }}>on {topic}</p>
+
+          <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
+
+          <button
+            onClick={() => setStarted(true)}
+            disabled={loading || !board}
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading || !board
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Building your board…</>
+              : <>Start Game <ChevronRight className="w-4 h-4" /></>}
+          </button>
+
+          <div className="mt-6">
+            <Link href="/games" className="text-sm text-brand font-medium hover:underline">Back to all games</Link>
+          </div>
+        </div>
+      </main>
+    );
   }
   if (error || !board) {
     return (
@@ -143,6 +183,10 @@ function JeopardyGame() {
         <div className="text-[11px] font-bold uppercase tracking-[.18em] mb-1" style={{ color: 'var(--accent)' }}>Jeopardy · custom round</div>
         <h1 className="font-display font-extrabold tracking-tight text-ink dark:text-slate-100" style={{ fontSize: 'clamp(24px,4vw,40px)' }}>{topic}</h1>
       </div>
+
+      {/* Minimized while playing — same as the hand-built games, so the rules stay
+          reachable without eating the board. */}
+      {!done && <GameInstructions className="mb-4 max-w-2xl mx-auto" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />}
 
       {done ? (
         <div className="cine-glass rounded-3xl p-8 text-center max-w-lg mx-auto">
