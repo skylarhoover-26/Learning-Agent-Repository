@@ -24,7 +24,10 @@ const TUTORIAL_STEPS = [
     title: 'Quick Wins',
     description: 'Get a ready-to-use AI prompt for your specific role and tasks. Tap Surprise me on the Lesson screen, copy the prompt, try it in your AI tool, and see results in under 5 minutes.',
     tip: 'Start here — it\'s the fastest way to see AI help with your actual work.',
-    action: { label: 'Surprise me', href: '/lesson?surprise=1' },
+    // Pin the format: surprise now runs in whatever format is selected (#166), and
+    // the promise above is a 5-minute prompt, so this entry point has to ask for a
+    // quick tip explicitly rather than inherit the picker's default.
+    action: { label: 'Surprise me', href: '/lesson?surprise=1&format=quick_tip' },
     color: 'bg-cta',
   },
   {

@@ -899,10 +899,18 @@ function LessonContent() {
   }, [videoTopic, format]);
 
   // "Surprise me": pick a personalized topic (same source as the old quick-win
-  // surprise), then launch it as a normal Quick Tip lesson — narrated when the
-  // learner is in watch mode, otherwise the conversational quick tip. Routing
-  // through the real lesson flow is what gives it a Finish button, a saved
-  // resume entry, and correct narrated behavior.
+  // surprise), then launch it in the format the learner ALREADY CHOSE — narrated
+  // when they're in watch mode, otherwise the reader. Routing through the real
+  // lesson flow is what gives it a Finish button, a saved resume entry, and
+  // correct narrated behavior.
+  //
+  // This used to force setFormat('quick_tip'), a leftover from when surprise lived
+  // at /quick-win. The button sits under "Generate lesson" *after* a format is
+  // picked, so silently swapping it meant choosing Project Quest and being handed a
+  // quick tip (feedback #166). Surprise picks the TOPIC; the format is the
+  // learner's. Note this also removed a stale-closure bug: launchVideo defaults its
+  // format argument to the `format` state, which hadn't re-rendered yet when
+  // setFormat was called on the line above, so the two paths disagreed.
   async function startSurprise() {
     setSurpriseError(null);
     try {
@@ -914,13 +922,12 @@ function LessonContent() {
       const data = await res.json();
       const t = data?.quickWin?.title;
       if (!res.ok || !t) throw new Error(data?.error || 'Could not find a tip just now.');
-      setFormat('quick_tip');
       setTopic(t);
       setSurpriseMode(false);
       if (learnMode === 'watch') {
-        launchVideo(t);
+        launchVideo(t, format);
       } else {
-        prefetchPlan(t, 'quick_tip', tools);
+        prefetchPlan(t, format, tools);
         setView('lesson');
       }
     } catch (err) {
@@ -1084,7 +1091,7 @@ function LessonContent() {
               </div>
             ) : (
               <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 max-w-xl mx-auto">
-                <BookLoader message="Finding a surprise Quick Tip for you…" size="lg" />
+                <BookLoader message={`Finding a surprise ${FORMAT_META[format].title} for you…`} size="lg" />
               </div>
             )}
           </main>

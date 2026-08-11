@@ -80,6 +80,18 @@ Quests on long topics are effectively at the ceiling, so some fraction of them f
 purely on timing regardless of cause. The deferred skeleton/detail split is the real
 answer; raising the client budget past the route's 300s `maxDuration` is not.
 
+### `<pending>` — #166 Surprise Me overrode the format
+
+- [ ] **Surprise from Project Quest → Narration** now gives a narrated Quest, not a
+      quick tip. Confirm — and brace for the wait: this routes surprise into the
+      ~274s quest generation from #181, which is the tradeoff Skylar accepted.
+- [ ] Surprise from each of the other three formats lands in that same format.
+- [ ] **Getting Started → "Surprise me"** still gives a Quick Tip. Its link was
+      pinned to `&format=quick_tip` because that card promises a 5-minute prompt;
+      without the pin it would have inherited the picker default ("standard").
+- [ ] The loader now reads "Finding a surprise &lt;Format&gt; for you…" — check it
+      names the right format.
+
 ### Open questions that predate any commit
 
 - [ ] **#162 / #164 — confirm the learn mode with Andrea.** The missing "Step X of
@@ -231,7 +243,7 @@ Status: `diagnosing` → `fix written` → `committed` → `pushed`
 | 163 | C maxDuration | Critical | | cause found, confirm in logs |
 | 165 | C maxDuration | Critical | | cause found, confirm in logs |
 | 167 | C maxDuration | Critical | | cause found, confirm in logs |
-| 166 | D surprise routing | Critical | | cause probable |
+| 166 | D surprise routing | Critical | | fix committed |
 | 155 | D naming | High | | cause certain |
 | 156 | D naming | High | | cause certain |
 | 169 | D game timing | High | | cause certain |
