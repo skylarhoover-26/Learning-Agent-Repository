@@ -29,10 +29,11 @@ const providers = oktaConfigured
     ]
   : [];
 
-// Session lifetime: an 8-hour sliding idle window (was the 30-day default).
-// Active use refreshes it (updateAge), so nobody gets logged out mid-session,
-// but after ~8h idle — e.g. returning the next day — Okta re-auth is required.
-const SESSION_MAX_AGE = 8 * 60 * 60; // 8 hours (seconds)
+// Session lifetime: a 24-hour sliding idle window (was the 30-day default,
+// then 8h). Active use refreshes it (updateAge), so nobody gets logged out
+// mid-session; after ~24h idle, Okta re-auth is required. Not a security-review
+// requirement — see docs/security/STATUS.md — so this is safe to tune.
+const SESSION_MAX_AGE = 24 * 60 * 60; // 24 hours (seconds)
 const SESSION_UPDATE_AGE = 60 * 60; // refresh at most hourly on activity
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

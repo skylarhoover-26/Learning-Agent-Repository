@@ -325,6 +325,8 @@ export async function GET() {
     status: 'active',
     commands: ['/learn', '/leaderboard', '/heatmap', '/skills'],
     events: ['message.im', 'app_home_opened'],
-    configured: Boolean(SIGNING_SECRET && BOT_TOKEN),
+    // Deliberately no `configured` flag here. Echoing whether the signing
+    // secret and bot token are set told an anonymous prober exactly when the
+    // signature check could be skipped (security review F-11).
   });
 }

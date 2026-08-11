@@ -6,6 +6,8 @@ import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
 import { parseRss } from '@/lib/parse-feed';
 import { classifyFindings, RUBRIC_VERSION } from '@/lib/news-relevance';
+import { requireCronSecret } from '@/lib/cron-auth';
+import { filterUnsafeContent } from '@/lib/content-safety';
 import { refreshStaleSkillMarks } from '@/lib/skill-staleness';
 import { APPROVED_CATEGORIES, dropExcluded } from '@/lib/ai-news';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
@@ -54,38 +56,6 @@ async function writeBlob(key, data) {
     });
   } catch (error) {
     console.error(`Blob write error (${key}):`, error);
-  }
-}
-
-async function filterUnsafeContent(findings) {
-  if (findings.length === 0) return findings;
-  try {
-    const client = new Anthropic();
-    const titles = findings.map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}`).join('\n');
-    const response = await client.messages.create({
-      model: MODELS.haiku,
-      max_tokens: 500,
-      system: `You are a content safety filter for a corporate AI learning platform at Housecall Pro.
-
-Review each article title and flag any that are:
-- Political (partisan politics, elections, political opinion)
-- Sexually explicit or violent
-- Hate speech or discriminatory
-- Conspiracy theories or misinformation
-- Not related to AI, technology, or professional development
-
-Return ONLY a JSON array of 1-based indices of articles to REMOVE.
-If all articles are safe, return [].
-Output ONLY the JSON array, no prose.`,
-      messages: [{ role: 'user', content: `Review these articles:\n${titles}` }],
-    });
-    const text = response.content[0].text.trim();
-    const match = text.match(/\[[\s\S]*?\]/);
-    if (!match) return findings;
-    const removeIndices = new Set(JSON.parse(match[0]));
-    return findings.filter((_, i) => !removeIndices.has(i + 1));
-  } catch {
-    return findings;
   }
 }
 
@@ -166,10 +136,8 @@ No prose, only the JSON array.`,
 }
 
 export async function GET(request) {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const denied = requireCronSecret(request);
+  if (denied) return denied;
 
   try {
     const allFindings = [];

@@ -2,6 +2,7 @@ import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
+import { requireAdmin } from '@/lib/require-admin';
 
 let client;
 function getClient() {
@@ -10,6 +11,9 @@ function getClient() {
 }
 
 export async function POST(request) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { findings } = await request.json();
     if (!findings || findings.length === 0) {

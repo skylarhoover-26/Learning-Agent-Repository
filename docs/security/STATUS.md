@@ -10,27 +10,43 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 |---|---|---|---|
 | F-01 | Critical | Identity is a client-set cookie | **Fixed** — Okta SSO live 2026-07-01 (`auth.js`, `middleware.js`) |
 | F-02 | High | `/api/user-lookup` unauth PII | **Fixed** — route deleted |
-| F-03 | High | Slack signature verification dead code | **Fixed** — enforced at `app/api/slack/route.js:245`; `response_url` host pinned to `hooks.slack.com` (line 124) |
-| F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` (`app/api/manager-data/route.js:25-30`) |
-| F-07 | High | Admin gate decorative; admin APIs unauth | **Partial** — `requireAdmin()` guards `app/api/admin/*`, but `/api/curriculum/scan` and `/api/curriculum/curate` still have no server-side check |
-| F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Open** — `app/api/curriculum/daily/route.js:170` still uses `authHeader !== \`Bearer ${process.env.CRON_SECRET}\``, which matches the literal `Bearer undefined` when the var is unset. Same pattern at `app/api/reporting/refresh/route.js:12` (that one is behind the SSO middleware) |
-| F-05 | Medium | Blobs written `access: 'public'` | **Open** — `lib/blob-store.js:32` and `app/api/curriculum/daily/route.js:51` |
+| F-03 | High | Slack signature verification dead code | **Fixed** — enforced at `app/api/slack/route.js:245`; `response_url` host pinned to `hooks.slack.com` |
+| F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
+| F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
+| F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
+| F-05 | Medium | Blobs written `access: 'public'` | **OPEN** — `lib/blob-store.js:32`, `app/api/curriculum/daily/route.js:52`. See below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
-| F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Open** — no auth, no rate limiting |
-| F-10 | Medium | Prompt injection via RSS titles | **Open** — no untrusted-region delimiters in the safety-filter prompt; `lib/parse-feed.js:92` accepts any `<link>` value with no scheme validation |
-| F-11 | Low | `/api/slack` GET leaks env presence | **Open** — `configured` field still returned (`app/api/slack/route.js:328`) |
+| F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
+| F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-11** — `lib/content-safety.js` delimits titles in `<untrusted>`, strips angle brackets, and range-checks the model's indices; `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
+| F-11 | Low | `/api/slack` GET leaks env presence | **Fixed 2026-08-11** — `configured` field removed |
 
-## The middleware exclusion matters here
+## F-05 is the one still open
 
-`middleware.js:21` excludes `api/curriculum` from the SSO matcher, so the
-`scan`, `curate`, and `daily` routes are **not** covered by Okta. F-07, F-08,
-F-09, and F-10 all live on those paths and are reachable anonymously today.
-Everything else in the app is gated.
+Switching `access: 'public'` → `'private'` in `lib/blob-store.js` changes how
+every read works, not just the writes — existing blobs stay public, and the
+read path (`list()` + `fetch(downloadUrl)`) needs reworking for token-authorized
+access. That is a migration with a real chance of breaking all user-data reads,
+so it wants its own change and its own verification pass rather than riding
+along with the rest. Mitigating factor, unchanged since the review: blob URLs
+carry a per-store random component, so this is exposure-on-URL-leak, not open
+enumeration.
 
-The blast radius for F-08 depends on whether `CRON_SECRET` is set in every
-environment — set in prod means prod is safe and previews are not. That was
-open question #1 in the review's section E and has never been answered in
-writing.
+## Cron paths and the middleware matcher
+
+Every cron path in `vercel.json` must appear in the `middleware.js` matcher
+exclusion list. A Vercel cron sends a `CRON_SECRET` bearer token and no session
+cookie, so any cron path the matcher catches gets 302'd to `/auth/signin` and
+the job silently does nothing.
+
+Found this way on 2026-08-11: `/api/reporting/refresh` and
+`/api/model-lineup/refresh` were both missing from the list and had been
+returning 302 in production — those two crons were not running. Both
+authenticate themselves in-route, so they were added to the exclusion.
+
+`CRON_SECRET` is confirmed set in the production environment (`vercel env ls
+production`, 2026-08-11), so the fail-closed change does not break the prod
+crons. Preview deploys without the var will now return 503 instead of running —
+which is the intended behaviour.
 
 ## What the review does *not* say
 
