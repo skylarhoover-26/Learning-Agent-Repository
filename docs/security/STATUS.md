@@ -14,11 +14,39 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **In progress** — code landed and gated behind `BLOB_PRIVATE_RW_TOKEN`; inert until a private store exists. See below |
+| F-05 | Medium | Blobs written `access: 'public'` | **In progress** — media (the real exposure) now routes through a private store + authenticated proxy; all gated behind `BLOB_PRIVATE_RW_TOKEN` and inert until it is set. See below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-11** — `lib/content-safety.js` delimits titles in `<untrusted>`, strips angle brackets, and range-checks the model's indices; `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
 | F-11 | Low | `/api/slack` GET leaks env presence | **Fixed 2026-08-11** — `configured` field removed |
+
+## F-05 — what is actually stored, and why media comes first
+
+An inventory of the store on 2026-08-11 reframed this finding:
+
+| What | Count | Size | Last written |
+|---|---|---|---|
+| `feedback-recordings/` — screen recordings | 3 | **18.6 MB** | 2026-08-08 |
+| `audit/` — activity log entries | 130 | 0.05 MB | 2026-07-15 |
+| `users/` — profile, XP, calibration, notifications (**one user**) | 6 | 0.002 MB | 2026-07-14 |
+| `leaderboard/cache.json` | 1 | 0.0001 MB | 2026-07-15 |
+
+The JSON is ~52KB of month-old data for a single user — Supabase owns the live
+path now. **The screen recordings are the real exposure**: they are captures of
+someone using the app, so they can show names, emails and other people's data,
+and they were world-readable to anyone holding the URL.
+
+(Worth a look on its own: JSON blob writes stopped around 2026-07-14/15 even
+though the code still calls `saveUserData` and the leaderboard cache has a
+60-second TTL. Either those paths went Supabase-only or blob writes have been
+failing silently. Not blocking, but unexplained.)
+
+So media was done first. `lib/blob-media.js` writes media to the private store,
+`/api/feedback/media/[...path]` streams it back behind an admin check, and
+`mediaProxySrc()` maps stored URLs onto that route. Because the proxy resolves by
+**pathname**, reading private-then-public, no stored feedback record ever needs
+rewriting and media uploaded either side of the cutover keeps working. Range
+headers are forwarded so `<video>` seeking still works.
 
 ## F-05 — in progress, gated behind a private store
 
@@ -58,14 +86,16 @@ rollback* a single environment-variable change rather than a redeploy.
 1. `vercel blob create-store learning-agent-private --access private`
 2. Add its token to Vercel as `BLOB_PRIVATE_RW_TOKEN`. **Do not touch
    `BLOB_READ_WRITE_TOKEN`** — that is the media store and the fallback path.
-3. `node scripts/migrate-blobs-private.mjs --dry-run`, then for real. It copies;
-   it never deletes.
-4. `--verify` — every public JSON blob must have a byte-identical private twin.
-5. Deploy, then confirm in the app: profile, XP total, leaderboard, `/reporting`,
-   AI news card, admin feedback list, and that a feedback screenshot still
-   renders (that last one proves the public media carve-out survived).
-6. Only then `--cleanup`, which deletes the public copies and refuses any blob
-   without a private twin.
+3. `node scripts/migrate-media-private.mjs --dry-run`, then for real, then
+   `--verify`. Copies only — it never deletes. The JSON equivalent
+   (`migrate-blobs-private.mjs`) is optional; see the inventory above.
+4. Deploy, then in the admin feedback UI confirm a **screenshot renders and a
+   recording plays and seeks**. That exercises the proxy, the private read, and
+   Range forwarding in one go.
+5. Confirm an anonymous request to `/api/feedback/media/<path>` is refused, and
+   that the old public blob URL 404s once cleanup has run.
+6. Only then `--cleanup`, which deletes the public originals and refuses any blob
+   without a matching private copy.
 
 **Smoke-test before deploying:** write one private blob, read it back, and
 confirm an anonymous fetch of its URL is refused. That check takes seconds and

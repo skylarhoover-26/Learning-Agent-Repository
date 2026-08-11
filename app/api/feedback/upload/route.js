@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { handleUpload } from '@vercel/blob/client';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
+import { mediaUploadToken } from '@/lib/blob-media';
 
 // Direct browser→Blob uploads for feedback attachments (screen recordings and
 // large images). These bypass the ~4.5MB serverless request-body limit: the file
@@ -22,6 +23,10 @@ export async function POST(request) {
     const json = await handleUpload({
       request,
       body,
+      // Mint the client token against the PRIVATE media store when it's
+      // configured; undefined falls back to BLOB_READ_WRITE_TOKEN (public),
+      // which is the pre-cutover behaviour.
+      token: mediaUploadToken(),
       onBeforeGenerateToken: async () => {
         // Only signed-in users can upload; the token is minted per request and
         // restricted to image/video under the feedback prefix.

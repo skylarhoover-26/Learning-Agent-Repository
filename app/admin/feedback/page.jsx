@@ -12,6 +12,7 @@ import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import MediaCapture from '@/components/media-capture';
 import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS, WORK_STATUSES } from '@/lib/feedback-priority';
 import { FEATURE_AREAS } from '@/lib/feedback-features';
+import { mediaProxySrc } from '@/lib/media-url';
 
 // Category → pill color, so bugs/ideas/praise are scannable at a glance.
 const CATEGORY_STYLES = {
@@ -814,16 +815,20 @@ function FeedbackCard({ feedback: f, refNumber, busy, onPatch }) {
       (Array.isArray(f.recordingUrls) && f.recordingUrls.length > 0) ||
       !isPraise(f) ? (
         <div className="flex flex-wrap items-center gap-2 mt-3">
+          {/* Media is served through /api/feedback/media, never by blob URL: the
+              media store is private, and a bare <img>/<video> src can't send an
+              auth header. mediaProxySrc maps a stored URL to that route, so
+              records written before the cutover keep rendering unchanged. */}
           {(f.screenshotUrls || []).map((url, i) => (
-            <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+            <a key={i} href={mediaProxySrc(url)} target="_blank" rel="noopener noreferrer">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="Screenshot" className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-600 hover:opacity-90" />
+              <img src={mediaProxySrc(url)} alt="Screenshot" className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-600 hover:opacity-90" />
             </a>
           ))}
           {(f.recordingUrls || []).map((url, i) => (
             <video
               key={`rec-${i}`}
-              src={url}
+              src={mediaProxySrc(url)}
               controls
               className="w-40 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-600 bg-black"
             />
