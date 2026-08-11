@@ -129,6 +129,28 @@ content. Fixed by putting "of N" next to the step marker itself.
       the legacy streaming view in `app/lesson/page.jsx:1750`, a different file with
       no total available. Still open.
 
+### `<pending>` — #189 hidden games
+
+Five games (Family Feud, Two Truths, Jeopardy, Millionaire, Wheel of Fortune) had
+routes but no card on `/games`, so they were reachable only through "Generate your
+own game". They ship with **no built-in question bank** — the route renders nothing
+without `?topic=` — which is why they were never listed.
+
+Chosen approach (Skylar, 2026-08-11): the card routes to `/games?make=<id>`, which
+preselects that game in the generator and focuses the topic box. Not a direct launch.
+
+- [ ] All **nine** cards now appear on `/games`, still ordered easy → hard.
+- [ ] Clicking one of the five preselects the right game, scrolls the generator into
+      view, and lands the cursor in the topic field.
+- [ ] Clicking the original four still goes **straight into play** — no regression.
+- [ ] The "Built on a topic you pick" line uses `var(--accent)` from the card's
+      difficulty glow; check it's legible in light **and** dark.
+- [ ] Deep link `/games?make=feud` works on a cold load (not just client nav).
+
+**Not a gap — leave it alone:** AI or Human is deliberately absent from the generator.
+Its own comment explains it needs genuine human-written samples, so it can't be
+generated from a topic.
+
 ### Open questions that predate any commit
 - [ ] **Cluster C (#163/#167) — confirm against runtime logs.** Missing
       `maxDuration` is a real defect worth fixing regardless, but a timeout is not
@@ -281,3 +303,5 @@ Status: `diagnosing` → `fix written` → `committed` → `pushed`
 | 145 | E AI News tailoring | High | | not diagnosed (feature) |
 | 173 | E Slack formatting | High | | not diagnosed |
 | 182 | refine loop | unset (new, Azeret 8/11) | | fix committed |
+| 181 | quest plan failure | unset (new, Azeret 8/11) | | diagnostics only, still open |
+| 189 | hidden games | Critical (new, Skylar 8/11) | | fix committed |

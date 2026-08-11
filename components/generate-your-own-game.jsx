@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import { buildGameTopics } from '@/lib/game-topics';
 import {
@@ -46,7 +46,31 @@ export default function GenerateYourOwnGame() {
   const [launched, setLaunched] = useState(null);
   const [sampleIdx, setSampleIdx] = useState(0);
   const ddRef = useRef(null);
+  const rootRef = useRef(null);
+  const topicRef = useRef(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // `?make=<id>` preselects a game type and brings this section into view. The
+  // Games page uses it for the five games that have no built-in question bank —
+  // their route renders nothing without a topic, so the card sends you here with
+  // the game already chosen rather than to an empty screen (feedback #189).
+  const makeId = searchParams.get('make');
+  useEffect(() => {
+    if (!makeId) return;
+    const match = GAME_TYPES.find((g) => g.id === makeId);
+    if (!match) return;
+    setSelected(match);
+    // Scroll after paint, then put the cursor in the topic box — the only thing
+    // left to do is name a topic.
+    const t = setTimeout(() => {
+      try {
+        rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        topicRef.current?.focus({ preventScroll: true });
+      } catch { /* older browsers */ }
+    }, 60);
+    return () => clearTimeout(t);
+  }, [makeId]);
 
   useEffect(() => {
     function onClick(e) { if (ddRef.current && !ddRef.current.contains(e.target)) setOpen(false); }
@@ -78,7 +102,7 @@ export default function GenerateYourOwnGame() {
   const SelIcon = selected?.icon;
 
   return (
-    <section className="mt-12">
+    <section ref={rootRef} className="mt-12">
       <div className="flex items-center gap-2 mb-1.5">
         <Wand2 className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-ink dark:text-slate-100">Generate your own game</h2>
@@ -157,6 +181,7 @@ export default function GenerateYourOwnGame() {
         <div className="flex flex-col sm:flex-row gap-2.5">
           <input
             type="text"
+            ref={topicRef}
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && canGenerate) generate(); }}

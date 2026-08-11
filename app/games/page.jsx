@@ -7,6 +7,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
   Gamepad2, Swords, Search, Timer, Eye, ChevronRight, Clock, BarChart3, Trophy, Zap,
+  Users, LayoutGrid, DollarSign, ScanSearch, Disc3, Sparkles,
 } from 'lucide-react';
 import { getGameStats } from '@/lib/game-store';
 import { maxGameXp } from '@/lib/progression';
@@ -61,6 +62,66 @@ const GAMES = [
     difficulty: 'Easy',
     difficultyColor: 'bg-green-50 text-green-700 ring-1 ring-green-200',
     time: '3-5 min',
+  },
+  // These five ship with NO built-in question bank — they exist only as generated
+  // rounds, so their route renders nothing without a `?topic=`. They were therefore
+  // reachable only by going through "Generate your own game", which is what feedback
+  // #189 asked us to fix. `needsTopic` sends the card into that generator with the
+  // game preselected instead of into an empty screen; `makeId` is its GAME_TYPES id.
+  {
+    slug: 'family-feud',
+    makeId: 'feud',
+    needsTopic: true,
+    icon: Users,
+    title: 'Family Feud',
+    description: 'Guess the top survey answers on your topic before three strikes.',
+    difficulty: 'Easy',
+    difficultyColor: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+    time: '5-8 min',
+  },
+  {
+    slug: 'two-truths',
+    makeId: 'twotruths',
+    needsTopic: true,
+    icon: ScanSearch,
+    title: 'Two Truths & a Lie',
+    description: 'Spot the false claim among three about your topic.',
+    difficulty: 'Easy',
+    difficultyColor: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+    time: '3-5 min',
+  },
+  {
+    slug: 'jeopardy',
+    makeId: 'jeopardy',
+    needsTopic: true,
+    icon: LayoutGrid,
+    title: 'Jeopardy',
+    description: 'A 5-category board of clues on your topic — answer in the form of a question.',
+    difficulty: 'Medium',
+    difficultyColor: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+    time: '8-12 min',
+  },
+  {
+    slug: 'millionaire',
+    makeId: 'millionaire',
+    needsTopic: true,
+    icon: DollarSign,
+    title: 'Millionaire',
+    description: 'Climb a 10-question ladder on your topic — how far can you get?',
+    difficulty: 'Medium',
+    difficultyColor: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+    time: '5-10 min',
+  },
+  {
+    slug: 'wheel-of-fortune',
+    makeId: 'wheel',
+    needsTopic: true,
+    icon: Disc3,
+    title: 'Wheel of Fortune',
+    description: 'Spin and guess letters to uncover a phrase from your topic.',
+    difficulty: 'Medium',
+    difficultyColor: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+    time: '5-8 min',
   },
 ];
 
@@ -117,7 +178,7 @@ function GamesHubInner() {
               <Link
                 key={game.slug}
                 data-tour={i === 0 ? 'game-card' : undefined}
-                href={`/games/${game.slug}`}
+                href={game.needsTopic ? `/games?make=${game.makeId}` : `/games/${game.slug}`}
                 className="group cine-glass cine-tilt rounded-2xl p-6 transition-all flex flex-col"
                 style={{ '--accent': diff.glow }}
               >
@@ -130,6 +191,14 @@ function GamesHubInner() {
 
                 <h3 className="font-bold text-ink dark:text-slate-200 text-lg mb-1">{game.title}</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 flex-1">{game.description}</p>
+
+                {/* Say so up front: these build a round from a topic you choose, so
+                    the click goes to the generator rather than straight into play. */}
+                {game.needsTopic && (
+                  <p className="text-xs font-medium mb-2 inline-flex items-center gap-1" style={{ color: 'var(--accent)' }}>
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" /> Built on a topic you pick
+                  </p>
+                )}
 
                 {gameStats && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1">
