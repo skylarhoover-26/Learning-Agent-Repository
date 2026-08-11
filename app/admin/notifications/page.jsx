@@ -38,6 +38,10 @@ function NotificationsAdminPageInner() {
   // Whether learners can take a lesson inside Slack. null = still loading.
   const [slackLesson, setSlackLesson] = useState(null);
   const [togglingLesson, setTogglingLesson] = useState(false);
+  // Why a save didn't stick. Without this the toggle just silently snapped back to
+  // Off, which is indistinguishable from never having clicked it — that cost real
+  // debugging time when the config write wasn't landing.
+  const [lessonError, setLessonError] = useState(null);
 
   useEffect(() => {
     fetch('/api/admin-check')
@@ -100,6 +104,7 @@ function NotificationsAdminPageInner() {
   async function toggleSlackLesson() {
     const next = !slackLesson;
     setTogglingLesson(true);
+    setLessonError(null);
     // Optimistic, then corrected from the response — the server is the authority on
     // what's actually stored.
     setSlackLesson(next);
@@ -109,12 +114,28 @@ function NotificationsAdminPageInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: next }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSlackLesson(!next);
+        setLessonError(
+          res.status === 403
+            ? "You're not an admin on this account, so this can't be changed here."
+            : `Couldn't save (${res.status}${data.error ? `: ${data.error}` : ''}). Nothing changed.`
+        );
+        return;
+      }
       setSlackLesson(data.enabled === true);
-    } catch {
+      // The server echoes what it actually stored. A mismatch means the write didn't
+      // take, and saying so beats showing a switch that lies about the real state.
+      if (data.enabled !== next) {
+        setLessonError('The server saved a different value than requested. Reload to see the real state.');
+      }
+    } catch (error) {
       setSlackLesson(!next);
+      setLessonError(`Couldn't reach the server (${error.message}). Nothing changed.`);
+    } finally {
+      setTogglingLesson(false);
     }
-    setTogglingLesson(false);
   }
 
   async function sendNow() {
@@ -285,6 +306,12 @@ function NotificationsAdminPageInner() {
               <span className="text-slate-500 dark:text-slate-400">Off — the daily DM links to the app only.</span>
             )}
           </p>
+          {lessonError && (
+            <p className="text-sm mt-2 text-red-600 dark:text-red-400 flex items-start gap-1.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{lessonError}</span>
+            </p>
+          )}
         </div>
 
         <SendHistory log={log} onRefresh={loadLog} />
