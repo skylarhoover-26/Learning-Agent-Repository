@@ -219,7 +219,7 @@ with Surprise me. Then Play, which lands on the game's own How-to-play screen.
 - [ ] Legacy `/games?make=feud` deep links still preselect the right game.
 - [ ] **Rewrite the games section of the UAT script** before testers see this.
 
-### `<pending>` — Games no longer daily-capped (Skylar, policy change)
+### `d4f119c` — Games no longer daily-capped (Skylar, policy change)
 
 **Behavior change, not a bug fix.** Skylar, 2026-08-11: "if they play family feud
 twice, they should get credit twice. We only are limiting the just chatting to 5 chats
