@@ -1,6 +1,7 @@
 import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
-import { put, list, del } from '@vercel/blob';
+import { list, del } from '@vercel/blob';
+import { readJsonBlob, writeJsonBlob } from '@/lib/blob-json';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
@@ -27,15 +28,7 @@ const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
 const BLOB_SCAN_META_KEY = 'shared/curriculum_scan_meta.json';
 
 async function readBlob(key) {
-  try {
-    const { blobs } = await list({ prefix: key, limit: 1 });
-    if (blobs.length === 0) return null;
-    const res = await fetch(blobs[0].downloadUrl);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+  return readJsonBlob(key, { fresh: false });
 }
 
 async function writeBlob(key, data) {
@@ -44,16 +37,7 @@ async function writeBlob(key, data) {
     for (const blob of blobs) {
       await del(blob.url);
     }
-    await put(key, JSON.stringify(data), {
-      // REQUIRED by @vercel/blob v2 — without it put() throws "access must be
-      // 'private' or 'public'" and the catch below swallows it. This is why the
-      // scan reported "73 new findings" on every single run: the write silently
-      // failed, so the dedupe read back an empty list every time and the AI news
-      // card had nothing to show.
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-    });
+    await writeJsonBlob(key, data);
   } catch (error) {
     console.error(`Blob write error (${key}):`, error);
   }

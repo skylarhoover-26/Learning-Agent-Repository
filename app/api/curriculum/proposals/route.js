@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { put, list, del } from '@vercel/blob';
+import { list, del } from '@vercel/blob';
+import { readJsonBlob, writeJsonBlob } from '@/lib/blob-json';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 
@@ -7,15 +8,7 @@ const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
 
 async function readBlob(key) {
-  try {
-    const { blobs } = await list({ prefix: key, limit: 1 });
-    if (blobs.length === 0) return null;
-    const res = await fetch(blobs[0].downloadUrl);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+  return readJsonBlob(key, { fresh: false });
 }
 
 async function writeBlob(key, data) {
@@ -24,12 +17,7 @@ async function writeBlob(key, data) {
     for (const blob of blobs) {
       await del(blob.url);
     }
-    await put(key, JSON.stringify(data), {
-      // REQUIRED by @vercel/blob v2 — see the note in api/curriculum/daily.
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-    });
+    await writeJsonBlob(key, data);
   } catch (error) {
     console.error(`Blob write error (${key}):`, error);
   }

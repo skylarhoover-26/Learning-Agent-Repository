@@ -14,46 +14,62 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **OPEN** — `lib/blob-store.js:32`, `app/api/curriculum/daily/route.js:52`. See below |
+| F-05 | Medium | Blobs written `access: 'public'` | **In progress** — code landed and gated behind `BLOB_PRIVATE_RW_TOKEN`; inert until a private store exists. See below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-11** — `lib/content-safety.js` delimits titles in `<untrusted>`, strips angle brackets, and range-checks the model's indices; `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
 | F-11 | Low | `/api/slack` GET leaks env presence | **Fixed 2026-08-11** — `configured` field removed |
 
-## F-05 is the one still open — and it is BLOCKED ON STORE CONFIGURATION
+## F-05 — in progress, gated behind a private store
 
-**Read this before writing any code for F-05.** It was attempted and reverted on
-2026-08-11 (`105d587`, reverted by `62aac30`). The attempt failed for a reason no
-amount of application code can fix:
+**The blocker, verified 2026-08-11.** A Vercel Blob store's access mode is fixed
+**at store creation** (`vercel blob create-store --access public|private`); there
+is no command to change it afterwards. The store this project uses is public:
 
 ```
-Vercel Blob: Cannot use private access on a public store.
-The store must be configured with private access.
+Blob Store: learning-agent-blob (store_L4ADQJeZg88HnC3u)
+Access: Public    Size: 31.63MB    Region: iad1
 ```
 
-The blob store behind this project (`xhnmqsy93cya2unk`, prod `BLOB_STORE_ID`
-`store_L4ADQJeZg88H…`) is a **public store**. Every `put(..., access: 'private')`
-against it throws. Verified directly against the production token: a public write
-succeeds, a private write fails with the error above.
+So `put(..., access: 'private')` against it throws
+`Cannot use private access on a public store`. A first attempt shipped exactly
+that and broke every write in production (`105d587`, reverted by `62aac30`).
+Neither `next build` nor `npm run lint` catches it — it is a runtime API
+rejection — and the app looked healthy afterwards because reads fell back to the
+public path while writes failed silently.
 
-Neither `next build` nor `npm run lint` catches this — it is a runtime API
-rejection — and the app *appeared* fine after deploying because reads fell back to
-the public path. Only writes broke, and most write sites swallow their errors.
+**The design: two stores.** A private store holds the JSON; the existing public
+store keeps feedback screenshots and recordings, which the admin UI renders
+through `<img>`/`<video>` src and which therefore cannot be private without an
+authenticated proxy. Access is a store-level property, so this split is the only
+way to have both without writing that proxy.
 
-**So F-05 is a storage-configuration task first, a code task second:**
+**The gate.** `lib/blob-json.js` keys off `BLOB_PRIVATE_RW_TOKEN`:
 
-1. Determine whether Vercel can convert this store to private access, or whether a
-   new private store plus a data migration is required. Note the store is shared —
-   see the two-store note in the project memory.
-2. Only then port the code. The reverted commit's approach was sound: one
-   `lib/blob-json.js` doing private writes and authenticated `get()` reads by
-   pathname, with a legacy public-read fallback, plus a migration script for
-   existing blobs (`access` is a property of the stored object, so old blobs stay
-   public until rewritten).
-3. Feedback screenshots and recordings must stay public regardless, or gain an
-   authenticated proxy route — the admin UI renders them via `<img>`/`<video>` src.
-4. **Smoke-test against the real store before deploying**: write one private blob,
-   read it back, confirm an anonymous fetch of its URL is refused.
+- unset → public writes to the default store, i.e. today's exact behaviour
+- set → JSON reads and writes go to the private store, with a public-read
+  fallback for anything not yet copied across
+
+That makes the code safe to deploy on its own, and makes the cutover *and the
+rollback* a single environment-variable change rather than a redeploy.
+
+**Cutover order** (each step verifiable, nothing destructive until the last):
+
+1. `vercel blob create-store learning-agent-private --access private`
+2. Add its token to Vercel as `BLOB_PRIVATE_RW_TOKEN`. **Do not touch
+   `BLOB_READ_WRITE_TOKEN`** — that is the media store and the fallback path.
+3. `node scripts/migrate-blobs-private.mjs --dry-run`, then for real. It copies;
+   it never deletes.
+4. `--verify` — every public JSON blob must have a byte-identical private twin.
+5. Deploy, then confirm in the app: profile, XP total, leaderboard, `/reporting`,
+   AI news card, admin feedback list, and that a feedback screenshot still
+   renders (that last one proves the public media carve-out survived).
+6. Only then `--cleanup`, which deletes the public copies and refuses any blob
+   without a private twin.
+
+**Smoke-test before deploying:** write one private blob, read it back, and
+confirm an anonymous fetch of its URL is refused. That check takes seconds and
+would have caught the first attempt.
 
 Mitigating factor, unchanged since the review: blob URLs carry a per-store random
 component, so the residual exposure is read-if-a-URL-leaks, not enumeration.
