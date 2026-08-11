@@ -48,7 +48,7 @@ still open.
       keeps their XP for the run. If that's not the XP behavior you want, say so
       before this ships — it's a one-line change now and a data cleanup later.
 
-### `<pending>` — #182 refine loop
+### `d53d0b3` — #182 refine loop
 
 - [ ] **Force a refine failure and confirm the amber banner + Try again appear**
       instead of a repeated question. Can't be produced without breaking the API
@@ -60,7 +60,7 @@ still open.
 - [ ] Confirm a **normal** refine run still reaches "Ready: a new lesson on X" and
       rebuilds. The success path was touched (`d.message` is now required).
 
-### `<pending>` — #181 Project Quest plan failure
+### `c032c5a` — #181 Project Quest plan failure
 
 This commit makes the failure **diagnosable**; it does not make generation faster.
 #181 stays open until the real cause shows up in the log.
@@ -80,7 +80,7 @@ Quests on long topics are effectively at the ceiling, so some fraction of them f
 purely on timing regardless of cause. The deferred skeleton/detail split is the real
 answer; raising the client budget past the route's 300s `maxDuration` is not.
 
-### `<pending>` — #166 Surprise Me overrode the format
+### `5553e54` — #166 Surprise Me overrode the format
 
 - [ ] **Surprise from Project Quest → Narration** now gives a narrated Quest, not a
       quick tip. Confirm — and brace for the wait: this routes surprise into the
@@ -107,9 +107,6 @@ answer; raising the client budget past the route's 300s `maxDuration` is not.
 - [ ] **#150 — check the screenshot.** Its second sentence ("Discovery isn't
       visible to me") looks like the admin menu-visibility toggle, not CSS, and
       would be a separate item.
-- [ ] **#166 — read the full surprise handler** before calling the cause
-      confirmed. Current read is "Surprise Me runs the Quick Win generator
-      regardless of format + learn mode", at medium-high confidence only.
 
 ---
 
