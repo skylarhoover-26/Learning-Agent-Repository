@@ -8,7 +8,17 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
+import GameInstructions from '@/components/game-instructions';
+import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
+
+// No rules anywhere before this — same gap as #185/#188 in the other generated games.
+const HOW_TO_PLAY = [
+  'A phrase from your topic is hidden. Uncover it one letter at a time.',
+  'Spin the wheel first — the value you land on is what each correct letter is worth.',
+  'Then pick a letter. Every match pays the spin value; a miss costs you the turn, and Bankrupt wipes the points for that puzzle.',
+  'Solve the phrase whenever you think you have it, and bank what you earned.',
+];
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 // Weighted wheel — Bankrupt is the only "bad" wedge and stays rare.
@@ -26,6 +36,9 @@ function WheelGame() {
   const [puzzles, setPuzzles] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Shows while the puzzles generate, so the rules cover the wait.
+  const [started, setStarted] = useState(false);
 
   const [idx, setIdx] = useState(0);
   const [guessed, setGuessed] = useState(() => new Set());
@@ -158,7 +171,20 @@ function WheelGame() {
       </main>
     );
   }
-  if (loading) return <main className="max-w-2xl mx-auto px-6 pt-10"><GameGenLoading label={`Building your Wheel of Fortune on ${topic}…`} estimateSeconds={16} /></main>;
+  if (!started && !error) {
+    return (
+      <GameStartScreen
+        icon={Disc3}
+        title="Wheel of Fortune"
+        subtitle={`on ${topic}`}
+        steps={HOW_TO_PLAY}
+        loading={loading}
+        ready={!!puzzle}
+        onStart={() => setStarted(true)}
+        loadingLabel="Building your puzzles…"
+      />
+    );
+  }
   if (error || !puzzle) {
     return (
       <main className="max-w-lg mx-auto px-6 py-20 text-center">
@@ -201,6 +227,8 @@ function WheelGame() {
           </span>
         </div>
       </div>
+
+      <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
       <div className="text-center mb-6">
         <div className="text-[11px] font-bold uppercase tracking-[.18em] mb-1" style={{ color: 'var(--accent)' }}>Wheel of Fortune · {puzzle.category}</div>

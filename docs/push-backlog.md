@@ -151,36 +151,42 @@ preselects that game in the generator and focuses the topic box. Not a direct la
 Its own comment explains it needs genuine human-written samples, so it can't be
 generated from a topic.
 
-### `0708b79` — #188 Jeopardy had no instructions
+### `0708b79` + follow-up — #185 / #188 game instructions (all five)
 
 **Cluster, not a one-off.** The four hand-built games (Speed Round, Prompt Battle,
 Hallucination Hunt, AI or Human) each render the shared `GameInstructions` twice —
 expanded on a start screen, collapsed on the play screen. **All five generated games
-render it zero times** and drop you straight from a spinner onto the game. That is
-#188 (Jeopardy) and #185 (Family Feud) from the same reporter.
+rendered it zero times** and dropped the player from a spinner straight into play.
+That is #188 (Jeopardy) and #185 (Family Feud) from the same reporter.
 
-Jeopardy is done. Its start screen shows *while* the board generates, so reading the
-rules covers the ~25s wait instead of stacking a spinner and then a gate.
+All five now have both: Jeopardy, Family Feud, Millionaire, Two Truths, Wheel of
+Fortune. The start screen was extracted to `components/game-start-screen.jsx` rather
+than pasted five times, and Jeopardy was refactored onto it.
 
-- [ ] Start screen appears immediately on entry, with the button reading "Building
-      your board…" and disabled until the board lands, then "Start Game".
-- [ ] "How to play" is collapsed on the play screen and expands on click.
-- [ ] A generation **failure** still reaches the "Couldn't build the board" screen —
-      the start screen is gated on `!error`, so an error must win over it.
-- [ ] The old `GameGenLoading` spinner is gone from this game; confirm nothing else
-      expected it.
+Each start screen renders *while* the round generates, so reading the rules covers
+the wait instead of stacking a spinner and then a gate.
 
-**Still to do — the same fix for four more games:** Family Feud (#185), Millionaire,
-Two Truths, Wheel of Fortune.
+- [ ] Play **all five** from `/games`: start screen appears immediately, the button
+      reads "Building your …" and is disabled until content lands, then "Start Game".
+- [ ] "How to play" is collapsed on each play screen and expands on click.
+- [ ] A generation **failure** still reaches each game's error screen — the start
+      screen is gated on `!error`, so an error has to win over it.
+- [ ] **Read the rules copy for accuracy.** It was written from the code, not from
+      playing: Millionaire's safety net and 50:50, Wheel's Bankrupt behaviour and
+      spin-before-letter rule, Family Feud's near-miss judging. Wrong rules are worse
+      than none.
+- [ ] `GameGenLoading` is still imported by the four non-Jeopardy games for their
+      Suspense fallback — confirm no game lost its initial loading state.
 
 **Not addressed by this, do not close on it:** #188's second half — "the answers are
 not that easy to know without some context" — is clue *quality*, a generation-prompt
-issue. Instructions don't fix it.
+issue. Instructions don't fix it. Same for #186 (Family Feud content read as being
+about an HCP feature launch rather than onboarding) — that's a topic/prompt problem.
 
-**#187 needs a check before any code.** It says Hallucination Hunt's "instructions are
-not minimized", but that game already passes `collapsible defaultOpen={false}` on its
-play screen, and its start-screen copy is expanded *by design*. Ask which screen she
-meant before changing anything.
+**#187 still needs a check before any code.** It says Hallucination Hunt's
+"instructions are not minimized", but that game already passes `collapsible
+defaultOpen={false}` on its play screen, and its start-screen copy is expanded *by
+design* — the same layout as Speed Round. Ask which screen she meant.
 
 ### Open questions that predate any commit
 - [ ] **Cluster C (#163/#167) — confirm against runtime logs.** Missing
@@ -336,3 +342,7 @@ Status: `diagnosing` → `fix written` → `committed` → `pushed`
 | 182 | refine loop | unset (new, Azeret 8/11) | | fix committed |
 | 181 | quest plan failure | unset (new, Azeret 8/11) | | diagnostics only, still open |
 | 189 | hidden games | Critical (new, Skylar 8/11) | | fix committed |
+| 185 | no game instructions | unset (new, Azeret 8/11) | | fix committed |
+| 188 | no game instructions | unset (new, Azeret 8/11) | | instructions fixed; clue-quality half open |
+| 186 | feud content confusing | unset (new, Azeret 8/11) | | not diagnosed (prompt/content) |
+| 187 | halluc instructions | unset (new, Azeret 8/11) | | needs reporter check, no code |

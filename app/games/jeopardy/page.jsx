@@ -3,12 +3,13 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, X, Trophy, Sparkles, RotateCcw, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, X, Trophy, Sparkles, RotateCcw } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import BookLoader from '@/components/book-loader';
 import ConfettiBurst from '@/components/confetti-burst';
 import GameInstructions from '@/components/game-instructions';
+import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
 
 // Jeopardy had no instructions at all — you went from a loading spinner straight
@@ -130,31 +131,16 @@ function JeopardyGame() {
   }
   if (!started && !error) {
     return (
-      <main className="max-w-2xl mx-auto px-6 pt-6 pb-8">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
-            <Trophy className="w-8 h-8 text-brand-600 dark:text-brand-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1">Jeopardy</h2>
-          <p className="text-sm mb-4" style={{ color: 'var(--ink-dim)' }}>on {topic}</p>
-
-          <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
-
-          <button
-            onClick={() => setStarted(true)}
-            disabled={loading || !board}
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading || !board
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Building your board…</>
-              : <>Start Game <ChevronRight className="w-4 h-4" /></>}
-          </button>
-
-          <div className="mt-6">
-            <Link href="/games" className="text-sm text-brand font-medium hover:underline">Back to all games</Link>
-          </div>
-        </div>
-      </main>
+      <GameStartScreen
+        icon={Trophy}
+        title="Jeopardy"
+        subtitle={`on ${topic}`}
+        steps={HOW_TO_PLAY}
+        loading={loading}
+        ready={!!board}
+        onStart={() => setStarted(true)}
+        loadingLabel="Building your board…"
+      />
     );
   }
   if (error || !board) {

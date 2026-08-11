@@ -8,9 +8,20 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
+import GameInstructions from '@/components/game-instructions';
+import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
 
 const MAX_STRIKES = 3;
+
+// This game went from a loading spinner straight into play, with no rules anywhere
+// (feedback #185). Same gap the other generated games had.
+const HOW_TO_PLAY = [
+  'We surveyed a crowd on your topic — your job is to name the most popular answers.',
+  'Type a guess and submit. Close counts: near-misses are judged for you, so wording need not be exact.',
+  `Every miss is a strike. ${MAX_STRIKES} strikes ends the round.`,
+  'Higher-ranked answers are worth more points. Clear the board or strike out, then move to the next round.',
+];
 
 function normalize(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
@@ -50,6 +61,9 @@ function FamilyFeud() {
   const [rounds, setRounds] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Shows while the round generates, so the rules cover the wait.
+  const [started, setStarted] = useState(false);
 
   const [idx, setIdx] = useState(0);
   const [found, setFound] = useState(() => new Set());   // indices of revealed answers
@@ -184,7 +198,20 @@ function FamilyFeud() {
       </main>
     );
   }
-  if (loading) return <main className="max-w-2xl mx-auto px-6 pt-10"><GameGenLoading label={`Building your Family Feud on ${topic}…`} estimateSeconds={18} /></main>;
+  if (!started && !error) {
+    return (
+      <GameStartScreen
+        icon={Users}
+        title="Family Feud"
+        subtitle={`on ${topic}`}
+        steps={HOW_TO_PLAY}
+        loading={loading}
+        ready={!!round}
+        onStart={() => setStarted(true)}
+        loadingLabel="Building your survey…"
+      />
+    );
+  }
   if (error || !round) {
     return (
       <main className="max-w-lg mx-auto px-6 py-20 text-center">
@@ -227,6 +254,8 @@ function FamilyFeud() {
           </span>
         </div>
       </div>
+
+      <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
       <div className="text-center mb-5">
         <div className="text-[11px] font-bold uppercase tracking-[.18em] mb-1" style={{ color: 'var(--accent)' }}>Family Feud · survey says</div>

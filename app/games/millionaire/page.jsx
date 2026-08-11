@@ -8,11 +8,21 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
+import GameInstructions from '@/components/game-instructions';
+import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
 
 // 10-rung ladder. Index 4 ($1,000) is the guaranteed milestone once passed.
 const LADDER = [100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000];
 const SAFE_INDEX = 4;
+
+// No rules anywhere before this — same gap as #185/#188 in the other generated games.
+const HOW_TO_PLAY = [
+  `Answer ${LADDER.length} multiple-choice questions on your topic, climbing from $${LADDER[0]} to $${LADDER[LADDER.length - 1].toLocaleString()}.`,
+  `Question ${SAFE_INDEX + 1} is a safety net — clear it and you keep $${LADDER[SAFE_INDEX].toLocaleString()} even if you miss later.`,
+  'Stuck? Use 50:50 once to remove two wrong answers.',
+  'You can walk away at any point and bank what you have. A wrong answer ends the run.',
+];
 const LETTERS = ['A', 'B', 'C', 'D'];
 
 function Millionaire() {
@@ -23,6 +33,9 @@ function Millionaire() {
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Shows while the ladder generates, so the rules cover the wait.
+  const [started, setStarted] = useState(false);
 
   const [idx, setIdx] = useState(0);
   const [chosen, setChosen] = useState(null);
@@ -107,7 +120,20 @@ function Millionaire() {
       </main>
     );
   }
-  if (loading) return <main className="max-w-2xl mx-auto px-6 pt-10"><GameGenLoading label={`Building your Millionaire ladder on ${topic}…`} estimateSeconds={18} /></main>;
+  if (!started && !error) {
+    return (
+      <GameStartScreen
+        icon={HelpCircle}
+        title="AI Millionaire"
+        subtitle={`on ${topic}`}
+        steps={HOW_TO_PLAY}
+        loading={loading}
+        ready={!!q}
+        onStart={() => setStarted(true)}
+        loadingLabel="Building your ladder…"
+      />
+    );
+  }
   if (error || !q) {
     return (
       <main className="max-w-lg mx-auto px-6 py-20 text-center">
@@ -152,6 +178,8 @@ function Millionaire() {
           </span>
         </div>
       </div>
+
+      <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
       <div className="text-center mb-2">
         <div className="text-[11px] font-bold uppercase tracking-[.18em]" style={{ color: 'var(--accent)' }}>Who Wants to Be an AI Millionaire</div>

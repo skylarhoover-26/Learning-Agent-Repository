@@ -8,7 +8,17 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
+import GameInstructions from '@/components/game-instructions';
+import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
+
+// No rules anywhere before this — same gap as #185/#188 in the other generated games.
+const HOW_TO_PLAY = [
+  'Each round gives you three statements about your topic. Two are true, one is not.',
+  'Pick the one you think is false.',
+  'The answer is revealed either way, with a short explanation — so a wrong pick still teaches you something.',
+  'Catch as many lies as you can across the rounds.',
+];
 
 function TwoTruths() {
   const params = useSearchParams();
@@ -18,6 +28,9 @@ function TwoTruths() {
   const [rounds, setRounds] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Shows while the rounds generate, so the rules cover the wait.
+  const [started, setStarted] = useState(false);
 
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState(null);   // chosen statement index (once picked → revealed)
@@ -71,7 +84,20 @@ function TwoTruths() {
       </main>
     );
   }
-  if (loading) return <main className="max-w-2xl mx-auto px-6 pt-10"><GameGenLoading label={`Building Two Truths & a Lie on ${topic}…`} estimateSeconds={14} /></main>;
+  if (!started && !error) {
+    return (
+      <GameStartScreen
+        icon={ScanSearch}
+        title="Two Truths & a Lie"
+        subtitle={`on ${topic}`}
+        steps={HOW_TO_PLAY}
+        loading={loading}
+        ready={!!round}
+        onStart={() => setStarted(true)}
+        loadingLabel="Building your rounds…"
+      />
+    );
+  }
   if (error || !round) {
     return (
       <main className="max-w-lg mx-auto px-6 py-20 text-center">
@@ -112,6 +138,8 @@ function TwoTruths() {
           <span className="cine-glass rounded-full px-4 py-1.5 font-display font-bold text-sm" style={{ color: 'var(--ink)' }}>Caught: <span style={{ color: 'var(--good)' }}>{score}</span></span>
         </div>
       </div>
+
+      <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
       <div className="text-center mb-6">
         <div className="text-[11px] font-bold uppercase tracking-[.18em] mb-1" style={{ color: 'var(--accent)' }}>Two Truths &amp; a Lie</div>
