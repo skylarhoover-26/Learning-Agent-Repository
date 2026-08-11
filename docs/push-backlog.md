@@ -18,12 +18,54 @@ Source: `/admin/feedback` export, 2026-08-11 — 35 open items, filtered to the
    (other Claude sessions push this repo)
 2. `git rebase main batch/aug-11` if it did
 3. `git checkout main && git merge --ff-only batch/aug-11`
-4. Push to `personal` **one commit at a time**, verifying prod between each:
+4. **Read "Verify before release" below and clear every open box for the commits
+   you're about to push.** Lint passing is not the same as this working.
+5. Push to `personal` **one commit at a time**, verifying prod between each:
    `git push personal <sha>:main`
-5. Once all commits are out and verified: `git push origin main`
+6. Once all commits are out and verified: `git push origin main`
 
 Each commit must stand on its own — if you verify between pushes, an intermediate
 state that depends on a later commit will look broken. Order accordingly.
+
+---
+
+## Verify before release
+
+Caveats and open questions attached to work already committed. These are the things
+that lint and `next build` **cannot** catch. Do not push a commit whose boxes are
+still open.
+
+### `a835860` — #165 checkpoint dead end
+
+- [ ] **Click through a real malformed activity.** The guard only fires when a
+      generated activity is missing its collection, which can't be manufactured
+      without running the app. Confirm the amber notice + Continue button appear
+      and that Continue actually advances the step.
+- [ ] Confirm a **normal** activity still renders and grades exactly as before —
+      the change wraps the type dispatch, so a mistake here would break all six
+      activity types, not just the malformed case.
+- [ ] Note: it resolves as **passed**, so a learner who hits a broken checkpoint
+      keeps their XP for the run. If that's not the XP behavior you want, say so
+      before this ships — it's a one-line change now and a data cleanup later.
+
+### Open questions that predate any commit
+
+- [ ] **#162 / #164 — confirm the learn mode with Andrea.** The missing "Step X of
+      Y" is explained by narrated mode falling through to the legacy streaming
+      view, but #162's wording says "Read & Practice", which is the *read*-mode
+      label. If the counter really is missing in read mode, it's a different bug
+      and the fix above it would be wrong.
+- [ ] **Cluster C (#163/#167) — confirm against runtime logs.** Missing
+      `maxDuration` is a real defect worth fixing regardless, but a timeout is not
+      the only way a screen spins forever. Don't close these on the config change
+      alone. (#165 is no longer in this cluster — its cause turned out to be the
+      dead end fixed in `a835860`, not a timeout.)
+- [ ] **#150 — check the screenshot.** Its second sentence ("Discovery isn't
+      visible to me") looks like the admin menu-visibility toggle, not CSS, and
+      would be a separate item.
+- [ ] **#166 — read the full surprise handler** before calling the cause
+      confirmed. Current read is "Surprise Me runs the Quick Win generator
+      regardless of format + learn mode", at medium-high confidence only.
 
 ---
 
