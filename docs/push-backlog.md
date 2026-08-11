@@ -129,7 +129,7 @@ content. Fixed by putting "of N" next to the step marker itself.
       the legacy streaming view in `app/lesson/page.jsx:1750`, a different file with
       no total available. Still open.
 
-### `<pending>` — #189 hidden games
+### `d4ecf62` — #189 hidden games
 
 Five games (Family Feud, Two Truths, Jeopardy, Millionaire, Wheel of Fortune) had
 routes but no card on `/games`, so they were reachable only through "Generate your
