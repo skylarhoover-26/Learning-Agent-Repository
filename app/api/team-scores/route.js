@@ -35,10 +35,9 @@ async function handleFetchTeamScores(emails) {
       let lastLessonAt = null;
       if (lessonBlob) {
         try {
-          // Read by data-type through the store (blobs are private — a bare
-          // URL fetch 401s).
-          {
-            const lessons = await getUserData(email, lessonBlob.name);
+          const res = await fetch(lessonBlob.url);
+          if (res.ok) {
+            const lessons = await res.json();
             if (Array.isArray(lessons)) {
               lessonCount = lessons.length;
               for (const l of lessons) {
@@ -55,8 +54,9 @@ async function handleFetchTeamScores(emails) {
       let lastXpAt = null;
       if (xpBlob) {
         try {
-          {
-            const events = await getUserData(email, xpBlob.name);
+          const res = await fetch(xpBlob.url);
+          if (res.ok) {
+            const events = await res.json();
             if (Array.isArray(events)) {
               // XP events store the points in `amount` (not `xp`).
               totalXp = events.reduce((sum, e) => sum + (e.amount || 0), 0);

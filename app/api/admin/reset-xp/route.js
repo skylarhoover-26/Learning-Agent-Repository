@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list, del } from '@vercel/blob';
-import { writeJsonBlob } from '@/lib/blob-json';
+import { list, put, del } from '@vercel/blob';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { mirrorResetAllProgress } from '@/lib/supabase-store';
@@ -20,14 +19,26 @@ export async function POST() {
     const progressBlobs = blobs.filter((b) => /\/(lp_xp_|lp_badges_|lp_lessons_).*\.json$/.test(b.pathname));
     let reset = 0;
     for (const b of progressBlobs) {
-      await writeJsonBlob(b.pathname, [], { cacheControlMaxAge: 0 });
+      await put(b.pathname, JSON.stringify([]), {
+        access: 'public',
+        contentType: 'application/json',
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        cacheControlMaxAge: 0,
+      });
       reset += 1;
     }
 
     // Stamp a reset epoch. Clients compare this to what they've seen and clear
     // their local copy, so the reset takes effect for everyone (and one-time XP
     // like the welcome bonus re-grants).
-    await writeJsonBlob('config/xp-reset.json', { resetAt: Date.now() }, { cacheControlMaxAge: 0 });
+    await put('config/xp-reset.json', JSON.stringify({ resetAt: Date.now() }), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      cacheControlMaxAge: 0,
+    });
 
     // Stage-2 dual-write: mirror the reset into Supabase (never throws).
     await mirrorResetAllProgress();

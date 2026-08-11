@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list, del } from '@vercel/blob';
-import { writeJsonBlob } from '@/lib/blob-json';
+import { list, del, put } from '@vercel/blob';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { mirrorWipeAll } from '@/lib/supabase-store';
@@ -42,7 +41,13 @@ export async function POST() {
     await mirrorWipeAll();
 
     // Bump the reset epoch so returning clients clear their local cache.
-    await writeJsonBlob('config/xp-reset.json', { resetAt: Date.now() }, { cacheControlMaxAge: 0 });
+    await put('config/xp-reset.json', JSON.stringify({ resetAt: Date.now() }), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      cacheControlMaxAge: 0,
+    });
 
     return NextResponse.json({ ok: true, blobsDeleted: deleted, preserved: 'users/__system__/*' });
   } catch (error) {

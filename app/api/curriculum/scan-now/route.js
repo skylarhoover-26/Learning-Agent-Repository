@@ -1,7 +1,6 @@
 import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
-import { list, del } from '@vercel/blob';
-import { readJsonBlob, writeJsonBlob } from '@/lib/blob-json';
+import { put, list, del } from '@vercel/blob';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
@@ -20,7 +19,15 @@ const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
 const BLOB_SCAN_META_KEY = 'shared/curriculum_scan_meta.json';
 
 async function readBlob(key) {
-  return readJsonBlob(key, { fresh: false });
+  try {
+    const { blobs } = await list({ prefix: key, limit: 1 });
+    if (blobs.length === 0) return null;
+    const res = await fetch(blobs[0].downloadUrl);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 async function writeBlob(key, data) {
@@ -29,7 +36,12 @@ async function writeBlob(key, data) {
     for (const blob of blobs) {
       await del(blob.url);
     }
-    await writeJsonBlob(key, data);
+    await put(key, JSON.stringify(data), {
+      // REQUIRED by @vercel/blob v2 — see the note in api/curriculum/daily.
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+    });
   } catch (error) {
     console.error(`Blob write error (${key}):`, error);
   }
