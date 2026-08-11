@@ -18,6 +18,9 @@ export async function POST(request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('POST /api/lesson/refine error:', error);
-    return NextResponse.json({ done: false, message: 'Can you tell me a bit more about what you were hoping to learn?', newTopic: null }, { status: 500 });
+    // Report the failure as a failure. This used to answer with a real-looking
+    // question, so a learner hitting a persistent error just saw the same prompt
+    // every turn with no sign anything was wrong (feedback #182).
+    return NextResponse.json({ error: true, done: false, message: null, newTopic: null }, { status: 500 });
   }
 }

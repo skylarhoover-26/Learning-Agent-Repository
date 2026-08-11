@@ -19,7 +19,7 @@ import { emitXp } from '@/lib/xp-bus';
 import { trackLessonComplete } from '@/lib/track';
 import {
   Target, ChevronRight, ChevronLeft, Send, Loader2, Trophy, Pause, Lightbulb, Check, RotateCcw, MessageSquare, RefreshCw,
-  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowUp, MousePointerClick,
+  Hammer, Copy, Download, Sparkles, LifeBuoy, ExternalLink, ArrowUp, MousePointerClick, AlertTriangle,
 } from 'lucide-react';
 
 const FORMAT_LABEL = { quick_tip: 'Quick Tip', standard: 'Quick Lesson', deep_dive: 'Deep Dive', project_quest: 'Project Quest' };
@@ -162,6 +162,10 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   const [refineMessages, setRefineMessages] = useState([]); // {role, content}
   const [refineLoading, setRefineLoading] = useState(false);
   const [refineReady, setRefineReady] = useState(null); // { message, newTopic } once we have enough
+  // Set when refine actually failed, so the thread shows an error + Retry instead
+  // of a canned question the learner can't distinguish from a real one (#182).
+  const [refineError, setRefineError] = useState(false);
+  const lastRefineMsgsRef = useRef([]);
   const refineBannerRef = useRef(null);
   // A tool the learner explicitly asked for during the refine chat. Applied to
   // the NEXT rebuild's tool recommendation so the lesson switches tools without
@@ -541,6 +545,8 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // or, once it has enough, surface the proposed new topic for confirmation.
   async function runRefineStep(msgs) {
     setRefineLoading(true);
+    setRefineError(false);
+    lastRefineMsgsRef.current = msgs;
     try {
       const res = await fetch('/api/lesson/refine', {
         method: 'POST',
@@ -548,17 +554,27 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         body: JSON.stringify({ topic, messages: msgs }),
       });
       const d = res.ok ? await res.json() : null;
-      const message = d?.message || 'Can you tell me a bit more about what you were hoping to learn?';
-      setRefineMessages((prev) => [...prev, { role: 'assistant', content: message }]);
+      // A failure gets an error banner, never an invented question — appending one
+      // is what let a broken refine repeat the same prompt forever (#182).
+      if (!d || d.error || !d.message) {
+        setRefineError(true);
+        return;
+      }
+      setRefineMessages((prev) => [...prev, { role: 'assistant', content: d.message }]);
       // A tool the learner named applies to the rebuild — it changes the tool,
       // never the topic.
-      if (d?.tool) refinePreferredToolRef.current = d.tool;
-      if (d?.done && d.newTopic) setRefineReady({ message, newTopic: d.newTopic });
+      if (d.tool) refinePreferredToolRef.current = d.tool;
+      if (d.done && d.newTopic) setRefineReady({ message: d.message, newTopic: d.newTopic });
     } catch {
-      setRefineMessages((prev) => [...prev, { role: 'assistant', content: 'Sorry — something went wrong. Mind trying that again?' }]);
+      setRefineError(true);
     } finally {
       setRefineLoading(false);
     }
+  }
+
+  function retryRefine() {
+    if (refineLoading) return;
+    runRefineStep(lastRefineMsgsRef.current);
   }
 
   function openRefine() {
@@ -1781,6 +1797,19 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
             {refineOpen && refineLoading && (
               <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-sm pl-8">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…
+              </div>
+            )}
+
+            {refineOpen && refineError && !refineLoading && (
+              <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3">
+                <p className="text-sm text-amber-800 dark:text-amber-200 mb-2 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  That didn&apos;t go through on our end — it&apos;s not you, and you don&apos;t need to answer again.
+                </p>
+                <button onClick={retryRefine}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all">
+                  <RotateCcw className="w-4 h-4" /> Try again
+                </button>
               </div>
             )}
 

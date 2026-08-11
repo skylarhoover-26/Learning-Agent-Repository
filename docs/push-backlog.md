@@ -48,6 +48,18 @@ still open.
       keeps their XP for the run. If that's not the XP behavior you want, say so
       before this ships — it's a one-line change now and a data cleanup later.
 
+### `<pending>` — #182 refine loop
+
+- [ ] **Force a refine failure and confirm the amber banner + Try again appear**
+      instead of a repeated question. Can't be produced without breaking the API
+      call on purpose.
+- [ ] **Answer refine 3 times without ever naming a concrete topic** and confirm it
+      now commits to a topic rather than asking a 4th time. The forced topic is the
+      learner's own last answer, so check it reads sanely in the "Ready: a new
+      lesson on X" banner — a rambling answer will show up verbatim there.
+- [ ] Confirm a **normal** refine run still reaches "Ready: a new lesson on X" and
+      rebuilds. The success path was touched (`d.message` is now required).
+
 ### Open questions that predate any commit
 
 - [ ] **#162 / #164 — confirm the learn mode with Andrea.** The missing "Step X of
@@ -208,3 +220,4 @@ Status: `diagnosing` → `fix written` → `committed` → `pushed`
 | 147 | E admin gate | High | | not diagnosed |
 | 145 | E AI News tailoring | High | | not diagnosed (feature) |
 | 173 | E Slack formatting | High | | not diagnosed |
+| 182 | refine loop | unset (new, Azeret 8/11) | | fix committed |
