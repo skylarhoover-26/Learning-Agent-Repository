@@ -35,6 +35,45 @@ Caveats and open questions attached to work already committed. These are the thi
 that lint and `next build` **cannot** catch. Do not push a commit whose boxes are
 still open.
 
+### `105d587` — F-05, every JSON blob is now private ⚠️ SHIPPED UNVERIFIED
+
+Released 2026-08-11 in the bulk merge, ahead of a security scan. **This one touches
+every read of user data** and had only lint + build behind it — `next build` does
+not perform a single blob read, and the local token points at the empty
+`learning-platform-data` store rather than `learning-agent-blob`.
+
+If a read path is wrong the app looks **wiped** rather than broken: reads return
+null and surfaces render their empty states. The data is not lost. Fast way out is
+`git revert 105d587`.
+
+- [ ] **Profile loads** for a signed-in user (not the onboarding redirect — that is
+      what a failed profile read looks like).
+- [ ] **XP total is correct** and a fresh grant reads back immediately.
+- [ ] **Leaderboard** renders with real standings, not empty.
+- [ ] **`/reporting`** populates — it was rewritten from blob URLs to pathnames.
+- [ ] **AI news card** fills on the home page.
+- [ ] **Admin → Feedback** lists records, and a screenshot/recording still plays
+      (media stayed public on purpose; if it 404s, that carve-out broke).
+- [ ] **Run `scripts/migrate-blobs-private.mjs --dry-run`** against
+      `learning-agent-blob`, then for real. Until it runs, every pre-existing blob
+      is **still public** — F-05 is only closed for newly-written data.
+
+### `27910c5` — security findings F-07/F-08/F-09/F-10/F-11 + 24h session
+
+- [ ] **Cron paths return 401/503, never 302.** `/api/curriculum/daily`,
+      `/api/reporting/refresh`, `/api/model-lineup/refresh`. A 302 means the
+      middleware matcher is catching a cron again and the job silently does nothing.
+- [ ] **`/api/reporting/refresh` and `/api/model-lineup/refresh` were dead in prod**
+      before this — they had been 302'ing since they were added. Confirm the next
+      scheduled runs actually populate the reporting snapshot and model lineup.
+- [ ] **Admin curriculum actions still work** — `/curriculum-pipeline` scan, curate,
+      and apply now require an admin session server-side. Confirm as an admin, then
+      confirm a non-admin gets 403.
+- [ ] **AI news still populates after a scan.** The safety filter moved to
+      `lib/content-safety.js` and now range-checks the model's indices; a bug there
+      would silently drop findings.
+- [ ] Session is 24h sliding — nobody should be re-prompted mid-day.
+
 ### `a835860` + follow-up — #165 checkpoint dead end
 
 **Confirmed by Andrea's screenshot** (2026-08-11): the card rendered its "Quick
