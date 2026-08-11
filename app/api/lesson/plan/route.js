@@ -37,7 +37,9 @@ export async function POST(request) {
       input: { topic, format },
       output: error ? null : { objectives: plan?.objectives?.length || 0, steps: plan?.steps?.length || 0 },
       durationMs: Date.now() - start,
-      error: error?.message || null,
+      // Prefer the diagnostic generateLessonPlan attaches — `message` is the
+      // friendly text shown to the learner and names no mechanism (#181).
+      error: error?.diagnostic || error?.message || null,
     }).catch(() => {});
 
     // Failures (after all retries) are recorded in the audit log above for admin

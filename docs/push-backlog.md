@@ -60,6 +60,26 @@ still open.
 - [ ] Confirm a **normal** refine run still reaches "Ready: a new lesson on X" and
       rebuilds. The success path was touched (`d.message` is now required).
 
+### `<pending>` — #181 Project Quest plan failure
+
+This commit makes the failure **diagnosable**; it does not make generation faster.
+#181 stays open until the real cause shows up in the log.
+
+- [ ] After release, hit a plan failure and confirm `/admin/activity-log` now shows
+      `format=… attempts=… webSearch=… lastError=…` instead of "Failed to design
+      the lesson."
+- [ ] Confirm the **learner-facing** message is unchanged — the friendly text is
+      still `error.message`, and the diagnostic rides alongside it. If the raw
+      cause ever reaches the lesson screen, that's this change leaking.
+- [ ] **Then re-open #181 with the real cause.** Both attempts failed at ~129s
+      each; we still don't know why.
+
+**Measured, worth acting on separately:** a *successful* project_quest plan for
+Azeret's topic took **274.1s** against a **280s** client abort — a 6-second margin.
+Quests on long topics are effectively at the ceiling, so some fraction of them fail
+purely on timing regardless of cause. The deferred skeleton/detail split is the real
+answer; raising the client budget past the route's 300s `maxDuration` is not.
+
 ### Open questions that predate any commit
 
 - [ ] **#162 / #164 — confirm the learn mode with Andrea.** The missing "Step X of
