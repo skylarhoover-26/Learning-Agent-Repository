@@ -108,7 +108,7 @@ answer; raising the client budget past the route's 300s `maxDuration` is not.
 - [ ] The loader now reads "Finding a surprise &lt;Format&gt; for you…" — check it
       names the right format.
 
-### `cce8707` — #164 (and #162) missing "x of n"
+### `328651d` — #164 (and #162) missing "x of n"
 
 **The cluster B diagnosis in this doc was wrong for these two.** It blamed narrated
 mode falling through to the legacy streaming view. Andrea's #164 screenshot shows the
