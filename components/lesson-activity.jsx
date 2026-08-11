@@ -19,6 +19,50 @@ function Prompt({ text, fallback }) {
   );
 }
 
+// A generated checkpoint occasionally arrives unusable — the model returns an
+// activity with no options/pairs/items. The child then renders its header above an
+// empty list, so there is nothing to click; and because progression is gated on
+// the activity resolving, and resolving only happens on a click, the learner is
+// stuck for good. Refreshing or resuming replays the same cached step, which is
+// what made feedback #165 a hard block rather than an annoyance.
+//
+// So detect it up front and offer a way past. It resolves as *passed* on purpose:
+// a malformed activity is our fault, and resolving it as failed would send them
+// back to restart the whole lesson (see resolveActivity in plan-lesson-player).
+const REQUIRED_ACTIVITY_FIELDS = {
+  mcq: ['options'],
+  match: ['pairs'],
+  scenario: ['choices'],
+  order: ['items'],
+  categorize: ['buckets', 'items'],
+};
+
+function isActivityUsable(type, activity) {
+  const required = REQUIRED_ACTIVITY_FIELDS[type];
+  // `write` is exempt — a textarea is usable with no generated collection at all.
+  if (!required) return true;
+  return required.every((field) => Array.isArray(activity?.[field]) && activity[field].length > 0);
+}
+
+function UnusableActivity({ onResolve, resolved }) {
+  return (
+    <div>
+      <div className="flex items-start gap-2 text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+        <p>This check didn&apos;t generate properly, so there&apos;s nothing here to answer — that&apos;s on us, not you. Keep going and you&apos;ll pick up right where you left off.</p>
+      </div>
+      {!resolved && (
+        <button
+          onClick={() => onResolve(true)}
+          className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-brand text-white text-sm font-semibold hover:bg-brand-600 transition-all"
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  );
+}
+
 // A required, interactive checkpoint that proves a learning objective. The
 // learner gets up to 3 tries with feedback on each miss; after the 3rd we reveal
 // the answer + why and unlock continuing. It calls onResolve(passed) once it's
@@ -48,12 +92,18 @@ export default function LessonActivity({ activityType, activity, objective, onRe
       </div>
       {objective && <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Proves: {objective}</p>}
 
-      {type === 'mcq' && <Mcq {...common} />}
-      {type === 'write' && <Write {...writeProps} />}
-      {type === 'match' && <Match {...common} />}
-      {type === 'scenario' && <Scenario {...common} />}
-      {type === 'order' && <Order {...common} />}
-      {type === 'categorize' && <Categorize {...common} />}
+      {!isActivityUsable(type, activity) ? (
+        <UnusableActivity onResolve={onResolve} resolved={resolved} />
+      ) : (
+        <>
+          {type === 'mcq' && <Mcq {...common} />}
+          {type === 'write' && <Write {...writeProps} />}
+          {type === 'match' && <Match {...common} />}
+          {type === 'scenario' && <Scenario {...common} />}
+          {type === 'order' && <Order {...common} />}
+          {type === 'categorize' && <Categorize {...common} />}
+        </>
+      )}
     </div>
   );
 }
