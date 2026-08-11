@@ -6,7 +6,10 @@ import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { sendDailyNotifications } from '@/lib/daily-notify';
 
-export const maxDuration = 60;
+// 300, not 60: each recipient now resolves their pick AND reads their XP /
+// lesson ledgers for the streak line, so per-person work grew. Sends stay
+// sequential for Slack's rate limits, so headroom scales with the allowlist.
+export const maxDuration = 300;
 
 export async function POST() {
   const user = await getAuthenticatedUser();
