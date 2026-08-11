@@ -10,6 +10,8 @@ import {
   buildLeaderboardBlocks,
   buildSkillsBlocks,
 } from '@/lib/slack-personalize';
+import { loadPickContext, buildPickBlocks } from '@/lib/slack-pick-context';
+import { isSlackLessonEnabled } from '@/lib/slack-lesson-config';
 import {
   logSlackMessage,
   reserveSlackEvent,
@@ -98,6 +100,7 @@ function buildHelpBlocks() {
           "*Just message me* with any question about AI — I'll answer right here and point you back to the app when there's something to try.",
           '',
           '*Quick commands:*',
+          "`/pick` — today's lesson, and why you got it",
           '`/learn [topic]` — a quick AI tip on any topic',
           '`/leaderboard` — where you stand this week',
           '`/heatmap` — your knowledge heatmap',
@@ -177,13 +180,31 @@ async function handleDirectMessage(payload) {
   });
 }
 
-// Personalized slash commands (leaderboard / heatmap / skills) need an async
-// email lookup, so they ack immediately then post the real data via response_url.
+// Personalized slash commands (leaderboard / heatmap / skills / pick) need an
+// async email lookup, so they ack immediately then post the real data via
+// response_url.
 async function handleDataSlash(command, responseUrl, userId, userName) {
   const { email } = await lookupSlackEmailByUserId(userId);
-  const snapshot = await getLearnerSnapshot(email);
+  const isPick = command === '/pick' || command === '/today';
   const isSkills = command === '/heatmap' || command === '/skills';
-  const blocks = isSkills ? buildSkillsBlocks(snapshot) : buildLeaderboardBlocks(snapshot);
+
+  let blocks;
+  let sentLabel;
+  if (isPick) {
+    // Same source the daily DM and the Home tab read, so all three agree on what
+    // today is.
+    const profile = { ...((await getLearnerSnapshot(email)).profile || {}), email };
+    const context = await loadPickContext(profile);
+    const slackLessonEnabled = await isSlackLessonEnabled().catch(() => false);
+    blocks = buildPickBlocks(context, APP_URL, { slackLessonEnabled })
+      || [{ type: 'section', text: { type: 'mrkdwn', text: `I couldn't work out today's pick. <${APP_URL}/daily|Open it in the app> and it'll sort itself out.` } }];
+    sentLabel = `Sent today's pick${context?.pick?.topic ? `: ${context.pick.topic}` : ''}.`;
+  } else {
+    const snapshot = await getLearnerSnapshot(email);
+    blocks = isSkills ? buildSkillsBlocks(snapshot) : buildLeaderboardBlocks(snapshot);
+    sentLabel = isSkills ? 'Sent knowledge heatmap summary.' : 'Sent leaderboard standing.';
+  }
+
   await sendDelayedResponse(responseUrl, blocks, 'ephemeral');
   await logSlackMessage({
     email,
@@ -198,8 +219,8 @@ async function handleDataSlash(command, responseUrl, userId, userName) {
     slackUserId: userId,
     direction: 'outbound',
     channel: null,
-    text: isSkills ? 'Sent knowledge heatmap summary.' : 'Sent leaderboard standing.',
-    meta: { source: isSkills ? 'skills' : 'leaderboard', command },
+    text: sentLabel,
+    meta: { source: isPick ? 'daily_pick_answer' : (isSkills ? 'skills' : 'leaderboard'), command },
   });
 }
 
@@ -222,7 +243,9 @@ function handleSlashCommand(command, text, responseUrl, userId, userName) {
     case '/leaderboard':
     case '/streak':
     case '/heatmap':
-    case '/skills': {
+    case '/skills':
+    case '/pick':
+    case '/today': {
       const deferred = async () => {
         await handleDataSlash(command, responseUrl, userId, userName);
       };
@@ -323,7 +346,7 @@ export async function GET() {
   return Response.json({
     name: 'AI Learning Coach Slack Bot',
     status: 'active',
-    commands: ['/learn', '/leaderboard', '/heatmap', '/skills'],
+    commands: ['/pick', '/learn', '/leaderboard', '/heatmap', '/skills'],
     events: ['message.im', 'app_home_opened'],
     // Deliberately no `configured` flag here. Echoing whether the signing
     // secret and bot token are set told an anonymous prober exactly when the
