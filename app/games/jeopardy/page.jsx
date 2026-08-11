@@ -85,8 +85,8 @@ function JeopardyGame() {
   // Persist the result once the board is cleared. This pays XP like any other
   // game — saveGameResult routes every finished round through onGameComplete, the
   // event syncs to Supabase, and leaderboard_totals() sums it with everything
-  // else. A custom round ranks you up exactly like a built-in one; the only limit
-  // is the once-per-game-per-content-day gate that all the games share.
+  // else. A custom round ranks you up exactly like a built-in one, and every play
+  // counts — games have no daily cap.
   useEffect(() => {
     if (!done || savedDone) return;
     setSavedDone(true);

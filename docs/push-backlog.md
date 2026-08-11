@@ -219,6 +219,33 @@ with Surprise me. Then Play, which lands on the game's own How-to-play screen.
 - [ ] Legacy `/games?make=feud` deep links still preselect the right game.
 - [ ] **Rewrite the games section of the UAT script** before testers see this.
 
+### `<pending>` — Games no longer daily-capped (Skylar, policy change)
+
+**Behavior change, not a bug fix.** Skylar, 2026-08-11: "if they play family feud
+twice, they should get credit twice. We only are limiting the just chatting to 5 chats
+a day and quick tips to 5 a day."
+
+`onGameComplete` awarded XP only for the FIRST completion of a given game per content
+day. That gate is gone — every finished game pays. The two caps Skylar named were
+already in place and are untouched: `DAILY_CAPS.chat_message = 5`,
+`DAILY_CAPS.quick_tip = 5`.
+
+- [ ] Play the same game twice in one day and confirm **both** wins award XP and move
+      the leaderboard.
+- [ ] Confirm a 0-score run still awards nothing (the `award <= 0` guard) rather than
+      logging an empty XP event.
+- [ ] Confirm chat still stops paying after 5 messages and quick tips after 5 — those
+      caps must NOT have moved.
+- [ ] Games-page copy now reads "every time you play"; check it isn't contradicted
+      anywhere else in the UI.
+
+**Farming exposure, stated plainly so it's a choice and not a surprise:** nothing now
+limits game XP per day. Hallucination Hunt pays up to 50 XP and runs 5-8 minutes, so a
+determined person could add a few hundred XP an hour and climb the leaderboard by
+grinding one game. The only brake is that the award is base × score, so sloppy replays
+pay little. If that becomes a problem, the natural fix is a per-day *total* game-XP
+ceiling rather than bringing back the per-game gate.
+
 ### Open questions that predate any commit
 - [ ] **Cluster C (#163/#167) — confirm against runtime logs.** Missing
       `maxDuration` is a real defect worth fixing regardless, but a timeout is not

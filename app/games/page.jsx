@@ -166,7 +166,7 @@ function GamesHubInner() {
               <p className="text-xs mt-3" style={{ color: 'var(--ink-dim)' }}>
                 {selected?.topic === 'optional'
                   ? 'Leave it blank to play our built-in set, or name a topic for a custom round.'
-                  : 'Custom rounds earn XP just like the standard games — once per game each day.'}
+                  : 'Custom rounds earn XP just like the standard games, every time you play.'}
               </p>
             </>
           )}
