@@ -5,7 +5,14 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { Bell, Plus, Trash2, Loader2, Send, History, CheckCircle2, AlertTriangle } from 'lucide-react';
 
-const TRIGGER_LABEL = { cron: 'Automatic (weekday)', manual: 'Manual send', n8n: 'n8n schedule' };
+// A 'catchup' row means the 9:30 cron didn't fire and the hour-later safety net
+// covered it. Labelled distinctly on purpose: it's a signal, not a normal send.
+const TRIGGER_LABEL = {
+  cron: 'Automatic (weekday)',
+  catchup: 'Catch-up (9:30 run missed)',
+  manual: 'Manual send',
+  n8n: 'n8n schedule',
+};
 
 function formatSentAt(iso) {
   try {

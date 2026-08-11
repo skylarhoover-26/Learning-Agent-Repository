@@ -2,25 +2,26 @@
 // Scheduled in vercel.json. Vercel automatically sends
 // `Authorization: Bearer ${CRON_SECRET}` on cron invocations, which we verify.
 //
-// Idempotency: guarded so it fires at most once per content-day (8 AM PT
-// rollover). This lets it coexist with the legacy n8n trigger
-// (/api/notifications/daily) without double-DMing anyone — whichever runs first
-// claims the day; the second no-ops. The admin "Send now" test bypasses this
-// guard (it calls sendDailyNotifications directly).
+// Idempotency: guarded so it fires at most once per content-day (8 AM PT rollover),
+// so this, the catch-up cron (/api/cron/daily-pick-catchup) and the legacy n8n trigger
+// (/api/notifications/daily) can't double-DM anyone — whichever runs first claims the
+// day; the others no-op. The admin "Send now" test bypasses the guard deliberately
+// (it calls sendDailyNotifications directly).
+//
+// The guard and its instrumentation live in lib/daily-send-guard.js. Every outcome —
+// entered, skipped, sent, failed — is written to the audit log, so a morning with no
+// DMs can be diagnosed rather than guessed at. That went in after three Mondays went
+// missing leaving no evidence either way.
 
 import { NextResponse } from 'next/server';
-import { sendDailyNotifications } from '@/lib/daily-notify';
+import { claimDayAndSend } from '@/lib/daily-send-guard';
 import { contentDayKey } from '@/lib/content-day';
-import { getUserData, saveUserData } from '@/lib/blob-store';
 
 // 300, not 60: each recipient now resolves their pick AND reads their XP /
 // lesson ledgers for the streak line, so per-person work grew. Sends stay
 // sequential for Slack's rate limits, so headroom scales with the allowlist.
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
-
-const SYSTEM_ID = '__system__';
-const SENT_MARKER = 'daily_pick_last_sent';
 
 function isAuthorized(request) {
   const expected = process.env.CRON_SECRET || process.env.NOTIFY_SECRET;
@@ -35,25 +36,11 @@ async function run(request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const today = contentDayKey();
   try {
-    const marker = await getUserData(SYSTEM_ID, SENT_MARKER);
-    const lastSent = marker?.date || marker?.data?.date;
-    if (lastSent === today) {
-      return NextResponse.json({ ok: true, skipped: 'already_sent_today', date: today });
-    }
-
-    // Claim the day BEFORE sending so a near-simultaneous n8n call can't also
-    // send. A send failure still marks the day (we don't want a retry storm);
-    // the summary surfaces per-recipient failures for follow-up.
-    await saveUserData(SYSTEM_ID, SENT_MARKER, { date: today, at: new Date().toISOString() });
-
-    const summary = await sendDailyNotifications('cron');
-    return NextResponse.json({ ok: true, date: today, ...summary });
+    return NextResponse.json(await claimDayAndSend('cron'));
   } catch (error) {
     console.error('GET /api/cron/daily-pick error:', error);
-    return NextResponse.json({ error: 'Send failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Send failed', date: contentDayKey() }, { status: 500 });
   }
 }
 
