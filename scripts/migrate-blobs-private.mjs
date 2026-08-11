@@ -7,16 +7,15 @@
  * means standing up a second, private store and moving the JSON into it. This
  * script does the moving.
  *
- * Media is deliberately left behind: feedback screenshots and recordings stay in
- * the public store because the admin UI renders them through <img>/<video> src,
- * which cannot carry an auth header.
+ * Media is handled separately by scripts/migrate-media-private.mjs — it is
+ * binary rather than JSON and needs size-based verification.
  *
  * This is COPY, not move — nothing is deleted from the public store. Verify the
  * app on the private store first, then delete the public copies with --cleanup
  * once you're confident. That ordering is what makes the cutover reversible.
  *
  * Usage:
- *   BLOB_READ_WRITE_TOKEN=<public> BLOB_PRIVATE_RW_TOKEN=<private> \
+ *   BLOB_READ_WRITE_TOKEN=<public> PRIVATE_READ_WRITE_TOKEN=<private> \
  *     node scripts/migrate-blobs-private.mjs --dry-run
  *   …same env… node scripts/migrate-blobs-private.mjs
  *   …same env… node scripts/migrate-blobs-private.mjs --verify
@@ -28,14 +27,15 @@ const DRY_RUN = process.argv.includes('--dry-run');
 const VERIFY = process.argv.includes('--verify');
 const CLEANUP = process.argv.includes('--cleanup');
 
-// Left in the public store on purpose — rendered via <img>/<video> src.
-const PUBLIC_ONLY_PREFIXES = ['feedback-shots/', 'feedback-recordings/'];
+// Handled by migrate-media-private.mjs, not here. (Belt and braces — the
+// .json check below already excludes them.)
+const MEDIA_PREFIXES = ['feedback-screenshots/', 'feedback-recordings/'];
 
 const PUBLIC_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-const PRIVATE_TOKEN = process.env.BLOB_PRIVATE_RW_TOKEN;
+const PRIVATE_TOKEN = process.env.PRIVATE_READ_WRITE_TOKEN;
 
 if (!PUBLIC_TOKEN || !PRIVATE_TOKEN) {
-  console.error('Both BLOB_READ_WRITE_TOKEN (source) and BLOB_PRIVATE_RW_TOKEN (target) are required.');
+  console.error('Both BLOB_READ_WRITE_TOKEN (source) and PRIVATE_READ_WRITE_TOKEN (target) are required.');
   process.exit(1);
 }
 if (PUBLIC_TOKEN === PRIVATE_TOKEN) {
@@ -43,7 +43,7 @@ if (PUBLIC_TOKEN === PRIVATE_TOKEN) {
   process.exit(1);
 }
 
-const isJsonData = (p) => p.endsWith('.json') && !PUBLIC_ONLY_PREFIXES.some((x) => p.startsWith(x));
+const isJsonData = (p) => p.endsWith('.json') && !MEDIA_PREFIXES.some((x) => p.startsWith(x));
 
 async function readPublicJson(pathname) {
   const { blobs } = await list({ prefix: pathname, limit: 1, token: PUBLIC_TOKEN });

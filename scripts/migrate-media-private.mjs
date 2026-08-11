@@ -14,7 +14,7 @@
  * public originals. That ordering keeps the whole cutover reversible.
  *
  * Usage:
- *   BLOB_READ_WRITE_TOKEN=<public> BLOB_PRIVATE_RW_TOKEN=<private> \
+ *   BLOB_READ_WRITE_TOKEN=<public> PRIVATE_READ_WRITE_TOKEN=<private> \
  *     node scripts/migrate-media-private.mjs --dry-run
  *   …same env… node scripts/migrate-media-private.mjs
  *   …same env… node scripts/migrate-media-private.mjs --verify
@@ -29,10 +29,10 @@ const CLEANUP = process.argv.includes('--cleanup');
 const MEDIA_PREFIXES = ['feedback-screenshots/', 'feedback-recordings/'];
 
 const PUBLIC_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-const PRIVATE_TOKEN = process.env.BLOB_PRIVATE_RW_TOKEN;
+const PRIVATE_TOKEN = process.env.PRIVATE_READ_WRITE_TOKEN;
 
 if (!PUBLIC_TOKEN || !PRIVATE_TOKEN) {
-  console.error('Both BLOB_READ_WRITE_TOKEN (source) and BLOB_PRIVATE_RW_TOKEN (target) are required.');
+  console.error('Both BLOB_READ_WRITE_TOKEN (source) and PRIVATE_READ_WRITE_TOKEN (target) are required.');
   process.exit(1);
 }
 if (PUBLIC_TOKEN === PRIVATE_TOKEN) {
@@ -41,6 +41,19 @@ if (PUBLIC_TOKEN === PRIVATE_TOKEN) {
 }
 
 const mb = (n) => `${(n / 1048576).toFixed(2)}MB`;
+
+// list() doesn't reliably carry a content type, and a copy that lands as
+// application/octet-stream will not play in <video>.
+const MIME_BY_EXT = {
+  mov: 'video/quicktime', mp4: 'video/mp4', webm: 'video/webm',
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+  gif: 'image/gif', webp: 'image/webp',
+};
+const mimeFor = (pathname, reported) => {
+  const ext = String(pathname).split('.').pop()?.toLowerCase();
+  if (reported && reported !== 'application/octet-stream') return reported;
+  return MIME_BY_EXT[ext] || reported || 'application/octet-stream';
+};
 
 async function eachPublicMediaBlob(fn) {
   for (const prefix of MEDIA_PREFIXES) {
@@ -67,7 +80,10 @@ async function migrate() {
   await eachPublicMediaBlob(async (b) => {
     try {
       const twin = await privateTwin(b.pathname);
-      if (twin && twin.size === b.size) { already += 1; return; }
+      const wantType = mimeFor(b.pathname, b.contentType);
+      // Re-copy when the type is wrong too, not just when the blob is missing —
+      // the first pass landed everything as application/octet-stream.
+      if (twin && twin.size === b.size && twin.contentType === wantType) { already += 1; return; }
       if (DRY_RUN) { console.log(`would copy: ${b.pathname} (${mb(b.size)})`); copied += 1; bytes += b.size; return; }
 
       const res = await fetch(b.downloadUrl || b.url);
@@ -77,7 +93,7 @@ async function migrate() {
       const body = Buffer.from(await res.arrayBuffer());
       await put(b.pathname, body, {
         access: 'private',
-        contentType: b.contentType || 'application/octet-stream',
+        contentType: mimeFor(b.pathname, b.contentType),
         addRandomSuffix: false, // the random suffix is already in the pathname
         allowOverwrite: true,
         token: PRIVATE_TOKEN,

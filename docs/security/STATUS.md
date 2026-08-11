@@ -14,7 +14,7 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **In progress** — media (the real exposure) now routes through a private store + authenticated proxy; all gated behind `BLOB_PRIVATE_RW_TOKEN` and inert until it is set. See below |
+| F-05 | Medium | Blobs written `access: 'public'` | **In progress** — media (the real exposure) now routes through a private store + authenticated proxy; all gated behind `PRIVATE_READ_WRITE_TOKEN` and inert until it is set. See below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-11** — `lib/content-safety.js` delimits titles in `<untrusted>`, strips angle brackets, and range-checks the model's indices; `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
@@ -72,7 +72,7 @@ through `<img>`/`<video>` src and which therefore cannot be private without an
 authenticated proxy. Access is a store-level property, so this split is the only
 way to have both without writing that proxy.
 
-**The gate.** `lib/blob-json.js` keys off `BLOB_PRIVATE_RW_TOKEN`:
+**The gate.** `lib/blob-json.js` keys off `PRIVATE_READ_WRITE_TOKEN`:
 
 - unset → public writes to the default store, i.e. today's exact behaviour
 - set → JSON reads and writes go to the private store, with a public-read
@@ -84,7 +84,7 @@ rollback* a single environment-variable change rather than a redeploy.
 **Cutover order** (each step verifiable, nothing destructive until the last):
 
 1. `vercel blob create-store learning-agent-private --access private`
-2. Add its token to Vercel as `BLOB_PRIVATE_RW_TOKEN`. **Do not touch
+2. Add its token to Vercel as `PRIVATE_READ_WRITE_TOKEN`. **Do not touch
    `BLOB_READ_WRITE_TOKEN`** — that is the media store and the fallback path.
 3. `node scripts/migrate-media-private.mjs --dry-run`, then for real, then
    `--verify`. Copies only — it never deletes. The JSON equivalent
