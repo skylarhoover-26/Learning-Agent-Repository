@@ -188,6 +188,37 @@ about an HCP feature launch rather than onboarding) — that's a topic/prompt pr
 defaultOpen={false}` on its play screen, and its start-screen copy is expanded *by
 design* — the same layout as Speed Round. Ask which screen she meant.
 
+### `<pending>` — Games page redesign (Skylar, not a feedback item)
+
+**This is a redesign, not a bug fix.** Skylar asked for it on 2026-08-11 after seeing
+that #189's fix left a visible seam. It replaces the whole `/games` layout, so the
+games section of the UAT script is now wrong and needs rewriting before testers run it.
+
+Before: a 4-card grid, then a separate "Generate your own game" panel with its own
+8-entry dropdown — the same game choosable two ways, with two hand-typed difficulty
+lists that had drifted apart.
+
+After: one flow. Step 1 is an arrow-scrollable rail of all nine games (easy → hard,
+selection ring + check like the lesson wizard's format tiles). Step 2 is the topic
+with Surprise me. Then Play, which lands on the game's own How-to-play screen.
+
+`components/generate-your-own-game.jsx` is deleted; `components/game-picker.jsx` is new.
+
+- [ ] **Play a game of each topic mode.** `optional` (Speed Round, Prompt Battle,
+      Hallucination Hunt) must still play with the topic box EMPTY — that's their
+      built-in question bank and it's the biggest regression risk here.
+      `required` (the five generated ones) must keep Play disabled until a topic.
+      `none` (AI or Human) should hide the topic box and play immediately.
+- [ ] Arrow buttons scroll one card at a time and disable at both ends; the rail is
+      also draggable/swipeable on touch.
+- [ ] Selection ring shows the difficulty colour — it's set via `--tw-ring-color`
+      inline, so if the ring renders grey, that's why.
+- [ ] Difficulty badges now come from `lib/progression`. Confirm they read
+      **Family Feud = Medium** and **Wheel of Fortune = Easy** — the old hand-typed
+      cards had both wrong, and the XP line is derived from the same source.
+- [ ] Legacy `/games?make=feud` deep links still preselect the right game.
+- [ ] **Rewrite the games section of the UAT script** before testers see this.
+
 ### Open questions that predate any commit
 - [ ] **Cluster C (#163/#167) — confirm against runtime logs.** Missing
       `maxDuration` is a real defect worth fixing regardless, but a timeout is not

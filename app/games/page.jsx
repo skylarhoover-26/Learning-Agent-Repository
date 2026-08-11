@@ -1,148 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { Suspense, useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
-  Gamepad2, Swords, Search, Timer, Eye, ChevronRight, Clock, BarChart3, Trophy, Zap,
-  Users, LayoutGrid, DollarSign, ScanSearch, Disc3, Sparkles,
+  Gamepad2, Swords, Search, Timer, Eye, ArrowRight, Sparkles, Wand2,
+  Users, LayoutGrid, DollarSign, ScanSearch, Disc3,
 } from 'lucide-react';
 import { getGameStats } from '@/lib/game-store';
-import { maxGameXp } from '@/lib/progression';
+import { gameDifficulty } from '@/lib/progression';
 import { sortByDifficulty } from '@/lib/difficulty';
-import GenerateYourOwnGame from '@/components/generate-your-own-game';
+import { useProfile } from '@/components/profile-provider';
+import { buildGameTopics } from '@/lib/game-topics';
+import GamePicker from '@/components/game-picker';
 
-// Difficulty → glow (card hover, matches Library) + badge, on the green/orange/
-// red scale: easy green, medium orange, hard red.
-const DIFF = {
-  Easy: { glow: '#22C55E', badge: 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-900/20 dark:text-green-400' },
-  Medium: { glow: '#F59E0B', badge: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-400' },
-  Hard: { glow: '#EF4444', badge: 'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400' },
+// One catalog for every game. This used to be two lists that drifted: a 4-card
+// GAMES array here and an 8-entry GAME_TYPES in the generator component, each with
+// its own hand-typed difficulty. `difficulty` is now derived from lib/progression,
+// which is the same source the XP award uses — so a card can't claim "Easy · 20 XP"
+// while progression pays out medium.
+//
+// `topic` is the real difference between these games:
+//   'required' — no built-in content; the round is generated from a topic
+//   'optional' — ships a question bank, and a topic swaps in a custom round
+//   'none'     — can't be generated at all (AI or Human needs real human writing)
+const CATALOG = [
+  { slug: 'speed-round', icon: Timer, title: 'Speed Round', time: '3-5 min', topic: 'optional',
+    description: 'Rapid-fire multiple choice. 10 questions, 15 seconds each.' },
+  { slug: 'ai-or-human', icon: Eye, title: 'AI or Human?', time: '3-5 min', topic: 'none',
+    description: 'Can you tell which text was written by AI and which by a human?' },
+  { slug: 'two-truths', icon: ScanSearch, title: 'Two Truths & a Lie', time: '3-5 min', topic: 'required',
+    description: 'Spot the false claim among three.' },
+  { slug: 'wheel-of-fortune', icon: Disc3, title: 'Wheel of Fortune', time: '5-8 min', topic: 'required',
+    description: 'Spin and guess letters to uncover a hidden phrase.' },
+  { slug: 'prompt-battle', icon: Swords, title: 'Prompt Battle', time: '5-10 min', topic: 'optional',
+    description: 'Write the sharpest prompt for a scenario and let AI score it.' },
+  { slug: 'family-feud', icon: Users, title: 'Family Feud', time: '5-8 min', topic: 'required',
+    description: 'Guess the top survey answers before three strikes.' },
+  { slug: 'jeopardy', icon: LayoutGrid, title: 'Jeopardy', time: '8-12 min', topic: 'required',
+    description: 'A 5-category board of clues — answer in the form of a question.' },
+  { slug: 'millionaire', icon: DollarSign, title: 'Millionaire', time: '5-10 min', topic: 'required',
+    description: 'Climb a 10-question ladder — how far can you get?' },
+  { slug: 'hallucination-hunt', icon: Search, title: 'Hallucination Hunt', time: '5-8 min', topic: 'optional',
+    description: 'Spot the planted factual errors in an AI answer.' },
+].map((g) => ({ ...g, difficulty: gameDifficulty(g.slug) }));
+
+const ORDERED = sortByDifficulty(CATALOG);
+
+// Legacy deep link: /games?make=<generator id> preselected a game back when the
+// dropdown owned that id. Keep it working, mapped onto slugs.
+const MAKE_ID_TO_SLUG = {
+  feud: 'family-feud', halluc: 'hallucination-hunt', jeopardy: 'jeopardy',
+  millionaire: 'millionaire', prompt: 'prompt-battle', speed: 'speed-round',
+  twotruths: 'two-truths', wheel: 'wheel-of-fortune',
 };
 
-const GAMES = [
-  {
-    slug: 'prompt-battle',
-    icon: Swords,
-    title: 'Prompt Battle',
-    description:
-      'Get a scenario, write your best prompt, and let AI score it on clarity, specificity, and effectiveness.',
-    difficulty: 'Medium',
-    difficultyColor: 'bg-cta-50 text-cta-700 ring-1 ring-cta-200',
-    time: '5-10 min',
-  },
-  {
-    slug: 'hallucination-hunt',
-    icon: Search,
-    title: 'Hallucination Hunt',
-    description:
-      'Spot the factual errors hiding in AI-generated responses. Click the sentences you think are wrong.',
-    difficulty: 'Hard',
-    difficultyColor: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
-    time: '5-8 min',
-  },
-  {
-    slug: 'speed-round',
-    icon: Timer,
-    title: 'Speed Round',
-    description:
-      'Rapid-fire multiple choice on AI concepts. 10 questions, 15 seconds each. How fast can you go?',
-    difficulty: 'Easy',
-    difficultyColor: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-    time: '3-5 min',
-  },
-  {
-    slug: 'ai-or-human',
-    icon: Eye,
-    title: 'AI or Human?',
-    description:
-      'Can you tell which text was written by AI and which by a human?',
-    difficulty: 'Easy',
-    difficultyColor: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-    time: '3-5 min',
-  },
-  // These five ship with NO built-in question bank — they exist only as generated
-  // rounds, so their route renders nothing without a `?topic=`. They were therefore
-  // reachable only by going through "Generate your own game", which is what feedback
-  // #189 asked us to fix. `needsTopic` sends the card into that generator with the
-  // game preselected instead of into an empty screen; `makeId` is its GAME_TYPES id.
-  {
-    slug: 'family-feud',
-    makeId: 'feud',
-    needsTopic: true,
-    icon: Users,
-    title: 'Family Feud',
-    description: 'Guess the top survey answers on your topic before three strikes.',
-    difficulty: 'Easy',
-    difficultyColor: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-    time: '5-8 min',
-  },
-  {
-    slug: 'two-truths',
-    makeId: 'twotruths',
-    needsTopic: true,
-    icon: ScanSearch,
-    title: 'Two Truths & a Lie',
-    description: 'Spot the false claim among three about your topic.',
-    difficulty: 'Easy',
-    difficultyColor: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-    time: '3-5 min',
-  },
-  {
-    slug: 'jeopardy',
-    makeId: 'jeopardy',
-    needsTopic: true,
-    icon: LayoutGrid,
-    title: 'Jeopardy',
-    description: 'A 5-category board of clues on your topic — answer in the form of a question.',
-    difficulty: 'Medium',
-    difficultyColor: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-    time: '8-12 min',
-  },
-  {
-    slug: 'millionaire',
-    makeId: 'millionaire',
-    needsTopic: true,
-    icon: DollarSign,
-    title: 'Millionaire',
-    description: 'Climb a 10-question ladder on your topic — how far can you get?',
-    difficulty: 'Medium',
-    difficultyColor: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-    time: '5-10 min',
-  },
-  {
-    slug: 'wheel-of-fortune',
-    makeId: 'wheel',
-    needsTopic: true,
-    icon: Disc3,
-    title: 'Wheel of Fortune',
-    description: 'Spin and guess letters to uncover a phrase from your topic.',
-    difficulty: 'Medium',
-    difficultyColor: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-    time: '5-8 min',
-  },
-];
-
-// Show games easy → hard so the difficulty signal reads consistently.
-const ORDERED_GAMES = sortByDifficulty(GAMES);
-
 export default function GamesHub() {
-  return <CinematicFrame><GamesHubInner /></CinematicFrame>;
+  return (
+    <CinematicFrame>
+      <PageHeader icon={Gamepad2} title="Learning Games" subtitle="Practice AI skills the fun way" />
+      <Suspense fallback={null}>
+        <GamesHubInner />
+      </Suspense>
+    </CinematicFrame>
+  );
 }
 
 function GamesHubInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { profile } = useProfile();
+  const samples = useMemo(() => buildGameTopics(profile), [profile]);
+
   const [allStats, setAllStats] = useState({});
+  const [selected, setSelected] = useState(null);
+  const [topic, setTopic] = useState('');
+  const [sampleIdx, setSampleIdx] = useState(0);
 
   useEffect(() => {
     try {
       const statsMap = {};
-      for (const game of GAMES) {
+      for (const game of CATALOG) {
         const s = getGameStats(game.slug);
-        if (s && s.gamesPlayed > 0) {
-          statsMap[game.slug] = s;
-        }
+        if (s && s.gamesPlayed > 0) statsMap[game.slug] = s;
       }
       setAllStats(statsMap);
     } catch {
@@ -150,93 +92,106 @@ function GamesHubInner() {
     }
   }, []);
 
-  return (
-    <div className="min-h-screen">
-      <PageHeader
-        icon={Gamepad2}
-        title="Learning Games"
-        subtitle="Practice AI skills the fun way"
-      />
+  const makeSlug = MAKE_ID_TO_SLUG[searchParams.get('make')] || null;
+  useEffect(() => {
+    if (!makeSlug) return;
+    const match = CATALOG.find((g) => g.slug === makeSlug);
+    if (match) setSelected(match);
+  }, [makeSlug]);
 
-      <main className="max-w-5xl mx-auto px-6 pt-6 pb-12 sm:pb-16">
-        <CinematicPageHero
-          eyebrow="Games"
-          title="Learning Games"
-          subtitle="Sharpen your AI skills with quick interactive challenges — pick a game and start playing."
-          icon={Gamepad2}
-          gradient
-        />
-        <p className="text-xs mb-8" style={{ color: 'var(--ink-dim)' }}>
-          Questions are fresh every play — and Hallucination Hunt mixes up its order daily at 8 AM PT.
+  const needsTopic = selected?.topic === 'required';
+  const takesTopic = selected && selected.topic !== 'none';
+  const canPlay = selected && (!needsTopic || topic.trim());
+
+  function play() {
+    if (!canPlay) return;
+    const t = topic.trim();
+    const qs = takesTopic && t ? `?topic=${encodeURIComponent(t)}` : '';
+    router.push(`/games/${selected.slug}${qs}`);
+  }
+
+  function surprise() {
+    setTopic(samples[sampleIdx % samples.length]);
+    setSampleIdx((i) => i + 1);
+  }
+
+  return (
+    <main className="max-w-5xl mx-auto px-6 pt-6 pb-12 sm:pb-16">
+      <CinematicPageHero
+        eyebrow="Games"
+        title="Learning Games"
+        subtitle="Pick a game, give it a topic if you want one, and play."
+        icon={Gamepad2}
+        gradient
+      />
+      <p className="text-xs mb-8" style={{ color: 'var(--ink-dim)' }}>
+        Questions are fresh every play — and Hallucination Hunt mixes up its order daily at 8 AM PT.
+      </p>
+
+      <GamePicker games={ORDERED} selectedSlug={selected?.slug || null} onSelect={setSelected} stats={allStats} />
+
+      {/* Step 2 stays visible but inert until a game is picked, so the shape of the
+          flow is obvious before you've touched anything. */}
+      <div className={`mt-8 transition-opacity ${selected ? '' : 'opacity-50 pointer-events-none'}`}>
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--ink-dim)' }}>
+          <span className="w-5 h-5 rounded-full grid place-items-center text-[11px]" style={{ background: 'var(--accent)', color: '#fff' }}>2</span>
+          Your topic
+          {selected?.topic === 'optional' && <span className="font-medium normal-case tracking-normal">— optional</span>}
         </p>
 
-        <div data-tour="page-games" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {ORDERED_GAMES.map((game, i) => {
-            const gameStats = allStats[game.slug];
-            const diff = DIFF[game.difficulty] || DIFF.Medium;
-            return (
-              <Link
-                key={game.slug}
-                data-tour={i === 0 ? 'game-card' : undefined}
-                href={game.needsTopic ? `/games?make=${game.makeId}` : `/games/${game.slug}`}
-                className="group cine-glass cine-tilt rounded-2xl p-6 transition-all flex flex-col"
-                style={{ '--accent': diff.glow }}
-              >
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-all"
-                  style={{ background: 'color-mix(in srgb, var(--accent) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 32%, transparent)', color: 'var(--accent)' }}
+        <div className="cine-glass rounded-3xl p-6 sm:p-7">
+          {selected?.topic === 'none' ? (
+            <p className="text-sm" style={{ color: 'var(--ink-dim)' }}>
+              {selected.title} uses its own hand-written set — no topic needed. Hit play.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && canPlay) play(); }}
+                  placeholder={`e.g., '${samples[0]}'`}
+                  className="flex-1 rounded-2xl px-4 py-3.5 text-ink dark:text-slate-100 outline-none focus:ring-2"
+                  style={{ background: 'var(--card)', border: '1px solid var(--line)' }}
+                />
+                <button
+                  type="button"
+                  onClick={surprise}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-pill bg-cta text-ink font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all shrink-0"
                 >
-                  <game.icon className="w-7 h-7" />
-                </div>
-
-                <h3 className="font-bold text-ink dark:text-slate-200 text-lg mb-1">{game.title}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 flex-1">{game.description}</p>
-
-                {/* Say so up front: these build a round from a topic you choose, so
-                    the click goes to the generator rather than straight into play. */}
-                {game.needsTopic && (
-                  <p className="text-xs font-medium mb-2 inline-flex items-center gap-1" style={{ color: 'var(--accent)' }}>
-                    <Sparkles className="w-3.5 h-3.5 shrink-0" /> Built on a topic you pick
-                  </p>
-                )}
-
-                {gameStats && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1">
-                    <Trophy className="w-3 h-3" />
-                    Best: {gameStats.bestScore} &middot; Played: {gameStats.gamesPlayed}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${diff.badge}`}
-                  >
-                    <BarChart3 className="w-3 h-3" />
-                    {game.difficulty}
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-bg-subtle dark:bg-slate-700 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-600">
-                    <Clock className="w-3 h-3" />
-                    {game.time}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 mb-4 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                  <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                  Chance to win up to {maxGameXp(game.slug)} XP
-                </div>
-
-                <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm group-hover:bg-cta-600 transition-all self-start">
-                  Play
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Link>
-            );
-          })}
+                  <Sparkles className="w-4 h-4" /> Surprise me
+                </button>
+              </div>
+              <p className="text-xs mt-3" style={{ color: 'var(--ink-dim)' }}>
+                {selected?.topic === 'optional'
+                  ? 'Leave it blank to play our built-in set, or name a topic for a custom round.'
+                  : 'Custom rounds earn XP just like the standard games — once per game each day.'}
+              </p>
+            </>
+          )}
         </div>
+      </div>
 
-        {/* Everyone can build a custom round from any topic. */}
-        <GenerateYourOwnGame />
-      </main>
-    </div>
+      <div className="mt-7 flex flex-col items-center gap-2">
+        <button
+          type="button"
+          onClick={play}
+          disabled={!canPlay}
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-pill bg-brand text-white font-bold shadow-sm hover:bg-brand-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Wand2 className="w-4 h-4" />
+          {selected ? `Play ${selected.title}` : 'Play'}
+          <ArrowRight className="w-4 h-4" />
+        </button>
+        <p className="text-xs" style={{ color: 'var(--ink-dim)' }}>
+          {!selected
+            ? 'Pick a game to get started.'
+            : needsTopic && !topic.trim()
+              ? 'Give it a topic first — this one builds its round from what you name.'
+              : 'How to play comes up next, before anything starts.'}
+        </p>
+      </div>
+    </main>
   );
 }
