@@ -28,6 +28,9 @@ function NotificationsAdminPageInner() {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
   const [log, setLog] = useState([]);
+  // Whether learners can take a lesson inside Slack. null = still loading.
+  const [slackLesson, setSlackLesson] = useState(null);
+  const [togglingLesson, setTogglingLesson] = useState(false);
 
   useEffect(() => {
     fetch('/api/admin-check')
@@ -48,6 +51,10 @@ function NotificationsAdminPageInner() {
 
   useEffect(() => {
     if (!allowed) return;
+    fetch('/api/admin/slack-lesson')
+      .then((r) => (r.ok ? r.json() : { enabled: false }))
+      .then((d) => setSlackLesson(d.enabled === true))
+      .catch(() => setSlackLesson(false));
     fetch('/api/admin/notify-allowlist')
       .then((r) => (r.ok ? r.json() : { emails: [] }))
       .then((d) => setEmails(Array.isArray(d.emails) ? d.emails : []))
@@ -81,6 +88,26 @@ function NotificationsAdminPageInner() {
 
   function removeEmail(e) {
     save(emails.filter((x) => x !== e));
+  }
+
+  async function toggleSlackLesson() {
+    const next = !slackLesson;
+    setTogglingLesson(true);
+    // Optimistic, then corrected from the response — the server is the authority on
+    // what's actually stored.
+    setSlackLesson(next);
+    try {
+      const res = await fetch('/api/admin/slack-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: next }),
+      });
+      const data = await res.json();
+      setSlackLesson(data.enabled === true);
+    } catch {
+      setSlackLesson(!next);
+    }
+    setTogglingLesson(false);
   }
 
   async function sendNow() {
@@ -213,6 +240,44 @@ function NotificationsAdminPageInner() {
               </span>
             )}
           </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-ink dark:text-slate-100">Lessons inside Slack</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Adds a <strong>Take it here in Slack</strong> button to the daily DM. Teach steps arrive as
+                messages, activities open in a Slack window, and finishing awards the same XP as the app.
+                Off means the button is hidden rather than left there doing nothing.
+              </p>
+            </div>
+            <button
+              onClick={toggleSlackLesson}
+              disabled={slackLesson === null || togglingLesson}
+              role="switch"
+              aria-checked={slackLesson === true}
+              aria-label="Lessons inside Slack"
+              className={`relative shrink-0 w-12 h-7 rounded-full transition-colors disabled:opacity-50 ${
+                slackLesson ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                  slackLesson ? 'left-6' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-sm mt-3 font-medium">
+            {slackLesson === null ? (
+              <span className="text-slate-400">Checking…</span>
+            ) : slackLesson ? (
+              <span className="text-green-600 dark:text-green-400">On — recipients can take today&rsquo;s pick in Slack.</span>
+            ) : (
+              <span className="text-slate-500 dark:text-slate-400">Off — the daily DM links to the app only.</span>
+            )}
+          </p>
         </div>
 
         <SendHistory log={log} onRefresh={loadLog} />

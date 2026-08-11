@@ -11,6 +11,8 @@ import {
   buildSkillsBlocks,
 } from '@/lib/slack-personalize';
 import { loadPickContext, buildPickBlocks } from '@/lib/slack-pick-context';
+import { handleSlackInteraction } from '@/lib/slack-interactivity';
+import { readSession } from '@/lib/slack-lesson-session';
 import { isSlackLessonEnabled } from '@/lib/slack-lesson-config';
 import {
   logSlackMessage,
@@ -18,7 +20,11 @@ import {
   getConversationHistoryForEmail,
 } from '@/lib/slack-conversation-store';
 
-export const maxDuration = 60;
+// 300, not 60: a Slack lesson started before the pre-gen cron has warmed it has to
+// generate a full lesson plan inside after(), and teach steps generate per Continue
+// press. At 60 the function was killed mid-generation and the learner just never got
+// their next step.
+export const maxDuration = 300;
 
 const SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
 const BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
@@ -155,8 +161,15 @@ async function handleDirectMessage(payload) {
 
   const { email } = await lookupSlackEmailByUserId(slackUserId);
 
-  // Prior turns for multi-turn memory (fetched before we log the current one).
-  const history = email ? await getConversationHistoryForEmail(email, 8) : [];
+  // Prior turns for multi-turn memory (fetched before we log the current one), plus
+  // any lesson they're part-way through in Slack, so "I'm stuck" is answered about
+  // the step they're actually on rather than the topic in general.
+  const [history, session] = email
+    ? await Promise.all([
+        getConversationHistoryForEmail(email, 8),
+        readSession(email).catch(() => null),
+      ])
+    : [[], null];
 
   await logSlackMessage({
     email,
@@ -167,7 +180,7 @@ async function handleDirectMessage(payload) {
     meta: { event_id: eventId, source: 'dm' },
   });
 
-  const { blocks, text: replyText, meta } = await generateSlackReply({ text, email, history });
+  const { blocks, text: replyText, meta } = await generateSlackReply({ text, email, history, session });
   await sendSlackMessage(channel, blocks, replyText);
 
   await logSlackMessage({
@@ -316,11 +329,26 @@ export async function POST(request) {
   if (contentType.includes('application/x-www-form-urlencoded')) {
     const params = new URLSearchParams(rawBody);
 
-    // Interactivity payloads (block_actions) arrive here too — Slack fires one
-    // even for link-only buttons, like the ones on the Home tab. They carry a
-    // `payload` field and no `command`, so ack with an empty 200 rather than
-    // falling through to the slash-command handler and replying with help text.
+    // Interactivity payloads (block_actions, view_submission) arrive here — Slack
+    // fires one even for link-only buttons, like the ones on the Home tab. They
+    // carry a `payload` field and no `command`.
+    //
+    // Ack with an empty 200 straight away: that's what closes a submitted modal and
+    // what keeps us inside Slack's 3s deadline. The real work (which includes model
+    // calls for teach steps and write grading) runs after the response is flushed.
     if (params.get('payload')) {
+      let payload = null;
+      try {
+        payload = JSON.parse(params.get('payload'));
+      } catch (error) {
+        console.error('Slack interactivity payload parse failed:', error);
+        return new Response('', { status: 200 });
+      }
+      after(() =>
+        handleSlackInteraction(payload).catch((err) =>
+          console.error('Interaction handler error:', err)
+        )
+      );
       return new Response('', { status: 200 });
     }
 
