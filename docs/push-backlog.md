@@ -35,12 +35,28 @@ Caveats and open questions attached to work already committed. These are the thi
 that lint and `next build` **cannot** catch. Do not push a commit whose boxes are
 still open.
 
-### `a835860` — #165 checkpoint dead end
+### `a835860` + follow-up — #165 checkpoint dead end
+
+**Confirmed by Andrea's screenshot** (2026-08-11): the card rendered its "Quick
+check" header, the "Proves: …" objective and "3 of 3 tries left" with **no options
+between them** — an empty `options.map()`, exactly as diagnosed.
+
+The screenshot also changed the fix. The step was titled *"SORT THE METRICS"*, which
+is a categorize/order activity, not multiple choice. So the payload was probably not
+missing — it was the **wrong shape for the declared type**, and `activityType ||
+'mcq'` rendered it as an Mcq that found no `options`. The follow-up commit detects
+the type from the payload's shape and renders the real activity; the escape hatch is
+now only for payloads that match nothing.
 
 - [ ] **Click through a real malformed activity.** The guard only fires when a
       generated activity is missing its collection, which can't be manufactured
       without running the app. Confirm the amber notice + Continue button appear
       and that Continue actually advances the step.
+- [ ] **Confirm shape-recovery works**: a payload whose shape disagrees with its
+      `activityType` should render as the shape (e.g. `buckets`+`items` → "Sort
+      these out"), with the correct header and icon, and should grade normally.
+- [ ] Check that the recovered label doesn't contradict the step title — a step
+      titled "sort the metrics" should no longer say "Quick check".
 - [ ] Confirm a **normal** activity still renders and grades exactly as before —
       the change wraps the type dispatch, so a mistake here would break all six
       activity types, not just the malformed case.

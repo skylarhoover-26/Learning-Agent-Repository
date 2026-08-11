@@ -44,6 +44,26 @@ function isActivityUsable(type, activity) {
   return required.every((field) => Array.isArray(activity?.[field]) && activity[field].length > 0);
 }
 
+// Which type does this payload actually look like? The declared activityType can
+// disagree with what was generated — and since an absent or unrecognized type falls
+// back to 'mcq', a sort-the-items payload renders as an empty Quick check. Andrea's
+// #165 screenshot is exactly that: a step titled "sort the metrics" rendered as a
+// multiple choice with no options. Trusting the shape recovers the real activity
+// instead of making her skip a checkpoint that was generated fine.
+//
+// `categorize` is tested before `order` on purpose — both carry `items`, and only
+// categorize also carries `buckets`.
+function detectActivityType(activity) {
+  if (!activity) return null;
+  const filled = (field) => Array.isArray(activity[field]) && activity[field].length > 0;
+  if (filled('options')) return 'mcq';
+  if (filled('pairs')) return 'match';
+  if (filled('choices')) return 'scenario';
+  if (filled('buckets') && filled('items')) return 'categorize';
+  if (filled('items')) return 'order';
+  return null;
+}
+
 function UnusableActivity({ onResolve, resolved }) {
   return (
     <div>
@@ -68,7 +88,13 @@ function UnusableActivity({ onResolve, resolved }) {
 // the answer + why and unlock continuing. It calls onResolve(passed) once it's
 // settled (either passed, or attempts exhausted).
 export default function LessonActivity({ activityType, activity, objective, onResolve, resolved, passed, toolLabel, onAskCoach }) {
-  const type = activityType || 'mcq';
+  // The label is a hint, the payload is the truth: when they disagree, render what
+  // was actually generated. Falls back to the declared type so an unusable activity
+  // still lands on the escape hatch below rather than guessing.
+  const declaredType = activityType || 'mcq';
+  const type = isActivityUsable(declaredType, activity)
+    ? declaredType
+    : (detectActivityType(activity) || declaredType);
   const TYPE_META = {
     mcq: { icon: ListChecks, label: 'Quick check' },
     write: { icon: PencilLine, label: 'Your turn — try it' },
