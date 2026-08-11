@@ -151,7 +151,7 @@ preselects that game in the generator and focuses the topic box. Not a direct la
 Its own comment explains it needs genuine human-written samples, so it can't be
 generated from a topic.
 
-### `<pending>` — #188 Jeopardy had no instructions
+### `0708b79` — #188 Jeopardy had no instructions
 
 **Cluster, not a one-off.** The four hand-built games (Speed Round, Prompt Battle,
 Hallucination Hunt, AI or Human) each render the shared `GameInstructions` twice —
