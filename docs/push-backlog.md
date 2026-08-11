@@ -188,7 +188,7 @@ about an HCP feature launch rather than onboarding) — that's a topic/prompt pr
 defaultOpen={false}` on its play screen, and its start-screen copy is expanded *by
 design* — the same layout as Speed Round. Ask which screen she meant.
 
-### `<pending>` — Games page redesign (Skylar, not a feedback item)
+### `779aa1c` — Games page redesign (Skylar, not a feedback item)
 
 **This is a redesign, not a bug fix.** Skylar asked for it on 2026-08-11 after seeing
 that #189's fix left a visible seam. It replaces the whole `/games` layout, so the
