@@ -14,7 +14,7 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **In progress** — media (the real exposure) now routes through a private store + authenticated proxy; all gated behind `PRIVATE_READ_WRITE_TOKEN` and inert until it is set. See below |
+| F-05 | Medium | Blobs written `access: 'public'` | **Closed for media 2026-08-11** — recordings live in a private store, served only via the admin-gated `/api/feedback/media` proxy; old public URLs 404. ~52KB of stale JSON is still public, see below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-11** — `lib/content-safety.js` delimits titles in `<untrusted>`, strips angle brackets, and range-checks the model's indices; `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
@@ -48,7 +48,7 @@ So media was done first. `lib/blob-media.js` writes media to the private store,
 rewriting and media uploaded either side of the cutover keeps working. Range
 headers are forwarded so `<video>` seeking still works.
 
-## F-05 — in progress, gated behind a private store
+## F-05 — how it was actually fixed
 
 **The blocker, verified 2026-08-11.** A Vercel Blob store's access mode is fixed
 **at store creation** (`vercel blob create-store --access public|private`); there
@@ -128,3 +128,39 @@ session and F-06 asks for HttpOnly/Secure flags; neither mentions `maxAge`,
 30 days, or an idle window. The 8-hour sliding session in `auth.js:35` was a
 judgment call made on 2026-07-01, not a security requirement — it can be tuned
 without reopening a finding.
+
+
+## F-05 — final state (2026-08-11)
+
+**Done.** `learning-agent-private` (`store_fEhggtHfo7UNJxrz`, Access: Private) is
+connected to the project with prefix `PRIVATE`, giving `PRIVATE_READ_WRITE_TOKEN`.
+Note Vercel's connect flow **replaces** `BLOB` in the default names rather than
+prepending, so prefix `PRIVATE` yields `PRIVATE_READ_WRITE_TOKEN`, not
+`PRIVATE_BLOB_READ_WRITE_TOKEN`.
+
+All three screen recordings (18.6MB) were copied to the private store, verified
+byte-for-byte, confirmed playing and seeking in the admin UI, and the public
+originals deleted. Their old URLs now return 404.
+
+Verified against the live store before deploying — the step the first attempt
+skipped: private write OK, authenticated read OK, **anonymous fetch of the blob
+URL → 403**, range read returns `content-range`.
+
+**Two bugs that only showed up in that testing**, both fixed in `72aef56`:
+- Copies land as `application/octet-stream` (`list()` doesn't carry a content
+  type through) and `<video>` refuses to play that. Type is now derived from the
+  extension on both copy and serve.
+- The SDK reports `statusCode` 200 even when storage satisfies a Range request.
+  A 200 carrying a partial body breaks seeking. The proxy now returns 206 when a
+  range was requested and `content-range` came back.
+
+**What is still public:** ~52KB of JSON — `users/` (6 files, one user),
+`audit/` (130 entries), `leaderboard/cache.json`, all last written 2026-07-14/15.
+Supabase owns the live path for this data. `scripts/migrate-blobs-private.mjs`
+will move it, but deleting it may be the better answer — confirm nothing reads it
+first. Unexplained and worth a look on its own: those blob writes stopped a month
+ago even though the code still calls `saveUserData`.
+
+**Rollback**, if media ever misbehaves: unset `PRIVATE_READ_WRITE_TOKEN` in
+Vercel. No redeploy needed — but note the public originals are now deleted, so
+media would 404 until the token is restored.
