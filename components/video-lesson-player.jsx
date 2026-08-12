@@ -34,6 +34,13 @@ function splitIntoLines(text) {
 // heavier formats are minutes, not seconds. `tau` shapes the script-phase
 // progress bar so it approaches full as the script lands (the audio phase then
 // shows its own real per-scene bar).
+// Just past /api/lesson/quiz's own maxDuration (120s). The client abort must
+// outlast the server or it kills a request that was still going to answer.
+const QUIZ_TIMEOUT_MS = 125000;
+// How long the wrap-up waits before offering a way out. Short, because the
+// learner has already finished the lesson at this point — the check is a bonus.
+const WRAP_SKIP_AFTER = 12;
+
 const NARRATED_LOAD = {
   quick_tip:     { estimate: '20-40 seconds', tau: 10 },
   standard:      { estimate: '45-90 seconds', tau: 22 },
@@ -89,6 +96,10 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
   // between scenes. The start screen waits until this is done.
   const [prepared, setPrepared] = useState(false);
   const [prepProgress, setPrepProgress] = useState({ done: 0, total: 0 });
+  const [wrapElapsed, setWrapElapsed] = useState(0);
+  // Guards the one-shot wrap-up run and holds its request for unmount teardown.
+  const quizStartedRef = useRef(false);
+  const quizAbortRef = useRef(null);
   // Seconds spent loading, for the progress bar on the loading screen (matches
   // the read-lesson loader). Ticks until the lesson is prepped or started.
   const [elapsed, setElapsed] = useState(0);
@@ -276,8 +287,24 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     onComplete?.({ correctness, quizCorrect });
   }, [onComplete]);
 
+  // THE bug behind feedback #167, and it fired on every narrated lesson longer
+  // than a quick tip — not just Project Quest.
+  //
+  // This effect kicked off the wrap-up quiz and returned `() => { cancelled = true }`
+  // as its cleanup, with `phase` in its own dependency array. Its first act is
+  // setPhase('quiz-loading'), which changes `phase`, which re-runs the effect,
+  // which runs the previous cleanup — flipping `cancelled` to true on the very
+  // run that owns the in-flight request. The response then always landed in
+  // `if (cancelled) return;` and `phase` stayed 'quiz-loading' forever. The
+  // learner sat on "Wrapping up" at the end of a lesson they'd already finished.
+  //
+  // So the run is guarded by a ref instead of by the phase transition, and the
+  // request is torn down when the PLAYER goes away rather than when the phase
+  // moves. Nothing here may cancel on a re-render.
   useEffect(() => {
     if (!finished || phase !== 'narrating') return;
+    if (quizStartedRef.current) return;
+    quizStartedRef.current = true;
     // Quick tips are completion-only — full XP, no quiz (matches read mode).
     if (format === 'quick_tip') {
       award(1, 0);
@@ -287,20 +314,28 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     // Longer formats: short checkpoint quiz grounded in the narration, so XP
     // scales by correctness exactly like the read lesson. If the quiz can't be
     // built, never block completion — award full credit.
-    let cancelled = false;
     setPhase('quiz-loading');
+    setWrapElapsed(0);
     const messages = scenes.map((s) => ({
       role: 'assistant',
       content: JSON.stringify({ slideTitle: s.title, message: s.narration, keyPoints: s.keyPoints }),
     }));
+    // The fetch also had no timeout, so even with the cancel bug fixed a request
+    // that never settled would hang the same screen. The abort sits just past the
+    // route's own maxDuration of 120s — long enough that a still-working request
+    // is never killed early — and the catch treats any failure as full credit.
+    const controller = new AbortController();
+    quizAbortRef.current = controller;
+    const timer = setTimeout(() => controller.abort(), QUIZ_TIMEOUT_MS);
     fetch('/api/lesson/quiz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic, format, messages }),
+      signal: controller.signal,
     })
       .then((r) => r.json())
       .then((data) => {
-        if (cancelled) return;
+        clearTimeout(timer);
         if (Array.isArray(data.questions) && data.questions.length > 0) {
           setQuizQuestions(data.questions);
           setPhase('quiz');
@@ -310,12 +345,30 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
         }
       })
       .catch(() => {
-        if (cancelled) return;
+        clearTimeout(timer);
         award(1, 0);
         setPhase('done');
       });
-    return () => { cancelled = true; };
   }, [finished, phase, format, topic, scenes, award]);
+
+  // Unmount only — never on a phase change. See the note above.
+  useEffect(() => () => quizAbortRef.current?.abort(), []);
+
+  // Finish now, skipping the check. Same outcome the timeout and error paths
+  // give — full credit — surfaced as a button so nobody has to wait out the
+  // abort just to leave a lesson they've already completed.
+  const skipWrapUp = useCallback(() => {
+    award(1, 0);
+    setPhase('done');
+  }, [award]);
+
+  // Counts the wrap-up wait so the screen shows progress rather than an
+  // indefinite spinner.
+  useEffect(() => {
+    if (phase !== 'quiz-loading') return;
+    const id = setInterval(() => setWrapElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [phase]);
 
   const handleQuizFinish = useCallback((correctness, stats) => {
     award(correctness, stats?.correctCount || 0);
@@ -391,6 +444,9 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
     setSceneIdx(0);
     setIsPlaying(true);
     startedSpeakingRef.current = false;
+    // Re-arm the wrap-up, or a replay would run to the end and stop at the last
+    // scene without ever building its check.
+    quizStartedRef.current = false;
   }, [stop]);
 
   const handleClose = useCallback(() => {
@@ -583,6 +639,29 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
                   <p className="inline-flex items-center gap-2 text-slate-300 text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" /> Nice work — building a quick check to lock it in…
                   </p>
+                  {/* A counter and a bar, so a slow wrap-up reads as progress
+                      instead of a hang (feedback #167). */}
+                  <div className="max-w-xs mx-auto mt-4">
+                    <div className="h-1.5 rounded-full overflow-hidden bg-slate-700">
+                      <div
+                        className="h-full rounded-full bg-brand transition-all duration-1000 ease-out"
+                        style={{ width: `${Math.min(95, Math.round(100 * (1 - Math.exp(-wrapElapsed / 8))))}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      {fmtTime(wrapElapsed)} · usually takes about 10 seconds
+                    </p>
+                  </div>
+                  {/* Your XP is already safe either way — skipping here awards
+                      full credit, exactly like a failed or timed-out build. */}
+                  {wrapElapsed >= WRAP_SKIP_AFTER && (
+                    <button
+                      onClick={skipWrapUp}
+                      className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 transition-all"
+                    >
+                      Taking too long? Skip the check and finish
+                    </button>
+                  )}
                 </div>
               ) : showDone ? (
                 <div className="text-center">
