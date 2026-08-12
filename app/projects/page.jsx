@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
-import { Briefcase, ListChecks, ChevronRight } from 'lucide-react';
+import { Briefcase, ListChecks, ChevronRight, ArrowLeft } from 'lucide-react';
 import { getCurrentLearner } from '@/lib/data';
 import ProjectsManager from '@/components/projects-manager';
 
@@ -29,6 +29,17 @@ async function ProjectsPageInner() {
       />
 
       <main className="max-w-4xl mx-auto px-6 pt-6 pb-10">
+        {/* Projects is reached from the profile menu and from lessons, and had no
+            way back except the browser control (feedback #197). Same treatment the
+            other profile-area pages use. Points home rather than using history,
+            so it behaves the same however you arrived. */}
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-brand mb-4 hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to home
+        </Link>
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Tell the AI Learning Coach about your real work projects, and every lesson will be tailored
