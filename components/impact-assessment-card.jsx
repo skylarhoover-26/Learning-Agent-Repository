@@ -40,8 +40,8 @@ export default function ImpactAssessmentCard() {
             Your AI Impact assessment
           </h3>
           <p className="text-sm text-slate-600 dark:text-slate-400 leading-snug">
-            Four questions on how AI is changing your work, your team, and your results. A few minutes,
-            and it&apos;s what your competency scores are built from.
+            Four questions on how AI is changing your work, your team, and your results.
+            Nothing to write &mdash; pick the option that sounds like you and you&apos;re done.
           </p>
         </div>
         <ArrowRight className="w-5 h-5 text-brand shrink-0 mt-3 transition-transform group-hover:translate-x-0.5" />

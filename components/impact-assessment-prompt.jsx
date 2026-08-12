@@ -28,7 +28,7 @@ const INTERVAL_MS = IMPACT_ASSESSMENT_INTERVAL_WEEKS * 7 * 24 * 60 * 60 * 1000;
 const COPY = {
   first: {
     title: 'Ready for the second half?',
-    body: `You've had a few days on the platform. Now for the four AI Impact questions — they take a few minutes and give you (and your manager) a real read on where your AI competencies sit.`,
+    body: `You've had a few days on the platform. Now for the four AI Impact questions — four taps, nothing to write, and they're what you and your manager see for your AI competencies.`,
     cta: 'Start now',
   },
   refresh: {
