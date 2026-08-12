@@ -87,12 +87,24 @@ function SectionLabel({ children }) {
 // Hover description for a drawer nav row — mirrors prod's ItemDescPopup so each
 // section explains what it does, but styled to the cinematic frame. Appears
 // after a short hover delay and disappears on click/navigation.
+//
+// Testers reported these as unreadable, "laying transparently" over the menu
+// (feedback #152 and #154). Two causes, and the first one is the real one:
+//
+// 1. STACKING. The row is `.cine-lift`, whose hover state sets a transform — and a
+//    transform creates a stacking context. That trapped this tip's z-index inside
+//    its own row, so the NEXT row down (positioned, later in the DOM) painted right
+//    over it and you read both texts at once. The row itself now takes a z-index on
+//    hover (see NavRow), which lifts the whole context above its siblings. Raising
+//    the number here alone could never have fixed it.
+// 2. The background was 3% translucent, which on a busy drawer is enough to muddy
+//    small text. It is fully opaque now.
 function NavDescTip({ text }) {
   if (!text) return null;
   return (
     <span
-      className="pointer-events-none absolute left-11 right-2 top-[calc(100%-0.15rem)] z-20 rounded-lg text-white text-xs leading-snug px-3 py-2 shadow-xl opacity-0 invisible transition-opacity duration-150 group-hover:opacity-100 group-hover:visible group-hover:delay-500"
-      style={{ background: 'linear-gradient(135deg, rgba(6,16,38,.97), rgba(12,32,66,.97))', border: '1px solid rgba(255,255,255,.12)' }}
+      className="pointer-events-none absolute left-11 right-2 top-[calc(100%-0.15rem)] z-50 rounded-lg text-white text-xs leading-snug px-3 py-2 shadow-xl opacity-0 invisible transition-opacity duration-150 group-hover:opacity-100 group-hover:visible group-hover:delay-500"
+      style={{ background: 'linear-gradient(135deg, rgb(6,16,38), rgb(12,32,66))', border: '1px solid rgba(255,255,255,.18)' }}
     >
       {text}
     </span>
@@ -121,7 +133,10 @@ function Drawer({ open, onClose }) {
         onClick={soon ? (e) => e.preventDefault() : undefined}
         aria-disabled={soon}
         aria-current={active ? 'page' : undefined}
-        className="cine-lift group relative flex items-center gap-3 mx-2 px-3 py-1.5 rounded-xl"
+        /* hover:z-30 is what makes the description readable. See NavDescTip: this
+           row builds a stacking context the moment cine-lift's transform kicks in,
+           so without a z-index here the row below paints over the tip. */
+        className="cine-lift group relative hover:z-30 flex items-center gap-3 mx-2 px-3 py-1.5 rounded-xl"
         style={{
           background: active ? 'linear-gradient(135deg,rgba(59,148,255,.18),rgba(59,148,255,.06))' : 'transparent',
           color: soon ? 'var(--ink-dim)' : 'var(--ink)',
@@ -162,8 +177,15 @@ function Drawer({ open, onClose }) {
             rendering fault. Putting Home on the same line reclaims it.
             No horizontal padding here on purpose: NavRow brings its own mx-2, so
             adding more would double the inset and misalign Home from the section
-            items below it. Sticky so both stay reachable while scrolling. */}
-        <div className="sticky top-0 z-10 flex items-center gap-1 pt-2 pb-1" style={{ background: 'var(--navbg)' }}>
+            items below it. Sticky so both stay reachable while scrolling.
+
+            The background is --popover, not --navbg. --navbg is translucent by
+            design (.82 light, .55 dark) which is right for the drawer sitting over
+            the page, but wrong for a sticky row that has to HIDE the menu items
+            scrolling underneath it — they showed straight through Home and read as
+            overlapping buttons (feedback #150). --popover is the opaque surface the
+            palette already keeps for exactly this, in every theme. */}
+        <div className="sticky top-0 z-10 flex items-center gap-1 pt-2 pb-1" style={{ background: 'var(--popover)' }}>
           <div className="flex-1 min-w-0">
             <NavRow item={{ href: '/', icon: Home, label: 'Home' }} />
           </div>
