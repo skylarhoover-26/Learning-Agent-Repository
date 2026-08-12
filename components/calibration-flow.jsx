@@ -3,8 +3,11 @@
 // The assessment, in two sections that no longer run back to back.
 //
 //   'skills'  intro → admin-authored quiz questions → graded competency scores
-//   'impact'  intro → 4 AI-impact questions (self-claim + written example) → AI
-//             synthesizes the competency scores + "why" → results
+//   'impact'  intro → 4 AI-impact questions → self-reported levels → results
+//
+// Only 'skills' is graded. The impact half used to pair each pick with a written
+// example that an AI weighed against the rubric; the boxes are gone, so the pick
+// is the level and it is labelled self-reported everywhere it surfaces.
 //
 // The onboarding gate (CalibrationGate) runs ONLY 'skills'. The old flow ran all
 // ~14 screens before anyone could enter the platform, which was the single most
@@ -56,9 +59,8 @@ export default function CalibrationFlow({
   const [questions, setQuestions] = useState(doSkills ? null : []); // null = still loading
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
-  // Per competency: { value, self, label, example }
+  // Per dimension: { value, self, label }
   const [impactAnswers, setImpactAnswers] = useState({});
-  const [scoring, setScoring] = useState(false);   // AI is synthesizing impact scores
   const [impactDetail, setImpactDetail] = useState(null);
   const [completed, setCompleted] = useState(false);
 
@@ -126,10 +128,6 @@ export default function CalibrationFlow({
       [dim]: { ...prev[dim], value: option.value, self: option.self, label: option.label },
     }));
   }
-  function setImpactExample(dim, text) {
-    setImpactAnswers(prev => ({ ...prev, [dim]: { ...prev[dim], example: text } }));
-  }
-
   // Skills-only finish: persist the graded scores and land on the results.
   function finishSkills() {
     try {
@@ -141,37 +139,19 @@ export default function CalibrationFlow({
     setCompleted(true);
   }
 
-  // After the last impact question, synthesize the competency scores + why.
-  async function runScoring() {
-    setScoring(true);
-    const entries = IMPACT_QUESTIONS.map(q => {
-      const a = impactAnswers[q.dimension] || {};
-      return { dimension: q.dimension, selfLevel: a.self ?? 3, mcLabel: a.label || '', exampleText: (a.example || '').trim() };
-    });
-    // Only meaningful when the quiz ran in the same session; on the deferred
-    // impact-only run there are no fresh skill scores to summarize.
-    const calibrationSummary = doSkills
-      ? 'calibration skill scores (0-100): ' +
-        measuredKeys.map((k) => `${k} ${Math.round((skills[k] ?? 0) * 100)}`).join(', ')
-      : '';
-
-    let detail;
-    try {
-      const res = await fetch('/api/impact-score', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries, calibrationSummary }),
-      });
-      const data = await res.json();
-      const scores = data?.scores || {};
-      detail = Object.fromEntries(entries.map(e => [
-        e.dimension,
-        { self: e.selfLevel, measured: scores[e.dimension]?.measured ?? e.selfLevel, why: scores[e.dimension]?.why || '' },
-      ]));
-    } catch (error) {
-      console.error('Impact scoring failed, using self-claim:', error);
-      detail = Object.fromEntries(entries.map(e => [e.dimension, { self: e.selfLevel, measured: e.selfLevel, why: '' }]));
-    }
+  // After the last impact question: the option someone picked IS their level.
+  //
+  // This used to POST to /api/impact-score so a model could weigh a written
+  // example against the rubric and produce a separate "measured" number. The
+  // example boxes are gone, so that call had nothing left to read — it would
+  // only have echoed the claim back, slowly. `self` and `measured` are now the
+  // same value, and both are kept so saved runs stay the shape every consumer
+  // (manager dashboard, /my-impact, history) already expects.
+  function finishImpact() {
+    const detail = Object.fromEntries(IMPACT_QUESTIONS.map((q) => {
+      const level = impactAnswers[q.dimension]?.self ?? 0;
+      return [q.dimension, { self: level, measured: level, why: '' }];
+    }));
 
     try {
       if (doSkills) saveCalibrationData({ skills, measuredKeys, answers });
@@ -181,7 +161,6 @@ export default function CalibrationFlow({
       console.error('Failed to save assessment:', error);
     }
     setImpactDetail(detail);
-    setScoring(false);
     setCompleted(true);
   }
 
@@ -199,7 +178,7 @@ export default function CalibrationFlow({
     if (isLastQuiz) { finishSkills(); return; }
     if (isQuiz && step === nQuiz && doImpact) { setStep(IMPACT_INTRO_STEP); return; }
     if (isImpactIntro) { setStep(FIRST_IMPACT_STEP); return; }
-    if (isLastImpact) { runScoring(); return; }
+    if (isLastImpact) { finishImpact(); return; }
     setStep(step + 1);
   }
 
@@ -273,11 +252,9 @@ export default function CalibrationFlow({
         </div>
       </div>
 
+      {/* No "scoring…" interstitial any more: the impact half is a self-report,
+          so finishing is instant rather than a wait on an LLM round-trip. */}
       <main className="max-w-2xl mx-auto px-6 py-10">
-        {scoring ? (
-          <ScoringStep />
-        ) : (
-          <>
             <div key={step} className="animate-fade-in">
               {isIntro && <IntroStep onNext={() => setStep(1)} questionCount={nQuiz} />}
 
@@ -301,9 +278,7 @@ export default function CalibrationFlow({
                 <ImpactQuestionCard
                   question={currentImpact}
                   selectedValue={impactAnswers[currentImpact.dimension]?.value}
-                  exampleText={impactAnswers[currentImpact.dimension]?.example}
                   onSelect={(option) => selectImpact(currentImpact.dimension, option)}
-                  onExampleChange={(text) => setImpactExample(currentImpact.dimension, text)}
                 />
               )}
             </div>
@@ -337,8 +312,6 @@ export default function CalibrationFlow({
                 </button>
               </div>
             )}
-          </>
-        )}
       </main>
     </div>
   );
@@ -350,16 +323,6 @@ function LoadingStep() {
       <Loader2 className="w-8 h-8 text-brand animate-spin mx-auto mb-4" />
       <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">Getting your questions ready…</h2>
       <p className="text-sm text-slate-500 dark:text-slate-400">One moment.</p>
-    </div>
-  );
-}
-
-function ScoringStep() {
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 text-center animate-fade-in">
-      <Loader2 className="w-8 h-8 text-brand animate-spin mx-auto mb-4" />
-      <h2 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">Scoring your AI impact…</h2>
-      <p className="text-sm text-slate-500 dark:text-slate-400">Weighing your answers against the AI competency scale.</p>
     </div>
   );
 }

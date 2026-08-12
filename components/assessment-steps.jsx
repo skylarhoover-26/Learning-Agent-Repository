@@ -89,10 +89,13 @@ export function IntroStep({ onNext, questionCount = 5 }) {
 }
 
 // --- Impact intro ----------------------------------------------------------
-// Sits between the skill self-rating and the four AI-impact questions. Those
-// questions are scored on BOTH halves (the option picked + the written example),
-// so this card sets that expectation up front. Without it people treat the
-// example box as optional and then feel penalized by the score (feedback #84).
+// Sits in front of the four AI-impact questions.
+//
+// This used to promise that a written example would be weighed against the pick
+// ("both halves get scored"), and warn that blank boxes would cost you. The
+// boxes are gone, so that copy would now be a straight lie. It says what's
+// actually true instead: this half is self-reported, it's quick, and honesty is
+// what makes it useful.
 export function ImpactIntroStep() {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
@@ -102,24 +105,19 @@ export function ImpactIntroStep() {
           AI Impact &middot; 4 questions
         </div>
         <h2 className="text-2xl font-bold tracking-tight mb-2">
-          These last four are scored a little differently.
+          Four quick ones, in your own words.
         </h2>
       </div>
       <div className="p-8 space-y-4">
         <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-          Each one pairs a multiple choice answer with room for examples, and
-          {' '}<strong>both halves get scored.</strong> Your pick tells us where you think you are.
-          Your examples are the proof we weigh it against.
+          These four aren&apos;t a test and there&apos;s nothing to write. Pick the option that
+          sounds most like you right now &mdash; <strong>where you actually are, not where you
+          think you should be.</strong>
         </p>
         <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-          Give one or two real examples with enough detail to show what actually changed: the task,
-          the tool, and the result.{' '}
-          {/* Bolded per feedback #84: learners were leaving example boxes empty and then
-              being surprised by a low score in that category. This is the consequence,
-              so it has to carry the same weight as "both halves get scored" above. */}
-          <strong>
-            If you have blank answers, it&apos;ll negatively impact your score.
-          </strong>
+          This half is self-reported, and it&apos;s shown that way to you and your manager.
+          It&apos;s a snapshot you&apos;ll retake as things change, so an honest low answer today
+          is worth far more than a generous one.
         </p>
       </div>
     </div>
@@ -278,8 +276,12 @@ export function GradedRatingStep({ skills, measuredKeys }) {
   );
 }
 
-// --- Impact question (multiple choice = self-claim, + optional example) ------
-export function ImpactQuestionCard({ question, selectedValue, exampleText, onSelect, onExampleChange }) {
+// --- Impact question (multiple choice; the pick IS the score) ---------------
+// The written-example box that used to sit under these is gone. It made every
+// recalibration a four-essay job, re-typing evidence already given, and the
+// friction bought us little: the pick is now the score, plainly labelled as
+// self-reported wherever it appears.
+export function ImpactQuestionCard({ question, selectedValue, onSelect }) {
   const Icon = DIMENSION_ICONS[question.dimension];
   const label = DIMENSION_LABELS[question.dimension];
   return (
@@ -308,16 +310,6 @@ export function ImpactQuestionCard({ question, selectedValue, exampleText, onSel
             </button>
           );
         })}
-      </div>
-      <div className="max-w-lg mx-auto mt-5">
-        <label className="block text-sm font-medium text-ink dark:text-slate-200 mb-1.5">{question.example}</label>
-        <textarea
-          value={exampleText || ''}
-          onChange={e => onExampleChange(e.target.value)}
-          rows={3}
-          placeholder="Be specific: the task, the tool, and what changed."
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm leading-relaxed resize-none"
-        />
       </div>
     </div>
   );
@@ -401,8 +393,14 @@ export function SkillResults({ skills, measuredKeys }) {
   );
 }
 
-// --- Impact results (self vs measured + why) --------------------------------
+// --- Impact results (self-reported) -----------------------------------------
 // `detail` = { personal: { self, measured, why }, team, org, development }.
+//
+// `measured` is kept as the field name because every consumer and every saved
+// run already keys off it — but it is now simply what the person picked. There
+// is no second number to compare against, so the two-bar legend and the
+// "you rated yourself N" gap text are gone. Runs saved back when an AI graded a
+// written example still carry their `why`, and those still expand.
 export function ImpactResults({ detail, previousScores = null }) {
   const dimensions = ['personal', 'team', 'org', 'development'];
   const measuredMap = Object.fromEntries(dimensions.map(d => [d, detail?.[d]?.measured || 0]));
@@ -417,10 +415,9 @@ export function ImpactResults({ detail, previousScores = null }) {
             Overall: {overall.level} Impact
           </span>
         </div>
-        <div className="flex justify-end gap-3 text-[10px] text-slate-500 dark:text-slate-400 mb-3">
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand" /> Measured</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand/30" /> You rated yourself</span>
-        </div>
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400 mb-5">
+          Self-reported &mdash; this is what you told us, not a graded score.
+        </p>
         <div className="space-y-4">
           {dimensions.map(dim => (
             <ImpactRow key={dim} dim={dim} d={detail?.[dim] || {}} prev={previousScores?.[dim]} />
@@ -435,12 +432,8 @@ function ImpactRow({ dim, d, prev }) {
   const [open, setOpen] = useState(false);
   const Icon = DIMENSION_ICONS[dim];
   const measured = d.measured || 0;
-  // Self-claim now tops out at 4 (5 is earned via the measured score). Normalize
-  // any legacy self of 5 from pre-fix runs so it never displays as "self-rated 5".
-  const self = (d.self === 0 || d.self) ? Math.min(4, d.self) : null;
   const label = SCORE_LABELS[measured] || 'Not Assessed';
   const delta = (prev !== undefined && prev !== null) ? measured - prev : null;
-  const gap = self !== null ? measured - self : null;
 
   return (
     <div className="p-4 rounded-xl bg-bg-warm dark:bg-slate-900 border border-slate-100 dark:border-slate-700">
@@ -457,16 +450,12 @@ function ImpactRow({ dim, d, prev }) {
           </div>
           <div className="flex items-center gap-3">
             <div className="relative flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              {self !== null && <div className="absolute h-full bg-brand/30 rounded-full" style={{ width: `${(self / 5) * 100}%` }} />}
               <div className="absolute h-full bg-brand rounded-full transition-all duration-700" style={{ width: `${(measured / 5) * 100}%` }} />
             </div>
             <span className="text-sm font-bold text-ink dark:text-slate-200 w-6 text-right">{measured}</span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             {label}
-            {gap !== null && gap !== 0 && (
-              <span className="text-slate-400"> · you rated yourself {self} ({gap > 0 ? `measured ${gap} higher` : `${Math.abs(gap)} higher than measured`})</span>
-            )}
           </p>
         </div>
       </div>

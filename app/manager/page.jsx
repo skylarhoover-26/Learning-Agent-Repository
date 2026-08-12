@@ -268,22 +268,26 @@ const CAL_SKILLS = [
   { key: 'data', name: 'Data Literacy' },
 ];
 
-// Expanded per-report panel: the AI "why" behind each competency score, the
-// month-over-month trend, and the skill-calibration insights (measured mastery
-// vs self-rating) so the manager sees the fuller picture.
+// Expanded per-report panel: the AI Impact levels, the month-over-month trend,
+// and the graded skill-calibration scores.
+//
+// The two halves are NOT the same kind of number and the panel has to say so.
+// Skill calibration is measured — we grade the placement quiz. AI Impact is what
+// the person told us: it used to be an AI reading a written example against the
+// rubric, but the example boxes are gone, so it's a self-report and is labelled
+// that way. Runs from before the change still carry their "why", which is why
+// that block still renders when present.
 function WhyTrendPanel({ detail, history, calibration }) {
   const dims = ['personal', 'team', 'org', 'development'];
   const prev = Array.isArray(history) && history.length >= 2 ? history[history.length - 2]?.scores : null;
   return (
     <div className="space-y-4">
     <div>
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">AI Impact — why &amp; trend</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">AI Impact — self-reported</p>
     <div className="grid sm:grid-cols-2 gap-3">
       {dims.map(dim => {
         const d = (detail && detail[dim]) || {};
         const measured = d.measured || 0;
-        // Self-claim tops out at 4 now; normalize legacy 5s from pre-fix runs.
-        const self = (d.self === 0 || d.self) ? Math.min(4, d.self) : null;
         const prevScore = prev ? prev[dim] : null;
         const delta = (prevScore !== null && prevScore !== undefined && measured) ? measured - prevScore : null;
         return (
@@ -301,7 +305,6 @@ function WhyTrendPanel({ detail, history, calibration }) {
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">
               {measured ? LEVEL_NAMES[measured] : 'Not assessed'}
-              {self !== null && self !== measured && <span className="text-slate-400"> · self-rated {self}</span>}
             </p>
             {d.why && <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{d.why}</p>}
           </div>
