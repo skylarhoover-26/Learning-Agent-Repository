@@ -317,7 +317,10 @@ function WhyTrendPanel({ detail, history, calibration }) {
             still carry a self number, and the rows below still show it. */}
         <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">AI Calibration — measured skills</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {CAL_SKILLS.map(({ key, name }) => {
+          {/* Only competencies the quiz actually measured. A key that's absent
+              was never asked about, and rendering it as 0 reads as "scored zero"
+              rather than "not assessed". */}
+          {CAL_SKILLS.filter(({ key }) => calibration.skills[key] !== undefined).map(({ key, name }) => {
             const measured = Math.round((calibration.skills[key] ?? 0) * 100);
             const self = calibration.selfRating && calibration.selfRating[key] != null
               ? Math.round(calibration.selfRating[key] * 100) : null;
