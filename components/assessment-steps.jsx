@@ -6,12 +6,20 @@
 
 import { useState } from 'react';
 import {
-  Crosshair, Check, ArrowRight, Info,
+  Crosshair, Check, ArrowRight, X,
   Shield, MessageSquare, Brain, Bot, Database, Wand2, Cpu,
   Award, TrendingUp, User, Users, Building2,
 } from 'lucide-react';
 import { SKILL_LABELS, SKILL_KEYS, SKILL_DEFINITIONS } from '@/lib/calibration-store';
 import { SCORE_LABELS, DIMENSION_LABELS, getOverallLevel } from '@/lib/scoring-store';
+
+// The five rungs a measured competency score maps onto. Shared by the graded
+// results step and the results card so one score never gets two different names.
+const RATING_LABELS = ['Beginner', 'Comfortable', 'Confident', 'Strong', 'Expert'];
+
+export function ratingLabel(value) {
+  return RATING_LABELS[Math.min(4, Math.max(0, Math.floor((value || 0) * 5)))];
+}
 
 export const SKILL_ICONS = {
   privacy: Shield,
@@ -23,59 +31,17 @@ export const SKILL_ICONS = {
   models: Cpu,
 };
 
-// Small (i) affordance that reveals plain-language help text on hover or keyboard
-// focus. Reused for competency definitions and for the self-vs-measured verdict.
-// `align` sets which edge the bubble anchors to: 'right' (default) extends the
-// tooltip LEFT from the icon — correct for icons near the RIGHT edge (the verdict
-// badge). 'left' extends it RIGHT — correct for icons near the LEFT edge (the
-// competency labels), which otherwise pushed the bubble off the card and clipped it.
-function InfoTip({ text, label = 'More info', align = 'right' }) {
+// A competency's plain-language definition, as small grey text directly under the
+// name. This used to be an (i) tooltip; people either never found it or had to
+// hover to read something they needed while answering (feedback #205).
+function CompetencyDefinition({ skillKey, className = '' }) {
+  const text = SKILL_DEFINITIONS[skillKey];
   if (!text) return null;
   return (
-    <span className="group relative inline-flex items-center">
-      <Info
-        className="w-3.5 h-3.5 text-slate-400 hover:text-brand focus:text-brand cursor-help outline-none"
-        tabIndex={0}
-        aria-label={label}
-      />
-      <span
-        role="tooltip"
-        className={`pointer-events-none absolute ${align === 'left' ? 'left-0' : 'right-0'} top-full z-30 mt-2 w-64 max-w-[min(16rem,calc(100vw-2rem))] rounded-lg bg-slate-900 dark:bg-slate-700 px-3 py-2 text-xs font-normal leading-snug text-white text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100`}
-      >
-        {text}
-      </span>
-    </span>
+    <p className={`text-xs text-slate-500 dark:text-slate-400 leading-snug ${className}`}>
+      {text}
+    </p>
   );
-}
-
-// Definition tooltip for a competency (e.g. what "AI Evaluation" covers), shown
-// next to each skill so people know what they mean before rating themselves.
-function SkillInfo({ skillKey }) {
-  return <InfoTip text={SKILL_DEFINITIONS[skillKey]} label={`What ${SKILL_LABELS[skillKey]} means`} align="left" />;
-}
-
-// The self-vs-measured verdict for one competency, plus a plain-language note on
-// what it means going forward (revealed in the badge's (i) tooltip).
-function calibrationStatus(delta) {
-  if (Math.abs(delta) < 10) {
-    return {
-      label: 'Calibrated',
-      tone: 'text-green-600',
-      explain: 'Your self-rating closely matched how you actually did on the scenarios — nice self-awareness. Your lessons start right where you expect.',
-    };
-  }
-  if (delta > 0) {
-    return {
-      label: `Overrated by ${delta}`,
-      tone: 'text-amber-600',
-      explain: `You rated yourself ${delta} points higher than your scenario answers showed. Totally normal — we'll make sure the fundamentals are solid before speeding up, so nothing feels shaky.`,
-    };
-  }
-  return {
-    label: `Underrated by ${Math.abs(delta)}`,
-    tone: 'text-blue-600',
-    explain: `You did ${Math.abs(delta)} points better than you gave yourself credit for. We'll pitch your lessons a little higher so they stay challenging instead of feeling too basic.`,
-  };
 }
 
 const DIMENSION_ICONS = {
@@ -86,23 +52,29 @@ const DIMENSION_ICONS = {
 };
 
 // --- Intro (Brian's "placement" card) -------------------------------------
-export function IntroStep({ onNext }) {
+export function IntroStep({ onNext, questionCount = 5 }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
       <div className="bg-gradient-to-br from-brand to-brand-700 text-white p-8 rounded-t-2xl">
         <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-pill mb-3">
           <Crosshair className="w-3.5 h-3.5" />
-          Placement &middot; ~5 minutes
+          Placement &middot; {questionCount} question{questionCount === 1 ? '' : 's'}
         </div>
         <h2 className="text-2xl font-bold tracking-tight mb-2">
           Let&apos;s find your starting point.
         </h2>
       </div>
       <div className="p-8">
-        <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-          A few quick questions about how you use AI today.
+        <p className="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+          {questionCount} situations you might actually run into.
           {' '}<strong>Answer honestly.</strong> That&apos;s how you get the most accurate read on
           where you are, and lessons that actually fit.
+        </p>
+        {/* Two things people asked for after the first round: tell me if I got it
+            right, and don't make me grade myself (feedback #204, #207). */}
+        <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+          You&apos;ll see the best answer and why straight after each one, and we&apos;ll score you
+          at the end — no rating yourself.
         </p>
         <button
           onClick={onNext}
@@ -154,93 +126,146 @@ export function ImpactIntroStep() {
   );
 }
 
-// --- Skill scenario --------------------------------------------------------
-export function ScenarioStep({ scenario, questionNumber, totalQuestions, selectedAnswer, onAnswer }) {
-  const Icon = SKILL_ICONS[scenario.primary];
-  const label = SKILL_LABELS[scenario.primary];
+// --- Quiz question ---------------------------------------------------------
+// Answering is a one-shot commit: pick an option and the best answer is revealed
+// immediately with a short "why", after which the options lock. That directly
+// answers "doesn't tell you if it's right or wrong" (feedback #204), and locking
+// is what keeps the score meaningful — otherwise the reveal just shows you which
+// button to press.
+export function QuizQuestionStep({ question, questionNumber, totalQuestions, selectedAnswer, onAnswer }) {
+  const Icon = SKILL_ICONS[question.competency];
+  const label = SKILL_LABELS[question.competency];
+  const revealed = selectedAnswer !== undefined && selectedAnswer !== null;
+  const gotItRight = revealed && selectedAnswer === question.best;
 
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-pill bg-brand-50 text-brand-700 text-sm font-medium">
           <Icon className="w-4 h-4" />
-          Scenario {questionNumber} of {totalQuestions} &middot; {label}
+          Question {questionNumber} of {totalQuestions} &middot; {label}
         </span>
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 mb-6">
-        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{scenario.setup}</p>
-      </div>
+      {question.setup && (
+        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 mb-6">
+          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{question.setup}</p>
+        </div>
+      )}
 
-      <h3 className="text-xl font-bold text-ink dark:text-slate-200 mb-4 tracking-tight">{scenario.prompt}</h3>
+      <h3 className="text-xl font-bold text-ink dark:text-slate-200 mb-4 tracking-tight">{question.prompt}</h3>
 
       <div className="space-y-3">
-        {scenario.answers.map((answer, i) => {
+        {question.answers.map((answer, i) => {
           const isSelected = selectedAnswer === i;
+          const isBest = i === question.best;
+          // Before answering: plain options, one highlighted on hover.
+          // After answering: the best answer goes green, a wrong pick goes amber,
+          // and everything else fades back so the eye lands on those two.
+          let tone = 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50';
+          if (revealed) {
+            if (isBest) {
+              tone = 'bg-green-50 dark:bg-green-500/10 text-ink dark:text-slate-200 border-green-500 dark:border-green-500/50 ring-1 ring-green-500';
+            } else if (isSelected) {
+              tone = 'bg-amber-50 dark:bg-amber-500/10 text-ink dark:text-slate-200 border-amber-500 dark:border-amber-500/50';
+            } else {
+              tone = 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700';
+            }
+          }
+
           return (
             <button
               key={i}
-              onClick={() => onAnswer(i)}
-              className={`w-full flex items-start gap-3 px-5 py-4 rounded-xl border text-left transition-all ${
-                isSelected
-                  ? 'bg-brand text-white border-brand shadow-sm'
-                  : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
-              }`}
+              onClick={() => !revealed && onAnswer(i)}
+              disabled={revealed}
+              aria-pressed={isSelected}
+              className={`w-full flex items-start gap-3 px-5 py-4 rounded-xl border text-left transition-all ${tone} ${revealed ? 'cursor-default' : ''}`}
             >
               <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                isSelected ? 'border-white bg-white/20' : 'border-slate-300 dark:border-slate-600'
+                revealed && isBest
+                  ? 'border-green-600 bg-green-600'
+                  : revealed && isSelected
+                    ? 'border-amber-600 bg-amber-600'
+                    : 'border-slate-300 dark:border-slate-600'
               }`}>
-                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                {revealed && isBest && <Check className="w-3.5 h-3.5 text-white" />}
+                {revealed && isSelected && !isBest && <X className="w-3.5 h-3.5 text-white" />}
               </span>
-              <span className="text-sm leading-relaxed">{answer.text}</span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm leading-relaxed">{answer.text}</span>
+                {revealed && (isBest || isSelected) && (
+                  <span className={`mt-1.5 inline-block text-[10px] font-bold uppercase tracking-wider ${
+                    isBest ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
+                  }`}>
+                    {isBest ? (isSelected ? 'Best answer · you picked this' : 'Best answer') : 'You picked this'}
+                  </span>
+                )}
+              </span>
             </button>
           );
         })}
       </div>
+
+      {revealed && (
+        <div className="mt-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 animate-fade-in">
+          <p className={`text-sm font-bold mb-1.5 ${gotItRight ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
+            {gotItRight ? 'Nailed it.' : 'Not quite.'}
+          </p>
+          {question.why
+            ? <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{question.why}</p>
+            : <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">The highlighted option is the strongest move here.</p>}
+        </div>
+      )}
     </div>
   );
 }
 
-// --- Skill self-rating -----------------------------------------------------
-export function SelfRateStep({ selfRating, onRatingChange }) {
-  const ratingLabels = ['Beginner', 'Comfortable', 'Confident', 'Strong', 'Expert'];
+// --- Graded rating scale ---------------------------------------------------
+// Replaces the old seven-slider self-rating. Learners no longer grade
+// themselves; we score them from their quiz answers and show them the result
+// (feedback #207). Read-only on purpose — the number is a measurement, so
+// letting someone drag it would make it a self-rating again.
+//
+// `measuredKeys` limits this to the competencies the active quiz actually asked
+// about. Without it a competency nobody was asked about would display its 0.3
+// baseline as though we had measured it.
+export function GradedRatingStep({ skills, measuredKeys }) {
+  const keys = (measuredKeys?.length ? measuredKeys : SKILL_KEYS).filter(k => SKILL_LABELS[k]);
 
   return (
     <div>
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
-          How would you rate yourself?
+          Here&apos;s where you landed
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 text-sm">
-          Be honest — the gap between what you think and what we measured is the most valuable insight.
+        <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
+          Scored from your answers, not a self-rating. This is where your lessons will start — and it
+          moves as you learn.
         </p>
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 space-y-6">
-        {SKILL_KEYS.map(key => {
-          const value = selfRating[key];
-          const labelIdx = Math.min(4, Math.floor(value * 5));
+        {keys.map(key => {
+          const value = skills?.[key] ?? 0;
           const Icon = SKILL_ICONS[key];
 
           return (
             <div key={key}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Icon className="w-4 h-4 text-brand" />
+              <div className="flex items-start justify-between gap-3 mb-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon className="w-4 h-4 text-brand shrink-0" />
                   <span className="text-sm font-semibold text-ink dark:text-slate-200">{SKILL_LABELS[key]}</span>
-                  <SkillInfo skillKey={key} />
                 </div>
-                <span className="text-xs font-bold text-brand">{ratingLabels[labelIdx]}</span>
+                <span className="text-xs font-bold text-brand shrink-0">{ratingLabel(value)}</span>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={value}
-                onChange={e => onRatingChange(key, parseFloat(e.target.value))}
-                className="w-full accent-brand"
-              />
+              {/* #205: definition as plain small grey text, not a tooltip. */}
+              <CompetencyDefinition skillKey={key} className="mb-2.5" />
+              <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-brand rounded-full transition-all duration-700"
+                  style={{ width: `${Math.round(value * 100)}%` }}
+                />
+              </div>
               <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                 <span>Beginner</span>
                 <span>Expert</span>
@@ -298,76 +323,58 @@ export function ImpactQuestionCard({ question, selectedValue, exampleText, onSel
   );
 }
 
-// --- Skill results (self vs measured + stats + radar) ----------------------
-export function SkillResults({ skills, selfRating }) {
-  const dims = SKILL_KEYS.map(k => ({ k, v: skills[k] }));
+// --- Skill results ---------------------------------------------------------
+// Measured scores only. There is no "Self vs. Measured" comparison any more
+// because we stopped asking people to rate themselves (feedback #207) — the quiz
+// grades them instead, so there is no second number to compare against.
+//
+// `measuredKeys` scopes this to the competencies the quiz actually covered.
+// Older runs saved before that field existed fall back to all competencies.
+export function SkillResults({ skills, measuredKeys }) {
+  const keys = (measuredKeys?.length ? measuredKeys : SKILL_KEYS).filter(k => SKILL_LABELS[k] && skills?.[k] !== undefined);
+  const dims = keys.map(k => ({ k, v: skills[k] }));
   const top = [...dims].sort((a, b) => b.v - a.v)[0];
   const bottom = [...dims].sort((a, b) => a.v - b.v)[0];
+  if (!dims.length) return null;
 
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-brand via-[#009FDA] to-[#0055FF]" />
         <div className="p-6">
-          <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">Self vs. Measured</h3>
+          <h3 className="text-lg font-bold text-ink dark:text-slate-200 mb-1">Your competency scores</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-            The gap between your self-assessment and scenario performance.
+            Scored from how you answered the quiz.
           </p>
 
-          <div className="space-y-4">
-            {SKILL_KEYS.map(key => {
+          <div className="space-y-5">
+            {keys.map(key => {
               const measured = Math.round(skills[key] * 100);
-              const self = Math.round(selfRating[key] * 100);
-              const delta = self - measured;
               const Icon = SKILL_ICONS[key];
-
-              const status = calibrationStatus(delta);
 
               return (
                 <div key={key}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Icon className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                       <span className="text-sm font-medium text-ink dark:text-slate-200">{SKILL_LABELS[key]}</span>
-                      <SkillInfo skillKey={key} />
                     </div>
-                    <span className="flex items-center gap-1">
-                      <span className={`text-xs font-bold ${status.tone}`}>{status.label}</span>
-                      <InfoTip text={status.explain} label={`What "${status.label}" means`} />
-                    </span>
+                    <span className="text-xs font-bold text-brand shrink-0">{ratingLabel(skills[key])}</span>
                   </div>
-
-                  {/* Two SEPARATE, distinctly-colored bars so self and measured
-                      are both visible at once — a single overlapping track hid
-                      whichever value was shorter. Each bar's label and value are
-                      grouped and color-matched to the bar. */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-16 shrink-0 text-[11px] font-semibold text-amber-600 dark:text-amber-400">Self</span>
-                      <div className="relative flex-1 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div className="absolute h-full bg-amber-400 rounded-full transition-all duration-700" style={{ width: `${self}%` }} />
-                      </div>
-                      <span className="w-7 shrink-0 text-right text-xs font-bold text-amber-600 dark:text-amber-400">{self}</span>
+                  {/* #205: definitions as small grey text rather than a tooltip. */}
+                  <CompetencyDefinition skillKey={key} className="mb-2" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="relative flex-1 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className="absolute h-full bg-brand rounded-full transition-all duration-700" style={{ width: `${measured}%` }} />
                     </div>
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-16 shrink-0 text-[11px] font-semibold text-brand">Measured</span>
-                      <div className="relative flex-1 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div className="absolute h-full bg-brand rounded-full transition-all duration-700" style={{ width: `${measured}%` }} />
-                      </div>
-                      <span className="w-7 shrink-0 text-right text-xs font-bold text-brand">{measured}</span>
-                    </div>
+                    <span className="w-7 shrink-0 text-right text-xs font-bold text-brand">{measured}</span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-6 flex gap-3 text-xs text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-400" /> Self-rated</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-brand" /> Measured</span>
-          </div>
-
-          <p className="mt-4 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          <p className="mt-6 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
             This is a snapshot of today. In about a month we&apos;ll invite you to recalibrate, so your scores and lessons keep pace as you grow.
           </p>
         </div>

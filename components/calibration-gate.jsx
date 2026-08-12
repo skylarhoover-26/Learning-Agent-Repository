@@ -2,10 +2,13 @@
 
 // Required, blocking first-run calibration. As soon as a user enters the
 // platform without a completed calibration, this covers the whole screen with
-// the unified assessment — there is no skip and no app chrome to navigate away
-// to. It replaces the old optional tour prompt as the very first thing a new (or
-// not-yet-calibrated) user sees. Finishing writes `calibrated_at` to the
-// profile, which unmounts the gate and lets them through.
+// the placement quiz — there is no skip and no app chrome to navigate away to.
+// Finishing writes `calibrated_at` to the profile, which unmounts the gate and
+// lets them through.
+//
+// SKILLS ONLY. The AI Impact half used to run here too, which made the required
+// first session ~20 screens (feedback #207). It now comes back a few days later
+// via ImpactAssessmentPrompt / lib/impact-schedule.js.
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
@@ -61,7 +64,7 @@ export default function CalibrationGate() {
   return (
     <div className="fixed inset-0 z-[80] overflow-y-auto bg-bg-warm dark:bg-slate-900">
       <div className="min-h-full">
-        <CalibrationFlow gated onComplete={handleComplete} />
+        <CalibrationFlow gated sections={['skills']} onComplete={handleComplete} />
       </div>
     </div>
   );

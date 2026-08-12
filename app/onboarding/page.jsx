@@ -757,8 +757,11 @@ function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCus
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
           What are your top tasks?
         </h2>
+        {/* #202: the minimum was getting skimmed past, so it's bolded and
+            underlined rather than sitting flat in the sentence. */}
         <p className="text-slate-600 dark:text-slate-400 text-sm">
-          Pick at least {MIN_TASKS} tasks you do most in {department} — the more you add, the more your
+          Pick <strong className="font-bold text-ink dark:text-slate-200 underline decoration-2 underline-offset-2">at least {MIN_TASKS} tasks</strong>
+          {' '}you do most in {department} — the more you add, the more your
           lessons, examples and games get built around your actual work.
         </p>
         {/* Continue stays disabled until MIN_TASKS, so say how many are left rather
@@ -855,7 +858,9 @@ function StepTopTasks({ department, tasks, selected, onToggle, customTask, onCus
       </div>
       <div className="text-center">
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-          {selected.length} selected{selected.length === 0 ? ' — pick at least 1' : ''}
+          {/* Was hardcoded to "pick at least 1", which contradicted the MIN_TASKS
+              requirement stated at the top of the very same step. */}
+          {selected.length} selected{selected.length < MIN_TASKS ? ` — pick at least ${MIN_TASKS}` : ''}
         </p>
         {/* Continue moved to the shared bottom nav (StepNav). */}
       </div>

@@ -312,7 +312,10 @@ function WhyTrendPanel({ detail, history, calibration }) {
 
     {calibration?.skills && (
       <div>
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">AI Calibration — skills (measured vs self)</p>
+        {/* Self-ratings are no longer collected (the quiz grades people instead),
+            so the heading can't promise a comparison. Runs from before the change
+            still carry a self number, and the rows below still show it. */}
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">AI Calibration — measured skills</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {CAL_SKILLS.map(({ key, name }) => {
             const measured = Math.round((calibration.skills[key] ?? 0) * 100);

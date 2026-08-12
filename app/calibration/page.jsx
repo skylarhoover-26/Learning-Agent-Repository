@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Crosshair, RotateCcw, Clock } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
@@ -17,14 +18,43 @@ import { getImpactDetail, getOverallLevel } from '@/lib/scoring-store';
 //
 // Wrapped in CinematicFrame (staging reskin) so it adopts the cinematic top bar +
 // drawer while keeping prod's calibration logic intact.
+// The Suspense boundary is required, not decorative: useSearchParams() below
+// suspends during prerender, and without it this statically-generated page would
+// bail out of prerendering entirely.
 export default function CalibrationPage() {
-  return <CinematicFrame><CalibrationPageInner /></CinematicFrame>;
+  return (
+    <CinematicFrame>
+      <Suspense fallback={<CalibrationLoading />}>
+        <CalibrationPageInner />
+      </Suspense>
+    </CinematicFrame>
+  );
+}
+
+function CalibrationLoading() {
+  return (
+    <div className="min-h-screen">
+      <PageHeader
+        icon={Crosshair}
+        title="My Calibration"
+        subtitle="Where you are with AI, and how it's changing over time"
+      />
+      <main className="max-w-2xl mx-auto px-6 pt-6 pb-10 text-center text-slate-500 dark:text-slate-400">
+        Loading…
+      </main>
+    </div>
+  );
 }
 
 function CalibrationPageInner() {
   const { profile, updateProfile } = useProfile();
+  const searchParams = useSearchParams();
+  // ?part=impact runs ONLY the AI Impact half. That's the link the deferred
+  // day-3 prompt and home card point at, so someone finishing their placement
+  // quiz days ago doesn't have to retake it to get their competency scores.
+  const impactOnly = searchParams.get('part') === 'impact';
   const [mode, setMode] = useState('loading'); // 'loading' | 'view' | 'run'
-  const [latest, setLatest] = useState(null);   // { skills, selfRating, impact }
+  const [latest, setLatest] = useState(null);   // { skills, measuredKeys, impact }
   const [history, setHistory] = useState([]);
 
   const load = useCallback(() => {
@@ -33,7 +63,7 @@ function CalibrationPageInner() {
     const hist = getCalibrationHistory();
     setHistory(hist);
     if (cal?.skills) {
-      setLatest({ skills: cal.skills, selfRating: cal.selfRating || {}, impact });
+      setLatest({ skills: cal.skills, measuredKeys: cal.measuredKeys || null, impact });
       return true;
     }
     setLatest(null);
@@ -42,8 +72,10 @@ function CalibrationPageInner() {
 
   useEffect(() => {
     const hasPrior = load();
-    setMode(hasPrior ? 'view' : 'run');
-  }, [load]);
+    // An explicit ?part=impact always runs, even for someone with prior scores —
+    // that's the whole point of the link.
+    setMode(impactOnly || !hasPrior ? 'run' : 'view');
+  }, [load, impactOnly]);
 
   function handleComplete() {
     if (profile) updateProfile({ calibrated_at: new Date().toISOString() }).catch(() => {});
@@ -70,7 +102,11 @@ function CalibrationPageInner() {
       />
 
       {mode === 'run' && (
-        <CalibrationFlow homeOnFinish={false} onComplete={handleComplete} />
+        <CalibrationFlow
+          homeOnFinish={false}
+          sections={impactOnly ? ['impact'] : ['skills', 'impact']}
+          onComplete={handleComplete}
+        />
       )}
 
       {mode === 'view' && latest && (
@@ -84,7 +120,7 @@ function CalibrationPageInner() {
             </button>
           </div>
 
-          <SkillResults skills={latest.skills} selfRating={latest.selfRating} />
+          <SkillResults skills={latest.skills} measuredKeys={latest.measuredKeys} />
 
           {latest.impact && <ImpactResults detail={latest.impact} previousScores={previousScores} />}
 

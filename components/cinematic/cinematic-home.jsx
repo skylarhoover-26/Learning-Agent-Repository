@@ -19,6 +19,8 @@ import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
 import { freshnessLabel, lessonHref, splitByApproval } from '@/lib/ai-news';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
+import ImpactAssessmentCard from '@/components/impact-assessment-card';
+import ImpactAssessmentPrompt from '@/components/impact-assessment-prompt';
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
@@ -403,6 +405,10 @@ export default function CinematicHome() {
         </div>
       </section>
 
+      {/* Deferred AI Impact assessment, once it comes due (a few days after the
+          placement quiz). Renders nothing until then, or once it's done. */}
+      <ImpactAssessmentCard />
+
       {/* TODAY'S PICK — gated on /daily. */}
       {isOn('/daily') && (
       <Link href={todaysPick?.href || '/daily'} data-tour="home-todays-pick" className="cine-tilt group block cine-glass rounded-3xl p-6 flex items-center gap-5" style={{ '--accent': 'var(--gold)' }}>
@@ -592,6 +598,12 @@ export default function CinematicHome() {
         )}
       </section>
       )}
+
+      {/* The AI Impact modal (deferred first run, and the monthly re-grade). This
+          lives HERE rather than in app/page.jsx: that file returns <CinematicHome />
+          on its first line, so everything below it — including where this used to be
+          mounted — is unreachable, and the nudge had never actually fired. */}
+      <ImpactAssessmentPrompt />
     </CinematicShell>
   );
 }

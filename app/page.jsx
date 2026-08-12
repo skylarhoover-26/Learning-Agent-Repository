@@ -12,7 +12,7 @@ import CinematicHome from '@/components/cinematic/cinematic-home';
 import WelcomeGreeting from '@/components/welcome-greeting';
 import FindAiHero from '@/components/find-ai-hero';
 import TodaysPick from '@/components/todays-pick';
-import CalibrationRefreshReminder from '@/components/calibration-refresh-reminder';
+import ImpactAssessmentPrompt from '@/components/impact-assessment-prompt';
 import HomeQuickActions from '@/components/home-quick-action';
 import GatedHomeSection from '@/components/gated-home-section';
 import {
@@ -219,7 +219,7 @@ export default async function Dashboard() {
         {/* AI News Feed */}
         <LiveSourcesFeed />
       </main>
-      <CalibrationRefreshReminder />
+      <ImpactAssessmentPrompt />
     </div>
   );
 }
