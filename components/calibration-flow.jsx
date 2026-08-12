@@ -19,7 +19,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ChevronRight, ArrowRight, Loader2 } from 'lucide-react';
 import { saveCalibrationData, calculateSkills, appendCalibrationRun } from '@/lib/calibration-store';
-import { activeQuestions, measuredCompetencies } from '@/lib/onboarding-quiz';
+import { activeQuestions, measuredCompetencies, shuffleQuiz } from '@/lib/onboarding-quiz';
+import { useProfile } from '@/components/profile-provider';
 import { saveImpactDetail } from '@/lib/scoring-store';
 import { IMPACT_QUESTIONS } from '@/lib/impact-questions';
 import {
@@ -30,6 +31,15 @@ import {
 const N_IMPACT = IMPACT_QUESTIONS.length;
 const LOAD_TIMEOUT_MS = 15000;
 
+// `answers` holds authored indices; the quiz renders shuffled ones. Map back so
+// stepping away and returning to a question re-highlights the option the learner
+// actually picked rather than whatever now sits in that slot.
+function toDisplayIndex(question, storedIndex) {
+  if (storedIndex === undefined || storedIndex === null) return undefined;
+  const at = question?.originalIndex?.indexOf(storedIndex);
+  return at === undefined || at < 0 ? undefined : at;
+}
+
 export default function CalibrationFlow({
   onComplete,
   gated = false,
@@ -38,6 +48,10 @@ export default function CalibrationFlow({
 }) {
   const doSkills = sections.includes('skills');
   const doImpact = sections.includes('impact');
+  // Only used to seed each learner's answer order. Optional chaining throughout:
+  // the provider can still be resolving, and a missing email just means everyone
+  // shares one (still per-question varied) order rather than breaking the quiz.
+  const { profile } = useProfile() || {};
 
   const [questions, setQuestions] = useState(doSkills ? null : []); // null = still loading
   const [step, setStep] = useState(0);
@@ -69,7 +83,18 @@ export default function CalibrationFlow({
   const measuredKeys = useMemo(() => measuredCompetencies(questions || []), [questions]);
   // calculateSkills keys off question id and reads each answer's `scores`, which
   // authored questions carry in the same shape the old scenarios did.
+  //
+  // NOTE it reads `questions`, not `shownQuestions` — scoring runs against the
+  // AUTHORED answer order, and `answers` stores authored indices to match.
   const skills = useMemo(() => calculateSkills(answers, questions || []), [answers, questions]);
+
+  // What the learner actually sees: same questions, same sequence, options
+  // reordered for them specifically. Seeded by email so it holds steady across
+  // refreshes and the back button.
+  const shownQuestions = useMemo(
+    () => shuffleQuiz(questions || [], profile?.email),
+    [questions, profile?.email],
+  );
 
   // Step map. The impact section starts right after the quiz when both sections
   // run; when only impact runs, its intro is step 0.
@@ -85,7 +110,7 @@ export default function CalibrationFlow({
   // The last quiz question is the end of the road when impact is deferred.
   const isLastQuiz = doSkills && !doImpact && step === nQuiz;
 
-  const currentQuestion = isQuiz && questions ? questions[step - 1] : null;
+  const currentQuestion = isQuiz && shownQuestions.length ? shownQuestions[step - 1] : null;
   const currentImpact = isImpact ? IMPACT_QUESTIONS[step - FIRST_IMPACT_STEP] : null;
 
   const totalSteps = (doSkills ? 1 + nQuiz : 0) + (doImpact ? 1 + N_IMPACT : 0);
@@ -261,8 +286,12 @@ export default function CalibrationFlow({
                   question={currentQuestion}
                   questionNumber={step}
                   totalQuestions={nQuiz}
-                  selectedAnswer={answers[currentQuestion.id]}
-                  onAnswer={(idx) => setAnswers(prev => ({ ...prev, [currentQuestion.id]: idx }))}
+                  selectedAnswer={toDisplayIndex(currentQuestion, answers[currentQuestion.id])}
+                  onAnswer={(idx) => setAnswers(prev => ({
+                    ...prev,
+                    // Store the AUTHORED index, never the displayed one.
+                    [currentQuestion.id]: currentQuestion.originalIndex[idx],
+                  }))}
                 />
               )}
 
