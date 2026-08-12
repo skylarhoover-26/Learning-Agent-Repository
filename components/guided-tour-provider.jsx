@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useCallback, useRef } from 'react';
+import { createContext, useContext, useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -9,8 +9,12 @@ import { GUIDED_TOUR_STEPS } from '@/lib/guided-tour';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 
 const TourContext = createContext(null);
+// The fallback must carry EVERY key a consumer reads. The drawer does
+// `!tourActive` to decide whether to honour collapsed sections, and an absent key
+// is undefined, so omitting it here would make that read `true` outside a
+// provider and silently stop sections collapsing at all.
 export function useTour() {
-  return useContext(TourContext) || { startTour: () => {} };
+  return useContext(TourContext) || { startTour: () => {}, tourActive: false };
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -138,6 +142,11 @@ export function TourProvider({ children }) {
   // Used to skip tour steps for features switched off for this viewer. Requires
   // MenuVisibilityProvider to sit OUTSIDE TourProvider (see app/layout.jsx).
   const { isItemDisabled } = useMenuVisibility();
+  // Exposed on the context so the drawer can show every section while the tour
+  // runs. Sections are collapsible and persist per browser, so a learner who had
+  // folded Settings away would otherwise have no "Send feedback" row in the DOM
+  // for the final step to point at.
+  const [tourActive, setTourActive] = useState(false);
   const driverRef = useRef(null);
   // The menu's open/closed state before the tour began, restored on exit.
   const menuWasOpenRef = useRef(true);
@@ -154,7 +163,9 @@ export function TourProvider({ children }) {
     const step = GUIDED_TOUR_STEPS[index];
     if (!step) return;
     if (step.route && window.location.pathname !== step.route) router.push(step.route);
-    const opensSidebar = step.element === '[data-tour="sidebar"]';
+    // `sidebar: true` marks a step whose anchor lives INSIDE the drawer, so it
+    // opens on mobile too rather than only on desktop.
+    const opensSidebar = step.element === '[data-tour="sidebar"]' || step.sidebar === true;
     // Keep the menu docked-open throughout the tour on desktop, where it sits
     // beside the content (content shifts via md:pl-80, no overlap or dimming) —
     // this is the persistent open menu learners want. On narrow screens the
@@ -284,6 +295,7 @@ export function TourProvider({ children }) {
         // persisting — their saved preference was never touched.
         setOpenTransient(menuWasOpenRef.current);
         hideClickShield();
+        setTourActive(false);
         try { window.sessionStorage.removeItem('tourActive'); } catch {}
       },
     });
@@ -291,6 +303,7 @@ export function TourProvider({ children }) {
     driverRef.current = d;
     // Flag the tour as running so pages (e.g. chat) can show a clean demo state
     // instead of the learner's real saved data.
+    setTourActive(true);
     try { window.sessionStorage.setItem('tourActive', '1'); } catch {}
     showClickShield();
     // prepareStep(0) sets the correct menu state for the first step. A short
@@ -301,7 +314,7 @@ export function TourProvider({ children }) {
   }, [prepareStep, runStepActions, menuOpen, setOpenTransient, isItemDisabled]);
 
   return (
-    <TourContext.Provider value={{ startTour }}>
+    <TourContext.Provider value={{ startTour, tourActive }}>
       {children}
     </TourContext.Provider>
   );

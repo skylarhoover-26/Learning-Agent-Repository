@@ -151,7 +151,7 @@ function NavDescTip({ text }) {
 // The cinematic drawer — reuses the real nav data/routes, styled to match.
 function Drawer({ open, onClose }) {
   const pathname = usePathname();
-  const { startTour } = useTour();
+  const { startTour, tourActive } = useTour();
   const { openFeedback } = useFeedback();
   const { isAdmin, actingAsAdmin, isManager, isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon } = useMenuVisibility();
 
@@ -159,6 +159,11 @@ function Drawer({ open, onClose }) {
   // localStorage doesn't exist, and seeding state from it would hydrate-mismatch.
   const [collapsed, setCollapsed] = useState(() => new Set());
   useEffect(() => { setCollapsed(readCollapsed()); }, []);
+
+  // While the tour runs, every section is shown regardless of what the learner
+  // folded away — the final step points at "Send feedback", which lives in
+  // Settings and would not be in the DOM if that section were collapsed.
+  const isCollapsed = (title) => !tourActive && collapsed.has(title);
 
   function toggleSection(title) {
     setCollapsed((prev) => {
@@ -252,8 +257,8 @@ function Drawer({ open, onClose }) {
             // — and hidden when an admin is "viewing as a regular user" (actingAsAdmin).
             (isSectionHidden(section.title) || (section.title === 'Manager' && !actingAsAdmin && !isManager)) ? null : (
               <div key={section.title}>
-                <SectionLabel collapsed={collapsed.has(section.title)} onToggle={() => toggleSection(section.title)}>{section.title}</SectionLabel>
-                {collapsed.has(section.title) ? null : isSectionComingSoon(section.title) ? (
+                <SectionLabel collapsed={isCollapsed(section.title)} onToggle={() => toggleSection(section.title)}>{section.title}</SectionLabel>
+                {isCollapsed(section.title) ? null : isSectionComingSoon(section.title) ? (
                   <p className="mx-4 px-3 py-2 text-sm italic" style={{ color: 'var(--ink-dim)' }}>Coming soon</p>
                 ) : section.items.map((item) => (
                   item.themeToggle ? (
@@ -281,6 +286,7 @@ function Drawer({ open, onClose }) {
                   ) : item.feedback ? (
                     <button
                       key="feedback"
+                      data-tour="nav-feedback"
                       // Feedback opens as a modal over the page — no need to close (and
                       // persist-close) the menu, which made the whole drawer disappear.
                       onClick={() => openFeedback()}
@@ -296,10 +302,10 @@ function Drawer({ open, onClose }) {
                 ))}
 
                 {/* HCP Skill Shop sits under Learn — external links. */}
-                {section.title === 'Learn' && !collapsed.has(section.title) && !isSectionHidden('HCP Skill Shop') && (
+                {section.title === 'Learn' && !isCollapsed(section.title) && !isSectionHidden('HCP Skill Shop') && (
                   <>
-                    <SectionLabel collapsed={collapsed.has('HCP Skill Shop')} onToggle={() => toggleSection('HCP Skill Shop')}>HCP Skill Shop</SectionLabel>
-                    {collapsed.has('HCP Skill Shop') ? null : SKILL_SHOP_LINKS.map((link) => (
+                    <SectionLabel collapsed={isCollapsed('HCP Skill Shop')} onToggle={() => toggleSection('HCP Skill Shop')}>HCP Skill Shop</SectionLabel>
+                    {isCollapsed('HCP Skill Shop') ? null : SKILL_SHOP_LINKS.map((link) => (
                       isItemHidden(link.href) ? null : (
                         <a
                           key={link.href}
@@ -322,8 +328,8 @@ function Drawer({ open, onClose }) {
 
           {isAdmin && (
             <div>
-              <SectionLabel collapsed={collapsed.has('Admin')} onToggle={() => toggleSection('Admin')}>Admin</SectionLabel>
-              {collapsed.has('Admin') ? null : ADMIN_ITEMS.map((item) => <NavRow key={item.href} item={item} />)}
+              <SectionLabel collapsed={isCollapsed('Admin')} onToggle={() => toggleSection('Admin')}>Admin</SectionLabel>
+              {isCollapsed('Admin') ? null : ADMIN_ITEMS.map((item) => <NavRow key={item.href} item={item} />)}
             </div>
           )}
         </nav>
