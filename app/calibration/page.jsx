@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Crosshair, RotateCcw, Clock } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Crosshair, RotateCcw, Clock, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CalibrationFlow from '@/components/calibration-flow';
@@ -49,10 +49,17 @@ function CalibrationLoading() {
 function CalibrationPageInner() {
   const { profile, updateProfile } = useProfile();
   const searchParams = useSearchParams();
-  // ?part=impact runs ONLY the AI Impact half. That's the link the deferred
-  // day-3 prompt and home card point at, so someone finishing their placement
-  // quiz days ago doesn't have to retake it to get their competency scores.
-  const impactOnly = searchParams.get('part') === 'impact';
+  const router = useRouter();
+  // ?part scopes which half runs, so nobody has to sit through the other one:
+  //
+  //   impact  the AI Impact questions alone — where the deferred day-3 prompt and
+  //           the home card point, so finishing your placement quiz days ago
+  //           doesn't mean retaking it to get competency scores.
+  //   skills  the placement questions alone — "Redo skill questions" below.
+  //   (none)  both, which is the first-time run and the ~4-week re-grade.
+  const part = searchParams.get('part');
+  const partial = part === 'impact' || part === 'skills';
+  const sections = part === 'impact' ? ['impact'] : part === 'skills' ? ['skills'] : ['skills', 'impact'];
   const [mode, setMode] = useState('loading'); // 'loading' | 'view' | 'run'
   const [latest, setLatest] = useState(null);   // { skills, measuredKeys, impact }
   const [history, setHistory] = useState([]);
@@ -72,15 +79,18 @@ function CalibrationPageInner() {
 
   useEffect(() => {
     const hasPrior = load();
-    // An explicit ?part=impact always runs, even for someone with prior scores —
-    // that's the whole point of the link.
-    setMode(impactOnly || !hasPrior ? 'run' : 'view');
-  }, [load, impactOnly]);
+    // An explicit ?part always runs, even for someone with prior scores — that's
+    // the whole point of the link.
+    setMode(partial || !hasPrior ? 'run' : 'view');
+  }, [load, partial]);
 
   function handleComplete() {
     if (profile) updateProfile({ calibrated_at: new Date().toISOString() }).catch(() => {});
     load();
     setMode('view');
+    // Drop the ?part so a refresh lands on the summary instead of silently
+    // restarting the half you just finished.
+    if (partial) router.replace('/calibration');
   }
 
   // Previous run's measured impact scores, for the "vs last" deltas.
@@ -104,19 +114,29 @@ function CalibrationPageInner() {
       {mode === 'run' && (
         <CalibrationFlow
           homeOnFinish={false}
-          sections={impactOnly ? ['impact'] : ['skills', 'impact']}
+          sections={sections}
           onComplete={handleComplete}
         />
       )}
 
       {mode === 'view' && latest && (
         <main className="max-w-2xl mx-auto px-6 pt-6 pb-10 space-y-6">
-          <div className="flex justify-end">
+          {/* Two buttons, not one "Recalibrate". The single button always re-ran
+              BOTH halves, so someone who just wanted to re-check their skill
+              scores had to sit through the impact questions as well (and used to
+              retype four essays doing it). Each half now stands on its own. */}
+          <div className="flex justify-end gap-2 flex-wrap">
             <button
-              onClick={() => setMode('run')}
+              onClick={() => router.push('/calibration?part=skills')}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill bg-cta text-ink font-semibold hover:bg-cta-600 transition-all shadow-sm"
             >
-              <RotateCcw className="w-4 h-4" /> Recalibrate
+              <RotateCcw className="w-4 h-4" /> Redo skill questions
+            </button>
+            <button
+              onClick={() => router.push('/calibration?part=impact')}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-sm font-semibold text-ink dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+            >
+              <TrendingUp className="w-4 h-4" /> Redo impact questions
             </button>
           </div>
 
