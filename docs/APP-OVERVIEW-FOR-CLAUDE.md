@@ -105,8 +105,8 @@ docs/               Backlog, handoffs, QA, migration plans (project history)
 
 ### Key API routes (`app/api/`)
 `auth`, `me` (profile/prefill), `identity`, `chat`, `discover`, `lesson`,
-`daily-lessons`, `curriculum`, `games`, `prompts`, `modules`, `calibration-scenarios`,
-`impact-score`, `scoring`, `skill-levels`, `leaderboard`, `team-scores`,
+`daily-lessons`, `curriculum`, `games`, `prompts`, `modules`, `onboarding-quiz`
+(+ `onboarding-quiz/parse`), `scoring`, `skill-levels`, `leaderboard`, `team-scores`,
 `manager-data` / `manager-check` / `manager-lookup`, `reporting`, `admin` /
 `admin-check`, `menu-visibility`, `profile-visibility`, `tools` / `ai-tools`,
 `notifications`, `tts`, `track` (activity), `audit-log`, `slack`,
