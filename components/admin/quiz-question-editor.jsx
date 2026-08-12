@@ -17,7 +17,7 @@ import { MIN_ANSWERS, MAX_ANSWERS } from '@/lib/onboarding-quiz';
 const inputClass = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-ink dark:text-slate-200 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all';
 
 export default function QuizQuestionEditor({
-  question, index, total, labels, onChange, onRemove, onMove,
+  question, index, total, labels, onChange, onRemove, onMove, canReorder = true,
 }) {
   const [open, setOpen] = useState(false);
   const answers = question.answers || [];
@@ -72,27 +72,29 @@ export default function QuizQuestionEditor({
     <div className={`rounded-xl border ${question.enabled === false ? 'border-slate-200 dark:border-slate-700 opacity-70' : 'border-slate-300 dark:border-slate-600'} bg-white dark:bg-slate-800 overflow-hidden`}>
       {/* Summary row */}
       <div className="flex items-center gap-2 px-3 py-2.5">
-        <div className="flex flex-col">
-          <button
-            type="button"
-            onClick={() => onMove(index, -1)}
-            disabled={index === 0}
-            aria-label="Move up"
-            className="text-slate-400 hover:text-brand disabled:opacity-25 disabled:hover:text-slate-400 leading-none"
-          >
-            <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onMove(index, 1)}
-            disabled={index === total - 1}
-            aria-label="Move down"
-            className="text-slate-400 hover:text-brand disabled:opacity-25 disabled:hover:text-slate-400 leading-none"
-          >
-            <ChevronRight className="w-3.5 h-3.5 rotate-90" />
-          </button>
-        </div>
-        <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+        {canReorder && (
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => onMove(index, -1)}
+              disabled={index === 0}
+              aria-label="Move up"
+              className="text-slate-400 hover:text-brand disabled:opacity-25 disabled:hover:text-slate-400 leading-none"
+            >
+              <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onMove(index, 1)}
+              disabled={index === total - 1}
+              aria-label="Move down"
+              className="text-slate-400 hover:text-brand disabled:opacity-25 disabled:hover:text-slate-400 leading-none"
+            >
+              <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+            </button>
+          </div>
+        )}
+        {canReorder && <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />}
 
         <button
           type="button"
