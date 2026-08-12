@@ -46,8 +46,12 @@ function ProfilePageInner() {
   const router = useRouter();
   const { profile: ctxProfile, updateProfile, isLoading: profileLoading } = useProfile();
   const { crownTier } = useChampions();
-  // Gates the full profile reset — support action, not self-service (feedback #147).
-  const { isAdmin } = useMenuVisibility();
+  // Gates the whole Danger Zone. actingAsAdmin, NOT isAdmin: actingAsAdmin is
+  // `isAdmin && !previewAsUser`, so "Viewing as a regular user" hides these the way
+  // it hides the Manager and Admin sections. Gating on isAdmin left both reset
+  // buttons on screen while previewing, which is precisely what an admin uses that
+  // mode to check.
+  const { actingAsAdmin } = useMenuVisibility();
   // Live progression stats (XP, level, badges, lessons) so the cards below reflect
   // real progress instead of static placeholders. Re-reads on every XP award via
   // the provider's xp-bus subscription, so leveling up updates here immediately.
@@ -525,9 +529,17 @@ function ProfilePageInner() {
           </div>
         </div>
 
-        {/* D. Reset / Sign Out */}
+        {/* D. Reset — admin only, both of them (feedback #147).
+            Neither reset is self-service now that we are live: wiping your own XP
+            and history is a support action, same as wiping the whole profile. A
+            learner who wants to change department, team or tasks uses Edit on the
+            Role & Tasks card above, which is on this page already.
+            The card is hidden entirely rather than disabled, so a non-admin never
+            sees a control they cannot use. */}
+        {actingAsAdmin && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="font-semibold text-ink dark:text-slate-200 mb-2">Danger Zone</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Admin only. Learners do not see this section.</p>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
             Just want to change your department, team, or tasks?{' '}
             <Link href="/my-role" className="font-medium text-brand hover:underline">
@@ -572,17 +584,8 @@ function ProfilePageInner() {
             )}
           </div>
 
-          {/* Full reset is admin-only now that we are live (feedback #147). It wipes
-              every setting and sends the person back through onboarding, which is a
-              support action rather than something a learner should be one click from
-              on their own profile. "Reset progress only" above stays open to
-              everyone: it keeps their role and tasks, so the blast radius is XP and
-              history rather than their whole account. */}
-          {isAdmin && (
-          <>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
             <span className="font-medium text-ink dark:text-slate-200">Reset profile (full)</span> — clears all settings and progress and sends you back through onboarding.
-            <span className="block mt-1 text-xs">Admin only.</span>
           </p>
           {!showResetConfirm ? (
             <button
@@ -613,9 +616,8 @@ function ProfilePageInner() {
               </div>
             </div>
           )}
-          </>
-          )}
         </div>
+        )}
       </main>
     </div>
   );
