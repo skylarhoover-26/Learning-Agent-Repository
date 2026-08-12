@@ -21,7 +21,7 @@ SMOKE-05,5,Onboarding,"Choose a first goal/topic to learn.","Goal is accepted an
 SMOKE-06,6,Calibration,"Open Calibrate (Your Progress > Calibrate) and answer the skill calibration questions to completion.","After each answer the best option is highlighted with a short explanation. At the end you get a graded score per competency (you're never asked to rate yourself), and skill levels update.",,,
 SMOKE-07,7,Home,"Go to Home.","Personalized greeting + your tier/level badge appear; page loads cleanly.",,,
 SMOKE-08,8,Home,"Click the 'Today's Pick' card.","A relevant lesson/activity opens matching your role/goals.",,,
-SMOKE-09,9,Discovery,"Open Discovery (Learn > Discovery) and open a use case relevant to your role.","Use cases load; the one you open is relevant with no broken content.",,,
+SMOKE-09,9,Your AI Opportunities,"Open Your AI Opportunities (Learn > Your AI Opportunities) and open a use case relevant to your role.","Use cases load; the one you open is relevant with no broken content.",,,
 SMOKE-10,10,Library,"Open Library (Learn > Library), expand a category, and open a use case.","Categories expand/collapse; use case content loads correctly.",,,
 SMOKE-11,11,Lesson generation,"Generate a lesson from a SPECIFIC topic (e.g. 'Writing customer follow-up emails with AI').","A coherent, on-topic lesson generates with no clarify prompt and no placeholder text.",,,
 SMOKE-12,12,Lesson generation,"Generate a lesson from a VAGUE topic (e.g. 'AI').","App asks a clarifying question instead of generating something generic.",,,
