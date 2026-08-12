@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
@@ -17,6 +17,7 @@ const HOW_TO_PLAY = [
   'You will see 10 short passages — customer emails, product descriptions, meeting notes, and more.',
   'For each one, decide whether it was written by AI or by a human.',
   'You will get instant feedback and a short explanation after every choice.',
+  'Read it, then hit Next when you are ready. Nothing moves on without you.',
 ];
 
 function shuffleAndPick(arr, count) {
@@ -39,7 +40,6 @@ function AiOrHuman() {
   const [results, setResults] = useState([]);
   const [gameOver, setGameOver] = useState(false);
   const [stats, setStats] = useState(null);
-  const advanceRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -62,16 +62,10 @@ function AiOrHuman() {
     setShowAnswer(false);
   }, [contentIdx, content.length]);
 
-  useEffect(() => {
-    if (!showAnswer) return;
-    advanceRef.current = setTimeout(() => {
-      advanceToNext();
-    }, 2500);
-    return () => {
-      if (advanceRef.current) clearTimeout(advanceRef.current);
-    };
-  }, [showAnswer, advanceToNext]);
-
+  // No auto-advance. This used to jump to the next item 2.5 seconds after the
+  // answer appeared, which is not enough time to read the explanation — the whole
+  // point of the reveal — and it raced the Next button that was already sitting
+  // there (feedback #169). Moving on is now entirely the player's call.
   function handleSelect(choice) {
     if (selected !== null || gameOver) return;
     const item = content[contentIdx];
@@ -82,7 +76,6 @@ function AiOrHuman() {
   }
 
   function handleNext() {
-    if (advanceRef.current) clearTimeout(advanceRef.current);
     advanceToNext();
   }
 
