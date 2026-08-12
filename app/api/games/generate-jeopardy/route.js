@@ -29,8 +29,22 @@ Jeopardy rules for the writing:
 - The "clue" is phrased as a STATEMENT (the "answer" in Jeopardy terms), e.g. "This prompting technique tells the model to reason step by step before answering."
 - The "answer" field is the correct response — the specific term/concept (e.g. "chain-of-thought"). Keep it short (1–5 words), NOT phrased as a question.
 - "acceptable" lists 1–4 alternative correct spellings/phrasings a player might type (synonyms, abbreviations, with/without hyphens). Always include the plain term.
+- "explanation" is one or two sentences saying why that answer is right and what the concept actually means. A player who guessed wrong should finish the clue understanding the idea, not just knowing they missed it.
 - Categories should be punchy, uppercase, and distinct facets of the topic.
-- Keep clues accurate and self-contained. No trick questions.
+- No trick questions.
+
+Every clue must be ANSWERABLE FROM THE CLUE ALONE. Players see one clue at a time
+with no reference material, and testers reported that generated boards read like
+trivia you either already knew or you didn't. So:
+- Describe what the thing DOES or what problem it solves, and let the answer be its
+  name. "This technique feeds the model a handful of worked examples before the real
+  request" is answerable; "This is a common prompting method" is not.
+- Give the clue enough distinguishing detail that exactly one term fits. If two or
+  three concepts would satisfy it, add the detail that rules the others out.
+- Never depend on a specific vendor's release, version number, pricing, or dated
+  announcement — those are unknowable and go stale.
+- At 200 and 400 the answer should be a term the clue nearly hands over. Save genuine
+  recall for 600 and 800, and even there the clue must define the concept.
 
 Return ONLY valid JSON (no markdown fences) with this exact shape:
 {
@@ -38,7 +52,7 @@ Return ONLY valid JSON (no markdown fences) with this exact shape:
     {
       "name": "CATEGORY NAME",
       "clues": [
-        { "value": 200, "clue": "<statement clue>", "answer": "<short response>", "acceptable": ["<alt>", "..."] }
+        { "value": 200, "clue": "<statement clue>", "answer": "<short response>", "acceptable": ["<alt>", "..."], "explanation": "<why that is the answer>" }
       ]
     }
   ]
@@ -109,6 +123,10 @@ function normalizeBoard(parsed) {
           clue: String(cl.clue).trim(),
           answer: String(cl.answer).trim(),
           acceptable: Array.isArray(cl.acceptable) ? cl.acceptable.map((a) => String(a).trim()).filter(Boolean) : [],
+          // Optional on purpose: a board that predates this field, or one where the
+          // model skipped it, still plays — the reveal just shows the answer alone
+          // rather than failing normalization over a teaching aid.
+          explanation: String(cl.explanation || '').trim(),
         };
       }
     });

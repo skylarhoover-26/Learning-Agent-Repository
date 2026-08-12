@@ -20,6 +20,7 @@ const HOW_TO_PLAY = [
   'Pick any clue from the board — the higher the value, the harder the clue.',
   'Answer in the form of a question ("What is…?") — though we accept a plain answer too.',
   'Not sure? Skip to see the answer. You still learn it, you just score nothing for it.',
+  'Right or wrong, every clue explains itself before you move on.',
   'Clear the whole board to finish. Your score is the total value of everything you got right.',
 ];
 
@@ -260,7 +261,13 @@ function JeopardyGame() {
                       : <><X className="w-5 h-5" /> Not quite</>}
                 </div>
                 <p className="text-sm mb-1" style={{ color: 'var(--ink-dim)' }}>The answer:</p>
-                <p className="font-semibold text-lg text-ink dark:text-slate-100 mb-5">{active.clue.answer}</p>
+                <p className={`font-semibold text-lg text-ink dark:text-slate-100 ${active.clue.explanation ? 'mb-3' : 'mb-5'}`}>{active.clue.answer}</p>
+                {/* Every other game explains itself on reveal — Jeopardy showed the
+                    bare term, so a miss taught you nothing (feedback #188). Guarded
+                    because boards generated before this field have no explanation. */}
+                {active.clue.explanation && (
+                  <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--ink-dim)' }}>{active.clue.explanation}</p>
+                )}
                 <div className="flex justify-end">
                   <button onClick={closeClue} className="cine-pill cine-lift inline-flex items-center gap-2 h-11 px-6 font-semibold">Continue <Sparkles className="w-4 h-4" /></button>
                 </div>
