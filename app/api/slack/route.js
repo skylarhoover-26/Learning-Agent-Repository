@@ -109,8 +109,12 @@ function buildHelpBlocks() {
           "`/pick` — today's lesson, and why you got it",
           '`/learn [topic]` — a quick AI tip on any topic',
           '`/leaderboard` — where you stand this week',
-          '`/heatmap` — your knowledge heatmap',
-          '`/skills` — your skill breakdown',
+          // One command with two names, and it has to say so. Listing them on
+          // separate lines with different descriptions ("knowledge heatmap" vs
+          // "skill breakdown") promised two different reports, so getting the same
+          // answer twice read as a bug (feedback #201). This matches how the Home
+          // tab has always worded it in lib/slack-home.js.
+          '`/heatmap` or `/skills` — your strengths and gaps',
         ].join('\n'),
       },
     },
