@@ -1,10 +1,10 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Menu, X, Home, ExternalLink, Play, MessageSquarePlus,
+  Menu, X, Home, ExternalLink, Play, MessageSquarePlus, ChevronRight,
 } from 'lucide-react';
 import UserMenu from '@/components/user-menu';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
@@ -80,8 +80,45 @@ function TopNav({ onMenu }) {
   );
 }
 
-function SectionLabel({ children }) {
-  return <p className="px-4 pt-3 pb-0.5 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--ink-dim)' }}>{children}</p>;
+// Section headers double as collapse toggles (feedback #149). The menu runs long
+// once Learn, Skill Shop, Progress, Manager, Settings and Admin are all expanded,
+// and there was no way to fold away the parts you don't use. Collapsed sections
+// persist per browser, so the shape you set is the shape you get back.
+//
+// Everything starts expanded, so nobody's menu silently changes under them.
+const COLLAPSED_KEY = 'la_menu_collapsed';
+
+function readCollapsed() {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function SectionLabel({ children, collapsed, onToggle }) {
+  const base = 'px-4 pt-3 pb-0.5 text-xs font-bold uppercase tracking-wider';
+  // Sections without a toggle (there are none today, but the component is shared)
+  // stay plain text rather than rendering a dead button.
+  if (!onToggle) {
+    return <p className={base} style={{ color: 'var(--ink-dim)' }}>{children}</p>;
+  }
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      className={`${base} w-full flex items-center gap-1.5 text-left hover:opacity-80 transition-opacity`}
+      style={{ color: 'var(--ink-dim)' }}
+    >
+      <ChevronRight
+        className="w-3 h-3 shrink-0 transition-transform"
+        style={{ transform: collapsed ? 'none' : 'rotate(90deg)' }}
+      />
+      {children}
+    </button>
+  );
 }
 
 // Hover description for a drawer nav row — mirrors prod's ItemDescPopup so each
@@ -117,6 +154,20 @@ function Drawer({ open, onClose }) {
   const { startTour } = useTour();
   const { openFeedback } = useFeedback();
   const { isAdmin, actingAsAdmin, isManager, isSectionHidden, isSectionComingSoon, isItemHidden, isItemComingSoon } = useMenuVisibility();
+
+  // Read on mount, not in the initializer: this renders on the server too, where
+  // localStorage doesn't exist, and seeding state from it would hydrate-mismatch.
+  const [collapsed, setCollapsed] = useState(() => new Set());
+  useEffect(() => { setCollapsed(readCollapsed()); }, []);
+
+  function toggleSection(title) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title); else next.add(title);
+      try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next])); } catch { /* private mode */ }
+      return next;
+    });
+  }
 
   function isActive(href) {
     if (href === '/') return pathname === '/';
@@ -201,8 +252,8 @@ function Drawer({ open, onClose }) {
             // — and hidden when an admin is "viewing as a regular user" (actingAsAdmin).
             (isSectionHidden(section.title) || (section.title === 'Manager' && !actingAsAdmin && !isManager)) ? null : (
               <div key={section.title}>
-                <SectionLabel>{section.title}</SectionLabel>
-                {isSectionComingSoon(section.title) ? (
+                <SectionLabel collapsed={collapsed.has(section.title)} onToggle={() => toggleSection(section.title)}>{section.title}</SectionLabel>
+                {collapsed.has(section.title) ? null : isSectionComingSoon(section.title) ? (
                   <p className="mx-4 px-3 py-2 text-sm italic" style={{ color: 'var(--ink-dim)' }}>Coming soon</p>
                 ) : section.items.map((item) => (
                   item.themeToggle ? (
@@ -245,10 +296,10 @@ function Drawer({ open, onClose }) {
                 ))}
 
                 {/* HCP Skill Shop sits under Learn — external links. */}
-                {section.title === 'Learn' && !isSectionHidden('HCP Skill Shop') && (
+                {section.title === 'Learn' && !collapsed.has(section.title) && !isSectionHidden('HCP Skill Shop') && (
                   <>
-                    <SectionLabel>HCP Skill Shop</SectionLabel>
-                    {SKILL_SHOP_LINKS.map((link) => (
+                    <SectionLabel collapsed={collapsed.has('HCP Skill Shop')} onToggle={() => toggleSection('HCP Skill Shop')}>HCP Skill Shop</SectionLabel>
+                    {collapsed.has('HCP Skill Shop') ? null : SKILL_SHOP_LINKS.map((link) => (
                       isItemHidden(link.href) ? null : (
                         <a
                           key={link.href}
@@ -271,8 +322,8 @@ function Drawer({ open, onClose }) {
 
           {isAdmin && (
             <div>
-              <SectionLabel>Admin</SectionLabel>
-              {ADMIN_ITEMS.map((item) => <NavRow key={item.href} item={item} />)}
+              <SectionLabel collapsed={collapsed.has('Admin')} onToggle={() => toggleSection('Admin')}>Admin</SectionLabel>
+              {collapsed.has('Admin') ? null : ADMIN_ITEMS.map((item) => <NavRow key={item.href} item={item} />)}
             </div>
           )}
         </nav>
