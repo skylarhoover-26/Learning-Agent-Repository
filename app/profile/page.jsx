@@ -14,6 +14,7 @@ import { useProgression } from '@/components/progression-provider';
 import Avatar from '@/components/avatar';
 import AvatarLocker from '@/components/avatar-locker';
 import { useChampions } from '@/components/champion-provider';
+import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { DEPARTMENTS, SUBTEAMS, getTaskList } from '@/lib/curriculum-data';
 
@@ -45,6 +46,8 @@ function ProfilePageInner() {
   const router = useRouter();
   const { profile: ctxProfile, updateProfile, isLoading: profileLoading } = useProfile();
   const { crownTier } = useChampions();
+  // Gates the full profile reset — support action, not self-service (feedback #147).
+  const { isAdmin } = useMenuVisibility();
   // Live progression stats (XP, level, badges, lessons) so the cards below reflect
   // real progress instead of static placeholders. Re-reads on every XP award via
   // the provider's xp-bus subscription, so leveling up updates here immediately.
@@ -569,8 +572,17 @@ function ProfilePageInner() {
             )}
           </div>
 
+          {/* Full reset is admin-only now that we are live (feedback #147). It wipes
+              every setting and sends the person back through onboarding, which is a
+              support action rather than something a learner should be one click from
+              on their own profile. "Reset progress only" above stays open to
+              everyone: it keeps their role and tasks, so the blast radius is XP and
+              history rather than their whole account. */}
+          {isAdmin && (
+          <>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
             <span className="font-medium text-ink dark:text-slate-200">Reset profile (full)</span> — clears all settings and progress and sends you back through onboarding.
+            <span className="block mt-1 text-xs">Admin only.</span>
           </p>
           {!showResetConfirm ? (
             <button
@@ -600,6 +612,8 @@ function ProfilePageInner() {
                 </button>
               </div>
             </div>
+          )}
+          </>
           )}
         </div>
       </main>
