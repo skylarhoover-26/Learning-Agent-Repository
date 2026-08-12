@@ -250,7 +250,12 @@ export default function CinematicHome() {
               href="/chat"
               className="cine-pill cine-tilt inline-flex items-center gap-2 h-12 px-6 font-semibold"
             >
-              <MessageCircle className="w-4 h-4 shrink-0" /> Chat with your coach <ArrowRight className="w-4 h-4 shrink-0" />
+              {/* "Just Chat", not "Chat with your coach". This one button was the
+                  only place using the second name, while the menu, the page header,
+                  the home tile below and even the coach's own description of its
+                  features all say Just Chat — so the hero read as a different
+                  feature from the one it links to (feedback #155, #156). */}
+              <MessageCircle className="w-4 h-4 shrink-0" /> Just Chat <ArrowRight className="w-4 h-4 shrink-0" />
             </Link>
             <Link
               href="/heatmap"
