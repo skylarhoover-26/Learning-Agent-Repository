@@ -21,11 +21,15 @@ import {
 // The "Show everything" toggle is the point of storing rejected items rather
 // than discarding them: if the rubric turns out too strict, you can see exactly
 // what it dropped and adjust, instead of wondering what you never saw.
+// How many of the newest items get a tailored line. Matches the server cap in
+// api/ai-news/why, and keeps the single generation call small.
+const WHY_LIMIT = 12;
+
 export default function AiNewsPage() {
   return <CinematicFrame><AiNewsInner /></CinematicFrame>;
 }
 
-function NewsRow({ item }) {
+function NewsRow({ item, why }) {
   return (
     // The whole row is now the "Take a lesson" target via the stretched link
     // below, so the hover lift/glow means something rather than decorating a
@@ -58,6 +62,16 @@ function NewsRow({ item }) {
               {item.summary}
             </p>
           )}
+          {/* What it means for THIS reader, generated from their role and tasks.
+              The blurb above summarises the article; this says what changed and
+              why it lands on their desk (feedback #145). Absent until it loads,
+              and absent entirely if generation failed, so the row still reads
+              fine without it. */}
+          {why && (
+            <p className="text-sm leading-relaxed mt-2 pl-2.5" style={{ color: 'var(--ink)', borderLeft: '2px solid var(--accent)' }}>
+              <span className="font-semibold">Why this matters to you: </span>{why}
+            </p>
+          )}
           <div className="flex items-center gap-3 mt-2">
             {/* pointer-events-auto: the content wrapper above is
                 pointer-events-none so clicks anywhere on the row reach the
@@ -88,7 +102,7 @@ function NewsRow({ item }) {
   );
 }
 
-function CategorySection({ label, count, items, note }) {
+function CategorySection({ label, count, items, note, why }) {
   return (
     <section>
       <div className="flex items-center gap-2 mb-1">
@@ -98,7 +112,7 @@ function CategorySection({ label, count, items, note }) {
       {note && <p className="text-sm mb-3" style={{ color: 'var(--ink-dim)' }}>{note}</p>}
       <div className="space-y-2 mt-3">
         {items.map((item, i) => (
-          <NewsRow key={item.externalId || `${label}-${i}`} item={item} />
+          <NewsRow key={item.externalId || `${label}-${i}`} item={item} why={why?.[item.externalId]} />
         ))}
       </div>
     </section>
@@ -147,6 +161,37 @@ function AiNewsInner() {
   // Memoized: `data?.items || []` is a new array identity every render, which made
   // every useMemo below re-run on each one — memoized in name only.
   const all = useMemo(() => data?.items || [], [data]);
+
+  // Per-learner "why this matters to you", one line per item. Fetched after the
+  // list lands, in a single request covering the newest items, and cached
+  // server-side per learner per content-day so revisits cost nothing.
+  //
+  // The effect depends on a STRING of ids, not on `all`. `all` is a fresh array
+  // identity whenever data reloads, and depending on it would re-POST on every
+  // such render; the joined ids only change when the actual set of items does.
+  const [why, setWhy] = useState({});
+  const whyItems = useMemo(
+    () => all.slice(0, WHY_LIMIT).filter((i) => i.externalId && i.title),
+    [all],
+  );
+  const whyKey = useMemo(() => whyItems.map((i) => i.externalId).join('|'), [whyItems]);
+
+  useEffect(() => {
+    if (!whyKey) return;
+    let active = true;
+    fetch('/api/ai-news/why', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: whyItems.map((i) => ({ id: i.externalId, title: i.title, summary: i.summary })),
+      }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (active && d?.why) setWhy(d.why); })
+      .catch(() => { /* the list reads fine without these lines */ });
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [whyKey]);
 
   // Source filter + sort apply to EVERYTHING, before the view pills, so the pill
   // counts always describe what you'd actually get by clicking them.
@@ -290,6 +335,7 @@ function AiNewsInner() {
                   label={g.label}
                   count={g.items.length}
                   items={g.items}
+                  why={why}
                 />
               ))}
             </div>
@@ -309,7 +355,7 @@ function AiNewsInner() {
                 </p>
                 <div className="space-y-2 mt-3">
                   {research.map((item, i) => (
-                    <NewsRow key={item.externalId || `research-${i}`} item={item} />
+                    <NewsRow key={item.externalId || `research-${i}`} item={item} why={why?.[item.externalId]} />
                   ))}
                 </div>
               </div>
