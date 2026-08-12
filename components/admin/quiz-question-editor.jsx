@@ -16,6 +16,19 @@ import { MIN_ANSWERS, MAX_ANSWERS } from '@/lib/onboarding-quiz';
 
 const inputClass = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-ink dark:text-slate-200 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all';
 
+// Model families, for the "this names a specific model" warning below.
+//
+// A live question once asked learners to choose between two models BY NAME and
+// version, and the version it recommended had already been superseded by the
+// time anyone noticed — so the placement quiz every new hire takes was teaching
+// a stale fact. The durable skill is the judgment (a fast everyday model vs a
+// slower deep-reasoning one); the names churn every few months.
+//
+// Deliberately a warning and not a block: there are legitimate reasons to name a
+// tool, and the author is better placed to judge than a regex. The parse route
+// has the same rule in its prompt, so imports avoid this on the way in.
+const MODEL_NAME_RE = /\b(gpt|claude|opus|sonnet|haiku|gemini|llama|mistral|grok|o[1-4]-(?:mini|preview))\b/i;
+
 export default function QuizQuestionEditor({
   question, index, total, labels, onChange, onRemove, onMove, canReorder = true,
 }) {
@@ -32,6 +45,9 @@ export default function QuizQuestionEditor({
   if (!question.why?.trim()) warnings.push('No "why" explanation');
   const bestAnswer = answers[question.best];
   if (bestAnswer && !Object.keys(bestAnswer.scores || {}).length) warnings.push('Best answer scores nothing');
+  const allText = [question.setup, question.prompt, question.why, ...answers.map((a) => a.text)]
+    .filter(Boolean).join(' ');
+  if (MODEL_NAME_RE.test(allText)) warnings.push('Names a specific AI model — model names go stale, ask about the judgment instead');
 
   function set(patch) {
     onChange({ ...question, ...patch });
