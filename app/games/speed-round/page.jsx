@@ -6,12 +6,13 @@ import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
-  Timer, ChevronRight, RotateCcw, CheckCircle2, XCircle, Trophy,
+  Timer, RotateCcw, CheckCircle2, XCircle, Trophy,
 } from 'lucide-react';
 import ALL_QUESTIONS from './questions';
 import { saveGameResult, getGameStats } from '@/lib/game-store';
 import GameInstructions from '@/components/game-instructions';
 import GameGenLoading from '@/components/game-gen-loading';
+import GameStartScreen from '@/components/game-start-screen';
 
 const TIMER_SECONDS = 15;
 const QUESTIONS_PER_GAME = 10;
@@ -305,17 +306,6 @@ function SpeedRound() {
     );
   }
 
-  if (genLoading) {
-    return (
-      <div className="min-h-screen">
-        <PageHeader icon={Timer} title="Speed Round" subtitle="Building your custom round" />
-        <main className="max-w-2xl mx-auto px-6 pt-6">
-          <GameGenLoading label={`Building a Speed Round on ${topic}…`} estimateSeconds={14} />
-        </main>
-      </div>
-    );
-  }
-
   if (genError) {
     return (
       <div className="min-h-screen">
@@ -329,6 +319,25 @@ function SpeedRound() {
     );
   }
 
+  // The rules now cover the generation wait instead of a bare spinner running
+  // first and the rules appearing only after it — a topic round showed 14s of
+  // progress bar before you were told what the game was.
+  if (!started) {
+    return (
+      <GameStartScreen
+        icon={Timer}
+        title="Speed Round"
+        subtitle={topic ? `on ${topic}` : 'Rapid-fire multiple choice'}
+        steps={HOW_TO_PLAY}
+        loading={genLoading}
+        ready={questions.length > 0}
+        onStart={() => { setSecondsLeft(TIMER_SECONDS); setStarted(true); }}
+        loadingLabel={`Building a Speed Round on ${topic}…`}
+        footnote={stats?.gamesPlayed > 0 ? `Best: ${stats.bestScore}/${QUESTIONS_PER_GAME} · Played: ${stats.gamesPlayed}` : null}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-bg-subtle dark:bg-slate-700">
       <PageHeader
@@ -338,37 +347,6 @@ function SpeedRound() {
       />
 
       <main className="max-w-2xl mx-auto px-6 pt-6 pb-8">
-        {!started ? (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
-              <Timer className="w-8 h-8 text-brand-600 dark:text-brand-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-4">Speed Round</h2>
-
-            <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
-
-            {stats && stats.gamesPlayed > 0 && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Best: {stats.bestScore}/{QUESTIONS_PER_GAME} &middot; Played: {stats.gamesPlayed}
-              </p>
-            )}
-
-            <button
-              onClick={() => { setSecondsLeft(TIMER_SECONDS); setStarted(true); }}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all"
-            >
-              Start Game
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            <div className="mt-6">
-              <Link href="/games" className="text-sm text-brand font-medium hover:underline">
-                Back to all games
-              </Link>
-            </div>
-          </div>
-        ) : (
-        <>
         <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
         {/* Question counter — previously shown in the page header, which the
@@ -459,8 +437,6 @@ function SpeedRound() {
             Back to all games
           </Link>
         </div>
-        </>
-        )}
       </main>
     </div>
   );

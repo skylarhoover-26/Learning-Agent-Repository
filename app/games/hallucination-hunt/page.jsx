@@ -11,6 +11,7 @@ import {
 import ROUNDS from './rounds';
 import GameInstructions from '@/components/game-instructions';
 import GameGenLoading from '@/components/game-gen-loading';
+import GameStartScreen from '@/components/game-start-screen';
 import { dailyPick } from '@/lib/content-day';
 
 const HOW_TO_PLAY = [
@@ -93,7 +94,11 @@ function HallucinationHunt() {
       body: JSON.stringify({ type: 'halluc', topic }),
     })
       .then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Failed'); return d; })
-      .then((d) => { if (live) { setGenRounds(d.rounds); setStarted(true); setGenLoading(false); } })
+      // Deliberately does NOT set started — a generated round goes through the
+      // same How-to-play gate as a built-in one. It used to auto-start here, which
+      // meant naming a topic (or hitting "Surprise me") dropped you onto the
+      // sentences with no rules ever shown (feedback #187).
+      .then((d) => { if (live) { setGenRounds(d.rounds); setGenLoading(false); } })
       .catch((e) => { if (live) { setGenError(e.message); setGenLoading(false); } });
     return () => { live = false; };
   }, [topic]);
@@ -258,24 +263,52 @@ function HallucinationHunt() {
     }
   }
 
-  if (genLoading) {
-    return (
-      <div className="min-h-screen">
-        <PageHeader icon={Search} title="Hallucination Hunt" subtitle="Building your custom round" />
-        <main className="max-w-2xl mx-auto px-6 pt-6">
-          <GameGenLoading label={`Building a Hallucination Hunt on ${topic}…`} estimateSeconds={18} />
-        </main>
-      </div>
-    );
-  }
-
-  if (genError || (topic && !round)) {
+  if (genError) {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Search} title="Hallucination Hunt" />
         <main className="max-w-lg mx-auto px-6 py-20 text-center">
           <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">Couldn&rsquo;t build that round</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{genError || 'Try a different topic.'}</p>
+          <Link href="/games" className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm">Back to games</Link>
+        </main>
+      </div>
+    );
+  }
+
+  // The rules screen now covers the generation wait, so it sits ahead of the
+  // "round didn't arrive" gate — during generation `round` is legitimately
+  // undefined and that gate would otherwise report a failure that hasn't happened.
+  if (!started) {
+    return (
+      <GameStartScreen
+        icon={Search}
+        title="Hallucination Hunt"
+        subtitle={topic ? `on ${topic}` : 'Find the factual errors in AI responses'}
+        steps={HOW_TO_PLAY}
+        loading={genLoading}
+        ready={!topic || rounds.length > 0}
+        onStart={() => setStarted(true)}
+        loadingLabel={`Building a Hallucination Hunt on ${topic}…`}
+        footnote={stats?.gamesPlayed > 0 ? `Best: ${stats.bestScore} · Played: ${stats.gamesPlayed}` : null}
+        resume={resumeAvailable && savedProgress
+          ? {
+              label: `Resume (Round ${(savedProgress.roundIdx || 0) + 1} of ${rounds.length})`,
+              onResume: handleResume,
+              onStartFresh: handleStartFresh,
+            }
+          : null}
+      />
+    );
+  }
+
+  if (topic && !round) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Search} title="Hallucination Hunt" />
+        <main className="max-w-lg mx-auto px-6 py-20 text-center">
+          <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">Couldn&rsquo;t build that round</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Try a different topic.</p>
           <Link href="/games" className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm">Back to games</Link>
         </main>
       </div>
@@ -377,46 +410,6 @@ function HallucinationHunt() {
       />
 
       <main className="max-w-3xl mx-auto px-6 pt-6 pb-8">
-        {!started ? (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-brand-600 dark:text-brand-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-4">Hallucination Hunt</h2>
-
-            <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
-
-            {stats && stats.gamesPlayed > 0 && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Best: {stats.bestScore} &middot; Played: {stats.gamesPlayed}
-              </p>
-            )}
-
-            {resumeAvailable && savedProgress ? (
-              <div className="flex items-center justify-center gap-3">
-                <button onClick={handleResume} className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all">
-                  Resume (Round {(savedProgress.roundIdx || 0) + 1} of {rounds.length})
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-                <button onClick={handleStartFresh} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:hover:bg-slate-700 transition-all">
-                  Start fresh
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => setStarted(true)} className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all">
-                Start Game
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-
-            <div className="mt-6">
-              <Link href="/games" className="text-sm text-brand font-medium hover:underline">
-                Back to all games
-              </Link>
-            </div>
-          </div>
-        ) : (
-        <>
         <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
         {/* Round info */}
@@ -544,8 +537,6 @@ function HallucinationHunt() {
             Back to all games
           </Link>
         </div>
-        </>
-        )}
       </main>
     </div>
   );

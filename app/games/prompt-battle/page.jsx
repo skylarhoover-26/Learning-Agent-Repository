@@ -13,6 +13,7 @@ import {
 } from '@/lib/game-store';
 import GameInstructions from '@/components/game-instructions';
 import GameGenLoading from '@/components/game-gen-loading';
+import GameStartScreen from '@/components/game-start-screen';
 import SCENARIOS from './scenarios';
 
 const HOW_TO_PLAY = [
@@ -88,7 +89,9 @@ function PromptBattle() {
       body: JSON.stringify({ type: 'prompt', topic }),
     })
       .then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Failed'); return d; })
-      .then((d) => { if (live) { setGenScenarios(d.scenarios); setStarted(true); setGenLoading(false); } })
+      // Deliberately does NOT set started — see the same note in Hallucination
+      // Hunt. Naming a topic skipped the rules entirely (feedback #187).
+      .then((d) => { if (live) { setGenScenarios(d.scenarios); setGenLoading(false); } })
       .catch((e) => { if (live) { setGenError(e.message); setGenLoading(false); } });
     return () => { live = false; };
   }, [topic]);
@@ -314,24 +317,47 @@ function PromptBattle() {
     );
   }
 
-  if (genLoading) {
-    return (
-      <div className="min-h-screen">
-        <PageHeader icon={Swords} title="Prompt Battle" subtitle="Building your custom round" />
-        <main className="max-w-2xl mx-auto px-6 pt-6">
-          <GameGenLoading label={`Building a Prompt Battle on ${topic}…`} estimateSeconds={14} />
-        </main>
-      </div>
-    );
-  }
-
-  if (genError || (topic && !scenarios[scenarioIdx])) {
+  if (genError) {
     return (
       <div className="min-h-screen">
         <PageHeader icon={Swords} title="Prompt Battle" />
         <main className="max-w-lg mx-auto px-6 py-20 text-center">
           <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">Couldn&rsquo;t build that round</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{genError || 'Try a different topic.'}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{genError}</p>
+          <Link href="/games" className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm">Back to games</Link>
+        </main>
+      </div>
+    );
+  }
+
+  // Ahead of the "scenario didn't arrive" gate on purpose — during generation
+  // there is legitimately no scenario yet, and the rules screen covers that wait.
+  if (!started) {
+    return (
+      <GameStartScreen
+        icon={Swords}
+        title="Prompt Battle"
+        subtitle={topic ? `on ${topic}` : 'Write the best prompt for the scenario'}
+        steps={HOW_TO_PLAY}
+        loading={genLoading}
+        ready={!topic || scenarios.length > 0}
+        onStart={() => setStarted(true)}
+        loadingLabel={`Building a Prompt Battle on ${topic}…`}
+        footnote={stats?.gamesPlayed > 0 ? `Best: ${stats.bestScore} · Played: ${stats.gamesPlayed}` : null}
+        resume={showResume
+          ? { label: 'Resume game', onResume: handleResume, onStartFresh: handleStartFresh }
+          : null}
+      />
+    );
+  }
+
+  if (topic && !scenarios[scenarioIdx]) {
+    return (
+      <div className="min-h-screen">
+        <PageHeader icon={Swords} title="Prompt Battle" />
+        <main className="max-w-lg mx-auto px-6 py-20 text-center">
+          <h2 className="text-xl font-bold text-ink dark:text-slate-200 mb-2">Couldn&rsquo;t build that round</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Try a different topic.</p>
           <Link href="/games" className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm">Back to games</Link>
         </main>
       </div>
@@ -349,46 +375,6 @@ function PromptBattle() {
       />
 
       <main className="max-w-3xl mx-auto px-6 pt-6 pb-8">
-        {!started ? (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-8 text-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
-              <Swords className="w-8 h-8 text-brand-600 dark:text-brand-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-4">Prompt Battle</h2>
-
-            <GameInstructions className="text-left mb-5" steps={HOW_TO_PLAY} />
-
-            {stats && stats.gamesPlayed > 0 && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Best: {stats.bestScore} &middot; Played: {stats.gamesPlayed}
-              </p>
-            )}
-
-            {showResume ? (
-              <div className="flex items-center justify-center gap-3">
-                <button onClick={handleResume} className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all">
-                  Resume game
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-                <button onClick={handleStartFresh} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 font-semibold text-sm hover:bg-bg-subtle dark:hover:bg-slate-700 transition-all">
-                  Start fresh
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => setStarted(true)} className="inline-flex items-center gap-2 px-6 py-2.5 bg-cta text-ink rounded-pill font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all">
-                Start Game
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-
-            <div className="mt-6">
-              <Link href="/games" className="text-sm text-brand font-medium hover:underline">
-                Back to all games
-              </Link>
-            </div>
-          </div>
-        ) : (
-        <>
         <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
 
         {/* Progress indicator */}
@@ -532,8 +518,6 @@ function PromptBattle() {
             Back to all games
           </Link>
         </div>
-        </>
-        )}
       </main>
     </div>
   );
