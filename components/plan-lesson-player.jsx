@@ -188,6 +188,8 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
   // End-of-lesson: claim XP first, THEN run the "did this help?" checkpoint.
   const [claimed, setClaimed] = useState(false);      // XP recorded, lesson done
   const [award, setAward] = useState(null);           // result of onLessonComplete
+  // Set when the tip just claimed is the one that hits the daily quick-tip cap.
+  const [capJustReached, setCapJustReached] = useState(false);
   // Shown when a learner exhausts all 3 tries on an activity: a pop-up that sends
   // them back to the start of the lesson (no XP for the failed run).
   const [restartPrompt, setRestartPrompt] = useState(false);
@@ -1100,6 +1102,14 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         emitXp(result);
         setAward(result);
         trackLessonComplete(topic, format, durationMs);
+        // Did THIS tip just take them to the cap? Checked after recording, so the
+        // count includes the one they only now finished. The existing cap notice
+        // fires on a tip started once you're already over, which means the person
+        // who earns all five in a row is never told they've hit the ceiling — they
+        // just silently stop being paid on the next one (feedback #177).
+        if (format === 'quick_tip') {
+          setCapJustReached(quickTipCapReached(resolveLearnerId(profile)));
+        }
       }
     } catch {
       // best-effort
@@ -1315,6 +1325,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           </button>
         </div>
       )}
+      {/* You just hit the ceiling. Said plainly, and pointed somewhere that still
+          pays, so it reads as "here's what's next" rather than "you're done". */}
+      {capJustReached && (
+        <div className="mt-5 rounded-xl border border-brand-200 dark:border-slate-600 bg-brand-50/60 dark:bg-slate-800 p-4 text-center">
+          <p className="text-sm text-ink dark:text-slate-200">
+            That&rsquo;s {DAILY_CAPS.quick_tip} quick tips today, which is the daily cap. More quick tips today
+            won&rsquo;t earn XP, but a <span className="font-semibold">Quick Lesson</span>, a{' '}
+            <span className="font-semibold">Deep Dive</span> or a game still will. The cap resets at 8 AM PT.
+          </p>
+        </div>
+      )}
       {checkpointBlock}
     </>
   );
@@ -1341,7 +1362,11 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
                 onClick={retakeLesson}
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-all"
               >
-                <RotateCcw className="w-4 h-4" /> Restart from the beginning
+                {/* Named for the outcome, not the mechanic. The restart flow was
+                    already here, but "Restart from the beginning" reads as losing
+                    your work rather than as the way to earn the XP back, so it was
+                    reported as a missing retake option (feedback #178). */}
+                <RotateCcw className="w-4 h-4" /> Retake to earn full XP
               </button>
               <button
                 onClick={() => { setRestartPrompt(false); if (onExit) onExit(); else router.push('/'); }}
@@ -1430,6 +1455,16 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         </div>
         {format !== 'quick_tip' && (
           <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">Step {stepIdx + 1} of {total}</span>
+        )}
+        {/* Refine sits up here beside Pause, on every step. It used to exist only
+            as a grey text-xs link at the very bottom of the page, below the whole
+            lesson, reading as fine print — which is why it was reported missing
+            outright (feedback #168). Same treatment as Pause so the two lesson-level
+            controls look like a pair. */}
+        {!refineOpen && (
+          <button onClick={openRefine} className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors">
+            <RefreshCw className="w-3.5 h-3.5" /> Refine
+          </button>
         )}
         <button onClick={pauseAndExit} className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors">
           <Pause className="w-3.5 h-3.5" /> Pause
@@ -1876,9 +1911,9 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         <div className="text-center">
           <button
             onClick={openRefine}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-brand hover:text-brand transition-colors"
           >
-            <RotateCcw className="w-3.5 h-3.5" /> This isn&rsquo;t what I was looking for
+            <RotateCcw className="w-4 h-4" /> Refine this lesson &mdash; it isn&rsquo;t what I wanted
           </button>
         </div>
       )}
