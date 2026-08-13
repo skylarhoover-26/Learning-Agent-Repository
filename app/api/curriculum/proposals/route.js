@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readJsonBlob, writeJsonBlob, delJsonBlob } from '@/lib/blob-json';
+import { readJsonBlob, writeJsonBlob } from '@/lib/blob-json';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 
@@ -12,9 +12,12 @@ async function readBlob(key) {
 
 async function writeBlob(key, data) {
   try {
-    // Clear both stores first — a public copy left over from before the
-    // private-store cutover would otherwise outlive the new write.
-    await delJsonBlob(key);
+    // Overwrite in place. Do NOT delete first: a del+put leaves the pathname
+    // returning 404 for a short window afterwards, so a read straight after a
+    // write misses. writeJsonBlob already passes allowOverwrite, and
+    // lib/blob-store.js moved off del+put for this exact reason. Stale public
+    // copies from before the private-store cutover are handled once by
+    // scripts/migrate-blobs-private.mjs --cleanup, not on every write.
     await writeJsonBlob(key, data);
   } catch (error) {
     console.error(`Blob write error (${key}):`, error);
