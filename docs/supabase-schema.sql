@@ -312,3 +312,47 @@ begin
   return v_deleted;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Activity events (reporting)
+--
+-- Everything the admin Activity Log shows, in a table you can actually query.
+-- The log itself lives in blob storage as one immutable object per event
+-- (audit/<date>/<id>.json), which is fine for "show me today" and useless for
+-- "how is Andrea's team doing on lessons this month" — that question needs a
+-- join and a group-by, not 2,000 HTTP fetches.
+--
+-- Blob stays the source of truth; this mirrors alongside it. A Supabase failure
+-- must never break the write path (lib/audit-log.js swallows it), so treat this
+-- table as complete-from-the-day-it-shipped, not complete historically.
+--
+-- NOT foreign-keyed to profiles on purpose. Events fire from crons, Slack, and
+-- signed-out paths where there is no profile row, and an FK violation would
+-- throw away the event — which is the one thing a log must not do.
+create table if not exists activity_events (
+  id          text primary key,                 -- same id as the blob entry
+  created_at  timestamptz not null default now(),
+  type        text not null,                    -- lesson_complete | game_complete | page_visit | ...
+  endpoint    text,
+  email       text,
+  name        text,
+  department  text,
+  tier        text,                             -- level at the time of the event
+  duration_ms integer default 0,
+  error       text,
+  input       jsonb default '{}'::jsonb,        -- the event payload (topic, score, format...)
+  output      jsonb
+);
+-- "What has this person been doing lately" and "everything of this kind today"
+-- are the two queries this table exists to answer.
+create index if not exists activity_events_email_created_idx on activity_events(email, created_at desc);
+create index if not exists activity_events_type_created_idx  on activity_events(type, created_at desc);
+create index if not exists activity_events_created_idx       on activity_events(created_at desc);
+
+alter table activity_events enable row level security;
+do $$
+begin
+  if not exists (select 1 from pg_policies where tablename = 'activity_events' and policyname = 'service_role_all') then
+    create policy service_role_all on activity_events for all to service_role using (true) with check (true);
+  end if;
+end $$;

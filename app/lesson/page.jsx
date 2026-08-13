@@ -359,6 +359,9 @@ function LessonContent() {
   // Correctness (0..1) from the quiz, read when completion is recorded.
   const quizCorrectnessRef = useRef(1);
   const quizCorrectRef = useRef(0);
+  // How many questions there were, so the log records "3 of 5" rather than a
+  // bare percentage with no idea how much it was measured over.
+  const quizTotalRef = useRef(0);
   const { refresh: refreshProgression } = useProgression() || {};
   const { profile } = useProfile();
   const { tools } = useActiveTool();
@@ -540,6 +543,7 @@ function LessonContent() {
     setQuizActive(false);
     quizCorrectnessRef.current = 1;
     quizCorrectRef.current = 0;
+    quizTotalRef.current = 0;
     setFinishing(false);
 
     try {
@@ -737,6 +741,7 @@ function LessonContent() {
     if (format === 'quick_tip') {
       quizCorrectnessRef.current = 1;
       quizCorrectRef.current = 0;
+      quizTotalRef.current = 0;
       wrapUpLesson();
       return;
     }
@@ -771,6 +776,7 @@ function LessonContent() {
   function handleQuizFinish(correctness, stats) {
     quizCorrectnessRef.current = correctness;
     quizCorrectRef.current = stats?.correctCount || 0;
+    quizTotalRef.current = stats?.total || 0;
     setFinishing(true);
     setQuizActive(false);
     wrapUpLesson();
@@ -821,7 +827,11 @@ function LessonContent() {
         emitXp(result);
         applyAdaptivePerformance(profile, quizCorrectnessRef.current);
         refreshProgression?.();
-        trackLessonComplete(topic, format, durationMs);
+        trackLessonComplete(topic, format, durationMs, {
+          correctness: quizCorrectnessRef.current,
+          quizCorrect: quizCorrectRef.current,
+          quizTotal: quizTotalRef.current,
+        });
       }
     } catch {
       // progression is best-effort
@@ -1059,7 +1069,7 @@ function LessonContent() {
         emitXp(result);
         applyAdaptivePerformance(profile, correctness);
         refreshProgression?.();
-        trackLessonComplete(videoTopic, format, durationMs);
+        trackLessonComplete(videoTopic, format, durationMs, { correctness, quizCorrect });
       }
     } catch {
       // progression is best-effort
