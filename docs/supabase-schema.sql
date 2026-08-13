@@ -410,3 +410,15 @@ create or replace view learner_level_gaps as
   from profiles p
   join learner_levels l on l.email = p.email
   where l.earned_tier is distinct from p.tier;
+
+-- A view does NOT inherit the RLS of the tables under it, and by default it runs
+-- with its CREATOR's privileges — so left alone this one reads straight past the
+-- policies on profiles and learner_levels, and Supabase flags it UNRESTRICTED.
+--
+-- security_invoker makes it run as whoever queries it, which puts it back behind
+-- RLS (default-deny for anon/authenticated). The revoke is the belt to that
+-- braces: nothing but the server should be reading it at all. The app never
+-- queries this view — it exists for looking at the data in the SQL editor, where
+-- you are the postgres role and see everything regardless.
+alter view learner_level_gaps set (security_invoker = on);
+revoke all on learner_level_gaps from anon, authenticated;
