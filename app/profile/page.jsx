@@ -94,12 +94,47 @@ function ProfilePageInner() {
     }
   }
 
-  async function handleReset() {
-    // 1. Delete the server-side profile so the onboarding gate reopens.
+  // Wipe this person server-side, through the one route that does it properly:
+  // blob + Supabase (XP is stored as ROWS there, so it has to be deleted, not
+  // written over) + a reset epoch so their OTHER devices clear themselves too.
+  //
+  // Both resets used to be browser-only. "Reset progress" made no server call at
+  // all, and the full reset deleted only the profile — so the blob and Supabase
+  // kept every XP event, and the next page load pulled it all straight back and
+  // re-uploaded it. Clearing localStorage alone cannot reset anything that syncs.
+  //
+  // The Danger Zone is admin-only (feedback #147), which is why calling the admin
+  // route here is not a privilege problem — and it takes the email explicitly, so
+  // it resets the person looking at the page rather than whoever is signed in.
+  async function resetOnServer(mode) {
+    const email = profile?.email;
+    if (!email) return;
     try {
-      await fetch('/api/user-data?type=profile', { method: 'DELETE' });
+      const res = await fetch('/api/admin/reset-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, mode }),
+      });
+      // A 404 means there was nothing stored to clear — fine, carry on and clear
+      // the browser. Anything else is a real failure worth surfacing, because a
+      // reset that half-worked is the thing that wastes an afternoon.
+      if (!res.ok && res.status !== 404) {
+        const d = await res.json().catch(() => null);
+        throw new Error(d?.error || `Reset failed (${res.status})`);
+      }
     } catch (error) {
-      console.error('Failed to delete profile:', error);
+      console.error('Server-side reset failed:', error);
+      window.alert('Your progress could not be reset on the server, so it would come back on your next visit. Nothing has been changed — please try again.');
+      throw error;
+    }
+  }
+
+  async function handleReset() {
+    // 1. Wipe everything server-side so nothing can re-hydrate afterwards.
+    try {
+      await resetOnServer('full');
+    } catch {
+      return; // already reported; leave their data alone rather than half-reset
     }
     // 2. Clear all learning state held in this browser (XP, levels, badges,
     //    quests, lessons, goals, calibration, tutorial flag, cached profile).
@@ -110,6 +145,9 @@ function ProfilePageInner() {
         // must be cleared on reset, or the gate stays satisfied and the user is
         // never re-calibrated after re-onboarding.
         'lp_', 'learner_', 'ai_impact_', 'calibration_', 'la_calibrated', 'tutorial_completed',
+        // Not prefixed like the others, so it needs naming explicitly — otherwise
+        // the earned difficulty level survives the wipe and syncs itself back.
+        'adaptive_level',
       ];
       Object.keys(localStorage)
         .filter((k) => prefixes.some((p) => k === p || k.startsWith(p)))
@@ -126,7 +164,12 @@ function ProfilePageInner() {
   // on the dashboard and does NOT go back through onboarding.
   async function handleResetProgress() {
     try {
-      const prefixes = ['lp_', 'learner_', 'ai_impact_', 'calibration_', 'la_calibrated', 'tutorial_completed'];
+      await resetOnServer('progress');
+    } catch {
+      return; // already reported
+    }
+    try {
+      const prefixes = ['lp_', 'learner_', 'ai_impact_', 'calibration_', 'la_calibrated', 'tutorial_completed', 'adaptive_level'];
       const keep = new Set(['learner_profile']); // the role/tasks/level cache
       Object.keys(localStorage)
         .filter((k) => !keep.has(k) && prefixes.some((p) => k === p || k.startsWith(p)))
