@@ -21,7 +21,7 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **Open, and larger than reported** — media is closed. 137 JSON blobs in the linked store are still world-readable, and a **second public store (`learning-agent-blob`, 31.61 MB) has never been reviewed at all** — it serves audit entries with name/email/department + AI inputs anonymously. See *a SECOND public store* below |
+| F-05 | Medium | Blobs written `access: 'public'` | **Closed for the linked store 2026-08-13** — media private; all 137 JSON blobs copied to the private store and the public originals deleted. `learning-platform-data` is now empty (0 blobs) and the URL the verification fetched returns 404. **Still open:** a second public store (`learning-agent-blob`, 31.61 MB) that no pass has reviewed — see below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-13** — the 2026-08-11 entry covered only `lib/content-safety.js`; six further prompts (including two unattended cron classifiers) were still taking feed text raw. All eight now quarantine via `lib/untrusted.js`. `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
@@ -262,6 +262,62 @@ BLOB_READ_WRITE_TOKEN=<public> PRIVATE_READ_WRITE_TOKEN=<private> \
 audit history is copied across rather than lost. Run it after deploying the
 store-aware listing, not before — otherwise the audit log has no reader that can
 see the copies it just made.
+
+## F-05 — JSON cleanup completed 2026-08-13
+
+Ran against the linked store with both production tokens:
+
+```
+migrate  : copied 130, already present 7, failed 0
+verify   : 130 identical, 0 missing, 7 differing
+cleanup  : deleted 137 public copies, refused 0
+```
+
+Public store `learning-platform-data` is now **0 blobs**. The exact URL the
+verification report fetched anonymously — `users/<email>/profile.json`, which
+returned HTTP 200 with real profile PII — now returns **404**, as do
+`leaderboard/cache.json` and a sampled audit entry.
+
+**The 7 "differing" blobs were not a problem, and it is worth recording why.**
+They are the 7 that already had private copies, because the live app has been
+writing them there since the 2026-08-11 cutover. The private side is newer in
+every case:
+
+| Blob | Public (stale, Jul) | Private (live) |
+|---|---|---|
+| `lp_xp_<email>.json` | `array[1]` | `array[4]` |
+| `leaderboard/cache.json` | generated 2026-07-15 | generated 2026-08-13 |
+| `calibration_history.json` | `array[1]` | `array[4]` |
+| `lp_notifications.json` | `array[1]` | `array[6]` |
+| `calibration_profile.json` | has `selfRating` | has `measuredKeys` (schema changed) |
+
+What the public copies held that private did not: one superseded July
+calibration snapshot, one old notification, and the pre-schema-change
+`selfRating` field. Reads have been private-first since the cutover, so the app
+had already stopped seeing any of it. A full byte-verified local backup of all
+137 blobs was taken before deleting.
+
+**Ordering mistake worth not repeating.** The runbook below says to run cleanup
+*after* deploying the store-aware listing. It was run before. Consequence, until
+`41d8c74` ships: the deployed code lists only the public store, which is now
+empty, so the admin reporting page enumerates zero learners and the audit log
+shows nothing. Learner-facing surfaces are unaffected — they read Supabase.
+Deploying resolves it; no data is lost either way, since everything is in the
+private store.
+
+## Obs: the 2026-07-15 write gap — resolved for current state
+
+Listing the private store settled what the repo alone could not. It holds 969
+blobs with writes on 2026-08-11, 08-12 and 08-13 — 165 today across `audit/`,
+`users/`, `shared/`, `daily/`, `config/`, `leaderboard/`, `reporting/` and
+`manager-data/`. **Writes are healthy and current.**
+
+The private store was created on 2026-08-11, so it cannot hold anything older,
+and the public store's last write was 2026-07-15. The ~4 weeks between remain
+genuinely empty in both stores — historical audit-log coverage that no longer
+exists anywhere. Not worth further archaeology: user data was dual-written to
+Supabase throughout, so the loss is audit history for that window, and
+`/api/admin/blob-health` now makes a recurrence visible within one request.
 
 ## F-05 — a SECOND public store, never reviewed
 
