@@ -12,9 +12,7 @@ import PlanLessonPlayer from '@/components/plan-lesson-player';
 import { emitXp } from '@/lib/xp-bus';
 import { useProgression } from '@/components/progression-provider';
 import { onLessonComplete, getLessonHistory } from '@/lib/progression';
-import { recordActivityScore } from '@/lib/adaptive-store';
-import { tierForBand, levelChangeMessage, ADAPTIVE_LADDER } from '@/lib/adaptive-level';
-import { addNotification } from '@/lib/notifications-store';
+import { recordActivity } from '@/lib/adaptive-store';
 import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
 import { useProfile } from '@/components/profile-provider';
 import { saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
@@ -132,24 +130,15 @@ function getSavedFormat() {
 // 0..1) into the learner's rolling score, and drop a bell notification if their
 // effective lesson level shifted up or down. Best-effort — never blocks or breaks
 // lesson completion.
+//
+// The notification and the level bookkeeping moved into recordActivity so games
+// get identical treatment; all this does is turn correctness into a 0-100 score.
 function applyAdaptivePerformance(profile, correctness) {
   try {
     const declared = profile?.tier;
     if (!declared) return;
     const score = (typeof correctness === 'number' ? correctness : 1) * 100;
-    const res = recordActivityScore(score, { tier: declared });
-    if (!res?.bandChanged) return;
-    const fromTier = tierForBand(declared, res.prevBand);
-    const toTier = tierForBand(declared, res.band);
-    const msg = levelChangeMessage(fromTier, toTier);
-    if (!msg) return;
-    const up = ADAPTIVE_LADDER.indexOf(toTier) > ADAPTIVE_LADDER.indexOf(fromTier);
-    addNotification({
-      type: 'level',
-      title: up ? 'Your lessons leveled up' : 'Lesson level adjusted',
-      detail: msg,
-      emoji: up ? '🚀' : '🎯',
-    });
+    recordActivity(score, { tier: declared, source: 'lesson' });
   } catch {
     // adaptive tracking is best-effort
   }
