@@ -27,6 +27,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
+import DangerConfirm from '@/components/admin/danger-confirm';
 
 const TYPE_CONFIG = {
   chat: { label: 'Chat', icon: MessageSquare, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
@@ -409,6 +410,36 @@ function ActivityLogPageInner() {
           returned, so you can QA what the AI is actually doing. Showing <span className="font-semibold">AI interactions</span> by
           default; switch the type filter to <span className="font-semibold">Page Visit</span> or{' '}
           <span className="font-semibold">Everything</span> to include navigation.
+        </div>
+
+        {/* Clearing the reporting history is deliberately separate from any
+            progress reset: resetting what people HAVE and erasing the record of
+            what they DID are different decisions, and they want different timing
+            — a test round might be reset weekly while this is cleared once,
+            before go-live. */}
+        <div className="max-w-xl">
+          <DangerConfirm
+            label="Clear reporting history"
+            phrase="CLEAR HISTORY"
+            title="Clear the reporting history"
+            onRun={async () => {
+              const res = await fetch('/api/admin/clear-activity', { method: 'POST' });
+              const d = await res.json().catch(() => null);
+              if (!res.ok) throw new Error(d?.error || 'The clear failed. Nothing was changed.');
+              return `Cleared ${d?.removed ?? 0} events. Reporting now starts from today.`;
+            }}
+          >
+            <p>
+              Deletes every event behind <span className="font-semibold">Program Health</span>{' '}
+              reporting &mdash; lessons, games, level changes and page visits. Use this once before
+              go-live so the first month of real reporting starts from zero.
+            </p>
+            <p>
+              The log on this page is kept: it reads the original records, and only the reporting
+              copy in Supabase is removed. People&apos;s XP, levels and progress are untouched.
+            </p>
+            <p className="font-semibold">This cannot be undone.</p>
+          </DangerConfirm>
         </div>
 
         {stats && (

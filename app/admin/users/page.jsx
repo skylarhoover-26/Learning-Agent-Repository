@@ -7,6 +7,7 @@ import Avatar from '@/components/avatar';
 import { getLevelTitle } from '@/lib/level-titles';
 import { crownTierFromIds, CROWN_ICON_CLASS } from '@/lib/crown';
 import { Users, Search, Zap, Loader2, Crown, Award, BookOpen, Check, RotateCcw } from 'lucide-react';
+import DangerConfirm from '@/components/admin/danger-confirm';
 
 const BADGE_META = {
   first_lesson: { name: 'First Steps', emoji: '🎓' },
@@ -261,6 +262,43 @@ function AdminUsersPageInner() {
             {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
             {resetting ? 'Resetting…' : 'Reset progress for everyone'}
           </button>
+        </div>
+
+        {/* The FULL wipe. Distinct from the button above, which keeps profiles so
+            nobody re-onboards — this deletes everything and sends the whole
+            company back through onboarding. It had no UI at all until now, which
+            meant the only way to run it was a hand-written POST from a console.
+            Typed confirmation rather than window.confirm: for something this
+            final, the confirmation has to interrupt autopilot, and a dialog you
+            dismiss by reflex doesn't. */}
+        <div className="mb-4 flex justify-end">
+          <div className="w-full max-w-xl">
+            <DangerConfirm
+              label="Delete everyone's data"
+              phrase="DELETE EVERYONE"
+              title="Delete all data for every person"
+              onRun={async () => {
+                const res = await fetch('/api/admin/reset-all', { method: 'POST' });
+                const d = await res.json().catch(() => null);
+                if (!res.ok) throw new Error(d?.error || 'The wipe failed. Nothing was changed.');
+                setDetail(null);
+                setSelected(null);
+                setTimeout(loadPeople, 1500);
+                return `Deleted ${d?.blobsDeleted ?? 0} records. Everyone re-onboards on their next visit.`;
+              }}
+            >
+              <p>
+                Permanently deletes every person&apos;s profile, XP, badges, lessons, goals and game
+                state &mdash; in both the blob store and Supabase. Everyone goes back through
+                onboarding on their next visit.
+              </p>
+              <p>
+                Admin access and the system settings survive. The reporting history is kept &mdash;
+                clear that separately from the Activity Log if you want it gone too.
+              </p>
+              <p className="font-semibold">This cannot be undone.</p>
+            </DangerConfirm>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[320px,1fr] gap-6">
           {/* People list */}
