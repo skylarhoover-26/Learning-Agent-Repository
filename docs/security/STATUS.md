@@ -23,7 +23,7 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
 | F-05 | Medium | Blobs written `access: 'public'` | **CLOSED 2026-08-13** — both public stores are now empty (0 blobs each) and every previously-readable URL returns 404. All 5,657 blobs live in `learning-agent-private`, which returns 403 anonymously. Includes 69 feedback screenshots (27.58 MB) that the 2026-08-11 "closed for media" claim had missed |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
-| F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-13** — admin-gated by the F-07 fix, and now rate-limited: 1/60s on the four curriculum routes, 60/10min on the other 32 AI routes, keyed by authenticated user (`lib/rate-limit.js`). **Requires the `rate_limit_hit` SQL in `docs/supabase-schema.sql` to be applied** |
+| F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-13, verified in production** — admin-gated by the F-07 fix, and rate-limited: 1/60s on the four curriculum routes, 60/10min on the other 32 AI routes, keyed by authenticated user (`lib/rate-limit.js`) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-13** — the 2026-08-11 entry covered only `lib/content-safety.js`; six further prompts (including two unattended cron classifiers) were still taking feed text raw. All eight now quarantine via `lib/untrusted.js`. `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
 | F-11 | Low | `/api/slack` GET leaks env presence | **Fixed 2026-08-11** — `configured` field removed |
 
@@ -460,12 +460,32 @@ would take out every AI feature during a Supabase hiccup to prevent some extra
 model spend by someone already named in the audit log. Failures are logged so a
 limiter that has silently stopped limiting is visible.
 
-**Deployment note.** `rate_limit_hit()` must be applied in Supabase or the
-limiter no-ops (fails open) and F-09 is not actually closed. `SUPABASE_SERVICE_ROLE_KEY`
-is marked Sensitive in Vercel and pulls blank, so this could not be applied or
-end-to-end tested from a laptop — the SQL is reviewed, not executed. Verify after
-applying: two rapid `POST`s to a curriculum route should return 200 then 429 with
-a `Retry-After` header.
+**Verified in production, 2026-08-13.** `rate_limit_hit()` is applied. The counter
+logic was exercised directly against the production database — `rate_limit_hit('k', 1, 60)`
+returns `allowed=true, count=1` then `allowed=false, count=2`; a limit of 3 allows
+three calls and blocks the fourth; an expired window resets to 1 rather than
+accumulating. The full chain was then confirmed live: real app usage produced rows
+such as
+
+```
+lesson/plan:u:<email>             count 2
+lesson/recommend-tool:u:<email>   count 1
+lesson/suggestions:u:<email>      count 1
+```
+
+which proves the guard fires, the per-user key is built correctly, and counters
+increment rather than only ever writing once.
+
+**Re-run the SQL after any schema reset**, or the limiter silently no-ops (it fails
+open by design) and F-09 quietly reopens. `SUPABASE_SERVICE_ROLE_KEY` is Sensitive in
+Vercel and pulls blank, so this cannot be applied or checked from a laptop — it needs
+the Supabase SQL editor. Note the editor truncated a 160-line paste twice without
+erroring usefully; apply it in small chunks.
+
+`rate_limits_prune()` is defined in `docs/supabase-schema.sql` but was NOT created —
+it was lost in one of those truncated pastes. Not required for F-09; stale counter
+rows are a few bytes. `delete from rate_limits where window_start < now() - interval '24 hours';`
+does the same job.
 
 ## F-06 — verify-agent observation, closed
 
