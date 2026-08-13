@@ -3,7 +3,7 @@ import { list, del } from '@vercel/blob';
 import { readJsonBlob, writeJsonBlob } from '@/lib/blob-json';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
-import { mirrorSave, mirrorDelete } from '@/lib/supabase-store';
+import { mirrorResetUserProgress, mirrorWipeUser } from '@/lib/supabase-store';
 
 // Admin-only: reset ONE person, without touching anyone else.
 //
@@ -59,17 +59,19 @@ export async function POST(request) {
 
     let touched = 0;
 
+    // Supabase is not a mirror of the blob here, it is the source the leaderboard
+    // (and therefore the People list) actually reads. Both stores must be cleared
+    // or the wipe reads as undone: emptying the blob alone left every xp_events
+    // row in place and the person's XP came straight back on refresh.
+    //
+    // These are dedicated delete functions, NOT mirrorSave(..., []). An empty save
+    // is a no-op for an append-only ledger, which is exactly how that bug happened.
     if (mode === 'full') {
       for (const b of blobs) {
         await del(b.url);
         touched += 1;
       }
-      // Mirror each delete into Supabase. Derived from the blob name so a data
-      // type added later is covered without editing a list here.
-      for (const b of blobs) {
-        const type = b.pathname.slice(prefix.length).replace(/\.json$/, '');
-        if (type) await mirrorDelete(email, type).catch(() => {});
-      }
+      await mirrorWipeUser(email);
     } else {
       // Progress only: empty the three ledgers rather than deleting them, which
       // is what reset-xp does for everyone. Emptying keeps the blob present so a
@@ -78,9 +80,8 @@ export async function POST(request) {
       for (const b of ledgers) {
         await writeJsonBlob(b.pathname, [], { cacheControlMaxAge: 0 });
         touched += 1;
-        const type = b.pathname.slice(prefix.length).replace(/\.json$/, '');
-        if (type) await mirrorSave(email, type, []).catch(() => {});
       }
+      await mirrorResetUserProgress(email);
     }
 
     // Stamp this person's reset epoch so their browser clears its local copy on
