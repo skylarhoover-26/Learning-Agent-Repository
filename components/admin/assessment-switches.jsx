@@ -12,6 +12,11 @@ import { clearAssessmentConfigCache } from '@/lib/use-assessment-config';
 // running. Switching every question off isn't accepted — an empty quiz would
 // strand new users on a blank required screen — so the only route was deleting
 // authored questions, and the questions are the expensive part.
+//
+// The two switches are INDEPENDENT. The impact one was briefly chained to the
+// quiz, because its timers counted from a date only the quiz wrote; impact now
+// falls back to the onboarding date instead (lib/impact-schedule.js), so either
+// assessment can run without the other.
 
 function Switch({ checked, onChange, disabled, label }) {
   return (
@@ -128,22 +133,21 @@ export default function AssessmentSwitches({ onChange }) {
       <div className="border-t border-slate-200 dark:border-slate-700 pt-5">
         <Row
           title="AI Impact assessment"
-          checked={impactOn && quizOn}
-          disabled={loading || busy || !quizOn}
+          checked={impactOn}
+          disabled={loading || busy}
           onChange={(next) => flip({ impact_enabled: next })}
           label="AI Impact assessment"
         >
           <p>
-            The four self-reported questions that arrive three days after the placement quiz, and
-            the monthly re-grade after that. This one switch stops both &mdash; the modal and the
-            home card.
+            The four self-reported questions that arrive three days after someone starts, and the
+            monthly re-grade after that. This one switch stops both &mdash; the modal and the home
+            card.
           </p>
-          {!quizOn && (
-            <p className="text-amber-700 dark:text-amber-400">
-              Held off while the placement quiz is off: the three-day and monthly timers both count
-              from the day someone finishes the quiz, and with no quiz there is no date to count from.
-            </p>
-          )}
+          <p>
+            Independent of the placement quiz: run either, both, or neither. The three-day clock
+            starts when someone finishes the quiz, or when they finish onboarding if the quiz
+            isn&apos;t running.
+          </p>
         </Row>
         <p className="text-sm mt-3 font-medium">
           {loading ? (

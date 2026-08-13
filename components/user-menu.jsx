@@ -32,7 +32,7 @@ const PROFILE_LINKS = [
 export default function UserMenu() {
   const { profile } = useProfile();
   const { crownTier } = useChampions();
-  const { isAdmin, previewAsUser, setPreviewAsUser, isProfileItemHidden, isProfileItemComingSoon } = useMenuVisibility();
+  const { isAdmin, previewAsUser, setPreviewAsUser, isProfileItemHidden, isProfileItemComingSoon, loaded } = useMenuVisibility();
   const displayName = displayNameFromProfile(profile);
   const myTier = profile ? crownTier(resolveLearnerId(profile)) : 0;
 
@@ -139,7 +139,15 @@ export default function UserMenu() {
             <div className="px-4 py-2.5 mb-1 border-b border-slate-100 dark:border-slate-700">
               <p className="text-sm font-semibold truncate text-ink dark:text-slate-100">{displayName}</p>
             </div>
-            {PROFILE_LINKS.map(link => {
+            {/* Nothing is drawn until the visibility config has actually arrived.
+                The provider starts with an EMPTY hidden list, so until its fetches
+                resolve every item reports itself visible — which briefly showed
+                hidden items (My Calibration, after the placement quiz was switched
+                off) before they vanished. A hidden item that flashes up has
+                already failed at being hidden, and an item that arrives a beat
+                late costs nothing: the fetch starts at app mount, long before
+                anyone opens this menu. */}
+            {loaded && PROFILE_LINKS.map(link => {
               // Admin "Profile Visibility" can hide an item (dropped) or mark it
               // "Coming soon" (shown greyed, non-clickable). Admins see all.
               if (isProfileItemHidden(link.href)) return null;

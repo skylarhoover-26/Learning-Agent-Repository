@@ -10,7 +10,7 @@ import {
   snoozeImpactAssessment,
   IMPACT_ASSESSMENT_INTERVAL_WEEKS,
 } from '@/lib/scoring-store';
-import { isFirstImpactPromptDue } from '@/lib/impact-schedule';
+import { isFirstImpactPromptDue, impactAnchorAt } from '@/lib/impact-schedule';
 import { useAssessmentConfig } from '@/lib/use-assessment-config';
 import { impactActive } from '@/lib/assessment-config';
 
@@ -52,8 +52,9 @@ export default function ImpactAssessmentPrompt() {
 
   useEffect(() => {
     if (!active) return undefined;
-    // The gate handles people who haven't finished the placement quiz at all.
-    if (!profile?.calibrated_at) return undefined;
+    // Nobody is prompted before they've finished onboarding — the anchor is the
+    // quiz when it runs, and onboarding when it doesn't.
+    if (!impactAnchorAt(profile)) return undefined;
 
     // Deferred first-time impact assessment takes priority over the re-grade.
     if (isFirstImpactPromptDue(profile)) {
