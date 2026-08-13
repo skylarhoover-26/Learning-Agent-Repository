@@ -356,3 +356,57 @@ begin
     create policy service_role_all on activity_events for all to service_role using (true) with check (true);
   end if;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Learner levels (adaptive difficulty)
+--
+-- One flat row per learner: the level performance has EARNED them, versus the
+-- one they picked at onboarding (profiles.tier). The full document still lives
+-- in user_documents like every other learner doc — this is a reporting
+-- projection, never a second source of truth.
+--
+-- It exists because "who has been moved off the level they picked, and which
+-- way" is a question you ask across everyone at once, and that is miserable to
+-- write against a jsonb blob.
+--
+-- declared_tier is deliberately absent: it lives on profiles.tier, and copying
+-- it here would give two answers to the same question the moment someone edits
+-- their profile. Join instead.
+create table if not exists learner_levels (
+  email        text primary key,
+  earned_tier  text,                             -- beginner | practitioner | power_user | builder | developer
+  score        integer,                          -- rolling 0-100 performance score
+  band         text,                             -- reinforce | steady | stretch
+  samples      integer default 0,                -- graded activities counted
+  evidence     numeric,                          -- the same, in lesson-equivalents
+  cooldown     integer default 0,                -- activities left before another move
+  last_change  jsonb,                            -- { from, to, direction, reason, at }
+  updated_at   timestamptz default now()
+);
+create index if not exists learner_levels_tier_idx    on learner_levels(earned_tier);
+create index if not exists learner_levels_updated_idx on learner_levels(updated_at desc);
+
+alter table learner_levels enable row level security;
+do $$
+begin
+  if not exists (select 1 from pg_policies where tablename = 'learner_levels' and policyname = 'service_role_all') then
+    create policy service_role_all on learner_levels for all to service_role using (true) with check (true);
+  end if;
+end $$;
+
+-- Handy for eyeballing it: everyone whose earned level differs from the level
+-- they picked at onboarding, and which direction they moved.
+create or replace view learner_level_gaps as
+  select
+    p.email,
+    coalesce(p.display_name, p.name) as name,
+    p.department,
+    p.tier        as declared_tier,
+    l.earned_tier,
+    l.score,
+    l.band,
+    l.samples,
+    l.updated_at
+  from profiles p
+  join learner_levels l on l.email = p.email
+  where l.earned_tier is distinct from p.tier;

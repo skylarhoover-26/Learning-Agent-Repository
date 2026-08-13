@@ -8,7 +8,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Shield, Activity, Users, Zap, FlaskConical, SlidersHorizontal,
   Wrench, Bell, UserCog, Sparkles, ClipboardCheck, ClipboardList, Eye, MessageSquarePlus,
-  MessagesSquare, PartyPopper,
+  MessagesSquare, PartyPopper, Gauge,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
@@ -22,7 +22,8 @@ const ADMIN_TOOLS = [
   { href: '/admin/conversations', icon: MessagesSquare, title: 'Slack Conversations', desc: 'Monitor two-way coaching chats between users and the Slack bot' },
   { href: '/admin/lesson-qa', icon: ClipboardCheck, title: 'Lesson QA', desc: 'Hidden quality review of generated lessons — scores, issues, who got them' },
   { href: '/admin/lesson-preview', icon: FlaskConical, title: 'Lesson Content Preview', desc: 'Generate and review what a lesson produces for any topic and depth' },
-  { href: '/admin/onboarding-quiz', icon: ClipboardList, title: 'Onboarding Quiz', desc: 'Write the placement questions every new user answers — answers, scoring, the best answer and why' },
+  { href: '/admin/onboarding-quiz', icon: ClipboardList, title: 'Onboarding Quiz', desc: 'Write the placement questions every new user answers, or switch the quiz off entirely' },
+  { href: '/admin/levels', icon: Gauge, title: 'Learner Levels', desc: 'Declared vs. earned difficulty — who performance has moved, which way, and what moved them' },
   { href: '/admin/menu-visibility', icon: Eye, title: 'Menu Visibility', desc: 'Turn menu sections or items on/off — hidden ones show "Coming soon" to non-admins' },
   { href: '/admin/profile-visibility', icon: UserCog, title: 'Profile Visibility', desc: 'Turn profile menu items on/off for non-admins — visible, coming soon, or hidden' },
   { href: '/admin/skill-levels', icon: SlidersHorizontal, title: 'Skill Levels', desc: "Set each AI skill's difficulty to control who gets recommended it" },
