@@ -21,7 +21,7 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **Open (media closed)** — recordings are private and their old URLs 404. 137 JSON blobs are still world-readable; an anonymous `curl` returned real profile PII on 2026-08-13. Cleanup is unblocked as of 2026-08-13 but **not yet run** — see the runbook below |
+| F-05 | Medium | Blobs written `access: 'public'` | **Open, and larger than reported** — media is closed. 137 JSON blobs in the linked store are still world-readable, and a **second public store (`learning-agent-blob`, 31.61 MB) has never been reviewed at all** — it serves audit entries with name/email/department + AI inputs anonymously. See *a SECOND public store* below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-13** — the 2026-08-11 entry covered only `lib/content-safety.js`; six further prompts (including two unattended cron classifiers) were still taking feed text raw. All eight now quarantine via `lib/untrusted.js`. `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
@@ -262,6 +262,50 @@ BLOB_READ_WRITE_TOKEN=<public> PRIVATE_READ_WRITE_TOKEN=<private> \
 audit history is copied across rather than lost. Run it after deploying the
 store-aware listing, not before — otherwise the audit log has no reader that can
 see the copies it just made.
+
+## F-05 — a SECOND public store, never reviewed
+
+**This is now the largest open item, and no security pass has looked at it.**
+
+The project has two public blob stores, not one:
+
+| Store | ID | Size | Created | Examined by the review? |
+|---|---|---|---|---|
+| `learning-platform-data` | `store_xHnmqSy93cYA2unk` | 50.18 KB | 2026-06-08 | yes — all 137 blobs, and the anonymous `curl` |
+| `learning-agent-blob` | `store_L4ADQJeZg88HnC3u` | **31.61 MB** | 2026-06-04 | **no** |
+
+Everything in the 2026-06-10 review, the 2026-08-13 verification, and the
+inventory earlier in this document is the 50 KB store — it is the one the
+project is linked to and the one `BLOB_READ_WRITE_TOKEN` reaches.
+
+The 31.61 MB store is public and still serving. Fetched anonymously on
+2026-08-13, no credentials:
+
+```
+GET https://l4adqjezg88hnc3u.public.blob.vercel-storage.com/audit/2026-06-30.json
+HTTP 200
+keys per entry : durationMs, endpoint, error, id, input, model, output,
+                 timestamp, type, user
+user object    : department, email, name, tier
+```
+
+So: audit entries carrying name, email, department and tier, alongside the input
+and output of AI interactions — the same class of data F-05 is about, roughly
+600× the volume that was reported, and outside the scope of every pass so far.
+`/config/xp-reset.json` also returns 200 there, so the app was writing to this
+store as recently as 2026-07-01.
+
+**Before deleting anything from the 50 KB store, inventory this one.** Doing the
+small cleanup first would close a 50 KB leak while a 31.61 MB one stays open,
+and would make the tracker read as "F-05 closed".
+
+Needed to proceed: a read-write token for `store_L4ADQJeZg88HnC3u` (it is not
+connected to the project, so no env var points at it). With that,
+`scripts/migrate-blobs-private.mjs` works against it unchanged.
+
+Open question worth answering at the same time: which store production actually
+writes to. `shared/` and `daily/` — written by the curriculum cron — are absent
+from *both* public stores, which is not explained yet.
 
 ## The 2026-07-15 write gap — still unexplained, but no longer a guess
 
