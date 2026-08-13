@@ -6,6 +6,13 @@ Tracks the findings from `security-review-learning-agent-repository-2026-06-10.m
 Status column verified against the code on **2026-08-11**, branch `batch/aug-11`.
 Re-verify before trusting this table — it is a snapshot, not a live check.
 
+> **2026-08-13.** An external verification pass
+> (`security-verification-learning-agent-repository-2026-08-13.md`) checked all
+> 11 findings and disputed two of this table's "Fixed" claims — F-05 and F-10.
+> Both disputes were correct. See *2026-08-13 — verification response* at the
+> bottom for what was actually wrong, what has since been fixed, and the one
+> item still open.
+
 | ID | Severity | Title | Status |
 |---|---|---|---|
 | F-01 | Critical | Identity is a client-set cookie | **Fixed** — Okta SSO live 2026-07-01 (`auth.js`, `middleware.js`) |
@@ -14,10 +21,10 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **Closed for media 2026-08-11** — recordings live in a private store, served only via the admin-gated `/api/feedback/media` proxy; old public URLs 404. ~52KB of stale JSON is still public, see below |
+| F-05 | Medium | Blobs written `access: 'public'` | **Open (media closed)** — recordings are private and their old URLs 404. 137 JSON blobs are still world-readable; an anonymous `curl` returned real profile PII on 2026-08-13. Cleanup is unblocked as of 2026-08-13 but **not yet run** — see the runbook below |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
-| F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-11** — `lib/content-safety.js` delimits titles in `<untrusted>`, strips angle brackets, and range-checks the model's indices; `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
+| F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-13** — the 2026-08-11 entry covered only `lib/content-safety.js`; six further prompts (including two unattended cron classifiers) were still taking feed text raw. All eight now quarantine via `lib/untrusted.js`. `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
 | F-11 | Low | `/api/slack` GET leaks env presence | **Fixed 2026-08-11** — `configured` field removed |
 
 ## F-05 — what is actually stored, and why media comes first
@@ -39,7 +46,9 @@ and they were world-readable to anyone holding the URL.
 (Worth a look on its own: JSON blob writes stopped around 2026-07-14/15 even
 though the code still calls `saveUserData` and the leaderboard cache has a
 60-second TTL. Either those paths went Supabase-only or blob writes have been
-failing silently. Not blocking, but unexplained.)
+failing silently. Not blocking, but unexplained. — **Investigated 2026-08-13**:
+confirmed real rather than a timestamp artifact, and four candidate causes ruled
+out. See *The 2026-07-15 write gap* below.)
 
 So media was done first. `lib/blob-media.js` writes media to the private store,
 `/api/feedback/media/[...path]` streams it back behind an admin check, and
@@ -164,3 +173,147 @@ ago even though the code still calls `saveUserData`.
 **Rollback**, if media ever misbehaves: unset `PRIVATE_READ_WRITE_TOKEN` in
 Vercel. No redeploy needed — but note the public originals are now deleted, so
 media would 404 until the token is restored.
+
+---
+
+# 2026-08-13 — verification response
+
+An external pass verified all 11 findings against this repo and production, and
+marked two of the table's "Fixed" claims as only partially remediated. Both
+challenges held up. This section records what was wrong and what changed.
+
+## F-10 — was wider than either document said
+
+The verification was right that the curator prompts still interpolated RSS
+titles raw. Checking the rest of the pipeline found the same primitive in
+**eight** places, not the two it named:
+
+| Site | Prompt | Reachable as |
+|---|---|---|
+| `curriculum/curate` | curator | admin |
+| `curriculum/daily` | curator | **cron, unattended** |
+| `curriculum/daily` | daily lesson generator | **cron, unattended** |
+| `curriculum/scan-now` | curator | admin |
+| `curriculum/scan-now` | daily lesson generator | admin |
+| `curriculum/apply` | content editor | admin |
+| `lib/news-relevance` | relevance classifier | **cron, unattended** |
+| `lib/skill-staleness` | staleness classifier | **cron, unattended** |
+
+The last two were in neither the original finding's Affected Components nor the
+verification, so no targeted re-check would have caught them. They are also the
+worst of the set: `news-relevance` feeds the model a 160-character feed-written
+*summary blurb* as well as the title, and `skill-staleness` acts on its own
+output by marking skills stale — both on the daily cron with no human in the
+loop.
+
+`lib/untrusted.js` now holds the pattern `lib/content-safety.js` proved out
+(strip angle brackets, wrap in `<untrusted>`, pair with a treat-as-data note in
+the system prompt) and all eight sites use it. Verified against a title carrying
+a `</untrusted>` escape attempt: the injected tag collapses to inert text and
+the delimiters stay balanced.
+
+Output validation was deliberately left alone — every one of these callers
+already range-checks indices or checks categories against a fixed allowlist,
+which is the other half of the defence and was already correct.
+
+**Lesson for the table above:** "Fixed" was recorded against the file that was
+patched (`lib/content-safety.js`), not against the finding's actual surface.
+
+## F-05 — the JSON cleanup, and why it was not just a delete
+
+Inventory re-confirmed on 2026-08-13, unchanged from 2026-08-11: 137 blobs —
+130 `audit/`, 6 `users/` (one person), 1 `leaderboard/cache.json`, and **zero**
+`feedback-recordings/`, so the media migration is genuinely complete.
+
+Deleting the JSON was the agreed plan. It would have been destructive, because
+of a bug the cutover introduced and nothing had noticed:
+
+**Writes moved to the private store; discovery and deletion did not.** Every
+`list()` and `del()` call site still used the bare SDK import, which resolves to
+the public store. Reads were fine — `readJsonBlob` is private-first — so the app
+looked healthy, but:
+
+- `lib/audit-log.js` lists the public store, so **nothing written since the
+  cutover is visible in the admin audit log**. Deleting the 130 public entries
+  would have blanked it entirely.
+- `lib/reporting.js` enumerates `users/` — it has been building the reporting
+  page from six stale public blobs (one person) instead of every learner.
+- `lib/blob-store.js`'s `listUserDataTypes`, so `team-scores` misses data.
+- `reset-user`, `reset-all` and `reset-xp` delete only the public copy. The
+  private copy survives and wins the next read, so a reset reports success and
+  the data comes back. `reset-all`'s own comment promises otherwise.
+
+Fixed by `listJsonBlobs` / `delJsonBlob` in `lib/blob-json.js`, which span both
+stores; every call site moved onto them. `listJsonBlobs` also walks the cursor
+to exhaustion when given no limit — the SDK's 1000-item default cap would have
+silently dropped people off the reporting page as headcount grew.
+
+**Still open:** the 137 public blobs are not yet deleted. The prerequisite is
+now in place, so the remaining work is the documented runbook:
+
+```bash
+BLOB_READ_WRITE_TOKEN=<public> PRIVATE_READ_WRITE_TOKEN=<private> \
+  node scripts/migrate-blobs-private.mjs            # copy (never deletes)
+…same env… node scripts/migrate-blobs-private.mjs --verify
+…same env… node scripts/migrate-blobs-private.mjs --cleanup
+```
+
+`--cleanup` refuses to delete any blob without a verified private twin, so the
+audit history is copied across rather than lost. Run it after deploying the
+store-aware listing, not before — otherwise the audit log has no reader that can
+see the copies it just made.
+
+## The 2026-07-15 write gap — still unexplained, but no longer a guess
+
+Both this document and the verification flagged that blob writes appear to have
+stopped around 2026-07-14/15. Investigated on 2026-08-13:
+
+**It is real, not a measurement artifact.** The obvious innocent explanation was
+that these blobs are overwritten in place (`addRandomSuffix: false`,
+`allowOverwrite: true`) and `uploadedAt` might just report first-creation.
+Tested directly against the production public store — wrote a probe blob,
+overwrote it three seconds later, and `uploadedAt` advanced (`…05Z` → `…08Z`).
+Probe deleted. So the July timestamps mean what they appear to mean: **nothing
+has reached the public store since 2026-07-15.**
+
+Ruled out:
+
+- *The private-store cutover moved them* — the tempting explanation, and wrong.
+  Every F-05 commit is dated 2026-08-11 (`105d587`, `62aac30`, `cd2af75`); the
+  private store did not exist in July. It does explain 2026-08-11 onward.
+- *A dead or read-only token / a full store* — the probe write above succeeded
+  with the production public token.
+- *The missing `access` parameter* that silently broke `daily-lessons` writes —
+  the pre-cutover `saveUserData` already passed `access: 'public'`.
+- *A conditional write path* — `POST /api/user-data` calls `saveUserData`
+  unconditionally on every sync, and `appendToLedger` does the same for XP.
+
+That leaves roughly a month (2026-07-15 → 2026-08-11) where writes should have
+gone to the public store and did not. It would have been invisible: Supabase is
+read-first for user data, so the app behaves correctly either way, and the audit
+log — the one surface that would have shown it — reads the store that stopped
+receiving writes.
+
+Closing this needs evidence not available from the repo: whether `users/` blobs
+in the **private** store carry post-cutover timestamps, and Vercel runtime logs
+from mid-July (retention permitting). Worth doing before `--cleanup`, since it
+decides whether the public copies are redundant or the only copies.
+
+Note the fix above changes the reporting page's inputs. If reporting starts
+showing materially more people after the next deploy, that is this bug being
+corrected, not new data appearing.
+
+## F-06 — verify-agent observation, closed
+
+The fallback `la_identity` cookie was `HttpOnly` + `SameSite=lax` but not
+`Secure`. Production never reaches that path (Okta is configured, so
+`POST /api/identity` returns 400), but Preview has no `AUTH_OKTA_ISSUER` and
+still runs the soft login, so the cookie was being set without `Secure` on a
+real hostname. Now set everywhere except `next dev`, and the `DELETE` handler
+clears it with matching attributes.
+
+## F-09 — unchanged, and still correct
+
+Rate limiting remains unimplemented. The surface is admin-only, so the residual
+risk is an authenticated admin abusing it. Recorded here so a future pass does
+not read the omission as an oversight.
