@@ -143,8 +143,7 @@ export const SKILL_SHOP_LINKS = [
 // shift) until the user is set up.
 function isChromeHiddenRoute(pathname) {
   return pathname.startsWith('/onboarding')
-    || pathname.startsWith('/auth')
-    || pathname.startsWith('/reporting/shared'); // public, no-login shared report
+    || pathname.startsWith('/auth');
 }
 
 const SidebarContext = createContext(null);

@@ -75,7 +75,7 @@ export function ProfileProvider({ children }) {
   useEffect(() => {
     if (isLoading || profile) return;
     if (hasRedirected.current) return;
-    if (pathname === '/onboarding' || pathname.startsWith('/auth') || pathname.startsWith('/reporting/shared')) return;
+    if (pathname === '/onboarding' || pathname.startsWith('/auth')) return;
     hasRedirected.current = true;
     router.push('/onboarding');
   }, [isLoading, profile, pathname, router]);
@@ -167,8 +167,7 @@ export function ProfileProvider({ children }) {
   // Onboarding / auth / shared-report routes render normally — they don't need
   // a profile. This only fires on a hard load (the provider isn't remounted on
   // client-side navigation), so it's a sub-second splash at most.
-  const skipGate =
-    pathname === '/onboarding' || pathname.startsWith('/auth') || pathname.startsWith('/reporting/shared');
+  const skipGate = pathname === '/onboarding' || pathname.startsWith('/auth');
   // Hold the splash on gated routes whenever we're still loading OR have no
   // profile. The second case is the real flash: once loading ends with a null
   // profile, the dashboard would paint one frame before the redirect effect

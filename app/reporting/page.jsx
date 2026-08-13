@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
-import { BarChart3, Loader2, RefreshCw, X } from 'lucide-react';
+import Link from 'next/link';
+import { BarChart3, Loader2, RefreshCw, X, Database, ArrowRight } from 'lucide-react';
 import ReportView from '@/components/report-view';
 import SearchableSelect from '@/components/searchable-select';
 import CompareView from '@/components/compare-view';
@@ -209,6 +210,23 @@ export default function ReportingPage() {
           icon={BarChart3}
           gradient
         />
+        {/* The live Supabase-backed view. This page is a daily snapshot built
+            from the blob store and joined to the Snowflake roster; that one
+            answers "what are people doing and how well" from activity as it
+            happens. Two data sources, two questions, both worth keeping. */}
+        <Link
+          href="/reporting/data"
+          className="group flex items-center gap-3 mb-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 hover:border-brand-300 hover:shadow-card transition-all"
+        >
+          <Database className="w-5 h-5 text-brand shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink dark:text-slate-200">Learning Data &mdash; live</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Lesson and game scores, pass rates, and level changes as they happen. Exports to CSV.
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+        </Link>
         {state.status === 'loading' && (
           <div className="flex items-center justify-center py-20 text-slate-500 dark:text-slate-400 gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Loading the report…</div>
         )}

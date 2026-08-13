@@ -24,14 +24,9 @@ import { useAssessmentConfig } from '@/lib/use-assessment-config';
 // step can ask the same question ("is calibration still ahead of this person?").
 import { hasLocalCalibrated, markLocalCalibrated } from '@/lib/calibration-local';
 
-// Routes that must never be gated: onboarding (you need a profile first), auth,
-// and the public token-shared report.
+// Routes that must never be gated: onboarding (you need a profile first) and auth.
 function isExempt(pathname) {
-  return (
-    pathname === '/onboarding' ||
-    pathname.startsWith('/auth') ||
-    pathname.startsWith('/reporting/shared')
-  );
+  return pathname === '/onboarding' || pathname.startsWith('/auth');
 }
 
 export default function CalibrationGate() {
