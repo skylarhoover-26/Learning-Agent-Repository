@@ -21,7 +21,7 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-04 | High | `MANAGER_DATA_SECRET` fail-open | **Fixed** — fails closed with 503 + `timingSafeEqual` |
 | F-07 | High | Admin gate decorative; admin APIs unauth | **Fixed 2026-08-11** — `lib/require-admin.js` guards `scan`, `curate`, `apply`; `proposals`/`scan-now` already guarded; matcher narrowed so all of them sit behind SSO too |
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
-| F-05 | Medium | Blobs written `access: 'public'` | **Closed for the linked store 2026-08-13** — media private; all 137 JSON blobs copied to the private store and the public originals deleted. `learning-platform-data` is now empty (0 blobs) and the URL the verification fetched returns 404. **Still open:** a second public store (`learning-agent-blob`, 31.61 MB) that no pass has reviewed — see below |
+| F-05 | Medium | Blobs written `access: 'public'` | **CLOSED 2026-08-13** — both public stores are now empty (0 blobs each) and every previously-readable URL returns 404. All 5,657 blobs live in `learning-agent-private`, which returns 403 anonymously. Includes 69 feedback screenshots (27.58 MB) that the 2026-08-11 "closed for media" claim had missed |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
 | F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-13** — the 2026-08-11 entry covered only `lib/content-safety.js`; six further prompts (including two unattended cron classifiers) were still taking feed text raw. All eight now quarantine via `lib/untrusted.js`. `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
@@ -319,89 +319,101 @@ exists anywhere. Not worth further archaeology: user data was dual-written to
 Supabase throughout, so the loss is audit history for that window, and
 `/api/admin/blob-health` now makes a recurrence visible within one request.
 
-## F-05 — a SECOND public store, never reviewed
+## F-05 — the second store, found and closed 2026-08-13
 
-**This is now the largest open item, and no security pass has looked at it.**
+The project had **two** public blob stores. Every prior pass — the 2026-06-10
+review, the 2026-08-13 verification, and the inventory earlier in this document
+— examined only `learning-platform-data`, because that is what the project link
+and a `vercel env pull` token resolve to.
 
-The project has two public blob stores, not one:
+| Store | Size before | Contents |
+|---|---|---|
+| `learning-platform-data` | 50 KB / 137 blobs | an orphan; last written 2026-07-15 |
+| `learning-agent-blob` | **31.61 MB / 5,520 blobs** | the store production actually wrote to |
 
-| Store | ID | Size | Created | Examined by the review? |
-|---|---|---|---|---|
-| `learning-platform-data` | `store_xHnmqSy93cYA2unk` | 50.18 KB | 2026-06-08 | yes — all 137 blobs, and the anonymous `curl` |
-| `learning-agent-blob` | `store_L4ADQJeZg88HnC3u` | **31.61 MB** | 2026-06-04 | **no** |
+`learning-agent-blob` held `audit/` running **2026-06-09 → 2026-08-11
+continuously**, `users/` data for **24 people**, 191 `feedback/` records, and
+**69 `feedback-screenshots/` totalling 27.58 MB**. All anonymously readable.
 
-Everything in the 2026-06-10 review, the 2026-08-13 verification, and the
-inventory earlier in this document is the 50 KB store — it is the one the
-project is linked to and the one `BLOB_READ_WRITE_TOKEN` reaches.
+Two earlier conclusions in this document were wrong because of this:
 
-The 31.61 MB store is public and still serving. Fetched anonymously on
-2026-08-13, no credentials:
+- **The "2026-07-15 write gap" never existed.** Writes were healthy the whole
+  time, going to `learning-agent-blob`. `learning-platform-data` is the store
+  that went quiet — it is an orphan, not the live one. The probe test that
+  "confirmed the gap is real" was sound but pointed at the wrong store.
+- **"Closed for media" was not true.** The 2026-08-11 migration moved 3
+  `feedback-recordings/`; it never touched the 69 screenshots in this store.
+  Screenshots are screen captures, so the same reasoning that made recordings
+  the priority applied to them all along.
+
+`docs/GOTCHAS.md` had this right on 2026-07-30 — "`BLOB_STORE_ID` does NOT
+describe the store the app uses… the token production actually runs with
+resolves to a *different* store." Both stores are connected to the project, so
+the runtime value and the pulled value differ. Trust that note.
+
+### What was done
+
+1. Full byte-verified local backup of all 5,520 blobs (0 missing, 0 mismatches).
+2. JSON copied to the private store: 4,977 copied, 474 already present, 0 failed.
+3. Media copied: 69 screenshots, 27.58 MB, verified 69 matching / 0 mismatches.
+4. Byte-verify of all 5,451 JSON blobs: **5,353 identical, 0 missing, 98 differing.**
+5. The 98 were analysed rather than assumed. 68 were Supabase round-trip
+   artefacts — same `id`, `…959Z` vs `…959+00:00`, plus an added `meta: {}`.
+   **19 records existed only in the archive**, because the migration script is
+   copy-if-absent, not merge, so blobs already present in private never received
+   the archive's extra entries.
+6. The 8 substantive records were merged into the private store using the app's
+   own `mergeLedger` (union by identity, stored copy wins a collision):
+
+   | Restored | |
+   |---|---|
+   | bridget | `first_goal` badge, calibration snapshot |
+   | brian | `first_lesson` badge, lesson-history record, calibration snapshot |
+   | skylar | calibration snapshot |
+   | kate, azeret | paused-lesson state |
+
+   A 9th (brian's `first_goal`) deduped on `badge_id` — he already held it under
+   a different timestamp. Left behind by choice: 5 cosmetic notifications, 3
+   legacy `audit/2026-06-30.json` entries, and 2 pre-schema-change `selfRating`
+   fields, all preserved in the local backup.
+7. Deleted: 69 media + 5,451 JSON, **refused 0** — the cleanup scripts verify a
+   private copy exists per blob before deleting.
+
+### Final state
 
 ```
-GET https://l4adqjezg88hnc3u.public.blob.vercel-storage.com/audit/2026-06-30.json
-HTTP 200
-keys per entry : durationMs, endpoint, error, id, input, model, output,
-                 timestamp, type, user
-user object    : department, email, name, tier
+learning-agent-blob      0 blobs      (was 5,520 / 31.61 MB)
+learning-platform-data   0 blobs      (was   137 / 50 KB)
+learning-agent-private   6,392 blobs / 61.44 MB
 ```
 
-So: audit entries carrying name, email, department and tier, alongside the input
-and output of AI interactions — the same class of data F-05 is about, roughly
-600× the volume that was reported, and outside the scope of every pass so far.
-`/config/xp-reset.json` also returns 200 there, so the app was writing to this
-store as recently as 2026-07-01.
+Anonymous fetches of `audit/2026-06-30.json`, `config/xp-reset.json`,
+`users/<email>/profile.json` and a screenshot all return **404**. The private
+store returns **403**.
 
-**Before deleting anything from the 50 KB store, inventory this one.** Doing the
-small cleanup first would close a 50 KB leak while a 31.61 MB one stays open,
-and would make the tracker read as "F-05 closed".
+Both empty public stores are retained deliberately: `learning-agent-blob` is
+still the Stage-3 Supabase backfill source named in
+`docs/SUPABASE-MIGRATION-PLAN.md`, and deleting either risks re-provisioning the
+store connection (see `docs/GOTCHAS.md`). Empty and public is fine; the data is
+what mattered.
 
-Needed to proceed: a read-write token for `store_L4ADQJeZg88HnC3u` (it is not
-connected to the project, so no env var points at it). With that,
-`scripts/migrate-blobs-private.mjs` works against it unchanged.
+## The 2026-07-15 write gap — WITHDRAWN, there was no gap
 
-Open question worth answering at the same time: which store production actually
-writes to. `shared/` and `daily/` — written by the curriculum cron — are absent
-from *both* public stores, which is not explained yet.
+This section previously argued the gap was real and listed four ruled-out
+causes. It was wrong, and is kept only so the reasoning error is visible.
 
-## The 2026-07-15 write gap — still unexplained, but no longer a guess
+The error: every measurement was taken against `learning-platform-data`, which
+is an orphan store. Production was writing to `learning-agent-blob` throughout,
+where `audit/` runs continuously from 2026-06-09 to 2026-08-11. Nothing stopped.
+The probe test (overwrite advances `uploadedAt`, so the July timestamps are real)
+was correct in itself — it just proved the orphan went quiet, not that writes had.
 
-Both this document and the verification flagged that blob writes appear to have
-stopped around 2026-07-14/15. Investigated on 2026-08-13:
+Also withdrawn: the claim that four weeks of audit history was lost. All 4,975
+entries were in the archive and are now in the private store.
 
-**It is real, not a measurement artifact.** The obvious innocent explanation was
-that these blobs are overwritten in place (`addRandomSuffix: false`,
-`allowOverwrite: true`) and `uploadedAt` might just report first-creation.
-Tested directly against the production public store — wrote a probe blob,
-overwrote it three seconds later, and `uploadedAt` advanced (`…05Z` → `…08Z`).
-Probe deleted. So the July timestamps mean what they appear to mean: **nothing
-has reached the public store since 2026-07-15.**
-
-Ruled out:
-
-- *The private-store cutover moved them* — the tempting explanation, and wrong.
-  Every F-05 commit is dated 2026-08-11 (`105d587`, `62aac30`, `cd2af75`); the
-  private store did not exist in July. It does explain 2026-08-11 onward.
-- *A dead or read-only token / a full store* — the probe write above succeeded
-  with the production public token.
-- *The missing `access` parameter* that silently broke `daily-lessons` writes —
-  the pre-cutover `saveUserData` already passed `access: 'public'`.
-- *A conditional write path* — `POST /api/user-data` calls `saveUserData`
-  unconditionally on every sync, and `appendToLedger` does the same for XP.
-
-That leaves roughly a month (2026-07-15 → 2026-08-11) where writes should have
-gone to the public store and did not. It would have been invisible: Supabase is
-read-first for user data, so the app behaves correctly either way, and the audit
-log — the one surface that would have shown it — reads the store that stopped
-receiving writes.
-
-Closing this needs evidence not available from the repo: whether `users/` blobs
-in the **private** store carry post-cutover timestamps, and Vercel runtime logs
-from mid-July (retention permitting). Worth doing before `--cleanup`, since it
-decides whether the public copies are redundant or the only copies.
-
-Note the fix above changes the reporting page's inputs. If reporting starts
-showing materially more people after the next deploy, that is this bug being
-corrected, not new data appearing.
+`/api/admin/blob-health` is still worth having — it reports per-store, so the
+next person cannot make this mistake silently — and the `del`-then-`put`
+read-after-write bug it surfaced (`3aceceb`) is unrelated and real.
 
 ## F-06 — verify-agent observation, closed
 
