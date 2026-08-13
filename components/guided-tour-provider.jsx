@@ -7,6 +7,7 @@ import 'driver.js/dist/driver.css';
 import { useSidebar } from '@/components/sidebar';
 import { GUIDED_TOUR_STEPS } from '@/lib/guided-tour';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
+import { PROFILE_CATALOG } from '@/lib/profile-catalog';
 
 const TourContext = createContext(null);
 // The fallback must carry EVERY key a consumer reads. The drawer does
@@ -141,7 +142,25 @@ export function TourProvider({ children }) {
   const { open: menuOpen, setOpenTransient } = useSidebar();
   // Used to skip tour steps for features switched off for this viewer. Requires
   // MenuVisibilityProvider to sit OUTSIDE TourProvider (see app/layout.jsx).
-  const { isItemDisabled } = useMenuVisibility();
+  const { isItemDisabled, isProfileItemHidden, isProfileItemComingSoon } = useMenuVisibility();
+
+  // Describe the profile dropdown using the items this viewer can actually see.
+  //
+  // The step used to name them in a fixed sentence ("...opens My Calibration, My
+  // Impact, your Role..."), which became wrong the moment an admin hid one — the
+  // tour kept pointing at My Calibration after the placement quiz was switched
+  // off and the item was gone. Falls back to the generic sentence if visibility
+  // hasn't resolved or everything is hidden.
+  const profileMenuDescription = useCallback((fallback) => {
+    const visible = PROFILE_CATALOG
+      .filter((i) => !isProfileItemHidden?.(i.href) && !isProfileItemComingSoon?.(i.href))
+      .map((i) => i.label);
+    if (!visible.length) return fallback;
+    const list = visible.length === 1
+      ? visible[0]
+      : `${visible.slice(0, -1).join(', ')}, and ${visible[visible.length - 1]}`;
+    return `Your name up top opens ${list}.`;
+  }, [isProfileItemHidden, isProfileItemComingSoon]);
   // Exposed on the context so the drawer can show every section while the tour
   // runs. Sections are collapsible and persist per browser, so a learner who had
   // folded Settings away would otherwise have no "Send feedback" row in the DOM
@@ -229,7 +248,12 @@ export function TourProvider({ children }) {
       .filter((s) => !(s.requiresItem && isItemDisabled?.(s.requiresItem)))
       .map(s => ({
         element: s.element,
-        popover: { title: s.popover.title, description: s.popover.description },
+        popover: {
+          title: s.popover.title,
+          description: s.describeProfileItems
+            ? profileMenuDescription(s.popover.description)
+            : s.popover.description,
+        },
       }));
 
     // Move to the next step (shared by the Next button and auto-advance).
@@ -311,7 +335,7 @@ export function TourProvider({ children }) {
     await new Promise(r => setTimeout(r, 120));
     await prepareStep(0);
     if (driverRef.current) d.drive(0);
-  }, [prepareStep, runStepActions, menuOpen, setOpenTransient, isItemDisabled]);
+  }, [prepareStep, runStepActions, menuOpen, setOpenTransient, isItemDisabled, profileMenuDescription]);
 
   return (
     <TourContext.Provider value={{ startTour, tourActive }}>
