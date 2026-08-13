@@ -417,7 +417,10 @@ export default function OnboardingPage() {
       <main className="flex-1 flex items-start justify-center px-6 py-10">
         <div
           key={`${step}-${showSubTeams}`}
-          className="w-full max-w-2xl animate-fade-in"
+          // The tools step lays eleven options out in two columns, so it gets more
+          // room. Every other step is a short single column and stays narrow —
+          // widening them all would leave long lines of text to track across.
+          className={`w-full animate-fade-in ${step === 5 ? 'max-w-4xl' : 'max-w-2xl'}`}
         >
           {step === 1 && !showSubTeams && phase === 'loading' && (
             <OnboardingPrefillLoading />
@@ -1039,44 +1042,46 @@ function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCus
           Chat assistants, automation platforms, voice or eval tools — anything you actually reach for. We&apos;ll pick the right one of yours for each lesson, and tell you when one you don&apos;t have would fit better. You can change this anytime.
         </p>
       </div>
-      <div className="space-y-4 max-w-lg mx-auto mb-4">
+      <div className="space-y-5 max-w-3xl mx-auto mb-4">
         {rowGroups.map((group) => (
-          <div key={group.id} className="space-y-2">
-            <div className="px-1">
+          <div key={group.id}>
+            <div className="px-1 mb-2">
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{group.label}</p>
               {group.hint && <p className="text-xs text-slate-400 dark:text-slate-500">{group.hint}</p>}
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {group.items.map((t) => {
           const key = toolKey(t);
           const isSelected = selectedKeys.has(key);
           return (
             <div
               key={key}
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border transition-all ${
+              className={`w-full flex items-start gap-3 px-4 py-3.5 rounded-xl border transition-all ${
                 isSelected
                   ? 'bg-brand text-white border-brand shadow-sm'
                   : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
               }`}
             >
-              <button onClick={() => onToggle(t.id === 'other' ? t : t.id)} className="flex items-center gap-4 flex-1 min-w-0 text-left">
-                <span className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${isSelected ? 'bg-white/20 border-white/50' : 'border-slate-300 dark:border-slate-600'}`}>
+              <button onClick={() => onToggle(t.id === 'other' ? t : t.id)} className="flex items-start gap-3 flex-1 min-w-0 text-left">
+                <span className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 ${isSelected ? 'bg-white/20 border-white/50' : 'border-slate-300 dark:border-slate-600'}`}>
                   {isSelected && <Check className="w-3.5 h-3.5" />}
                 </span>
-                <span className="text-2xl shrink-0">{t.emoji}</span>
+                <span className="text-xl shrink-0 leading-none mt-0.5">{t.emoji}</span>
                 <span className="flex-1 min-w-0">
                   <span className="block font-semibold">{t.label}</span>
                   {t.strengths && (
-                    <span className={`block text-sm ${isSelected ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>Best for {t.strengths}</span>
+                    <span className={`block text-xs leading-snug mt-0.5 ${isSelected ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>Best for {t.strengths}</span>
                   )}
                 </span>
               </button>
             </div>
           );
             })}
+            </div>
           </div>
         ))}
       </div>
-      <div className="max-w-lg mx-auto mb-6 flex items-center gap-2">
+      <div className="max-w-3xl mx-auto mb-6 flex items-center gap-2">
         <input
           type="text"
           value={customTool}
