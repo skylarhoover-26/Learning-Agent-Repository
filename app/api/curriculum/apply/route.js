@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { requireAdmin } from '@/lib/require-admin';
+import { untrusted, QUARANTINE_NOTE } from '@/lib/untrusted';
 
 let client;
 function getClient() {
@@ -25,8 +26,10 @@ export async function POST(request) {
       return `Module ${m.num}: ${m.title} — ${m.subtitle}\n  Sections: ${sectionTitles}`;
     }).join('\n');
 
+    // source_findings are carried over from the curator, so they are still the
+    // original feed text and stay quarantined here too.
     const sourceContext = (proposal.source_findings || [])
-      .map(f => `- [${f.sourceName}] ${f.title}\n  ${f.url}`)
+      .map(f => `- [${f.sourceName}] ${untrusted(f.title)}\n  ${untrusted(f.url)}`)
       .join('\n');
 
     const response = await getClient().messages.create({
@@ -39,6 +42,8 @@ You receive an approved curriculum update proposal and must generate the specifi
 For CONTENT UPDATE proposals: write the updated section content (1-2 paragraphs) and specify which module and section to update.
 For NEW MODULE proposals: write a module outline (title, subtitle, 3-5 section titles with one-line descriptions).
 For DEPRECATION proposals: explain what to remove and why, and suggest a replacement topic.
+
+${QUARANTINE_NOTE}
 
 Return ONLY JSON:
 {

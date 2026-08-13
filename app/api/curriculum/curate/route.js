@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { requireAdmin } from '@/lib/require-admin';
+import { formatFindings, QUARANTINE_NOTE } from '@/lib/untrusted';
 
 let client;
 function getClient() {
@@ -20,10 +21,7 @@ export async function POST(request) {
       return NextResponse.json({ proposals: [] });
     }
 
-    const findingsList = findings
-      .slice(0, 30)
-      .map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}\n   ${f.url}`)
-      .join('\n');
+    const findingsList = formatFindings(findings, { limit: 30 });
 
     const moduleSummary = MODULES
       .map(m => `Module ${m.num}: ${m.title} — ${m.subtitle}`)
@@ -36,6 +34,8 @@ export async function POST(request) {
 
 You receive (1) recent findings from AI sources we monitor, and (2) a list
 of our existing modules. Decide which findings warrant a curriculum update.
+
+${QUARANTINE_NOTE}
 
 For each warranted update (max 5), output JSON matching:
 {

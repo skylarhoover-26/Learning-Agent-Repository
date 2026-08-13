@@ -12,6 +12,7 @@ import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 import { filterUnsafeContent } from '@/lib/content-safety';
+import { formatFindings, QUARANTINE_NOTE } from '@/lib/untrusted';
 
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
 const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
@@ -38,9 +39,7 @@ async function writeBlob(key, data) {
 async function generateDailyLessonsFromFindings(client, findings) {
   if (findings.length === 0) return 0;
 
-  const findingsList = findings
-    .map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}\n   ${f.url}`)
-    .join('\n');
+  const findingsList = formatFindings(findings);
 
   const response = await client.messages.create({
     model: MODELS.haiku,
@@ -55,6 +54,8 @@ lesson as what a contractor or technician would do. Each lesson should connect
 real-world AI developments to practical workplace applications.
 
 Mix difficulty levels and categories. Make topics specific and actionable, not generic.
+
+${QUARANTINE_NOTE}
 
 Output ONLY a JSON array where each item has:
 {
@@ -185,10 +186,7 @@ export async function POST() {
         errors,
       });
     }
-    const findingsList = merged
-      .slice(0, 30)
-      .map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}\n   ${f.url}`)
-      .join('\n');
+    const findingsList = formatFindings(merged, { limit: 30 });
 
     const moduleSummary = MODULES
       .map((m) => `Module ${m.num}: ${m.title} — ${m.subtitle}`)
@@ -201,6 +199,8 @@ export async function POST() {
 
 You receive (1) recent findings from AI sources we monitor, and (2) a list
 of our existing modules. Decide which findings warrant a curriculum update.
+
+${QUARANTINE_NOTE}
 
 For each warranted update (max 5), output JSON matching:
 {

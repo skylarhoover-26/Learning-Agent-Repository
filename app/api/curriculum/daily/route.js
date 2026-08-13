@@ -12,6 +12,7 @@ import { filterUnsafeContent } from '@/lib/content-safety';
 import { refreshStaleSkillMarks } from '@/lib/skill-staleness';
 import { APPROVED_CATEGORIES, dropExcluded } from '@/lib/ai-news';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
+import { formatFindings, QUARANTINE_NOTE } from '@/lib/untrusted';
 
 // This route does the heaviest work in the app — 12 feed fetches + up to three
 // sequential Claude calls — so it needs far more than the platform default or
@@ -46,9 +47,7 @@ async function writeBlob(key, data) {
 async function generateDailyLessons(client, findings) {
   if (findings.length === 0) return 0;
 
-  const findingsList = findings
-    .map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}\n   ${f.url}`)
-    .join('\n');
+  const findingsList = formatFindings(findings);
 
   const response = await client.messages.create({
     model: MODELS.haiku,
@@ -63,6 +62,8 @@ lesson as what a contractor or technician would do. Each lesson should connect
 real-world AI developments to practical workplace applications.
 
 Mix difficulty levels and categories. Make topics specific and actionable, not generic.
+
+${QUARANTINE_NOTE}
 
 Output ONLY a JSON array where each item has:
 {
@@ -237,10 +238,7 @@ export async function GET(request) {
     // Curriculum proposals are internal/admin-only — only run when new findings exist.
     let newProposals = [];
     if (safeFindings.length > 0) {
-    const findingsList = merged
-      .slice(0, 30)
-      .map((f, i) => `${i + 1}. [${f.sourceName}] ${f.title}\n   ${f.url}`)
-      .join('\n');
+    const findingsList = formatFindings(merged, { limit: 30 });
 
     const moduleSummary = MODULES
       .map(m => `Module ${m.num}: ${m.title} — ${m.subtitle}`)
@@ -253,6 +251,8 @@ export async function GET(request) {
 
 You receive (1) recent findings from AI sources we monitor, and (2) a list
 of our existing modules. Decide which findings warrant a curriculum update.
+
+${QUARANTINE_NOTE}
 
 For each warranted update (max 5), output JSON matching:
 {
