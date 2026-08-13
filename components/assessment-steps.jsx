@@ -227,8 +227,28 @@ export function QuizQuestionStep({ question, questionNumber, totalQuestions, sel
 // `measuredKeys` limits this to the competencies the active quiz actually asked
 // about. Without it a competency nobody was asked about would display its 0.3
 // baseline as though we had measured it.
+//
+// A competency also has to have an actual SCORE to appear. It previously fell
+// back to every competency in SKILL_KEYS and rendered a missing score as 0,
+// which drew a full-width empty bar labelled "Beginner" — indistinguishable from
+// a real result of zero, and shown for competencies the quiz never asked about.
+// Nothing measured is not the same as measured badly.
 export function GradedRatingStep({ skills, measuredKeys }) {
-  const keys = (measuredKeys?.length ? measuredKeys : SKILL_KEYS).filter(k => SKILL_LABELS[k]);
+  const candidates = measuredKeys?.length ? measuredKeys : SKILL_KEYS;
+  const keys = candidates.filter(k => SKILL_LABELS[k] && typeof skills?.[k] === 'number');
+
+  if (!keys.length) {
+    return (
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 tracking-tight mb-2">
+          You&apos;re all set
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
+          Your lessons will start from the experience level you picked during setup, and adjust as you go.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
