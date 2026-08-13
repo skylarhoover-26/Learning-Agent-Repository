@@ -11,6 +11,8 @@ import {
   IMPACT_ASSESSMENT_INTERVAL_WEEKS,
 } from '@/lib/scoring-store';
 import { isFirstImpactPromptDue } from '@/lib/impact-schedule';
+import { useAssessmentConfig } from '@/lib/use-assessment-config';
+import { impactActive } from '@/lib/assessment-config';
 
 // The modal that brings people back for the AI Impact competencies. It covers two
 // cases, which read very differently to the person seeing them:
@@ -41,9 +43,15 @@ const COPY = {
 export default function ImpactAssessmentPrompt() {
   const router = useRouter();
   const { profile } = useProfile();
+  const { config, loading } = useAssessmentConfig();
   const [mode, setMode] = useState(null); // null | 'first' | 'refresh'
+  // One switch stops BOTH cases below. Leaving the monthly re-grade running with
+  // the assessment switched off would mean people getting pulled back to
+  // re-take something that is no longer part of the platform.
+  const active = !loading && impactActive(config);
 
   useEffect(() => {
+    if (!active) return undefined;
     // The gate handles people who haven't finished the placement quiz at all.
     if (!profile?.calibrated_at) return undefined;
 
@@ -63,7 +71,7 @@ export default function ImpactAssessmentPrompt() {
 
     const timer = setTimeout(() => setMode('refresh'), 800);
     return () => clearTimeout(timer);
-  }, [profile]);
+  }, [profile, active]);
 
   if (!mode) return null;
   const copy = COPY[mode];

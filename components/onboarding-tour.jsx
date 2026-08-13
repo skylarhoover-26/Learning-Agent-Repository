@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Sparkles, X } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { useTour } from '@/components/guided-tour-provider';
+import { useAssessmentConfig } from '@/lib/use-assessment-config';
 
 // The welcome tour is offered exactly ONCE — right after onboarding, the first
 // time the learner lands on the dashboard. We persist a `tour_offered` flag on
@@ -14,17 +15,24 @@ export default function OnboardingTour() {
   const pathname = usePathname();
   const { profile, updateProfile } = useProfile();
   const { startTour: startGuidedTour } = useTour();
+  const { config, loading } = useAssessmentConfig();
   // 'hidden' = nothing to show, 'welcome' = prompt card, 'running' = driver active.
   const [phase, setPhase] = useState('hidden');
 
   // Show on the dashboard, once a profile exists (so it never fires
-  // mid-onboarding), only if it's never been offered before, and only AFTER the
-  // required calibration is done — otherwise it would collide with the gate.
+  // mid-onboarding), only if it's never been offered before, and only once
+  // nothing else is covering the screen.
+  //
+  // That last condition used to be `profile.calibrated_at`, which is set by the
+  // calibration gate. It reads as "wait for calibration to finish", but what it
+  // actually means is "wait until the gate isn't in the way" — so with the quiz
+  // switched off, that date is never written and the tour would never fire for
+  // anyone. Ask about the gate directly instead.
   useEffect(() => {
-    if (pathname !== '/' || !profile) return;
-    if (!profile.calibrated_at) return;
+    if (pathname !== '/' || !profile || loading) return;
+    if (config.quiz_enabled && !profile.calibrated_at) return;
     if (!profile.tour_offered) setPhase('welcome');
-  }, [pathname, profile]);
+  }, [pathname, profile, config.quiz_enabled, loading]);
 
   function markSeen() {
     // Persist on the profile so the offer never returns.

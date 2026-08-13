@@ -6,6 +6,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { ClipboardList, Loader2, RotateCcw, Plus, Save, ListOrdered, LayoutList } from 'lucide-react';
 import QuizQuestionEditor from '@/components/admin/quiz-question-editor';
 import QuizImportPanel from '@/components/admin/quiz-import-panel';
+import AssessmentSwitches from '@/components/admin/assessment-switches';
 
 // Authoring surface for the onboarding placement quiz. These are the questions
 // every new user answers inside the required gate, and the scores they produce
@@ -29,6 +30,9 @@ function OnboardingQuizAdminPageInner() {
   const [status, setStatus] = useState(null); // null | 'saved' | 'reset' | string error
   // 'order' = the sequence learners get. 'competency' = grouped for authoring.
   const [view, setView] = useState('order');
+  // Whether the quiz runs at all. When it's off the "at least one live question"
+  // rule stops applying — there's no learner to strand.
+  const [quizEnabled, setQuizEnabled] = useState(true);
 
   useEffect(() => {
     fetch('/api/admin-check')
@@ -178,6 +182,8 @@ function OnboardingQuizAdminPageInner() {
 
   return (
     <Shell>
+      <AssessmentSwitches onChange={(c) => setQuizEnabled(c?.quiz_enabled !== false)} />
+
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
           These are the questions in the required placement quiz. Learners answer one at a time and
@@ -251,11 +257,14 @@ function OnboardingQuizAdminPageInner() {
         </div>
       </div>
 
-      {liveCount === 0 && (
+      {/* Only a problem while the quiz actually runs. With the switch off, zero
+          live questions is the intended state, not a mistake to warn about. */}
+      {liveCount === 0 && quizEnabled && (
         <div className="rounded-xl border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-4 py-3">
           <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">No live questions</p>
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            Saving with nothing live would leave new users staring at an empty quiz. Turn at least one on.
+            Saving with nothing live would leave new users staring at an empty quiz. Turn at least one
+            on, or switch the placement quiz off at the top of this page.
           </p>
         </div>
       )}
@@ -288,7 +297,7 @@ function OnboardingQuizAdminPageInner() {
         <button
           type="button"
           onClick={save}
-          disabled={busy || liveCount === 0}
+          disabled={busy || (quizEnabled && liveCount === 0)}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

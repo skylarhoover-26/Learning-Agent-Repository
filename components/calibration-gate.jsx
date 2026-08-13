@@ -9,11 +9,17 @@
 // SKILLS ONLY. The AI Impact half used to run here too, which made the required
 // first session ~20 screens (feedback #207). It now comes back a few days later
 // via ImpactAssessmentPrompt / lib/impact-schedule.js.
+//
+// The whole gate can be switched off in /admin/onboarding-quiz, which is how a
+// test round runs with onboarding alone. When it's off nothing here stamps
+// `calibrated_at` — so anything that used that date as "this person has finished
+// entering the platform" has to ask about the switch too (the tour does).
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/profile-provider';
 import CalibrationFlow from '@/components/calibration-flow';
+import { useAssessmentConfig } from '@/lib/use-assessment-config';
 // The device-local marker lives in lib/calibration-local so onboarding's last
 // step can ask the same question ("is calibration still ahead of this person?").
 import { hasLocalCalibrated, markLocalCalibrated } from '@/lib/calibration-local';
@@ -31,10 +37,17 @@ function isExempt(pathname) {
 export default function CalibrationGate() {
   const pathname = usePathname();
   const { profile, updateProfile } = useProfile();
+  // Admins can switch the placement quiz off entirely (/admin/onboarding-quiz).
+  // While `loading` we show nothing: this is a full-screen blocking overlay, and
+  // flashing it up for half a second before deciding it shouldn't run is worse
+  // than a beat of nothing.
+  const { config, loading } = useAssessmentConfig({ enabled: !!profile });
 
   // Whether the gate will actually cover the screen. Computed before any early
   // return so the effect below can be unconditional (hooks can't be).
   const showing = !!profile
+    && config.quiz_enabled
+    && !loading
     && !profile.calibrated_at
     && !isExempt(pathname)
     && !hasLocalCalibrated(profile.email);

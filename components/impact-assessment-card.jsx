@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { TrendingUp, ArrowRight } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import { isFirstImpactDue } from '@/lib/impact-schedule';
+import { useAssessmentConfig } from '@/lib/use-assessment-config';
+import { impactActive } from '@/lib/assessment-config';
 
 // Persistent home card for the deferred AI Impact assessment. Deliberately
 // survives a "remind me later" on the modal — dismissing an interruption should
@@ -15,11 +17,16 @@ import { isFirstImpactDue } from '@/lib/impact-schedule';
 // during SSR would hydrate-mismatch.
 export default function ImpactAssessmentCard() {
   const { profile } = useProfile();
+  const { config, loading } = useAssessmentConfig();
   const [due, setDue] = useState(false);
+  // The card outlives a snooze on purpose, so it has to honour the switch itself
+  // — otherwise turning the assessment off would leave a permanent invitation to
+  // it sitting on the home screen.
+  const active = !loading && impactActive(config);
 
   useEffect(() => {
-    setDue(isFirstImpactDue(profile));
-  }, [profile]);
+    setDue(active && isFirstImpactDue(profile));
+  }, [profile, active]);
 
   if (!due) return null;
 
