@@ -102,7 +102,7 @@ export function ProgressionProvider({ children }) {
             `lp_xp_${learnerId}`, `lp_badges_${learnerId}`, `lp_lessons_${learnerId}`,
             'lp_paused_lessons', 'lp_notifications', 'lp_notifications_read_at',
             'learner_goals', 'learner_game_state', 'learner_chat_history',
-            'learner_library_usage', 'learner_module_state',
+            'learner_library_usage', 'learner_module_state', 'adaptive_level',
             'calibration_profile', 'ai_impact_scores', 'ai_impact_snooze_until',
             'curriculum_findings', 'curriculum_proposals', 'curriculum_patches',
             'learner_lesson_state', 'lp_plan_lesson',

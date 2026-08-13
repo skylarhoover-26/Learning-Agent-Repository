@@ -80,6 +80,16 @@ export async function POST(request) {
         await writeJsonBlob(b.pathname, [], { cacheControlMaxAge: 0 });
         touched += 1;
       }
+      // The earned difficulty level is progress too. Left behind, someone reset
+      // to level 1 keeps the lesson difficulty their old performance earned —
+      // and the rolling score keeps counting activities they no longer have.
+      // Deleted rather than emptied: absent means "seed from the declared tier",
+      // which is exactly where a reset learner should start.
+      const adaptive = blobs.filter((b) => /\/adaptive_level\.json$/.test(b.pathname));
+      for (const b of adaptive) {
+        await delJsonBlob(b.pathname);
+        touched += 1;
+      }
       await mirrorResetUserProgress(email);
     }
 
