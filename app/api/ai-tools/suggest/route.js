@@ -3,10 +3,14 @@ import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { getMergedTools } from '@/lib/ai-tools-store';
 import { generateToolStrengthSuggestions } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Admin-only: ask the model to propose refreshed "what it's good for" phrasing
 // for the whole catalog. The admin reviews and saves via POST /api/ai-tools.
-export async function POST() {
+export async function POST(request) {
+  const limited = await enforceRateLimit('ai-tools/suggest', 'ai', request);
+  if (limited) return limited;
+
   const user = await getAuthenticatedUser();
   if (!user?.email || !(await isAdmin(user.email))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });

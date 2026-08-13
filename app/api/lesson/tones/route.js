@@ -2,6 +2,7 @@ import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 let client;
 function getClient() {
@@ -28,6 +29,9 @@ const FALLBACK_TONES = [
 ];
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/tones', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { sourceText, toneContext } = await request.json();
     const source = sourceText || 'a workplace scenario';

@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { SKILL_LABELS, SKILL_DEFINITIONS, SKILL_KEYS } from '@/lib/competencies';
 import { normalizeQuiz, MIN_ANSWERS, MAX_ANSWERS } from '@/lib/onboarding-quiz';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Turn a pasted conversation into placement questions.
 //
@@ -58,6 +59,9 @@ const SYSTEM = [
 ].join('\n');
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('onboarding-quiz/parse', 'ai', request);
+  if (limited) return limited;
+
   const user = await getAuthenticatedUser();
   if (!user?.email || !(await isAdmin(user.email))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });

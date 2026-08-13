@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateBuildReview } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const maxDuration = 60;
 
@@ -8,6 +9,9 @@ export const maxDuration = 60;
 // Project Quest build step. Never gates progress — on any failure the client
 // still keeps the learner's work.
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/build-review', 'ai', request);
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const profile = await getAuthenticatedProfile();

@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { generateToolDescription } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Any signed-in learner: when they add a custom tool, auto-fill what it's good
 // for and its URL so the catalog entry is useful right away.
 export async function POST(request) {
+  const limited = await enforceRateLimit('tools/describe', 'ai', request);
+  if (limited) return limited;
+
   const user = await getAuthenticatedUser();
   if (!user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });

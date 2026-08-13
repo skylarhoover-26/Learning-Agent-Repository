@@ -12,6 +12,7 @@ import { isAdmin } from '@/lib/admin';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 import { filterUnsafeContent } from '@/lib/content-safety';
 import { formatFindings, QUARANTINE_NOTE } from '@/lib/untrusted';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 const BLOB_FINDINGS_KEY = 'shared/curriculum_findings.json';
 const BLOB_PROPOSALS_KEY = 'shared/curriculum_proposals.json';
@@ -113,7 +114,10 @@ No prose, only the JSON array.`,
   return lessons.length;
 }
 
-export async function POST() {
+export async function POST(request) {
+  const limited = await enforceRateLimit('curriculum/scan-now', 'curriculum', request);
+  if (limited) return limited;
+
   try {
     const user = await getAuthenticatedUser();
     if (!user?.email || !(await isAdmin(user.email))) {

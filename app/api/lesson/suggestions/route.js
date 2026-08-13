@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateSuggestedTopics } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/suggestions', 'ai', request);
+  if (limited) return limited;
+
   try {
     const profile = await getAuthenticatedProfile();
     let exclude = [];

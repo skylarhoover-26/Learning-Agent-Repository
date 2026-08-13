@@ -3,8 +3,12 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonResponse } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/continue', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { topic, messages, userInput, pace, difficulty, format, tools } = await request.json();
     const profile = await getAuthenticatedProfile();

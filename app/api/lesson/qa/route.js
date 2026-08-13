@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonQA } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Hidden self-QA: runs a quality review on a generated lesson plan and logs the
 // verdict (with the learner + tool) to the audit log so admins can review it.
 // Learners never see the result.
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/qa', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { plan, topic, format, tool } = await request.json();
     const profile = await getAuthenticatedProfile();

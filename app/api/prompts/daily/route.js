@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateDailyPrompts } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const maxDuration = 60;
 
 // Daily, role-personalized prompts for the Prompts page. Client caches per
 // content-day (8 AM PT), so this only runs once a day per learner.
 export async function POST(request) {
+  const limited = await enforceRateLimit('prompts/daily', 'ai', request);
+  if (limited) return limited;
+
   try {
     const profile = await getAuthenticatedProfile();
     let exclude = [];

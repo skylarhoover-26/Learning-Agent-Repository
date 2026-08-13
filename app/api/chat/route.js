@@ -4,8 +4,12 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateChatReply } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
 import { detectLessonTopic } from '@/lib/lesson-intent';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('chat', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { messages, tools } = await request.json();
     const profile = await getAuthenticatedProfile();

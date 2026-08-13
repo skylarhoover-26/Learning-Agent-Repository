@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { generateLessonResponse } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Caps per format so a runaway lesson can't loop forever.
 const MAX_SLIDES = { quick_tip: 2, standard: 6, deep_dive: 12 };
@@ -9,6 +10,9 @@ const MAX_SLIDES = { quick_tip: 2, standard: 6, deep_dive: 12 };
 // Admin tool: generate a full lesson for a topic/format by auto-advancing
 // through every phase, so admins can review exactly what a learner would see.
 export async function POST(request) {
+  const limited = await enforceRateLimit('admin/lesson-preview', 'ai', request);
+  if (limited) return limited;
+
   try {
     const user = await getAuthenticatedUser();
     if (!user?.email || !(await isAdmin(user.email))) {

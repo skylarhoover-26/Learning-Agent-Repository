@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 let client;
 function getClient() {
@@ -33,6 +34,9 @@ Return ONLY a JSON object with this exact shape (no markdown fences):
 Be encouraging but honest. Always reference the RCTF framework (Role, Context, Task, Format) in your feedback. Tailor to a non-technical business professional.`;
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('games/score-prompt', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { scenario, prompt } = await request.json();
     const profile = await getAuthenticatedProfile();

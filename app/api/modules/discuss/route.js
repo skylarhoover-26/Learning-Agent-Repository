@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import Anthropic from '@anthropic-ai/sdk';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 const MODEL = MODELS.sonnet;
 
@@ -35,6 +36,9 @@ function buildDiscussionPrompt(quizContext, profile) {
 }
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('modules/discuss', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { quizContext, messages } = await request.json();
 

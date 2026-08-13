@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateNextSteps } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const maxDuration = 60;
 
@@ -8,6 +9,9 @@ export const maxDuration = 60;
 // what they came for, return tailored troubleshooting resources + a paste-ready
 // prompt to get them unstuck.
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/next-steps', 'ai', request);
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const profile = await getAuthenticatedProfile();

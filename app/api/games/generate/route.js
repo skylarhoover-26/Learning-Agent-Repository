@@ -4,6 +4,7 @@ import { MODELS } from '@/lib/models';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { logAuditEntry } from '@/lib/audit-log';
 import { AUDIENCE, playerRoleContext } from '@/lib/audience';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // LLM generation of a full custom round can take a while — give it room so the
 // route doesn't time out before responding (see the maxDuration gotcha).
@@ -259,6 +260,9 @@ Return ONLY valid JSON (no markdown fences):
 };
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('games/generate', 'ai', request);
+  if (limited) return limited;
+
   try {
     const profile = await getAuthenticatedProfile();
     const body = await request.json().catch(() => ({}));

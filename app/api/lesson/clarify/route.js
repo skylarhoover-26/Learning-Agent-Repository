@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateTopicClarification } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // LLM call — avoid the short default function timeout killing it mid-generation.
 export const maxDuration = 60;
@@ -9,6 +10,9 @@ export const maxDuration = 60;
 // returns a clarifying question plus pickable directions (basics + 1-2 specific
 // angles); otherwise { vague: false } so the lesson starts immediately.
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/clarify', 'ai', request);
+  if (limited) return limited;
+
   try {
     const profile = await getAuthenticatedProfile();
     const { topic, context } = await request.json();

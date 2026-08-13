@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { requireAdmin } from '@/lib/require-admin';
 import { untrusted, QUARANTINE_NOTE } from '@/lib/untrusted';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 let client;
 function getClient() {
@@ -12,6 +13,9 @@ function getClient() {
 }
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('curriculum/apply', 'curriculum', request);
+  if (limited) return limited;
+
   const denied = await requireAdmin();
   if (denied) return denied;
 

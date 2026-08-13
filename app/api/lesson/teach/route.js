@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateTeachStep, generateLessonAnswer } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // A single teach step is a smaller call, but cold starts + a deep-dive step
 // (~2400 tokens) can still push past 60s, so give it headroom.
@@ -9,6 +10,9 @@ export const maxDuration = 120;
 // Generates the teaching content for one planned teach step, or answers a
 // learner's free-form question (mode: 'answer').
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/teach', 'ai', request);
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const { topic, objectives, tools, mode, format } = body;

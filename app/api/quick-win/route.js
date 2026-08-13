@@ -7,6 +7,7 @@ import { logAuditEntry } from '@/lib/audit-log';
 import { buildToolGuidance, resolveTools } from '@/lib/ai-tools';
 import { AUDIENCE } from '@/lib/audience';
 import { getMergedTools } from '@/lib/ai-tools-store';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 let client;
 function getClient() {
@@ -81,6 +82,9 @@ function buildSystemPrompt(profile, catalog, flavorTask) {
 }
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('quick-win', 'ai', request);
+  if (limited) return limited;
+
   try {
     const profile = await getAuthenticatedProfile();
     const { department, sub_team, top_tasks } = profile || {};

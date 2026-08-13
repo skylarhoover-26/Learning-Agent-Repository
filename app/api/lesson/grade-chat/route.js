@@ -2,6 +2,7 @@ import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // LLM call — don't let Vercel's short default timeout kill it mid-answer.
 export const maxDuration = 60;
@@ -16,6 +17,9 @@ function getClient() {
 // got their score and how to push it higher, and can revise & resubmit. We feed
 // the task, criteria, their attempt, and the score so the coaching is concrete.
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/grade-chat', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { task, criteria, learnerResponse, score, strength, improvement, messages } = await request.json();
     const convo = (Array.isArray(messages) ? messages : [])

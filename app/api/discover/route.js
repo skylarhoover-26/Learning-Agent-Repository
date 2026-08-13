@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateDiscoverOpportunities } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Sonnet generation here can take 20-40s+ (other AI routes see 30-65s). Without
 // this the function falls back to Vercel's short default timeout and gets killed
@@ -11,6 +12,9 @@ import { logAuditEntry } from '@/lib/audit-log';
 export const maxDuration = 120;
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('discover', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { workDescription, tools } = await request.json();
     const profile = await getAuthenticatedProfile();

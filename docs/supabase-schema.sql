@@ -220,3 +220,95 @@ begin
     create policy service_role_all on feedback for all to service_role using (true) with check (true);
   end if;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Rate limiting (security review F-09)
+-- ---------------------------------------------------------------------------
+-- F-09 asked for auth AND rate limiting on the routes that trigger paid model
+-- calls and outbound feed fetches. Auth landed first; this is the throttle.
+--
+-- Counters live here rather than in a new Redis because Supabase is already
+-- provisioned, the check is a single round trip, and it works across every
+-- serverless instance and region (an in-process counter does not — each cold
+-- start gets its own, so a caller simply spreads across instances).
+--
+-- Fixed window, not sliding: a caller can in theory get 2x the limit across a
+-- window boundary. That is fine for a cost guardrail and keeps the whole thing
+-- one atomic statement. A sliding window needs per-hit rows and a periodic
+-- sweep, which is a lot of machinery for a control whose job is to stop a loop.
+create table if not exists rate_limits (
+  key           text primary key,
+  window_start  timestamptz not null default now(),
+  count         integer     not null default 0
+);
+
+alter table rate_limits enable row level security;
+
+do $$
+begin
+  if not exists (select 1 from pg_policies where tablename = 'rate_limits' and policyname = 'service_role_all') then
+    create policy service_role_all on rate_limits for all to service_role using (true) with check (true);
+  end if;
+end $$;
+
+-- Record one hit and say whether it is allowed.
+--
+-- The whole decision is a single INSERT .. ON CONFLICT so two concurrent
+-- requests cannot both read "count = limit - 1" and both proceed. The CASE in
+-- the UPDATE is what expires a window: if the stored window is older than
+-- p_window_seconds the row resets to 1 rather than incrementing.
+--
+-- Returns the post-hit count, so a caller over the limit still increments —
+-- deliberate. A caller hammering the endpoint keeps its window alive rather
+-- than being handed a fresh allowance the moment the old one lapses.
+create or replace function rate_limit_hit(
+  p_key text,
+  p_limit integer,
+  p_window_seconds integer
+)
+returns table (allowed boolean, current_count integer, reset_at timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer;
+  v_start timestamptz;
+begin
+  insert into rate_limits as r (key, window_start, count)
+  values (p_key, now(), 1)
+  on conflict (key) do update
+    set count = case
+          when r.window_start < now() - make_interval(secs => p_window_seconds) then 1
+          else r.count + 1
+        end,
+        window_start = case
+          when r.window_start < now() - make_interval(secs => p_window_seconds) then now()
+          else r.window_start
+        end
+  returning r.count, r.window_start into v_count, v_start;
+
+  return query select
+    (v_count <= p_limit),
+    v_count,
+    (v_start + make_interval(secs => p_window_seconds));
+end;
+$$;
+
+-- Housekeeping: rows are tiny and self-expiring in meaning but not on disk.
+-- Call occasionally (or from a cron) to drop windows nothing has touched.
+create or replace function rate_limits_prune(p_older_than_hours integer default 24)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_deleted integer;
+begin
+  delete from rate_limits
+   where window_start < now() - make_interval(hours => p_older_than_hours);
+  get diagnostics v_deleted = row_count;
+  return v_deleted;
+end;
+$$;

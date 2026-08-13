@@ -23,7 +23,7 @@ Re-verify before trusting this table — it is a snapshot, not a live check.
 | F-08 | High | `CRON_SECRET` fail-open on the daily cron | **Fixed 2026-08-11** — `lib/cron-auth.js` fails closed (503) with `timingSafeEqual`; used by `curriculum/daily` and `reporting/refresh` |
 | F-05 | Medium | Blobs written `access: 'public'` | **CLOSED 2026-08-13** — both public stores are now empty (0 blobs each) and every previously-readable URL returns 404. All 5,657 blobs live in `learning-agent-private`, which returns 403 anonymously. Includes 69 feedback screenshots (27.58 MB) that the 2026-08-11 "closed for media" claim had missed |
 | F-06 | Medium | Cookie missing HttpOnly/Secure | **Fixed** — resolved by F-01; session is a server-issued HttpOnly JWT |
-| F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-11** — admin-gated by the F-07 fix. Rate limiting still not implemented (admin-only surface now, so the exposure is internal) |
+| F-09 | Medium | Unauth cost amplification on `curriculum/{scan,curate}` | **Fixed 2026-08-13** — admin-gated by the F-07 fix, and now rate-limited: 1/60s on the four curriculum routes, 60/10min on the other 32 AI routes, keyed by authenticated user (`lib/rate-limit.js`). **Requires the `rate_limit_hit` SQL in `docs/supabase-schema.sql` to be applied** |
 | F-10 | Medium | Prompt injection via RSS titles | **Fixed 2026-08-13** — the 2026-08-11 entry covered only `lib/content-safety.js`; six further prompts (including two unattended cron classifiers) were still taking feed text raw. All eight now quarantine via `lib/untrusted.js`. `isSafeUrl()` in `lib/parse-feed.js` drops non-http(s) links |
 | F-11 | Low | `/api/slack` GET leaks env presence | **Fixed 2026-08-11** — `configured` field removed |
 
@@ -414,6 +414,58 @@ entries were in the archive and are now in the private store.
 `/api/admin/blob-health` is still worth having — it reports per-store, so the
 next person cannot make this mistake silently — and the `del`-then-`put`
 read-after-write bug it surfaced (`3aceceb`) is unrelated and real.
+
+## F-09 — rate limiting, added 2026-08-13
+
+The finding asked for two things. Admin auth landed on 2026-08-11 and closed the
+actual exploit (an anonymous caller looping `POST /api/curriculum/scan`). The
+second half — "Vercel Edge Config or KV-backed rate limiting … say 1 scan / 60s,
+1 curate / 60s" — is now implemented.
+
+**Keyed by authenticated user, not IP.** The finding predates SSO. Now that every
+caller is a signed-in employee, an email is a better key than an IP: it cannot be
+rotated by changing network, and it does not lump the whole office together
+behind one corporate NAT address.
+
+**Counters live in Supabase**, not a new Redis. It is already provisioned, the
+check is one round trip (~30ms against model calls that take seconds), and it
+works across every serverless instance — an in-process counter does not, since
+each cold start gets a fresh one and a caller simply spreads across instances.
+See `rate_limit_hit()` in `docs/supabase-schema.sql`: a single
+`INSERT … ON CONFLICT DO UPDATE` so two concurrent requests cannot both read
+`count = limit - 1` and both proceed.
+
+| Tier | Limit | Applies to |
+|---|---|---|
+| `curriculum` | 1 per 60s | `curriculum/{scan,scan-now,curate,apply}` — exactly what the finding asked |
+| `ai` | 60 per 10 min | the other 32 model-backed routes |
+
+The second tier goes beyond the finding, which named only `scan` and `curate`.
+The review's own surface inventory flagged that "most [LLM-backed routes] have no
+auth and no rate limiting"; auth is now universal, and this closes the throttling
+half for the same set. The ceiling is far above any real learning session and low
+enough to stop a client stuck in a retry loop billing us overnight.
+
+Crons (`curriculum/daily`, `model-lineup/refresh`) and `api/slack` are
+deliberately **not** limited: they authenticate by shared secret or signature
+rather than session, run on a fixed schedule, and throttling them would mean
+dropping scheduled work.
+
+**This fails OPEN**, and that is deliberate. If Supabase is unreachable the
+request proceeds. It is the opposite of the F-04/F-08 requirement, and the
+difference matters: those were authorization checks where failing open admitted
+anonymous callers. This is a cost guardrail sitting *behind* authorization —
+every caller has already proved they are a signed-in employee. Failing closed
+would take out every AI feature during a Supabase hiccup to prevent some extra
+model spend by someone already named in the audit log. Failures are logged so a
+limiter that has silently stopped limiting is visible.
+
+**Deployment note.** `rate_limit_hit()` must be applied in Supabase or the
+limiter no-ops (fails open) and F-09 is not actually closed. `SUPABASE_SERVICE_ROLE_KEY`
+is marked Sensitive in Vercel and pulls blank, so this could not be applied or
+end-to-end tested from a laptop — the SQL is reviewed, not executed. Verify after
+applying: two rapid `POST`s to a curriculum route should return 200 then 429 with
+a `Retry-After` header.
 
 ## F-06 — verify-agent observation, closed
 

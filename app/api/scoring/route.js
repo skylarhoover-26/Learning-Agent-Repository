@@ -2,6 +2,7 @@ import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 let client;
 function getClient() {
@@ -73,6 +74,9 @@ Respond with ONLY a single number: 4 or 5. No other text.`,
 };
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('scoring', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { dimension, text } = await request.json();
 

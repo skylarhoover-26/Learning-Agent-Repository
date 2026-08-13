@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODELS } from '@/lib/models';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Family Feud only. A guess is checked against the board locally first (exact
 // text, whole-phrase containment, keywords); this route is consulted ONLY when
@@ -32,6 +33,9 @@ Rules:
 - Judge the meaning only. Ignore spelling, grammar, word order, and length.`;
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('games/match-answer', 'ai', request);
+  if (limited) return limited;
+
   try {
     const body = await request.json().catch(() => ({}));
     const guess = String(body.guess || '').trim();

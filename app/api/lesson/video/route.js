@@ -4,6 +4,7 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateVideoScript } from '@/lib/ai';
 import { QUESTS } from '@/lib/quest-data';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Narrated lessons are ONE script call (up to VIDEO_FORMAT_TOKENS for the format,
 // see lib/ai.js), which runs well past the platform's default function budget.
@@ -14,6 +15,9 @@ import { logAuditEntry } from '@/lib/audit-log';
 export const maxDuration = 120;
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/video', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { topic, format, tools, questId } = await request.json();
 

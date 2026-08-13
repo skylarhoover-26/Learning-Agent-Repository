@@ -2,12 +2,16 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { generateTeachStep } from '@/lib/ai';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Admin tool: given a stored lesson plan, reconstruct the teaching text for each
 // teach step so an admin can read the full lesson exactly as a learner works
 // through it. Activities live in the plan already; only the teach narrative is
 // generated on demand (learners get it lazily, so it isn't stored).
 export async function POST(request) {
+  const limited = await enforceRateLimit('admin/lesson-content', 'ai', request);
+  if (limited) return limited;
+
   try {
     const user = await getAuthenticatedUser();
     if (!user?.email || !(await isAdmin(user.email))) {

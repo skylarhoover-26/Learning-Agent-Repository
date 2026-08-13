@@ -5,6 +5,7 @@ import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { getUserData, saveUserData } from '@/lib/blob-store';
 import { contentDayKey } from '@/lib/content-day';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // "Why this matters to YOU" for each AI-news item.
 //
@@ -61,6 +62,9 @@ const SYSTEM = [
 ].join('\n');
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('ai-news/why', 'ai', request);
+  if (limited) return limited;
+
   try {
     const profile = await getAuthenticatedProfile();
     const email = profile?.email;

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonQuiz } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Runs at the end of both the read and narrated lessons, and is a real Sonnet
 // call — so like the plan (300s) and teach (120s) routes it needs its own budget
@@ -11,6 +12,9 @@ import { logAuditEntry } from '@/lib/audit-log';
 export const maxDuration = 120;
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/quiz', 'ai', request);
+  if (limited) return limited;
+
   try {
     const { topic, format, messages } = await request.json();
     const profile = await getAuthenticatedProfile();

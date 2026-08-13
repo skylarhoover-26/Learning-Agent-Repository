@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateLessonPlan } from '@/lib/ai';
 import { logAuditEntry } from '@/lib/audit-log';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Plan generation can run long — see PLAN_TOKENS in lib/ai.js for the per-format
 // output ceiling, plus internal grounding/retries. Keep this at 300s and keep the
@@ -12,6 +13,9 @@ import { logAuditEntry } from '@/lib/audit-log';
 export const maxDuration = 300;
 
 export async function POST(request) {
+  const limited = await enforceRateLimit('lesson/plan', 'ai', request);
+  if (limited) return limited;
+
   try {
     // `model` is the model already chosen for this topic by /recommend-tool and
     // shown in the lesson's on-screen hint. Passing it through means the lesson
