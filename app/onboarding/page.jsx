@@ -11,7 +11,7 @@ import {
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
 } from '@/lib/curriculum-data';
-import { toolKey, normalizeTool, serializeTools } from '@/lib/ai-tools';
+import { toolKey, normalizeTool, serializeTools, TOOL_CATEGORIES } from '@/lib/ai-tools';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
 import { addBadgeEarned } from '@/lib/learner-store';
@@ -1012,7 +1012,19 @@ function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCus
   const { catalog } = useToolCatalog();
   const selectedKeys = new Set(selected.map((s) => toolKey(normalizeTool(s))));
   const customSelected = selected.map(normalizeTool).filter((t) => t.id === 'other');
-  const rows = [...catalog, ...customSelected];
+  // Grouped, because the categories are not interchangeable — see lib/ai-tools.
+  // Most people tick one or two from the top group and skim the rest, and the
+  // headings are what stop "Vapi" reading as an alternative to ChatGPT.
+  // Anything the catalog doesn't categorise, plus the learner's own typed-in
+  // tools, lands under Specialist rather than being dropped.
+  const groups = TOOL_CATEGORIES.map((c) => ({
+    ...c,
+    items: catalog.filter((t) => (t.category || 'specialist') === c.id),
+  })).filter((g) => g.items.length);
+  const customGroup = customSelected.length
+    ? [{ id: 'yours', label: 'Added by you', hint: '', items: customSelected }]
+    : [];
+  const rowGroups = [...groups, ...customGroup];
 
   return (
     <div>
@@ -1021,14 +1033,20 @@ function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCus
           <PanelsTopLeft className="w-7 h-7 text-brand" />
         </div>
         <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
-          Which AI tools do you use?
+          Which tools do you use to work with AI?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
-          Pick all that apply — you might use one or several. For each lesson we&apos;ll automatically pick the best one of your tools for the topic, and tell you when a tool you don&apos;t have would fit better. You can change this anytime.
+          Chat assistants, automation platforms, voice or eval tools — anything you actually reach for. We&apos;ll pick the right one of yours for each lesson, and tell you when one you don&apos;t have would fit better. You can change this anytime.
         </p>
       </div>
-      <div className="space-y-2 max-w-lg mx-auto mb-4">
-        {rows.map((t) => {
+      <div className="space-y-4 max-w-lg mx-auto mb-4">
+        {rowGroups.map((group) => (
+          <div key={group.id} className="space-y-2">
+            <div className="px-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{group.label}</p>
+              {group.hint && <p className="text-xs text-slate-400 dark:text-slate-500">{group.hint}</p>}
+            </div>
+            {group.items.map((t) => {
           const key = toolKey(t);
           const isSelected = selectedKeys.has(key);
           return (
@@ -1054,7 +1072,9 @@ function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCus
               </button>
             </div>
           );
-        })}
+            })}
+          </div>
+        ))}
       </div>
       <div className="max-w-lg mx-auto mb-6 flex items-center gap-2">
         <input
