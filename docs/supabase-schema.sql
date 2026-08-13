@@ -422,3 +422,74 @@ create or replace view learner_level_gaps as
 -- you are the postgres role and see everything regardless.
 alter view learner_level_gaps set (security_invoker = on);
 revoke all on learner_level_gaps from anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Reporting rollups
+--
+-- Adoption is a DISTINCT-people-over-time question, and answering it in JS would
+-- mean pulling every event — page views included — into the server just to count
+-- unique emails. These aggregate in Postgres and hand back one row per person or
+-- per week, which is a few hundred rows at most.
+--
+-- Scores are guarded with jsonb_typeof rather than a bare cast: `input` is
+-- free-form event payload, and one malformed scorePercent would otherwise error
+-- the whole report rather than being skipped.
+
+-- One row per person: what they did in the window.
+create or replace function reporting_activity_rollup(p_days integer default 30)
+returns table (
+  email       text,
+  events      bigint,
+  lessons     bigint,
+  games       bigint,
+  failures    bigint,
+  avg_score   numeric,
+  last_active timestamptz
+)
+language sql
+stable
+as $$
+  select
+    lower(e.email),
+    count(*),
+    count(*) filter (where e.type = 'lesson_complete'),
+    count(*) filter (where e.type = 'game_complete'),
+    count(*) filter (
+      where jsonb_typeof(e.input->'scorePercent') = 'number'
+        and (e.input->>'scorePercent')::numeric < 70
+    ),
+    round(avg(
+      case when jsonb_typeof(e.input->'scorePercent') = 'number'
+           then (e.input->>'scorePercent')::numeric end
+    )),
+    max(e.created_at)
+  from activity_events e
+  where e.email is not null
+    and (p_days = 0 or e.created_at >= now() - make_interval(days => p_days))
+  group by lower(e.email)
+$$;
+grant execute on function reporting_activity_rollup(integer) to service_role;
+
+-- One row per week: how many distinct people showed up, and what they did.
+create or replace function reporting_weekly_active(p_weeks integer default 8)
+returns table (
+  week_start    date,
+  active_people bigint,
+  lessons       bigint,
+  games         bigint
+)
+language sql
+stable
+as $$
+  select
+    (date_trunc('week', e.created_at))::date,
+    count(distinct lower(e.email)),
+    count(*) filter (where e.type = 'lesson_complete'),
+    count(*) filter (where e.type = 'game_complete')
+  from activity_events e
+  where e.email is not null
+    and e.created_at >= date_trunc('week', now()) - make_interval(weeks => greatest(p_weeks, 1) - 1)
+  group by 1
+  order by 1
+$$;
+grant execute on function reporting_weekly_active(integer) to service_role;

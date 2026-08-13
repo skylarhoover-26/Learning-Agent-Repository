@@ -52,12 +52,15 @@ const PRIORITY_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-8
 const SKIPPED_STYLE = 'bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:border-slate-500';
 
 // Workflow-status pill colors: In Progress reads yellow, Blocked light red;
-// Needs Review a calm blue, Not Started neutral slate.
+// Needs Review a calm blue, Not Started neutral slate. On Watch is violet — it
+// has to be clearly NOT the green of Done, because the whole point of it is that
+// the work isn't signed off yet.
 const WORK_STATUS_STYLES = {
   'Not Started': 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
   'In Progress': 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800',
   'Needs Review': 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800',
   Blocked: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+  'On Watch': 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/20 dark:text-violet-300 dark:border-violet-800',
 };
 const WORK_STATUS_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-600';
 // Terminal "Done" state shown in the per-card status dropdown once an item is
@@ -65,7 +68,7 @@ const WORK_STATUS_UNSET = 'bg-white text-slate-400 border-slate-200 dark:bg-slat
 const WORK_STATUS_DONE_STYLE = 'bg-green-50 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
 // Sentinel for the synthetic "Done" option in the per-card status dropdown.
 const DONE_STATUS = 'Done';
-// Order mirrors WORK_STATUSES: Not Started → Blocked; unset sinks last.
+// Order mirrors WORK_STATUSES: Not Started → On Watch; unset sinks last.
 const WORK_STATUS_ORDER = Object.fromEntries(WORK_STATUSES.map((s, i) => [s, i]));
 function workStatusRank(f) {
   return f.workStatus in WORK_STATUS_ORDER ? WORK_STATUS_ORDER[f.workStatus] : 99;
@@ -129,6 +132,7 @@ const TABS = [
   { key: 'pending', label: 'In Progress' },
   { key: 'needsReview', label: 'Needs Review' },
   { key: 'blocked', label: 'Blocked' },
+  { key: 'onWatch', label: 'On Watch' },
   { key: 'done', label: 'Done' },
   { key: 'skipped', label: 'Skipped' },
   { key: 'praise', label: 'Praise' },
@@ -268,7 +272,7 @@ function AdminFeedbackInner() {
   async function exportBacklog() {
     if (!items) return;
     // Export the OPEN/actionable backlog — New + Not Started + In Progress +
-    // Needs Review + Blocked. Excludes Done/Skipped (already resolved/set aside)
+    // Needs Review + Blocked + On Watch. Excludes Done/Skipped (already resolved)
     // and Praise (not a to-do), which are just noise for a stale-vs-live triage.
     const rows = [...items]
       .filter((f) => !isPraise(f) && !isDone(f) && !isSkipped(f))
@@ -441,11 +445,13 @@ function AdminFeedbackInner() {
           const inProgress = triaged.filter((f) => f.workStatus === 'In Progress');
           const needsReview = triaged.filter((f) => f.workStatus === 'Needs Review');
           const blocked = triaged.filter((f) => f.workStatus === 'Blocked');
-          const notStarted = triaged.filter((f) => !['In Progress', 'Needs Review', 'Blocked'].includes(f.workStatus));
+          // Shipped but not signed off yet — still open, deliberately not Done.
+          const onWatch = triaged.filter((f) => f.workStatus === 'On Watch');
+          const notStarted = triaged.filter((f) => !['In Progress', 'Needs Review', 'Blocked', 'On Watch'].includes(f.workStatus));
           const done = items.filter((f) => !isPraise(f) && isDone(f));
           const skipped = items.filter((f) => !isPraise(f) && isSkipped(f));
-          const counts = { all: items.length, new: newItems.length, notStarted: notStarted.length, pending: inProgress.length, needsReview: needsReview.length, blocked: blocked.length, done: done.length, skipped: skipped.length, praise: praise.length };
-          const base = tab === 'all' ? items : tab === 'praise' ? praise : tab === 'done' ? done : tab === 'skipped' ? skipped : tab === 'new' ? newItems : tab === 'notStarted' ? notStarted : tab === 'needsReview' ? needsReview : tab === 'blocked' ? blocked : inProgress;
+          const counts = { all: items.length, new: newItems.length, notStarted: notStarted.length, pending: inProgress.length, needsReview: needsReview.length, blocked: blocked.length, onWatch: onWatch.length, done: done.length, skipped: skipped.length, praise: praise.length };
+          const base = tab === 'all' ? items : tab === 'praise' ? praise : tab === 'done' ? done : tab === 'skipped' ? skipped : tab === 'new' ? newItems : tab === 'notStarted' ? notStarted : tab === 'needsReview' ? needsReview : tab === 'blocked' ? blocked : tab === 'onWatch' ? onWatch : inProgress;
           // Free-text search across the card's text, author, and page — so a
           // reviewer can find a specific report without scrolling the whole queue.
           const q = search.trim().toLowerCase();
@@ -494,7 +500,7 @@ function AdminFeedbackInner() {
               if (diff !== 0) return diff;
             }
             if (sortBy === 'status') {
-              // Order by workflow status (Not Started → Blocked); unset sinks last.
+              // Order by workflow status (Not Started → On Watch); unset sinks last.
               const diff = workStatusRank(a) - workStatusRank(b);
               if (diff !== 0) return diff;
             }
@@ -620,6 +626,8 @@ function AdminFeedbackInner() {
                     ? 'Nothing flagged for review.'
                     : tab === 'blocked'
                     ? 'Nothing blocked.'
+                    : tab === 'onWatch'
+                    ? 'Nothing on watch — nothing waiting to be confirmed.'
                     : 'No in-progress feedback — all caught up!'}
                 </p>
               ) : (
