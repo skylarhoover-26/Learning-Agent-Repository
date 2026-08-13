@@ -1039,7 +1039,7 @@ function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCus
           Which tools do you use to work with AI?
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
-          Chat assistants, automation platforms, voice or eval tools — anything you actually reach for. We&apos;ll pick the right one of yours for each lesson, and tell you when one you don&apos;t have would fit better. You can change this anytime.
+          Pick anything you use to work with AI — we&apos;ll match each lesson to the right one of yours.
         </p>
       </div>
       <div className="space-y-5 max-w-3xl mx-auto mb-4">
