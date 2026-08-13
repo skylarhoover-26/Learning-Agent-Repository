@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list, del } from '@vercel/blob';
-import { readJsonBlob, writeJsonBlob } from '@/lib/blob-json';
+import { readJsonBlob, writeJsonBlob, listJsonBlobs, delJsonBlob } from '@/lib/blob-json';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { mirrorResetUserProgress, mirrorWipeUser } from '@/lib/supabase-store';
@@ -52,7 +51,7 @@ export async function POST(request) {
     }
 
     const prefix = `users/${email}/`;
-    const { blobs } = await list({ prefix });
+    const { blobs } = await listJsonBlobs({ prefix });
     if (!blobs.length) {
       return NextResponse.json({ error: 'No stored data found for that person.' }, { status: 404 });
     }
@@ -68,7 +67,7 @@ export async function POST(request) {
     // is a no-op for an append-only ledger, which is exactly how that bug happened.
     if (mode === 'full') {
       for (const b of blobs) {
-        await del(b.url);
+        await delJsonBlob(b.pathname);
         touched += 1;
       }
       await mirrorWipeUser(email);
@@ -93,8 +92,8 @@ export async function POST(request) {
 
     // Drop the cached leaderboard so it rebuilds without this person's old total.
     try {
-      const { blobs: lbBlobs } = await list({ prefix: 'leaderboard/' });
-      for (const b of lbBlobs) await del(b.url);
+      const { blobs: lbBlobs } = await listJsonBlobs({ prefix: 'leaderboard/' });
+      for (const b of lbBlobs) await delJsonBlob(b.pathname);
     } catch { /* best-effort */ }
 
     return NextResponse.json({ ok: true, email, mode, touched });

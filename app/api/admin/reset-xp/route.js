@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list, del } from '@vercel/blob';
-import { writeJsonBlob } from '@/lib/blob-json';
+import { writeJsonBlob, listJsonBlobs, delJsonBlob } from '@/lib/blob-json';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { mirrorResetAllProgress } from '@/lib/supabase-store';
@@ -14,7 +13,7 @@ export async function POST() {
   }
 
   try {
-    const { blobs } = await list({ prefix: 'users/' });
+    const { blobs } = await listJsonBlobs({ prefix: 'users/' });
     // Empty everyone's XP, badges and lesson history so a clean slate also lets
     // one-time XP (the welcome bonus, first-lesson, etc.) be earned again.
     const progressBlobs = blobs.filter((b) => /\/(lp_xp_|lp_badges_|lp_lessons_).*\.json$/.test(b.pathname));
@@ -35,8 +34,8 @@ export async function POST() {
     // Clear the cached leaderboard so it rebuilds from the now-empty data
     // instead of serving a stale (e.g. doubled) snapshot.
     try {
-      const { blobs: lbBlobs } = await list({ prefix: 'leaderboard/' });
-      for (const b of lbBlobs) await del(b.url);
+      const { blobs: lbBlobs } = await listJsonBlobs({ prefix: 'leaderboard/' });
+      for (const b of lbBlobs) await delJsonBlob(b.pathname);
     } catch { /* best-effort */ }
 
     return NextResponse.json({ ok: true, reset });

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list, del } from '@vercel/blob';
-import { writeJsonBlob } from '@/lib/blob-json';
+import { writeJsonBlob, listJsonBlobs, delJsonBlob } from '@/lib/blob-json';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { mirrorWipeAll } from '@/lib/supabase-store';
@@ -22,20 +21,20 @@ export async function POST() {
   }
 
   try {
-    const { blobs } = await list({ prefix: 'users/' });
+    const { blobs } = await listJsonBlobs({ prefix: 'users/' });
     // Delete every per-user blob, but NOT the system allowlists.
     const userBlobs = blobs.filter((b) => !b.pathname.startsWith('users/__system__/'));
     let deleted = 0;
     for (const b of userBlobs) {
-      await del(b.url);
+      await delJsonBlob(b.pathname);
       deleted += 1;
     }
 
     // Clear the cached leaderboard snapshot so it rebuilds from the now-empty
     // data instead of serving stale pre-reset XP/avatars.
     try {
-      const { blobs: lbBlobs } = await list({ prefix: 'leaderboard/' });
-      for (const b of lbBlobs) await del(b.url);
+      const { blobs: lbBlobs } = await listJsonBlobs({ prefix: 'leaderboard/' });
+      for (const b of lbBlobs) await delJsonBlob(b.pathname);
     } catch { /* best-effort */ }
 
     // Wipe the Supabase mirror to match.

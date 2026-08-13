@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list, del } from '@vercel/blob';
-import { readJsonBlob, writeJsonBlob } from '@/lib/blob-json';
+import { readJsonBlob, writeJsonBlob, delJsonBlob } from '@/lib/blob-json';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 
@@ -13,10 +12,9 @@ async function readBlob(key) {
 
 async function writeBlob(key, data) {
   try {
-    const { blobs } = await list({ prefix: key, limit: 1 });
-    for (const blob of blobs) {
-      await del(blob.url);
-    }
+    // Clear both stores first — a public copy left over from before the
+    // private-store cutover would otherwise outlive the new write.
+    await delJsonBlob(key);
     await writeJsonBlob(key, data);
   } catch (error) {
     console.error(`Blob write error (${key}):`, error);

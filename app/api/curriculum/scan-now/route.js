@@ -1,7 +1,6 @@
 import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
-import { list, del } from '@vercel/blob';
-import { readJsonBlob, writeJsonBlob } from '@/lib/blob-json';
+import { readJsonBlob, writeJsonBlob, delJsonBlob } from '@/lib/blob-json';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODULES } from '@/lib/modules-data';
 import { FEEDS } from '@/lib/feeds';
@@ -26,10 +25,9 @@ async function readBlob(key) {
 
 async function writeBlob(key, data) {
   try {
-    const { blobs } = await list({ prefix: key, limit: 1 });
-    for (const blob of blobs) {
-      await del(blob.url);
-    }
+    // Clear both stores first — a public copy left over from before the
+    // private-store cutover would otherwise outlive the new write.
+    await delJsonBlob(key);
     await writeJsonBlob(key, data);
   } catch (error) {
     console.error(`Blob write error (${key}):`, error);
