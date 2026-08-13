@@ -69,6 +69,8 @@ function AdminUsersPageInner() {
   const [grantStatus, setGrantStatus] = useState(null);
   const [grantedTotal, setGrantedTotal] = useState(null);
   const [resetting, setResetting] = useState(false);
+  // Which per-person reset is in flight: 'progress' | 'full' | null.
+  const [resettingPerson, setResettingPerson] = useState(null);
 
   useEffect(() => {
     fetch('/api/admin-check').then((r) => r.json()).then((d) => setAllowed(!!d.isAdmin)).catch(() => setAllowed(false));
@@ -174,6 +176,43 @@ function AdminUsersPageInner() {
     }
   }
 
+  // Reset ONE person. `mode` is 'progress' (keep their profile and role) or
+  // 'full' (delete everything, so they re-onboard). Confirmed by typing nothing
+  // clever — just a window.confirm naming the person, since this is destructive
+  // and the button sits next to Grant XP.
+  async function resetPerson(mode) {
+    if (!selected) return;
+    const who = detail?.profile?.display_name || selected;
+    const warning = mode === 'full'
+      ? `Fully reset ${who}? This deletes their profile, role, tasks and all progress. They will start at onboarding on their next visit. This cannot be undone.`
+      : `Reset progress for ${who}? This clears their XP, badges and lesson history but keeps their role and tasks. This cannot be undone.`;
+    if (!window.confirm(warning)) return;
+    setResettingPerson(mode);
+    try {
+      const res = await fetch('/api/admin/reset-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: selected, mode }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'failed');
+      if (mode === 'full') {
+        // Nothing left to show for them.
+        setSelected(null);
+        setDetail(null);
+      } else {
+        setDetail((prev) => (prev ? { ...prev, totalXp: 0, level: 1, badges: [], lessons: [] } : prev));
+      }
+      setPeople((prev) => prev.map((x) => (x.learnerId === selected ? { ...x, totalXp: 0, level: 1 } : x)));
+      // Storage settles a beat behind the write, same as the grant path.
+      setTimeout(loadPeople, 1500);
+    } catch (e) {
+      window.alert(e.message === 'failed' ? 'Could not reset that person. Try again.' : e.message);
+    } finally {
+      setResettingPerson(null);
+    }
+  }
+
   async function resetAllXp() {
     if (!window.confirm('Reset progress for EVERYONE? This clears all XP, admin grants, badges, and lesson history, and lets one-time XP (like the welcome bonus) be earned again. This cannot be undone.')) return;
     setResetting(true);
@@ -210,6 +249,9 @@ function AdminUsersPageInner() {
   return (
     <Shell>
       <main className="max-w-6xl mx-auto px-6 py-6">
+        {/* Scope is in the label on purpose. With a per-person reset now sitting
+            inside the detail panel, a bare "Reset all progress" up here is one
+            careless click away from being read as "reset the person I selected". */}
         <div className="flex justify-end mb-4">
           <button
             onClick={resetAllXp}
@@ -217,7 +259,7 @@ function AdminUsersPageInner() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
           >
             {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-            {resetting ? 'Resetting…' : 'Reset all progress'}
+            {resetting ? 'Resetting…' : 'Reset progress for everyone'}
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[320px,1fr] gap-6">
@@ -324,6 +366,37 @@ function AdminUsersPageInner() {
                   )}
                   {grantStatus === 'error' && <p className="text-xs text-red-600 mt-2">Couldn&apos;t grant XP. Try again.</p>}
                   <p className="text-[11px] text-slate-400 mt-2">Use a negative number to deduct. Grants are recorded with your name.</p>
+                </div>
+
+                {/* Reset this person. The profile page's Danger Zone only ever
+                    acted on the signed-in user, so this is the only way to reset
+                    someone else. */}
+                <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10 p-4">
+                  <h3 className="text-sm font-semibold text-ink dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                    <RotateCcw className="w-4 h-4 text-red-600" /> Reset this person
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => resetPerson('progress')}
+                      disabled={!!resettingPerson}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-ink dark:text-slate-200 text-sm font-medium hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                    >
+                      {resettingPerson === 'progress' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                      Reset progress only
+                    </button>
+                    <button
+                      onClick={() => resetPerson('full')}
+                      disabled={!!resettingPerson}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    >
+                      {resettingPerson === 'full' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                      Reset profile (full)
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                    Progress only keeps their role and tasks. Full deletes everything and sends them back through onboarding.
+                    Their browser clears its own copy the next time they open the app.
+                  </p>
                 </div>
 
                 {/* Badges */}
