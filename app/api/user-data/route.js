@@ -74,7 +74,9 @@ export async function POST(request) {
     await saveUserData(user.email, type, toStore);
     // Stage-2 dual-write: shadow into Supabase. Blob is authoritative; this
     // never throws (failures are logged inside mirrorSave).
-    await mirrorSave(user.email, type, toStore);
+    // Pass the replace intent through: for the XP ledger, Supabase stores one
+    // ROW per event, and writing fewer rows never deletes the others.
+    await mirrorSave(user.email, type, toStore, { replace: mode === 'replace' });
     // `count` lets a caller confirm the stored ledger is at least as long as what
     // it posted; `merged` says whether anything server-side was folded in.
     return NextResponse.json({
