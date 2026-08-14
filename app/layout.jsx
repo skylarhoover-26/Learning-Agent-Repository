@@ -20,6 +20,7 @@ import HelpWidget from '@/components/help-widget';
 import IdentityGate from '@/components/identity-gate';
 import OnboardingTour from '@/components/onboarding-tour';
 import CalibrationGate from '@/components/calibration-gate';
+import QuarterCheckModal from '@/components/quarter-check-modal';
 import { CinematicChrome } from '@/components/cinematic/cinematic-shell';
 
 const inter = Inter({
@@ -100,6 +101,9 @@ export default function RootLayout({ children }) {
                     </HeaderProvider>
                     </FeedbackProvider>
                     <CalibrationGate />
+                    {/* Start-of-quarter "are these still right?" check. Suppresses
+                        itself while the gate above is showing. */}
+                    <QuarterCheckModal />
                     <OnboardingTour />
                     <GlobalXpPopup />
                   </TourProvider>
