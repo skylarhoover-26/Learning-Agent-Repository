@@ -46,11 +46,25 @@ const FORMAT_LABEL = { quick_tip: 'Quick Tip', standard: 'Quick Lesson', deep_di
 // as "1â3 minutes" when an en-dash got mis-decoded (fixed in ec5e6a8 by going
 // ASCII in video-lesson-player); these strings render straight into the loader,
 // so keep them boring rather than typographically nice.
+// Every plan now GROUNDS itself with a live doc lookup before writing (lib/ai.js),
+// which added roughly 15-30s to every format — search round trips plus the tokens
+// spent reading results. These bands were calibrated for ungrounded plans, so they
+// each move up one notch. Under-promising is the specific failure mode to avoid
+// here: an honest 2 minutes reads as normal, while "1-1.5 minutes" that takes 2
+// reads as stuck.
+//
+// These are ESTIMATES of the grounding cost, not measurements — a local timing run
+// isn't possible because ANTHROPIC_API_KEY is a Sensitive Vercel var and doesn't
+// pull down. Real numbers do exist though: /api/lesson/plan writes durationMs and
+// format to the audit log on every generation, so /admin/activity-log can calibrate
+// these from actual grounded runs. Remember the loader covers MORE than the plan
+// (tool recommendation -> plan -> first teach step), so plan durationMs is a floor
+// for the wait a learner sees, not the whole of it.
 const FORMAT_LOAD = {
-  quick_tip:     { estimate: '30-60 seconds',  slow: 75,  tau: 25 },
-  standard:      { estimate: '1-1.5 minutes',  slow: 105, tau: 35 },
-  deep_dive:     { estimate: '1.5-2 minutes',  slow: 150, tau: 50 },
-  project_quest: { estimate: '2-3 minutes',    slow: 210, tau: 70 },
+  quick_tip:     { estimate: '45-75 seconds',   slow: 95,  tau: 30 },
+  standard:      { estimate: '1.5-2 minutes',   slow: 125, tau: 42 },
+  deep_dive:     { estimate: '2-2.5 minutes',   slow: 175, tau: 58 },
+  project_quest: { estimate: '2.5-4 minutes',   slow: 240, tau: 80 },
 };
 
 // The concrete terms/items an activity will quiz, so the preceding teach step
