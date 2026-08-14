@@ -82,23 +82,32 @@ Return ONLY valid JSON (no markdown fences):
   // list and routinely run a full line, which overflows a pad or shrinks to
   // unreadable. Hence its own entry: identical JSON, much harder brevity rules.
   lilyleap: {
-    maxTokens: 2000,
-    system: `You are writing a "Lily Leap" quiz for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${LILY_COUNT} multiple-choice questions that teach genuinely useful, practical knowledge about it.
+    maxTokens: 3000,
+    system: `You are writing a "Lily Leap" quiz for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${LILY_COUNT} questions that teach real judgment about it.
 
-The player answers by jumping onto a lily pad, so each option is printed inside a small circle.
+The player reads a short situation, then jumps onto the lily pad holding the answer they'd choose.
 
-Rules:
-- Each question has EXACTLY 3 options, with ONE clearly correct answer.
-- Every option is AT MOST 4 words, and short is better than clever. One or two words is ideal. They must fit inside a circle.
-- Never write an option as a sentence, and never start options with "The" just to pad them.
-- The question itself is at most 14 words. It sits in a single strip above the pond.
-- "correct" is the 0-based index (0-2) of the right option.
-- The three options must be genuinely different answers, not shades of the same one. No "all of the above", no "none of the above".
-- Accurate. No trick questions. Vary difficulty from foundational to nuanced.
-- "explanation" is ONE short sentence on why the answer is right, shown after the jump.
+EVERY QUESTION IS A SPECIFIC SITUATION. Not a definition, not a "which is best" with no context:
+- Name concrete details: a number, an error message, a file, a deadline, who is waiting on it.
+- The situation must be one someone doing this work would recognise, and the right answer must be genuinely arguable-about until you know the reason.
+- 20 to 35 words. Two short sentences is ideal: what is happening, then what you have to decide.
+
+BAD (too vague to teach anything): "Your n8n JSON is 400 lines. What should you share with AI?"
+GOOD: "Your n8n workflow fails at the HTTP node with a 429 and the JSON export is 400 lines. You want AI's help fastest. What do you paste in?"
+
+OPTIONS:
+- EXACTLY 3, each a genuinely different course of action, at most 8 words.
+- Never a reworded version of another option, and never "all of the above" or "none of the above".
+- Wrong options must be things a reasonable person would actually try, not straw men.
+- No option is right merely because it is longest or most detailed.
+
+Also:
+- "correct" is the 0-based index (0-2).
+- "explanation" is ONE or TWO sentences saying why that choice wins AND what the tempting wrong one costs. This is the teaching, so make it concrete.
+- Vary what the ${LILY_COUNT} questions are about across the topic. Accurate, no trick questions.
 
 Return ONLY valid JSON (no markdown fences):
-{ "questions": [ { "q": "<question>", "options": ["a","b","c"], "correct": <0-2>, "explanation": "<one sentence>" } ] }`,
+{ "questions": [ { "q": "<situation and decision>", "options": ["a","b","c"], "correct": <0-2>, "explanation": "<why, concretely>" } ] }`,
     normalize: (parsed) => {
       const arr = Array.isArray(parsed?.questions) ? parsed.questions : null;
       if (!arr) return null;
@@ -107,10 +116,12 @@ Return ONLY valid JSON (no markdown fences):
           && Number.isInteger(x.correct) && x.correct >= 0 && x.correct <= 2)
         .map((x) => ({
           q: String(x.q).trim(),
-          // Hard cap in code as well as in the prompt: a pad that has to render
-          // "Retrieval augmented generation pipeline" is a broken pad, and a brevity
-          // rule that only exists in the prompt is a request.
-          options: x.options.map((o) => String(o).trim().split(/\s+/).slice(0, 4).join(' ')),
+          // 8 words, not 4. The first cut at this capped options at four words, which
+          // turned real choices into headlines ("Full JSON always" vs "Relevant node
+          // JSON") and left nothing to reason about. The pads are ovals now, so there
+          // is room for a phrase — but still a hard cap, because a pad that has to
+          // render a sentence is a broken pad.
+          options: x.options.map((o) => String(o).trim().split(/\s+/).slice(0, 8).join(' ')),
           correct: x.correct,
           explanation: String(x.explanation || '').trim(),
         }))

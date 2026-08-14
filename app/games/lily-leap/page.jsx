@@ -20,7 +20,7 @@ import { saveGameResult } from '@/lib/game-store';
 // Inspired by the lily-pad quiz format. Everything here — the frog, the pond, the
 // name — is ours; no assets or copy were taken from anyone else's version.
 const HOW_TO_PLAY = [
-  'A question sits above the pond, with one answer on each lily pad.',
+  'A short situation from your topic sits above the pond, with one course of action on each lily pad.',
   'Tap the pad you think is right and your frog jumps to it.',
   'Right answer, you move a step closer to shore. Wrong answer, you lose a life and the frog stays put.',
   'Three lives. Reach the shore before they run out.',
@@ -199,7 +199,7 @@ function LilyLeap() {
       {/* The question strip, above the water like the format it borrows from. */}
       <div className="rounded-2xl px-5 py-4 mb-3 text-center" style={{ background: 'var(--card, #fff)', border: '1px solid var(--line)' }}>
         <div className="text-[11px] font-bold uppercase tracking-[.18em] mb-1" style={{ color: 'var(--accent)' }}>Lily Leap · {topic}</div>
-        <h1 className="font-display font-extrabold tracking-tight text-ink dark:text-slate-100" style={{ fontSize: 'clamp(17px,2.4vw,22px)' }}>{q.q}</h1>
+        <h1 className="font-display font-bold tracking-tight text-ink dark:text-slate-100 max-w-xl mx-auto text-balance" style={{ fontSize: 'clamp(15px,2vw,19px)', lineHeight: 1.35 }}>{q.q}</h1>
       </div>
 
       {/* The pond. Pads are buttons; the frog sits on the one just chosen, or on its
@@ -222,13 +222,13 @@ function LilyLeap() {
                 onClick={() => pick(i)}
                 disabled={revealed}
                 aria-label={`Answer ${String.fromCharCode(65 + i)}: ${opt}`}
-                className="relative aspect-square rounded-full grid place-items-center px-3 text-center transition-transform duration-200 disabled:cursor-default hover:scale-[1.03] active:scale-[0.98]"
+                className="relative aspect-[5/4] rounded-[50%] grid place-items-center px-4 py-6 text-center transition-transform duration-200 disabled:cursor-default hover:scale-[1.03] active:scale-[0.98]"
                 style={{ background: pad, border: `3px solid ${ring}`, boxShadow: '0 6px 18px rgba(0,0,0,.18)' }}
               >
                 <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold" style={{ background: '#fff', color: '#2f7a3c' }}>
                   {String.fromCharCode(65 + i)}
                 </span>
-                <span className="font-bold text-white leading-tight" style={{ fontSize: 'clamp(12px,1.7vw,16px)', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>
+                <span className="font-bold text-white leading-snug" style={{ fontSize: 'clamp(11px,1.5vw,14px)', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>
                   {opt}
                 </span>
                 {/* The frog rides the chosen pad, so the jump is visible without
