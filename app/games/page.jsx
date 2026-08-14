@@ -212,16 +212,17 @@ function GamesHubInner() {
       />
 
       {/* Step 2 stays visible but inert until a game is picked, so the shape of the
-          flow is obvious before you've touched anything. */}
+          flow is obvious before you've touched anything — and disappears entirely for
+          AI or Human, the one game that takes no topic. Showing it a disabled input
+          next to a Surprise me button that does nothing was worse than showing it
+          nothing: two dead controls to explain instead of one clear Play. */}
+      {(!selected || canGenerate) && (
       <div className={`mt-8 transition-opacity ${selected ? '' : 'opacity-50 pointer-events-none'}`}>
         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--ink-dim)' }}>
           <span className="w-5 h-5 rounded-full grid place-items-center text-[11px]" style={{ background: 'var(--accent)', color: '#fff' }}>2</span>
           Your topic
-          {/* Required wherever a topic is what builds the round, which is everywhere
-              except AI or Human. */}
-          {canGenerate && (
-            <span className="font-medium normal-case tracking-normal" style={{ color: 'var(--accent)' }}>— required</span>
-          )}
+          {/* Unconditional: this panel only renders for games built from a topic. */}
+          <span className="font-medium normal-case tracking-normal" style={{ color: 'var(--accent)' }}>— required</span>
         </p>
 
         <div className="cine-glass rounded-3xl p-6 sm:p-7">
@@ -232,11 +233,8 @@ function GamesHubInner() {
                   value={topic}
                   onChange={(e) => { setTopic(e.target.value); setTopicNudge(false); }}
                   onKeyDown={(e) => { if (e.key === 'Enter' && canPlay) play(); }}
-                  disabled={!canGenerate}
-                  placeholder={canGenerate
-                    ? `e.g., '${samples[0]}'`
-                    : `${selected?.title || 'This game'} always uses its own set`}
-                  className={`flex-1 rounded-2xl px-4 py-3.5 text-ink dark:text-slate-100 outline-none focus:ring-2 disabled:opacity-60 ${
+                  placeholder={`e.g., '${samples[0]}'`}
+                  className={`flex-1 rounded-2xl px-4 py-3.5 text-ink dark:text-slate-100 outline-none focus:ring-2 ${
                     topicNudge ? 'ring-2 ring-amber-400' : ''
                   }`}
                   style={{ background: 'var(--card)', border: '1px solid var(--line)' }}
@@ -250,13 +248,12 @@ function GamesHubInner() {
                 </button>
               </div>
               <p className="text-xs mt-3" style={{ color: 'var(--ink-dim)' }}>
-                {canGenerate
-                  ? 'Name a topic, or press Surprise me and we will suggest one from your tasks, goals and projects. Every round is built fresh for it.'
-                  : `${selected?.title || 'This game'} uses PRE-SET rounds, not a topic. It compares real human writing with AI writing, so the examples are hand-written by us, and each play shuffles a fresh 10 out of the pool. Just press Play.`}
+                Name a topic, or press Surprise me and we will suggest one from your tasks, goals and projects. Every round is built fresh for it.
               </p>
             </>
         </div>
       </div>
+      )}
 
       <div className="mt-7 flex flex-col items-center gap-2">
         {/* Only ever disabled before a game is picked, where the whole step-2 panel
@@ -278,13 +275,17 @@ function GamesHubInner() {
           // "something of yours is missing" rather than "this is off limits".
           <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
             <ArrowUp className="w-4 h-4" />
-            {canGenerate
-              ? 'Type a topic above, or hit Surprise me.'
-              : `Hit Surprise me above to play ${selected.title}.`}
+            Type a topic above, or hit Surprise me.
           </p>
         ) : (
-          <p className="text-xs" style={{ color: 'var(--ink-dim)' }}>
-            {!selected ? 'Pick a game to get started.' : 'How to play comes up next, before anything starts.'}
+          <p className="text-xs max-w-md text-center" style={{ color: 'var(--ink-dim)' }}>
+            {!selected
+              ? 'Pick a game to get started.'
+              : !canGenerate
+                // The transparency that used to live in the step-2 panel has to land
+                // somewhere, so it sits with the button that starts the game.
+                ? `${selected.title} uses pre-set rounds instead of a topic. The examples are hand-written by us, and each play shuffles a fresh 10 from the pool.`
+                : 'How to play comes up next, before anything starts.'}
           </p>
         )}
       </div>
