@@ -238,6 +238,28 @@ function hairShape(id, fill) {
           ))}
         </g>
       );
+    case 'hair_curlylong':
+      // Long curly: the long silhouette (falls past the shoulders, frames the face)
+      // with a curl texture instead of a smooth edge. Built the same way the Afro is
+      // — overlapping circles for the volume, a solid body underneath — because a
+      // scalloped path alone reads as wavy, not curly.
+      //
+      // The ringlets sit at x<=37 and x>=63, outside the face box, so they fall
+      // BESIDE the face rather than across it.
+      return (
+        <g fill={fill}>
+          <path d="M29 78 Q25 24 50 19 Q75 24 71 78 Q64 72 65 56 Q67 34 50 30 Q33 34 35 56 Q36 72 29 78 Z" />
+          {[[36, 22, 7], [44, 18, 7], [52, 18, 7], [60, 21, 7], [30, 30, 6.5], [70, 30, 6.5]].map(([cx, cy, r], i) => (
+            <circle key={`c${i}`} cx={cx} cy={cy} r={r} />
+          ))}
+          {[38, 48, 58, 68, 76].map((cy, i) => (
+            <g key={`r${cy}`}>
+              <circle cx={i % 2 ? 28 : 31} cy={cy} r={i === 4 ? 5 : 6} />
+              <circle cx={i % 2 ? 72 : 69} cy={cy} r={i === 4 ? 5 : 6} />
+            </g>
+          ))}
+        </g>
+      );
     case 'hair_bob':
       return <path d="M30 54 Q30 18 50 18 Q70 18 70 54 Q66 56 64 48 Q64 30 50 28 Q36 30 36 48 Q34 56 30 54 Z" fill={fill} />;
     case 'hair_spiky':
