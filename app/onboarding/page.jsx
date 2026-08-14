@@ -73,12 +73,16 @@ export default function OnboardingPage() {
   const [aiTools, setAiTools] = useState([]);
   const [customTool, setCustomTool] = useState('');
   const [addingTool, setAddingTool] = useState(false);
-  // Step 6, skippable: the real work someone is doing right now. Weighted next to
-  // tasks and goals by every generator (lib/learner-signals.js), so it's worth
-  // asking for up front rather than hoping people find /projects later.
+  // Step 6: the real work someone is doing right now. Weighted next to tasks and
+  // goals by every generator (lib/learner-signals.js), so it's worth asking for up
+  // front rather than hoping people find /projects later. Optional in what it
+  // stores, but it does require an answer — see canAdvance.
   const [projects, setProjects] = useState([]);
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
+  // "I don't have one right now" — an explicit answer, so an empty list is a
+  // decision we can see rather than a step that was silently walked past.
+  const [noProjects, setNoProjects] = useState(false);
   // Whether the calibration gate is still ahead of this person, which decides
   // whether the last step reads "Continue setup" or "Finish setup" (#135).
   // Resolved in an effect, not during render: isCalibrationPending reads
@@ -137,6 +141,7 @@ export default function OnboardingPage() {
           if (Array.isArray(d.goals)) setGoals(d.goals);
           if (Array.isArray(d.aiTools)) setAiTools(d.aiTools);
           if (Array.isArray(d.projects)) setProjects(d.projects);
+          if (typeof d.noProjects === 'boolean') setNoProjects(d.noProjects);
           if (d.avatar) { setAvatar(d.avatar); draftHadAvatarRef.current = true; }
           if (d.prefill) setPrefill(d.prefill);
           setPhase(d.phase || (d.department ? 'confirm' : 'manual'));
@@ -193,10 +198,10 @@ export default function OnboardingPage() {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         email: session?.user?.email?.toLowerCase() || null,
-        step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, projects, avatar, phase, prefill,
+        step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, projects, noProjects, avatar, phase, prefill,
       }));
     } catch { /* storage unavailable */ }
-  }, [step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, projects, avatar, phase, prefill, session]);
+  }, [step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, projects, noProjects, avatar, phase, prefill, session]);
 
   // Everyone's default avatar is their Slack profile photo. Fetch it once on
   // mount and switch the avatar into photo mode — UNLESS a restored draft
@@ -240,10 +245,17 @@ export default function OnboardingPage() {
     if (step === 3) return tier.length > 0;
     if (step === 4) return goals.length > 0;
     if (step === 5) return aiTools.length > 0;
-    if (step === 6) return true; // projects are optional — skippable by design
+    // Projects stay optional, but the step now needs an ANSWER: either a project,
+    // or "I don't have one right now". A required field would just manufacture junk
+    // ("various", "my job") and that string becomes the worked example in every
+    // lesson — worse than empty, since a project outranks tasks as an example source.
+    if (step === 6) return projects.length > 0 || noProjects;
     if (step === 7) return true; // avatar always valid (starts on defaults)
     return false;
-  }, [step, department, subTeam, topTasks, tier, goals, aiTools]);
+    // projects/noProjects belong here for the same reason as every other answer:
+    // without them this callback keeps the value it had when the step opened, so
+    // adding a project would leave Continue disabled with no way to un-stick it.
+  }, [step, department, subTeam, topTasks, tier, goals, aiTools, projects, noProjects]);
 
   function goNext() {
     if (!canAdvance()) return;
@@ -584,6 +596,7 @@ export default function OnboardingPage() {
               onAdd={() => {
                 const t = projectTitle.trim();
                 if (!t) return;
+                setNoProjects(false); // they do have one after all
                 if (projects.some((p) => p.title.toLowerCase() === t.toLowerCase())) {
                   setProjectTitle('');
                   setProjectDesc('');
@@ -619,7 +632,14 @@ export default function OnboardingPage() {
               it's optional and can be done later from My Projects. */}
           {step >= 2 && step <= 6 && (
             <div className="mt-8">
-              <StepNav onBack={goBack} onNext={goNext} disabled={!canAdvance()} />
+              <StepNav
+                onBack={goBack}
+                onNext={goNext}
+                disabled={!canAdvance()}
+                alt={step === 6 && projects.length === 0
+                  ? { label: "I don't have one right now", onClick: () => { setNoProjects(true); goNext(); } }
+                  : null}
+              />
             </div>
           )}
           {/* "Finish setup" was a lie whenever calibration was still pending:
@@ -656,7 +676,11 @@ export default function OnboardingPage() {
 // Back gets its own button next to Continue instead of a link up in the header.
 // Omit onNext to render a Back-only footer (e.g. the sub-team picker, which
 // advances on selection).
-function StepNav({ onBack, onNext, disabled = false, label = 'Continue', variant = 'default' }) {
+// `alt` is an optional second way forward, shown beside the primary action — used
+// by the projects step, where "I don't have one right now" is a real answer rather
+// than a skip. Keeping it in the nav (not buried in the step body) is the point:
+// the choice has to be as visible as Continue, or it's just a hidden skip again.
+function StepNav({ onBack, onNext, disabled = false, label = 'Continue', variant = 'default', alt = null }) {
   const primaryClass = variant === 'finish'
     ? 'inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-green-600 text-white font-semibold shadow-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all'
     : 'inline-flex items-center gap-2 px-8 py-3 rounded-pill bg-cta text-ink font-semibold shadow-sm hover:bg-cta-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all';
@@ -670,6 +694,15 @@ function StepNav({ onBack, onNext, disabled = false, label = 'Continue', variant
         <ChevronLeft className="w-4 h-4" />
         Back
       </button>
+      {alt && (
+        <button
+          type="button"
+          onClick={alt.onClick}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-pill border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+        >
+          {alt.label}
+        </button>
+      )}
       {onNext && (
         <button type="button" onClick={onNext} disabled={disabled} className={primaryClass}>
           {variant === 'finish' && <Sparkles className="w-4 h-4" />}
@@ -1218,7 +1251,8 @@ function StepProjects({ projects, title, description, onTitleChange, onDescripti
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-sm">
           Add a project or two and your lessons will use them as the worked example
-          instead of a made-up scenario. Optional — you can add these later from My Projects.
+          instead of a made-up scenario. Nothing in flight right now? Say so below —
+          you can always add one later from My Projects.
         </p>
       </div>
 
