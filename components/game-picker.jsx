@@ -87,15 +87,13 @@ export default function GamePicker({ games, selectedSlug, onSelect, stats = {} }
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${diff.badge}`}>
                   <BarChart3 className="w-3 h-3" /> {diff.label}
                 </span>
-                {/* Every game needs an answer in step 2 now, so the badge no longer
-                    says whether a topic is required — it says what SURPRISE ME will
-                    give you, which is the only remaining difference between games and
-                    the thing worth knowing before you pick one. */}
+                {/* Every game is built from a topic, so the badge says that plainly.
+                    It reads the same on eight of the nine cards, which is the point:
+                    the old three-state labelling was the thing making Games feel
+                    inconsistent (#219). AI or Human is the one genuine exception. */}
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: 'var(--accent)' }}>
                   <Sparkles className="w-3 h-3 shrink-0" />
-                  {game.generates === false
-                    ? 'Hand-written rounds'
-                    : game.bank ? 'Your topic or ours' : 'Built from your topic'}
+                  {game.generates === false ? 'Hand-written rounds' : 'Built from your topic'}
                 </span>
                 {gameStats && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">

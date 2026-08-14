@@ -22,36 +22,41 @@ import GamePicker from '@/components/game-picker';
 // which is the same source the XP award uses — so a card can't claim "Easy · 20 XP"
 // while progression pays out medium.
 //
-// Two independent facts per game, replacing a single three-state `topic` flag
-// ('required' | 'optional' | 'none'). That flag conflated "can this be generated?"
-// with "does this ship content?", which is what made step 2 behave differently on
-// different games and left Rachel thinking Games had locked her out (#219).
+// Rounds are GENERATED, the way lessons are. There used to be a three-state `topic`
+// flag ('required' | 'optional' | 'none') and, briefly, a `bank` flag for games that
+// shipped curated questions — both gone, because they made step 2 behave differently
+// depending on which game you'd picked, which is what left Rachel thinking Games had
+// locked her out after two plays (#219).
 //
-//   generates — a topic can drive the round's content (everything but AI or Human,
-//               whose premise is genuinely human-written text to compare against)
-//   bank      — ships curated, reviewed content that can be played as-is
+// One rule now: a game is built from a topic. Type one, or press Surprise me and we
+// suggest one from your tasks, goals and projects.
 //
-// The rule the learner sees is now the same everywhere: step 2 always needs an
-// answer. Type a topic, or press Surprise me — which fills in a topic for a game
-// that generates, and plays the curated set for a game that has one.
+//   generates — false ONLY for AI or Human, whose premise is telling genuinely
+//               human-written text from AI-written text. Generating its rounds would
+//               destroy the thing being tested, so it keeps hand-written content and
+//               takes no topic. Every other game generates.
+//
+// The per-game files that remain (speed-round/questions.js, hallucination-hunt/
+// rounds.js, prompt-battle/scenarios.js) are now only reached by a direct URL with no
+// topic param. They stay as that fallback rather than leaving those routes broken.
 const CATALOG = [
-  { slug: 'speed-round', icon: Timer, title: 'Speed Round', time: '3-5 min', generates: true, bank: true,
+  { slug: 'speed-round', icon: Timer, title: 'Speed Round', time: '3-5 min', generates: true,
     description: 'Rapid-fire multiple choice. 10 questions, 15 seconds each.' },
-  { slug: 'ai-or-human', icon: Eye, title: 'AI or Human?', time: '3-5 min', generates: false, bank: true,
+  { slug: 'ai-or-human', icon: Eye, title: 'AI or Human?', time: '3-5 min', generates: false,
     description: 'Can you tell which text was written by AI and which by a human?' },
-  { slug: 'two-truths', icon: ScanSearch, title: 'Two Truths & a Lie', time: '3-5 min', generates: true, bank: false,
+  { slug: 'two-truths', icon: ScanSearch, title: 'Two Truths & a Lie', time: '3-5 min', generates: true,
     description: 'Spot the false claim among three.' },
-  { slug: 'wheel-of-fortune', icon: Disc3, title: 'Wheel of Fortune', time: '5-8 min', generates: true, bank: false,
+  { slug: 'wheel-of-fortune', icon: Disc3, title: 'Wheel of Fortune', time: '5-8 min', generates: true,
     description: 'Spin and guess letters to uncover a hidden phrase.' },
-  { slug: 'prompt-battle', icon: Swords, title: 'Prompt Battle', time: '5-10 min', generates: true, bank: true,
+  { slug: 'prompt-battle', icon: Swords, title: 'Prompt Battle', time: '5-10 min', generates: true,
     description: 'Write the sharpest prompt for a scenario and let AI score it.' },
-  { slug: 'family-feud', icon: Users, title: 'Family Feud', time: '5-8 min', generates: true, bank: false,
+  { slug: 'family-feud', icon: Users, title: 'Family Feud', time: '5-8 min', generates: true,
     description: 'Guess the top survey answers before three strikes.' },
-  { slug: 'jeopardy', icon: LayoutGrid, title: 'Jeopardy', time: '8-12 min', generates: true, bank: false,
+  { slug: 'jeopardy', icon: LayoutGrid, title: 'Jeopardy', time: '8-12 min', generates: true,
     description: 'A 5-category board of clues — answer in the form of a question.' },
-  { slug: 'millionaire', icon: DollarSign, title: 'Millionaire', time: '5-10 min', generates: true, bank: false,
+  { slug: 'millionaire', icon: DollarSign, title: 'Millionaire', time: '5-10 min', generates: true,
     description: 'Climb a 10-question ladder — how far can you get?' },
-  { slug: 'hallucination-hunt', icon: Search, title: 'Hallucination Hunt', time: '5-8 min', generates: true, bank: true,
+  { slug: 'hallucination-hunt', icon: Search, title: 'Hallucination Hunt', time: '5-8 min', generates: true,
     description: 'Spot the planted factual errors in an AI answer.' },
 ].map((g) => ({ ...g, difficulty: gameDifficulty(g.slug) }));
 
@@ -89,8 +94,6 @@ function GamesHubInner() {
   const [sampleIdx, setSampleIdx] = useState(0);
   // Highlights the topic field after someone presses Play without one.
   const [topicNudge, setTopicNudge] = useState(false);
-  // "Play the curated set" — the other way to answer step 2, for games that ship one.
-  const [useBank, setUseBank] = useState(false);
   const topicRef = useRef(null);
 
   useEffect(() => {
@@ -113,13 +116,15 @@ function GamesHubInner() {
     if (match) setSelected(match);
   }, [makeSlug]);
 
-  // One rule for every game: step 2 needs an answer before you can play. It's
-  // satisfied either by a typed topic or by pressing Surprise me, which means
-  // "pick one for me" on a game that generates and "play your curated set" on a
-  // game that has one.
+  // One rule: a game is generated from a topic, so step 2 needs one. Type it, or
+  // press Surprise me and we suggest one from your work.
+  //
+  // AI or Human is the single exception and cannot be otherwise: the game is telling
+  // genuinely human-written text from AI-written text, so generating its rounds would
+  // destroy the thing being tested. It keeps its hand-written content and needs no
+  // topic, which is why it's playable the moment it's picked.
   const canGenerate = selected?.generates !== false;
-  const hasBank = !!selected?.bank;
-  const answered = !!selected && (!!topic.trim() || useBank);
+  const answered = !!selected && (!canGenerate || !!topic.trim());
   const canPlay = answered;
   // Play is BLOCKED, not disabled — see the button below. Feedback #219: Rachel
   // played two games that need no topic, hit one that does, saw a greyed-out Play
@@ -146,19 +151,14 @@ function GamesHubInner() {
     router.push(`/games/${selected.slug}${qs}`);
   }
 
-  // Surprise me answers step 2 without making anyone think of a subject. What that
-  // means depends on what the game HAS, which is the one place the two kinds of game
-  // still differ — and the helper text under the field says which you'll get.
+  // Surprise me answers step 2 without making anyone think of a subject: it picks a
+  // topic from their tasks, goals and projects (lib/game-topics.js) and drops it in
+  // the field, where they can see it and edit it before playing.
+  //
+  // It does NOT play a curated set. Rounds are generated on the spot, the same way
+  // lessons are — so a game is always about something the player chose or accepted,
+  // never a generic bank.
   function surprise() {
-    if (hasBank) {
-      // Curated content exists: play it. Instant, reviewed, and it keeps the 400+
-      // hand-written questions in the repo doing their job.
-      setTopic('');
-      setUseBank(true);
-      setTopicNudge(false);
-      return;
-    }
-    setUseBank(false);
     setTopic(samples[sampleIdx % samples.length]);
     setSampleIdx((i) => i + 1);
     setTopicNudge(false);
@@ -169,12 +169,12 @@ function GamesHubInner() {
       <CinematicPageHero
         eyebrow="Games"
         title="Learning Games"
-        subtitle="Pick a game, give it a topic if you want one, and play."
+        subtitle="Pick a game, give it a topic, and we build the round around it."
         icon={Gamepad2}
         gradient
       />
       <p className="text-xs mb-8" style={{ color: 'var(--ink-dim)' }}>
-        Questions are fresh every play — and Hallucination Hunt mixes up its order daily at 8 AM PT.
+        Every round is built for the topic you give it, so the questions are new each time you play.
       </p>
 
       {/* Switching games clears step 2. "Playing our built-in set" carried over from
@@ -186,7 +186,6 @@ function GamesHubInner() {
         onSelect={(game) => {
           setSelected(game);
           setTopic('');
-          setUseBank(false);
           setTopicNudge(false);
         }}
         stats={allStats}
@@ -198,8 +197,11 @@ function GamesHubInner() {
         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--ink-dim)' }}>
           <span className="w-5 h-5 rounded-full grid place-items-center text-[11px]" style={{ background: 'var(--accent)', color: '#fff' }}>2</span>
           Your topic
-          {/* Always required now, on every game — one rule instead of three states. */}
-          <span className="font-medium normal-case tracking-normal" style={{ color: 'var(--accent)' }}>— required</span>
+          {/* Required wherever a topic is what builds the round, which is everywhere
+              except AI or Human. */}
+          {canGenerate && (
+            <span className="font-medium normal-case tracking-normal" style={{ color: 'var(--accent)' }}>— required</span>
+          )}
         </p>
 
         <div className="cine-glass rounded-3xl p-6 sm:p-7">
@@ -208,7 +210,7 @@ function GamesHubInner() {
                 <input
                   ref={topicRef}
                   value={topic}
-                  onChange={(e) => { setTopic(e.target.value); setUseBank(false); setTopicNudge(false); }}
+                  onChange={(e) => { setTopic(e.target.value); setTopicNudge(false); }}
                   onKeyDown={(e) => { if (e.key === 'Enter' && canPlay) play(); }}
                   disabled={!canGenerate}
                   placeholder={canGenerate
@@ -227,20 +229,10 @@ function GamesHubInner() {
                   <Sparkles className="w-4 h-4" /> Surprise me
                 </button>
               </div>
-              {/* Confirms what pressing it actually did, so "answered" is visible
-                  rather than something you infer from the Play button waking up. */}
-              {useBank && (
-                <p className="inline-flex items-center gap-1.5 text-sm font-medium mt-3" style={{ color: 'var(--accent)' }}>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Playing our built-in set for {selected?.title}.
-                </p>
-              )}
               <p className="text-xs mt-3" style={{ color: 'var(--ink-dim)' }}>
-                {!canGenerate
-                  ? `${selected?.title || 'This game'} compares real human writing with AI writing, so its rounds are hand-written. Press Surprise me to play them.`
-                  : hasBank
-                    ? 'Name a topic for a custom round, or press Surprise me to play our built-in set. Both earn XP.'
-                    : 'Name a topic, or press Surprise me and we will pick one from your work. Custom rounds earn XP just like the standard games.'}
+                {canGenerate
+                  ? 'Name a topic, or press Surprise me and we will suggest one from your tasks, goals and projects. Every round is built fresh for it.'
+                  : `${selected?.title || 'This game'} compares real human writing with AI writing, so its rounds are hand-written and need no topic. Just press Play.`}
               </p>
             </>
         </div>
