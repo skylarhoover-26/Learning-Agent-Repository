@@ -174,6 +174,7 @@ function WheelGame() {
   if (!started && !error) {
     return (
       <GameStartScreen
+        slug="wheel-of-fortune"
         icon={Disc3}
         title="Wheel of Fortune"
         subtitle={`on ${topic}`}

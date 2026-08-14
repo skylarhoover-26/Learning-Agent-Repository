@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { gameGenEstimateLabel } from '@/lib/game-estimates';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import GameInstructions from '@/components/game-instructions';
 
@@ -27,8 +28,13 @@ export default function GameStartScreen({
   loadingLabel = 'Building your round…',
   footnote = null,
   resume = null,
+  // The game's slug, so this screen can name how long the wait usually is. Games
+  // used to show an unbounded spinner while lessons named a band — same wait, same
+  // model, and only one of them told you what to expect.
+  slug = null,
 }) {
   const waiting = loading || !ready;
+  const estimate = waiting ? gameGenEstimateLabel(slug) : null;
 
   return (
     <main className="max-w-2xl mx-auto px-6 pt-6 pb-8">
@@ -75,6 +81,12 @@ export default function GameStartScreen({
               ? <><Loader2 className="w-4 h-4 animate-spin" /> {loadingLabel}</>
               : <>Start Game <ChevronRight className="w-4 h-4" /></>}
           </button>
+        )}
+
+        {estimate && (
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+            This usually takes <span className="font-semibold">{estimate}</span>.
+          </p>
         )}
 
         <div className="mt-6">

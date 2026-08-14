@@ -324,6 +324,7 @@ export async function POST(request) {
     // alongside the profile (they live under their own user-data key).
     const profileForGen = gen.roleAnchored ? await withProjects(profile) : profile;
 
+    const start = Date.now();
     const system = [
       AUDIENCE,
       gen.roleAnchored ? playerRoleContext(profileForGen) : null,
@@ -358,6 +359,9 @@ export async function POST(request) {
       model: MODELS.sonnet,
       input: { type, topic },
       output: { ok: true },
+      // Recorded so lib/game-estimates.js can be set from measurements instead of
+      // scaled guesses — see the note there.
+      durationMs: Date.now() - start,
     }).catch(() => {});
 
     return NextResponse.json({ type, topic, ...result });

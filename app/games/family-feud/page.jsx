@@ -201,6 +201,7 @@ function FamilyFeud() {
   if (!started && !error) {
     return (
       <GameStartScreen
+        slug="family-feud"
         icon={Users}
         title="Family Feud"
         subtitle={`on ${topic}`}

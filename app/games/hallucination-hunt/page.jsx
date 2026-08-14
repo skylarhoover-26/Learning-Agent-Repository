@@ -282,6 +282,7 @@ function HallucinationHunt() {
   if (!started) {
     return (
       <GameStartScreen
+        slug="hallucination-hunt"
         icon={Search}
         title="Hallucination Hunt"
         subtitle={topic ? `on ${topic}` : 'Find the factual errors in AI responses'}

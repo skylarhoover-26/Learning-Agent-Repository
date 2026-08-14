@@ -335,6 +335,7 @@ function PromptBattle() {
   if (!started) {
     return (
       <GameStartScreen
+        slug="prompt-battle"
         icon={Swords}
         title="Prompt Battle"
         subtitle={topic ? `on ${topic}` : 'Write the best prompt for the scenario'}

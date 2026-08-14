@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, BarChart3, Clock, Zap, Trophy, Sparkles } from 'lucide-react';
+import { Check, BarChart3, Clock, Zap, Trophy, Sparkles, Target } from 'lucide-react';
 import { maxGameXp } from '@/lib/progression';
 
 const DIFF = {
@@ -81,19 +81,29 @@ export default function GamePicker({ games, selectedSlug, onSelect, stats = {} }
                 </div>
               </div>
 
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-snug mb-3 flex-1 line-clamp-2">{game.description}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-snug mb-2 flex-1 line-clamp-2">{game.description}</p>
+
+              {/* What the game is FOR. Skylar's ask: people should be able to see what
+                  each one helps them get better at, not just how long it takes and how
+                  much XP it pays. */}
+              {game.teaches && (
+                <p className="text-[11px] font-medium mb-3 inline-flex items-start gap-1" style={{ color: 'var(--ink-dim)' }}>
+                  <Target className="w-3 h-3 shrink-0 mt-[2px]" />
+                  <span>Builds: {game.teaches}</span>
+                </p>
+              )}
 
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${diff.badge}`}>
                   <BarChart3 className="w-3 h-3" /> {diff.label}
                 </span>
-                {/* Every game is built from a topic, so the badge says that plainly.
-                    It reads the same on eight of the nine cards, which is the point:
-                    the old three-state labelling was the thing making Games feel
-                    inconsistent (#219). AI or Human is the one genuine exception. */}
+                {/* Reads the same on nine of the ten cards, which is the point: the old
+                    three-state labelling is what made Games feel inconsistent (#219).
+                    AI or Human says "pre-set rounds" outright rather than leaving
+                    someone to discover it after picking. */}
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: 'var(--accent)' }}>
                   <Sparkles className="w-3 h-3 shrink-0" />
-                  {game.generates === false ? 'Hand-written rounds' : 'Built from your topic'}
+                  {game.generates === false ? 'Pre-set rounds, no topic' : 'Built from your topic'}
                 </span>
                 {gameStats && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">

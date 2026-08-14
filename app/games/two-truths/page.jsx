@@ -87,6 +87,7 @@ function TwoTruths() {
   if (!started && !error) {
     return (
       <GameStartScreen
+        slug="two-truths"
         icon={ScanSearch}
         title="Two Truths & a Lie"
         subtitle={`on ${topic}`}

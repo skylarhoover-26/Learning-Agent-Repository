@@ -123,6 +123,7 @@ function Millionaire() {
   if (!started && !error) {
     return (
       <GameStartScreen
+        slug="millionaire"
         icon={HelpCircle}
         title="AI Millionaire"
         subtitle={`on ${topic}`}

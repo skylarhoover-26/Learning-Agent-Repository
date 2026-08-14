@@ -31,34 +31,52 @@ import GamePicker from '@/components/game-picker';
 // One rule now: a game is built from a topic. Type one, or press Surprise me and we
 // suggest one from your tasks, goals and projects.
 //
-// EVERY game in this list generates. AI or Human was the one that could not — its
-// premise is telling genuinely human-written text from AI-written text, so generating
-// its rounds would have destroyed the thing being tested — and it was retired in
-// favour of Lily Leap, which teaches at the same Easy tier and follows the same rule.
-// `generates` stays on each entry as the flag that enforces "no exceptions": add a
-// game that can't be built from a topic and the hub will tell you.
+// Almost every game generates from a topic. AI or Human is the single exception and
+// is kept on purpose: its premise is telling genuinely human-written text from
+// AI-written text, so generating its rounds would destroy what it tests, and nothing
+// else in the set teaches that AI writing has tells. It is LABELLED as pre-set rather
+// than quietly behaving differently, which is what went wrong in #219.
+//
+// `teaches` is on every entry because a player choosing between ten games has no way
+// to tell what any of them is FOR from a title and a difficulty chip.
 //
 // The per-game files that remain (speed-round/questions.js, hallucination-hunt/
 // rounds.js, prompt-battle/scenarios.js) are now only reached by a direct URL with no
 // topic param. They stay as that fallback rather than leaving those routes broken.
 const CATALOG = [
   { slug: 'speed-round', icon: Timer, title: 'Speed Round', time: '3-5 min', generates: true,
+    teaches: 'Fast recall of the basics',
     description: 'Rapid-fire multiple choice. 10 questions, 15 seconds each.' },
   { slug: 'lily-leap', icon: Waves, title: 'Lily Leap', time: '3-5 min', generates: true,
+    teaches: 'Quick judgment, one call at a time',
     description: 'Jump across the pond by landing on the right answers.' },
+  // Kept deliberately, as the one game with PRE-SET rounds. It teaches the thing
+  // nothing else here does — that AI writing has tells — and it cannot be generated
+  // without destroying what it tests, so the honest move is to label it rather than
+  // replace it.
+  { slug: 'ai-or-human', icon: Eye, title: 'AI or Human?', time: '3-5 min', generates: false,
+    teaches: 'Spotting the tells in AI writing',
+    description: 'Can you tell which text was written by AI and which by a human?' },
   { slug: 'two-truths', icon: ScanSearch, title: 'Two Truths & a Lie', time: '3-5 min', generates: true,
+    teaches: 'Catching a false claim',
     description: 'Spot the false claim among three.' },
   { slug: 'wheel-of-fortune', icon: Disc3, title: 'Wheel of Fortune', time: '5-8 min', generates: true,
+    teaches: 'The vocabulary of AI work',
     description: 'Spin and guess letters to uncover a hidden phrase.' },
   { slug: 'prompt-battle', icon: Swords, title: 'Prompt Battle', time: '5-10 min', generates: true,
+    teaches: 'Writing a prompt that works',
     description: 'Write the sharpest prompt for a scenario and let AI score it.' },
   { slug: 'family-feud', icon: Users, title: 'Family Feud', time: '5-8 min', generates: true,
+    teaches: 'The answers most people reach for',
     description: 'Guess the top survey answers before three strikes.' },
   { slug: 'jeopardy', icon: LayoutGrid, title: 'Jeopardy', time: '8-12 min', generates: true,
+    teaches: 'Breadth across a whole topic',
     description: 'A 5-category board of clues — answer in the form of a question.' },
   { slug: 'millionaire', icon: DollarSign, title: 'Millionaire', time: '5-10 min', generates: true,
+    teaches: 'Depth, one step harder each time',
     description: 'Climb a 10-question ladder — how far can you get?' },
   { slug: 'hallucination-hunt', icon: Search, title: 'Hallucination Hunt', time: '5-8 min', generates: true,
+    teaches: 'Catching factual errors in AI output',
     description: 'Spot the planted factual errors in an AI answer.' },
 ].map((g) => ({ ...g, difficulty: gameDifficulty(g.slug) }));
 
@@ -234,7 +252,7 @@ function GamesHubInner() {
               <p className="text-xs mt-3" style={{ color: 'var(--ink-dim)' }}>
                 {canGenerate
                   ? 'Name a topic, or press Surprise me and we will suggest one from your tasks, goals and projects. Every round is built fresh for it.'
-                  : `${selected?.title || 'This game'} compares real human writing with AI writing, so its rounds are hand-written and need no topic. Just press Play.`}
+                  : `${selected?.title || 'This game'} uses PRE-SET rounds, not a topic. It compares real human writing with AI writing, so the examples are hand-written by us, and each play shuffles a fresh 10 out of the pool. Just press Play.`}
               </p>
             </>
         </div>

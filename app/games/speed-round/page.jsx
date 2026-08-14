@@ -325,6 +325,7 @@ function SpeedRound() {
   if (!started) {
     return (
       <GameStartScreen
+        slug="speed-round"
         icon={Timer}
         title="Speed Round"
         subtitle={topic ? `on ${topic}` : 'Rapid-fire multiple choice'}

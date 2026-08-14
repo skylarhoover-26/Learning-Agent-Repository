@@ -126,6 +126,7 @@ function LilyLeap() {
   if (!started && !error) {
     return (
       <GameStartScreen
+        slug="lily-leap"
         icon={Waves}
         title="Lily Leap"
         subtitle={`on ${topic}`}

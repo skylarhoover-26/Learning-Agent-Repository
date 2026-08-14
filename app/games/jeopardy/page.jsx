@@ -136,6 +136,7 @@ function JeopardyGame() {
   if (!started && !error) {
     return (
       <GameStartScreen
+        slug="jeopardy"
         icon={Trophy}
         title="Jeopardy"
         subtitle={`on ${topic}`}
