@@ -11,23 +11,23 @@ import LessonQuiz from '@/components/lesson-quiz';
 import PlanLessonPlayer from '@/components/plan-lesson-player';
 import { emitXp } from '@/lib/xp-bus';
 import { useProgression } from '@/components/progression-provider';
-import { onLessonComplete, getLessonHistory } from '@/lib/progression';
+import { onLessonComplete } from '@/lib/progression';
 import { recordActivity } from '@/lib/adaptive-store';
-import { contentDayKey, REFRESH_LABEL } from '@/lib/content-day';
+import { REFRESH_LABEL } from '@/lib/content-day';
 import { useProfile } from '@/components/profile-provider';
 import { saveLessonState, clearSavedLesson } from '@/lib/lesson-store';
 import BookLoader from '@/components/book-loader';
 import {
   BookOpen, ChevronRight, Zap, BookMarked, Trophy,
-  Loader2, Send, Mic, MicOff, MessageSquare, PlayCircle, Sparkles,
-  Target, BarChart3, Bot, CheckCircle2, MessagesSquare, Lightbulb, Search, Mail, PenLine, Brain, Rocket, Check,
+  Loader2, Send, Mic, MicOff, MessageSquare, PlayCircle, Sparkles, Check, PenLine,
 } from 'lucide-react';
 import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
 import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
-import { signalSignature } from '@/lib/learner-signals';
 import { FALLBACK_TOPICS } from '@/lib/fallback-topics';
+import TopicCardGrid, { TopicGridSkeleton } from '@/components/topic-card-grid';
+import { useSuggestedTopics } from '@/components/use-suggested-topics';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import PausedLessonsBox from '@/components/paused-lessons-box';
 import { getPausedLesson, listPausedLessons, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
@@ -82,14 +82,6 @@ const FORMAT_TONES = {
 // Step 3 (topics) isn't a scale, so tiles cycle through a 6-color palette by
 // position — every tile reads as its own category, and the selected one lights
 // up with a ring + glow + check badge. `tile` tints the emoji chip.
-const TOPIC_TONES = [
-  { ring: 'ring-blue-400 dark:ring-blue-500', glow: 'rgba(59,130,246,0.5)', solid: '#3B82F6', tile: 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800', badge: 'bg-blue-500', chevron: 'text-blue-400' },
-  { ring: 'ring-teal-400 dark:ring-teal-500', glow: 'rgba(20,184,166,0.5)', solid: '#14B8A6', tile: 'bg-teal-50 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800', badge: 'bg-teal-500', chevron: 'text-teal-400' },
-  { ring: 'ring-violet-400 dark:ring-violet-500', glow: 'rgba(139,92,246,0.5)', solid: '#8B5CF6', tile: 'bg-violet-50 text-violet-600 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800', badge: 'bg-violet-500', chevron: 'text-violet-400' },
-  { ring: 'ring-amber-400 dark:ring-amber-500', glow: 'rgba(245,158,11,0.5)', solid: '#F59E0B', tile: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800', badge: 'bg-amber-500', chevron: 'text-amber-400' },
-  { ring: 'ring-rose-400 dark:ring-rose-500', glow: 'rgba(244,63,94,0.5)', solid: '#F43F5E', tile: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800', badge: 'bg-rose-500', chevron: 'text-rose-400' },
-  { ring: 'ring-emerald-400 dark:ring-emerald-500', glow: 'rgba(16,185,129,0.5)', solid: '#10B981', tile: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800', badge: 'bg-emerald-500', chevron: 'text-emerald-400' },
-];
 
 // One collapsed rung of the wizard ladder: a completed step, grayed out, showing
 // the learner's choice. Clicking it reopens that step so they can change it.
@@ -146,39 +138,6 @@ function applyAdaptivePerformance(profile, correctness) {
   }
 }
 
-const SUGGESTIONS_CACHE_KEY = 'lesson_suggested_topics';
-
-// What the cached topic list is keyed on. `signalSignature` covers department,
-// sub-team, tier, tools, tasks, goals and projects, so editing ANY of the four
-// signals the suggestions are built from invalidates the list — the old hand-rolled
-// key was department|tier|tasks only, which meant changing your goals left
-// yesterday's suggestions in place. lessonCount keeps the original behavior of
-// regenerating once you finish a lesson.
-function suggestionSignature(profile, projects, lessonCount) {
-  return `${signalSignature({ ...profile, work_projects: projects || [] })}|n${lessonCount}`;
-}
-
-// Read the cached list ONLY if it still matches this learner's profile and today's
-// content-day. Runs at mount, where the profile context hasn't resolved yet — so it
-// reads the copies the profile provider keeps in localStorage for exactly this kind
-// of non-React caller. Any missing piece, or any mismatch, returns null: showing
-// nothing beats showing topics we are about to replace.
-function readValidSuggestions() {
-  try {
-    const cached = JSON.parse(localStorage.getItem(SUGGESTIONS_CACHE_KEY) || 'null');
-    if (!cached || !Array.isArray(cached.topics) || !cached.topics.length) return null;
-    if (cached.date !== contentDayKey()) return null;
-    const profile = JSON.parse(localStorage.getItem('learner_profile') || 'null');
-    if (!profile) return null;
-    const projects = JSON.parse(localStorage.getItem('learner_work_projects') || '[]');
-    const history = getLessonHistory(resolveLearnerId(profile)) || [];
-    if (cached.sig !== suggestionSignature(profile, projects, history.length)) return null;
-    return cached.topics;
-  } catch {
-    return null; // unreadable cache, or no localStorage (server render)
-  }
-}
-
 const SUGGESTED_TOPICS = FALLBACK_TOPICS;
 
 // Worked examples for the "type your own" box, mirroring Discovery's "Or start
@@ -191,20 +150,6 @@ const TOPIC_EXAMPLES = [
   'Using AI to draft a first reply to an unhappy customer, then editing it so it still sounds like me.',
   'How to check whether an AI answer is actually correct before I pass it on to someone else.',
 ];
-
-// Monochrome line-icon (stencil) equivalents for topic emojis — the app-wide
-// preference is lucide line icons, not colorful iOS emojis. Covers the static
-// topics + common emojis the personalized-suggestion API returns; anything else
-// falls back to a neutral Lightbulb so it's never a color emoji.
-const TOPIC_ICON = {
-  '🎯': Target, '🧵': MessageSquare, '📊': BarChart3, '🤖': Bot, '✅': CheckCircle2,
-  '💬': MessagesSquare, '📧': Mail, '✉️': Mail, '🔍': Search, '📝': PenLine,
-  '🧠': Brain, '🚀': Rocket, '⚡': Zap, '💡': Lightbulb, '📈': BarChart3, '📚': BookOpen,
-};
-function TopicIcon({ emoji }) {
-  const Ic = TOPIC_ICON[emoji] || Lightbulb;
-  return <Ic className="w-5 h-5" style={{ color: 'var(--accent2)' }} />;
-}
 
 function LessonContent() {
   const searchParams = useSearchParams();
@@ -379,7 +324,7 @@ function LessonContent() {
   // bare percentage with no idea how much it was measured over.
   const quizTotalRef = useRef(0);
   const { refresh: refreshProgression } = useProgression() || {};
-  const { profile, workProjects } = useProfile();
+  const { profile } = useProfile();
   const { tools } = useActiveTool();
 
   useEffect(() => {
@@ -402,98 +347,13 @@ function LessonContent() {
   // Seed from the last cached personalized list synchronously so a refresh
   // paints the real topics immediately instead of flashing the static fallback
   // first. The effect below still revalidates (sig/date) and refreshes if stale.
-  // Safe to read localStorage here: this component is client-only (under
-  // Suspense via useSearchParams), so there's no SSR/hydration mismatch.
-  // Cached topics are only painted once they've been CHECKED against the current
-  // profile. This initializer used to return `cached.topics` on sight, ignoring the
-  // `sig` and `date` stored right next to them — so the picker painted the previous
-  // profile's topics, the effect below then computed the real signature, saw the
-  // mismatch, refetched, and swapped the list out from under the reader. That is the
-  // flash: personalized topics replaced by *different* personalized topics, which
-  // reads as a glitch rather than as loading. readValidSuggestions() applies the same
-  // test at mount, from the same localStorage the provider keeps warm, so a valid
-  // cache paints instantly and an invalid one paints nothing at all.
-  //
-  // Starts null rather than reading the cache inline, because a useState
-  // initializer runs during the SERVER render too, where localStorage doesn't
-  // exist. Returning topics on the client and nothing on the server is a hydration
-  // mismatch, and React resolving one is itself a visible repaint — the very thing
-  // we're removing. The mount effect below reads the cache one tick later instead.
-  const [suggested, setSuggested] = useState(null);
-  // Starts TRUE so the first paint is skeletons, never the generic fallback list.
-  // Those fallback topics are real and clickable, so showing them before we know
-  // whether a personalized list exists means offering choices we're about to
-  // replace. Cleared by whichever effect resolves the list.
-  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
-
-  // Mount-only: adopt a still-valid cached list immediately, so a returning learner
-  // gets their topics on the first tick instead of waiting on the profile context.
-  useEffect(() => {
-    const cached = readValidSuggestions();
-    if (cached) {
-      setSuggested(cached);
-      setSuggestionsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Nothing to resolve on this screen — don't leave the skeleton armed for a
-    // picker that isn't showing.
-    if (initialTopic || view !== 'picker') { setSuggestionsLoading(false); return; }
-    if (!profile) return; // still resolving; keep the skeleton up
-
-    let history = [];
-    try { history = getLessonHistory(resolveLearnerId(profile)) || []; } catch { history = []; }
-    const completedTopics = history.map((l) => l.topic).filter(Boolean);
-    const recentCompleted = completedTopics.slice(-12);
-
-    // Same signature the mount-time read uses — see suggestionSignature.
-    const sig = suggestionSignature(profile, workProjects, history.length);
-    const today = contentDayKey(); // rolls over at 8 AM PT
-
-    try {
-      const cached = JSON.parse(localStorage.getItem(SUGGESTIONS_CACHE_KEY) || 'null');
-      if (cached && cached.sig === sig && cached.date === today && Array.isArray(cached.topics) && cached.topics.length) {
-        setSuggested(cached.topics);
-        setSuggestionsLoading(false);
-        return;
-      }
-    } catch {
-      // ignore cache read errors
-    }
-
-    // Nothing valid to show: clear any stale list and say we're working, rather
-    // than leaving old topics on screen to be replaced a few seconds later.
-    setSuggested(null);
-    setSuggestionsLoading(true);
-
-    let cancelled = false;
-    fetch('/api/lesson/suggestions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ exclude: recentCompleted }),
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
-      .then((data) => {
-        if (cancelled) return;
-        if (Array.isArray(data.suggestions) && data.suggestions.length) {
-          setSuggested(data.suggestions);
-          try {
-            localStorage.setItem(SUGGESTIONS_CACHE_KEY, JSON.stringify({ sig, date: today, topics: data.suggestions }));
-          } catch {
-            // ignore cache write errors
-          }
-        }
-      })
-      .catch(() => {
-        // Generation failed — the static SUGGESTED_TOPICS take over, which is
-        // what they're for.
-      })
-      .finally(() => {
-        if (!cancelled) setSuggestionsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [profile, workProjects, initialTopic, view]);
+  // Shared with the Games hub: same six topics, same daily cache, one copy of the
+  // signature rule. Extracted to components/use-suggested-topics.js when Games
+  // started offering the same cards — two copies would have meant fixing this
+  // morning's stale-cache bug in one of them.
+  const { topics: suggested, loading: suggestionsLoading } = useSuggestedTopics({
+    enabled: !initialTopic && view === 'picker',
+  });
 
   function selectFormat(key) {
     setFormat(key);
@@ -1363,69 +1223,19 @@ function LessonContent() {
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
             Pick a topic
           </h3>
-          {/* Skeletons, not the generic fallback, while a personalized list is being
-              generated: the fallback topics are real and clickable, so showing them
-              mid-generation means offering choices that are about to be replaced. */}
+          {/* Cards and skeletons are shared with the Games hub — see
+              components/topic-card-grid.jsx. Skeletons rather than the generic
+              fallback while a list generates: those fallback topics are real and
+              clickable, so showing them mid-generation offers choices that are about
+              to be replaced. */}
           {suggestionsLoading && !suggested ? (
-            <>
-              {/* Say what's happening. Skeletons alone read as "broken" to plenty of
-                  people — this names the wait and why it's worth it. */}
-              <p aria-live="polite" className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
-                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                Building topics around your role, tasks, goals and projects — about 10 seconds.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-busy="true">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-start gap-3 p-4 cine-glass rounded-2xl animate-pulse">
-                  <span className="shrink-0 w-11 h-11 rounded-xl bg-slate-200 dark:bg-slate-700" />
-                  <div className="flex-1 space-y-2 py-0.5">
-                    <div className="h-4 w-2/5 rounded bg-slate-200 dark:bg-slate-700" />
-                    <div className="h-3 w-full rounded bg-slate-100 dark:bg-slate-700/60" />
-                    <div className="h-3 w-4/5 rounded bg-slate-100 dark:bg-slate-700/60" />
-                  </div>
-                </div>
-              ))}
-              </div>
-            </>
+            <TopicGridSkeleton note="Building topics around your role, tasks, goals and projects — about 10 seconds." />
           ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(suggested || SUGGESTED_TOPICS).map((s, i) => {
-              const selected = selectedTopic === s.topic;
-              const tone = TOPIC_TONES[i % TOPIC_TONES.length];
-              return (
-                <button
-                  key={i}
-                  onClick={() => setSelectedTopic(s.topic)}
-                  aria-pressed={selected}
-                  className={`group relative overflow-hidden flex items-start gap-3 p-4 cine-glass cine-tilt rounded-2xl transition-all text-left ${
-                    selected ? `ring-2 ${tone.ring}` : ''
-                  }`}
-                  // --tilt-accent gets the SOLID colour, not `glow`. cine-tilt's
-                  // hover rule mixes it at 38%, and `glow` is already rgba(...,0.5),
-                  // so passing that gave ~19% — visibly fainter than Achievements,
-                  // whose tints are solid hex. `glow` keeps its alpha for the
-                  // selected box-shadow, where the softness is wanted.
-                  style={selected
-                    ? { boxShadow: `0 0 34px -6px ${tone.glow}`, '--tilt-accent': tone.solid }
-                    : { '--tilt-accent': tone.solid }}
-                >
-                  {selected && (
-                    <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-50" style={{ background: tone.glow }} />
-                  )}
-                  <span className={`relative shrink-0 w-11 h-11 rounded-xl grid place-items-center border ${tone.tile}`}>
-                    <TopicIcon emoji={s.emoji} />
-                  </span>
-                  <div className="relative flex-1">
-                    <div className="font-medium text-slate-800 dark:text-slate-200 mb-0.5">{s.label}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">{s.topic}</div>
-                  </div>
-                  {selected
-                    ? <span className={`relative self-center inline-flex items-center justify-center w-6 h-6 rounded-full text-white shadow-sm ${tone.badge}`}><Check className="w-4 h-4" /></span>
-                    : <ChevronRight className={`relative self-center w-5 h-5 ${tone.chevron} opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all`} />}
-                </button>
-              );
-            })}
-          </div>
+            <TopicCardGrid
+              topics={suggested || SUGGESTED_TOPICS}
+              selected={selectedTopic}
+              onSelect={(s) => setSelectedTopic(s.topic)}
+            />
           )}
           <div className="flex flex-col items-center gap-3 mt-6">
             <div className="flex justify-center gap-3">

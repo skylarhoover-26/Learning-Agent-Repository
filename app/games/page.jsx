@@ -15,6 +15,8 @@ import { sortByDifficulty } from '@/lib/difficulty';
 import { useProfile } from '@/components/profile-provider';
 import { buildGameTopics } from '@/lib/game-topics';
 import GamePicker from '@/components/game-picker';
+import TopicCardGrid, { TopicGridSkeleton } from '@/components/topic-card-grid';
+import { useSuggestedTopics } from '@/components/use-suggested-topics';
 
 // One catalog for every game. This used to be two lists that drifted: a 4-card
 // GAMES array here and an 8-entry GAME_TYPES in the generator component, each with
@@ -107,6 +109,11 @@ function GamesHubInner() {
   const { profile, workProjects } = useProfile();
   // Projects count alongside tasks and goals in what "Surprise me" offers.
   const samples = useMemo(() => buildGameTopics(profile, workProjects), [profile, workProjects]);
+
+  // Only fetched once a game is picked: step 2 is inert before that, and nobody
+  // should pay a generation for a panel they cannot use yet.
+  const { topics: suggestedTopics, loading: suggestionsLoading, fallback: fallbackTopics } =
+    useSuggestedTopics({ enabled: true });
 
   const [allStats, setAllStats] = useState({});
   const [selected, setSelected] = useState(null);
@@ -226,31 +233,50 @@ function GamesHubInner() {
         </p>
 
         <div className="cine-glass rounded-3xl p-6 sm:p-7">
-            <>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  ref={topicRef}
-                  value={topic}
-                  onChange={(e) => { setTopic(e.target.value); setTopicNudge(false); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && canPlay) play(); }}
-                  placeholder={`e.g., '${samples[0]}'`}
-                  className={`flex-1 rounded-2xl px-4 py-3.5 text-ink dark:text-slate-100 outline-none focus:ring-2 ${
-                    topicNudge ? 'ring-2 ring-amber-400' : ''
-                  }`}
-                  style={{ background: 'var(--card)', border: '1px solid var(--line)' }}
-                />
-                <button
-                  type="button"
-                  onClick={surprise}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-pill bg-cta text-ink font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all shrink-0"
-                >
-                  <Sparkles className="w-4 h-4" /> Surprise me
-                </button>
-              </div>
-              <p className="text-xs mt-3" style={{ color: 'var(--ink-dim)' }}>
-                Name a topic, or press Surprise me and we will suggest one from your tasks, goals and projects. Every round is built fresh for it.
-              </p>
-            </>
+          {/* The SAME six topics the Lesson picker offers, from the same daily cache.
+              A co-worker's idea, and a good one: it makes the two surfaces one thought
+              — here is what's worth learning, read it or play it. They come from the
+              profile rather than from lesson history, so this works for someone who
+              has never opened Lesson, and whichever page they open first pays the
+              generation while the other is instant. */}
+          {suggestionsLoading && !suggestedTopics ? (
+            <TopicGridSkeleton note="Building topics around your role, tasks, goals and projects — about 10 seconds." />
+          ) : (
+            <TopicCardGrid
+              topics={suggestedTopics || fallbackTopics}
+              selected={topic}
+              onSelect={(s) => { setTopic(s.topic); setTopicNudge(false); }}
+            />
+          )}
+
+          <div className="mt-5 pt-5" style={{ borderTop: '1px solid var(--line)' }}>
+            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--ink-dim)' }}>
+              Or name your own
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                ref={topicRef}
+                value={topic}
+                onChange={(e) => { setTopic(e.target.value); setTopicNudge(false); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && canPlay) play(); }}
+                placeholder={`e.g., '${samples[0]}'`}
+                className={`flex-1 rounded-2xl px-4 py-3.5 text-ink dark:text-slate-100 outline-none focus:ring-2 ${
+                  topicNudge ? 'ring-2 ring-amber-400' : ''
+                }`}
+                style={{ background: 'var(--card)', border: '1px solid var(--line)' }}
+              />
+              <button
+                type="button"
+                onClick={surprise}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-pill bg-cta text-ink font-semibold text-sm shadow-sm hover:bg-cta-600 transition-all shrink-0"
+              >
+                <Sparkles className="w-4 h-4" /> Surprise me
+              </button>
+            </div>
+            <p className="text-xs mt-3" style={{ color: 'var(--ink-dim)' }}>
+              Pick one above, type your own, or press Surprise me for something from your tasks, goals and projects. Every round is built fresh for it.
+            </p>
+          </div>
         </div>
       </div>
       )}
