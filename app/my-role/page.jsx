@@ -7,6 +7,7 @@ import { useProfile } from '@/components/profile-provider';
 import { useProgression } from '@/components/progression-provider';
 import { DEPARTMENTS, SUBTEAMS, getTaskList } from '@/lib/curriculum-data';
 import { TIERS, GOALS } from '@/lib/onboarding-options';
+import { resolveTaskAdd, normalizeTaskText, taskNoticeText } from '@/lib/task-input';
 import {
   extractRole, roleLabel, buildApplyNow, buildSchedule, buildRevert,
 } from '@/lib/role-manager';
@@ -39,6 +40,8 @@ function MyRolePageInner() {
   const [subTeam, setSubTeam] = useState(null);
   const [topTasks, setTopTasks] = useState([]);
   const [customTask, setCustomTask] = useState('');
+  // Feedback for the custom-task input: {kind: 'duplicate'|'selected', task}.
+  const [taskNotice, setTaskNotice] = useState(null);
   const [tier, setTier] = useState('');
   const [goals, setGoals] = useState([]);
   const [applyMode, setApplyMode] = useState('now');
@@ -58,6 +61,10 @@ function MyRolePageInner() {
   const scheduled = profile.scheduled_role_change;
   const today = new Date().toISOString().slice(0, 10);
   const availableTasks = department ? getTaskList(department, subTeam) : [];
+  // Ring the task a duplicate add pointed at, so the message has a target.
+  const highlightKey = taskNotice?.task ? normalizeTaskText(taskNotice.task) : null;
+  const isTaskHighlighted = (task) => !!highlightKey && normalizeTaskText(task) === highlightKey;
+  const taskNoticeLine = taskNoticeText(taskNotice);
   const hasSubteams = !!SUBTEAMS[department];
   const canSave =
     department && (!hasSubteams || subTeam) && topTasks.length >= 1 && tier && goals.length >= 1 &&
@@ -79,12 +86,15 @@ function MyRolePageInner() {
     setDepartment(dept);
     setSubTeam(null);
     setTopTasks([]);
+    setTaskNotice(null);
   }
 
   function toggleTask(t) {
     setTopTasks((prev) =>
       prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
     );
+    // The notice points at a specific task; once they touch the list it's stale.
+    setTaskNotice(null);
   }
 
   function toggleGoal(g) {
@@ -94,11 +104,20 @@ function MyRolePageInner() {
   }
 
   function addCustomTask() {
-    const v = customTask.trim();
-    if (v && !topTasks.includes(v)) {
-      setTopTasks((prev) => [...prev, v]);
-      setCustomTask('');
+    const result = resolveTaskAdd({
+      typed: customTask,
+      selected: topTasks,
+      available: availableTasks,
+    });
+    if (result.status === 'empty') return;
+    if (result.status === 'duplicate') {
+      // Keep the text so they can reword it — a silent no-op reads as a bug.
+      setTaskNotice({ kind: 'duplicate', task: result.match });
+      return;
     }
+    setTopTasks(result.tasks);
+    setCustomTask('');
+    setTaskNotice(result.status === 'selected' ? { kind: 'selected', task: result.match } : null);
   }
 
   async function handleSave() {
@@ -280,16 +299,16 @@ function MyRolePageInner() {
               <Section title={`Top tasks (${topTasks.length})`}>
                 <div className="space-y-2">
                   {availableTasks.map((t) => (
-                    <TaskRow key={t} active={topTasks.includes(t)} onClick={() => toggleTask(t)}>{t}</TaskRow>
+                    <TaskRow key={t} active={topTasks.includes(t)} highlight={isTaskHighlighted(t)} onClick={() => toggleTask(t)}>{t}</TaskRow>
                   ))}
                   {topTasks.filter((t) => !availableTasks.includes(t)).map((t) => (
-                    <TaskRow key={t} active onClick={() => toggleTask(t)}>{t}</TaskRow>
+                    <TaskRow key={t} active highlight={isTaskHighlighted(t)} onClick={() => toggleTask(t)}>{t}</TaskRow>
                   ))}
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
                       value={customTask}
-                      onChange={(e) => setCustomTask(e.target.value)}
+                      onChange={(e) => { setCustomTask(e.target.value); setTaskNotice(null); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTask(); } }}
                       placeholder="Add your own task…"
                       className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand"
@@ -298,6 +317,11 @@ function MyRolePageInner() {
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
+                  {taskNoticeLine && (
+                    <p role="status" className="text-xs font-medium text-amber-700 dark:text-amber-300 px-1">
+                      {taskNoticeLine}
+                    </p>
+                  )}
                 </div>
               </Section>
             )}
@@ -420,7 +444,7 @@ function Chip({ active, onClick, children }) {
   );
 }
 
-function TaskRow({ active, disabled, onClick, children }) {
+function TaskRow({ active, disabled, onClick, highlight = false, children }) {
   return (
     <button
       onClick={onClick}
@@ -431,7 +455,7 @@ function TaskRow({ active, disabled, onClick, children }) {
           : disabled
             ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border-slate-100 cursor-not-allowed'
             : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
-      }`}
+      } ${highlight ? 'ring-2 ring-cta ring-offset-2 dark:ring-offset-slate-900' : ''}`}
     >
       <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${active ? 'bg-white border-white' : 'border-slate-300 dark:border-slate-600'}`}>
         {active && <Check className="w-3 h-3 text-brand" />}

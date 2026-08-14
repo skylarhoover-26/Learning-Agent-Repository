@@ -10,6 +10,7 @@ import {
   Briefcase, Check, Plus, Save, Loader2, ArrowLeft,
 } from 'lucide-react';
 import { getTaskList } from '@/lib/curriculum-data';
+import { resolveTaskAdd, normalizeTaskText, taskNoticeText } from '@/lib/task-input';
 
 // No cap — users can add as many tasks as they want (minimum 1).
 const MAX_TASKS = Infinity;
@@ -22,6 +23,8 @@ function MyTasksContent() {
   const [topTasks, setTopTasks] = useState([]);
   const [customTask, setCustomTask] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  // Feedback for the custom-task input: {kind: 'duplicate'|'selected', task}.
+  const [taskNotice, setTaskNotice] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -43,17 +46,29 @@ function MyTasksContent() {
       if (prev.length >= MAX_TASKS) return prev;
       return [...prev, task];
     });
+    // The notice points at a specific task; once they touch the list it's stale.
+    setTaskNotice(null);
     setSaved(false);
   }
 
   function handleAddCustomTask() {
-    const trimmed = customTask.trim();
-    if (trimmed && !topTasks.includes(trimmed) && topTasks.length < MAX_TASKS) {
-      setTopTasks(prev => [...prev, trimmed]);
-      setCustomTask('');
-      setShowCustomInput(false);
-      setSaved(false);
+    if (topTasks.length >= MAX_TASKS) return;
+    const result = resolveTaskAdd({
+      typed: customTask,
+      selected: topTasks,
+      available: availableTasks,
+    });
+    if (result.status === 'empty') return;
+    if (result.status === 'duplicate') {
+      // Keep the text so they can reword it — a silent no-op reads as a bug.
+      setTaskNotice({ kind: 'duplicate', task: result.match });
+      return;
     }
+    setTopTasks(result.tasks);
+    setCustomTask('');
+    setShowCustomInput(false);
+    setTaskNotice(result.status === 'selected' ? { kind: 'selected', task: result.match } : null);
+    setSaved(false);
   }
 
   async function handleSave() {
@@ -77,6 +92,10 @@ function MyTasksContent() {
   }
 
   const atLimit = topTasks.length >= MAX_TASKS;
+  // Ring the task a duplicate add pointed at, so the message has a target.
+  const highlightKey = taskNotice?.task ? normalizeTaskText(taskNotice.task) : null;
+  const isHighlighted = task => !!highlightKey && normalizeTaskText(task) === highlightKey;
+  const noticeText = taskNoticeText(taskNotice);
   const hasChanges = JSON.stringify(topTasks) !== JSON.stringify(profile?.top_tasks || []);
 
   if (!profile) return null;
@@ -117,7 +136,7 @@ function MyTasksContent() {
                     : isDisabled
                     ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border-slate-100 dark:border-slate-700 cursor-not-allowed'
                     : 'bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
-                }`}
+                } ${isHighlighted(task) ? 'ring-2 ring-cta ring-offset-2 dark:ring-offset-slate-900' : ''}`}
               >
                 <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
                   isSelected
@@ -135,7 +154,9 @@ function MyTasksContent() {
             <button
               key={task}
               onClick={() => handleTaskToggle(task)}
-              className="w-full flex items-center gap-4 px-5 py-3.5 rounded-xl border text-left transition-all bg-brand text-white border-brand shadow-sm"
+              className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl border text-left transition-all bg-brand text-white border-brand shadow-sm ${
+                isHighlighted(task) ? 'ring-2 ring-cta ring-offset-2 dark:ring-offset-slate-900' : ''
+              }`}
             >
               <div className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 bg-white dark:bg-slate-800 border-white">
                 <Check className="w-3.5 h-3.5 text-brand" />
@@ -149,8 +170,8 @@ function MyTasksContent() {
               <input
                 type="text"
                 value={customTask}
-                onChange={e => setCustomTask(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleAddCustomTask(); if (e.key === 'Escape') { setShowCustomInput(false); setCustomTask(''); } }}
+                onChange={e => { setCustomTask(e.target.value); setTaskNotice(null); }}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddCustomTask(); if (e.key === 'Escape') { setShowCustomInput(false); setCustomTask(''); setTaskNotice(null); } }}
                 placeholder="Describe your task..."
                 autoFocus
                 className="flex-1 px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm"
@@ -163,7 +184,7 @@ function MyTasksContent() {
                 Add
               </button>
               <button
-                onClick={() => { setShowCustomInput(false); setCustomTask(''); }}
+                onClick={() => { setShowCustomInput(false); setCustomTask(''); setTaskNotice(null); }}
                 className="px-3 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
               >
                 Cancel
@@ -171,7 +192,7 @@ function MyTasksContent() {
             </div>
           ) : (
             <button
-              onClick={() => setShowCustomInput(true)}
+              onClick={() => { setShowCustomInput(true); setTaskNotice(null); }}
               disabled={atLimit}
               className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl border border-dashed text-left transition-all ${
                 atLimit
@@ -182,6 +203,12 @@ function MyTasksContent() {
               <Plus className="w-5 h-5 shrink-0" />
               <span className="font-medium text-sm">Something else not listed here</span>
             </button>
+          )}
+
+          {noticeText && (
+            <p role="status" className="text-sm font-medium text-amber-700 dark:text-amber-300 px-1">
+              {noticeText}
+            </p>
           )}
         </div>
 

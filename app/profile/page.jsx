@@ -17,6 +17,7 @@ import { useChampions } from '@/components/champion-provider';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { DEPARTMENTS, SUBTEAMS, getTaskList } from '@/lib/curriculum-data';
+import { resolveTaskAdd, normalizeTaskText, taskNoticeText } from '@/lib/task-input';
 
 const TIER_LABELS = {
   beginner: { label: 'Beginner', emoji: '🌱', color: 'bg-green-50 text-green-700 ring-1 ring-green-200' },
@@ -68,6 +69,8 @@ function ProfilePageInner() {
   const [editTopTasks, setEditTopTasks] = useState([]);
   const [customTask, setCustomTask] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  // Feedback for the custom-task input: {kind: 'duplicate'|'selected', task}.
+  const [taskNotice, setTaskNotice] = useState(null);
   const [roleSaveStatus, setRoleSaveStatus] = useState('idle');
 
   useEffect(() => {
@@ -203,6 +206,7 @@ function ProfilePageInner() {
     setEditTopTasks([]);
     setShowCustomInput(false);
     setCustomTask('');
+    setTaskNotice(null);
   }
 
   function handleEditTaskToggle(task) {
@@ -210,15 +214,26 @@ function ProfilePageInner() {
       if (prev.includes(task)) return prev.filter(t => t !== task);
       return [...prev, task];
     });
+    // The notice points at a specific task; once they touch the list it's stale.
+    setTaskNotice(null);
   }
 
   function handleAddCustomTask() {
-    const trimmed = customTask.trim();
-    if (trimmed && !editTopTasks.includes(trimmed)) {
-      setEditTopTasks(prev => [...prev, trimmed]);
-      setCustomTask('');
-      setShowCustomInput(false);
+    const result = resolveTaskAdd({
+      typed: customTask,
+      selected: editTopTasks,
+      available: editAvailableTasks,
+    });
+    if (result.status === 'empty') return;
+    if (result.status === 'duplicate') {
+      // Keep the text so they can reword it — a silent no-op reads as a bug.
+      setTaskNotice({ kind: 'duplicate', task: result.match });
+      return;
     }
+    setEditTopTasks(result.tasks);
+    setCustomTask('');
+    setShowCustomInput(false);
+    setTaskNotice(result.status === 'selected' ? { kind: 'selected', task: result.match } : null);
   }
 
   async function handleSaveRole() {
@@ -245,6 +260,10 @@ function ProfilePageInner() {
 
   const editAvailableTasks = editDept ? getTaskList(editDept, editSubTeam) : [];
   const editAtLimit = false; // No cap — users can add as many tasks as they want (minimum 1).
+  // Ring the task a duplicate add pointed at, so the message has a target.
+  const editHighlightKey = taskNotice?.task ? normalizeTaskText(taskNotice.task) : null;
+  const isTaskHighlighted = task => !!editHighlightKey && normalizeTaskText(task) === editHighlightKey;
+  const taskNoticeLine = taskNoticeText(taskNotice);
   const editShowSubTeamPicker = editingRole && editDept && !!SUBTEAMS[editDept];
   const editShowTaskPicker = editingRole && editDept && (!SUBTEAMS[editDept] || editSubTeam);
   const canSaveRole = editDept && editTopTasks.length >= 1 && (!SUBTEAMS[editDept] || editSubTeam);
@@ -469,7 +488,7 @@ function ProfilePageInner() {
                               : isDisabled
                               ? 'bg-slate-50 dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 cursor-not-allowed'
                               : 'bg-white dark:bg-slate-900 text-ink dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-200 hover:bg-brand-50'
-                          }`}
+                          } ${isTaskHighlighted(task) ? 'ring-2 ring-cta ring-offset-2 dark:ring-offset-slate-900' : ''}`}
                         >
                           <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
                             isSelected ? 'bg-white dark:bg-slate-800 border-white' : 'border-slate-300 dark:border-slate-600'
@@ -485,7 +504,9 @@ function ProfilePageInner() {
                       <button
                         key={task}
                         onClick={() => handleEditTaskToggle(task)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border text-left transition-all text-sm bg-brand text-white border-brand shadow-sm"
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border text-left transition-all text-sm bg-brand text-white border-brand shadow-sm ${
+                          isTaskHighlighted(task) ? 'ring-2 ring-cta ring-offset-2 dark:ring-offset-slate-900' : ''
+                        }`}
                       >
                         <div className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 bg-white dark:bg-slate-800 border-white">
                           <Check className="w-3 h-3 text-brand" />
@@ -499,8 +520,8 @@ function ProfilePageInner() {
                         <input
                           type="text"
                           value={customTask}
-                          onChange={e => setCustomTask(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') handleAddCustomTask(); if (e.key === 'Escape') { setShowCustomInput(false); setCustomTask(''); } }}
+                          onChange={e => { setCustomTask(e.target.value); setTaskNotice(null); }}
+                          onKeyDown={e => { if (e.key === 'Enter') handleAddCustomTask(); if (e.key === 'Escape') { setShowCustomInput(false); setCustomTask(''); setTaskNotice(null); } }}
                           placeholder="Describe your task..."
                           autoFocus
                           className="flex-1 px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm"
@@ -513,7 +534,7 @@ function ProfilePageInner() {
                           Add
                         </button>
                         <button
-                          onClick={() => { setShowCustomInput(false); setCustomTask(''); }}
+                          onClick={() => { setShowCustomInput(false); setCustomTask(''); setTaskNotice(null); }}
                           className="px-2.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
                         >
                           <X className="w-4 h-4" />
@@ -521,7 +542,7 @@ function ProfilePageInner() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => setShowCustomInput(true)}
+                        onClick={() => { setShowCustomInput(true); setTaskNotice(null); }}
                         disabled={editAtLimit}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-dashed text-left transition-all text-sm ${
                           editAtLimit
@@ -532,6 +553,12 @@ function ProfilePageInner() {
                         <Plus className="w-4 h-4 shrink-0" />
                         <span className="font-medium">Something else not listed here</span>
                       </button>
+                    )}
+
+                    {taskNoticeLine && (
+                      <p role="status" className="text-xs font-medium text-amber-700 dark:text-amber-300 px-1">
+                        {taskNoticeLine}
+                      </p>
                     )}
                   </div>
                 </div>
