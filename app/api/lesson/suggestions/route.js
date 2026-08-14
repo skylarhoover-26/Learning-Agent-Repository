@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { generateSuggestedTopics } from '@/lib/ai';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { withProjects } from '@/lib/work-projects';
 
 export async function POST(request) {
   const limited = await enforceRateLimit('lesson/suggestions', 'ai', request);
@@ -16,7 +17,9 @@ export async function POST(request) {
     } catch {
       // no body / not JSON — fine, just no exclusions
     }
-    const suggestions = await generateSuggestedTopics(profile, { exclude });
+    // Projects are one of the four signals the suggestions are built from, and
+    // they live outside the profile document.
+    const suggestions = await generateSuggestedTopics(await withProjects(profile), { exclude });
     return NextResponse.json({ suggestions });
   } catch (error) {
     console.error('POST /api/lesson/suggestions error:', error);

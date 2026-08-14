@@ -100,6 +100,19 @@ export function ProfileProvider({ children }) {
     }
   }, [profile]);
 
+  // Projects get the same treatment, for the same reason: non-React callers need
+  // them synchronously. The lesson picker validates its cached topic list at mount,
+  // before this provider's fetches resolve, and projects are part of what that list
+  // is keyed on — without a warm copy it could never confirm a cache hit and would
+  // regenerate suggestions on every visit.
+  useEffect(() => {
+    try {
+      localStorage.setItem('learner_work_projects', JSON.stringify(workProjects || []));
+    } catch {
+      /* storage may be unavailable */
+    }
+  }, [workProjects]);
+
   useEffect(() => {
     if (isLoading || profile) return;
     if (hasRedirected.current) return;

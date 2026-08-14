@@ -26,6 +26,7 @@ import { useStt } from '@/lib/use-stt';
 import { useTts } from '@/lib/use-tts';
 import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
+import { signalSignature } from '@/lib/learner-signals';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import PausedLessonsBox from '@/components/paused-lessons-box';
 import { getPausedLesson, listPausedLessons, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
@@ -144,7 +145,40 @@ function applyAdaptivePerformance(profile, correctness) {
   }
 }
 
-// Fallback shown instantly and used if personalized suggestions fail to load.
+const SUGGESTIONS_CACHE_KEY = 'lesson_suggested_topics';
+
+// What the cached topic list is keyed on. `signalSignature` covers department,
+// sub-team, tier, tools, tasks, goals and projects, so editing ANY of the four
+// signals the suggestions are built from invalidates the list — the old hand-rolled
+// key was department|tier|tasks only, which meant changing your goals left
+// yesterday's suggestions in place. lessonCount keeps the original behavior of
+// regenerating once you finish a lesson.
+function suggestionSignature(profile, projects, lessonCount) {
+  return `${signalSignature({ ...profile, work_projects: projects || [] })}|n${lessonCount}`;
+}
+
+// Read the cached list ONLY if it still matches this learner's profile and today's
+// content-day. Runs at mount, where the profile context hasn't resolved yet — so it
+// reads the copies the profile provider keeps in localStorage for exactly this kind
+// of non-React caller. Any missing piece, or any mismatch, returns null: showing
+// nothing beats showing topics we are about to replace.
+function readValidSuggestions() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(SUGGESTIONS_CACHE_KEY) || 'null');
+    if (!cached || !Array.isArray(cached.topics) || !cached.topics.length) return null;
+    if (cached.date !== contentDayKey()) return null;
+    const profile = JSON.parse(localStorage.getItem('learner_profile') || 'null');
+    if (!profile) return null;
+    const projects = JSON.parse(localStorage.getItem('learner_work_projects') || '[]');
+    const history = getLessonHistory(resolveLearnerId(profile)) || [];
+    if (cached.sig !== suggestionSignature(profile, projects, history.length)) return null;
+    return cached.topics;
+  } catch {
+    return null; // unreadable cache, or no localStorage (server render)
+  }
+}
+
+// Fallback shown if personalized suggestions fail to load.
 const SUGGESTED_TOPICS = [
   { emoji: '🎯', label: 'Prompt Basics', topic: 'How to write clear, specific prompts that get useful results' },
   { emoji: '🧵', label: 'AI for Slack', topic: 'Using AI to draft, summarize, and respond to Slack messages and threads faster' },
@@ -352,7 +386,7 @@ function LessonContent() {
   // bare percentage with no idea how much it was measured over.
   const quizTotalRef = useRef(0);
   const { refresh: refreshProgression } = useProgression() || {};
-  const { profile } = useProfile();
+  const { profile, workProjects } = useProfile();
   const { tools } = useActiveTool();
 
   useEffect(() => {
@@ -377,41 +411,70 @@ function LessonContent() {
   // first. The effect below still revalidates (sig/date) and refreshes if stale.
   // Safe to read localStorage here: this component is client-only (under
   // Suspense via useSearchParams), so there's no SSR/hydration mismatch.
-  const [suggested, setSuggested] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('lesson_suggested_topics') || 'null');
-      if (cached && Array.isArray(cached.topics) && cached.topics.length) return cached.topics;
-    } catch {
-      // ignore unreadable cache
+  // Cached topics are only painted once they've been CHECKED against the current
+  // profile. This initializer used to return `cached.topics` on sight, ignoring the
+  // `sig` and `date` stored right next to them — so the picker painted the previous
+  // profile's topics, the effect below then computed the real signature, saw the
+  // mismatch, refetched, and swapped the list out from under the reader. That is the
+  // flash: personalized topics replaced by *different* personalized topics, which
+  // reads as a glitch rather than as loading. readValidSuggestions() applies the same
+  // test at mount, from the same localStorage the provider keeps warm, so a valid
+  // cache paints instantly and an invalid one paints nothing at all.
+  //
+  // Starts null rather than reading the cache inline, because a useState
+  // initializer runs during the SERVER render too, where localStorage doesn't
+  // exist. Returning topics on the client and nothing on the server is a hydration
+  // mismatch, and React resolving one is itself a visible repaint — the very thing
+  // we're removing. The mount effect below reads the cache one tick later instead.
+  const [suggested, setSuggested] = useState(null);
+  // Starts TRUE so the first paint is skeletons, never the generic fallback list.
+  // Those fallback topics are real and clickable, so showing them before we know
+  // whether a personalized list exists means offering choices we're about to
+  // replace. Cleared by whichever effect resolves the list.
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+
+  // Mount-only: adopt a still-valid cached list immediately, so a returning learner
+  // gets their topics on the first tick instead of waiting on the profile context.
+  useEffect(() => {
+    const cached = readValidSuggestions();
+    if (cached) {
+      setSuggested(cached);
+      setSuggestionsLoading(false);
     }
-    return null;
-  });
+  }, []);
 
   useEffect(() => {
-    if (initialTopic || !profile || view !== 'picker') return;
+    // Nothing to resolve on this screen — don't leave the skeleton armed for a
+    // picker that isn't showing.
+    if (initialTopic || view !== 'picker') { setSuggestionsLoading(false); return; }
+    if (!profile) return; // still resolving; keep the skeleton up
 
     let history = [];
     try { history = getLessonHistory(resolveLearnerId(profile)) || []; } catch { history = []; }
     const completedTopics = history.map((l) => l.topic).filter(Boolean);
     const recentCompleted = completedTopics.slice(-12);
-    const lessonCount = history.length;
 
-    // lessonCount in the signature means finishing a lesson invalidates the
-    // cached list, so the next time they land on the picker it regenerates.
-    const sig = `${profile.department || ''}|${profile.tier || ''}|${(profile.top_tasks || []).join(',')}|n${lessonCount}`;
+    // Same signature the mount-time read uses — see suggestionSignature.
+    const sig = suggestionSignature(profile, workProjects, history.length);
     const today = contentDayKey(); // rolls over at 8 AM PT
-    const cacheKey = 'lesson_suggested_topics';
 
     try {
-      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      const cached = JSON.parse(localStorage.getItem(SUGGESTIONS_CACHE_KEY) || 'null');
       if (cached && cached.sig === sig && cached.date === today && Array.isArray(cached.topics) && cached.topics.length) {
         setSuggested(cached.topics);
+        setSuggestionsLoading(false);
         return;
       }
     } catch {
       // ignore cache read errors
     }
 
+    // Nothing valid to show: clear any stale list and say we're working, rather
+    // than leaving old topics on screen to be replaced a few seconds later.
+    setSuggested(null);
+    setSuggestionsLoading(true);
+
+    let cancelled = false;
     fetch('/api/lesson/suggestions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -419,19 +482,25 @@ function LessonContent() {
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
       .then((data) => {
+        if (cancelled) return;
         if (Array.isArray(data.suggestions) && data.suggestions.length) {
           setSuggested(data.suggestions);
           try {
-            localStorage.setItem(cacheKey, JSON.stringify({ sig, date: today, topics: data.suggestions }));
+            localStorage.setItem(SUGGESTIONS_CACHE_KEY, JSON.stringify({ sig, date: today, topics: data.suggestions }));
           } catch {
             // ignore cache write errors
           }
         }
       })
       .catch(() => {
-        // fall back to the static SUGGESTED_TOPICS already shown
+        // Generation failed — the static SUGGESTED_TOPICS take over, which is
+        // what they're for.
+      })
+      .finally(() => {
+        if (!cancelled) setSuggestionsLoading(false);
       });
-  }, [profile, initialTopic, view]);
+    return () => { cancelled = true; };
+  }, [profile, workProjects, initialTopic, view]);
 
   function selectFormat(key) {
     setFormat(key);
@@ -1301,6 +1370,24 @@ function LessonContent() {
           <h3 className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold mb-3">
             Pick a topic
           </h3>
+          {/* Skeletons, not the generic fallback, while a personalized list is being
+              generated: the fallback topics are real and clickable, so showing them
+              mid-generation means offering choices that are about to be replaced. */}
+          {suggestionsLoading && !suggested ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-busy="true" aria-live="polite">
+              <span className="sr-only">Building topic suggestions from your role, tasks, goals and projects…</span>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-start gap-3 p-4 cine-glass rounded-2xl animate-pulse">
+                  <span className="shrink-0 w-11 h-11 rounded-xl bg-slate-200 dark:bg-slate-700" />
+                  <div className="flex-1 space-y-2 py-0.5">
+                    <div className="h-4 w-2/5 rounded bg-slate-200 dark:bg-slate-700" />
+                    <div className="h-3 w-full rounded bg-slate-100 dark:bg-slate-700/60" />
+                    <div className="h-3 w-4/5 rounded bg-slate-100 dark:bg-slate-700/60" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => {
               const selected = selectedTopic === s.topic;
@@ -1339,6 +1426,7 @@ function LessonContent() {
               );
             })}
           </div>
+          )}
           <div className="flex flex-col items-center gap-3 mt-6">
             <div className="flex justify-center gap-3">
               <button
