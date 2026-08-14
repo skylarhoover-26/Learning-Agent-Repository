@@ -241,7 +241,19 @@ function hairShape(id, fill) {
     case 'hair_bob':
       return <path d="M30 54 Q30 18 50 18 Q70 18 70 54 Q66 56 64 48 Q64 30 50 28 Q36 30 36 48 Q34 56 30 54 Z" fill={fill} />;
     case 'hair_spiky':
-      return <path d="M30 34 L34 18 L40 30 L46 15 L52 30 L58 15 L64 30 L70 18 L70 34 Q50 26 30 34 Z" fill={fill} />;
+      // Was one zigzag whose base curved UP through the middle (Q50 26), carving a
+      // crescent out of its own hair and leaving the spikes floating on a slab.
+      // Now: a cap that follows the skull like every other style here, with spikes
+      // rising from it and fanning outward the way gelled hair actually sits.
+      return (
+        <g fill={fill}>
+          <path d="M29 35 Q29 20 50 19 Q71 20 71 35 Q62 28 50 28 Q38 28 29 35 Z" />
+          <path d="M32 24 L28 8 L40 20 Z" />
+          <path d="M42 20 L44 4 L52 19 Z" />
+          <path d="M54 19 L60 5 L64 21 Z" />
+          <path d="M64 22 L72 10 L70 26 Z" />
+        </g>
+      );
     case 'hair_mohawk':
       return <path d="M45 34 L45 16 L48 6 L50 16 L52 6 L55 16 L55 34 Z" fill={fill} />;
     case 'hair_bun':
@@ -252,9 +264,18 @@ function hairShape(id, fill) {
         </g>
       );
     case 'hair_afro':
-      // Full, rounded volume framing the face (was three loose circles).
+      // Feedback #217: "Afro isn't accurate". The single smooth path read as a
+      // helmet or a mushroom cap — an afro's defining feature is TEXTURE and a halo
+      // that's visibly wider than the head, not a moulded shell. Overlapping circles
+      // around the perimeter give the rounded, textured edge; the cap underneath
+      // closes the silhouette and sets a hairline at y=30, clear of the eyes.
       return (
-        <path d="M24 44 Q15 22 30 12 Q39 5 50 5 Q61 5 70 12 Q85 22 76 44 Q71 33 61 33 Q63 24 50 23 Q37 24 39 33 Q29 33 24 44 Z" fill={fill} />
+        <g fill={fill}>
+          <path d="M28 40 Q27 20 50 19 Q73 20 72 40 Q64 30 50 30 Q36 30 28 40 Z" />
+          {[[50, 15, 12], [36, 18, 11], [64, 18, 11], [27, 28, 10], [73, 28, 10], [28, 38, 8], [72, 38, 8]].map(([cx, cy, r], i) => (
+            <circle key={i} cx={cx} cy={cy} r={r} />
+          ))}
+        </g>
       );
     case 'hair_pigtails':
       return (
@@ -291,11 +312,15 @@ function hairShape(id, fill) {
     case 'hair_undercut':
       return <path d="M34 28 Q34 16 50 16 Q66 16 66 28 Q58 23 50 23 Q42 23 34 28 Z" fill={fill} />;
     case 'hair_locs':
+      // The old version hung a loc at x=50 — straight down the centre of the face,
+      // over the nose and mouth, which is the "looks weird" in feedback #217. Locs
+      // now fall at the sides and temples only, longer at the outside and shorter as
+      // they come forward, so the face stays clear.
       return (
         <g fill={fill}>
-          <path d="M31 34 Q31 18 50 18 Q69 18 69 34 Q60 26 50 26 Q40 26 31 34 Z" />
-          {[30, 37, 50, 63, 70].map((x, i) => (
-            <rect key={i} x={x - 1.6} y="24" width="3.2" height={i % 2 ? 30 : 24} rx="1.6" />
+          <path d="M29 34 Q29 18 50 18 Q71 18 71 34 Q61 27 50 27 Q39 27 29 34 Z" />
+          {[[27, 26, 34], [32, 24, 27], [68, 24, 27], [73, 26, 34], [36, 22, 16], [64, 22, 16]].map(([x, y, h], i) => (
+            <rect key={i} x={x - 1.7} y={y} width="3.4" height={h} rx="1.7" />
           ))}
         </g>
       );

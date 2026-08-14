@@ -1,13 +1,13 @@
 'use client';
 
-import { Suspense, useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
   Gamepad2, Swords, Search, Timer, Eye, ArrowRight, Sparkles, Wand2,
-  Users, LayoutGrid, DollarSign, ScanSearch, Disc3,
+  Users, LayoutGrid, DollarSign, ScanSearch, Disc3, ArrowUp,
 } from 'lucide-react';
 import { getGameStats } from '@/lib/game-store';
 import { gameDifficulty } from '@/lib/progression';
@@ -79,6 +79,9 @@ function GamesHubInner() {
   const [selected, setSelected] = useState(null);
   const [topic, setTopic] = useState('');
   const [sampleIdx, setSampleIdx] = useState(0);
+  // Highlights the topic field after someone presses Play without one.
+  const [topicNudge, setTopicNudge] = useState(false);
+  const topicRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -103,9 +106,24 @@ function GamesHubInner() {
   const needsTopic = selected?.topic === 'required';
   const takesTopic = selected && selected.topic !== 'none';
   const canPlay = selected && (!needsTopic || topic.trim());
+  // Play is BLOCKED, not disabled — see the button below. Feedback #219: Rachel
+  // played two games that need no topic, hit one that does, saw a greyed-out Play
+  // and concluded she'd been locked out of Games after two plays. That reading is
+  // completely fair: this app greys things out when they're LOCKED (avatar items
+  // behind levels, "Coming soon" menu entries), so a dimmed button means "not
+  // yours yet" long before it means "you missed a field".
+  const topicMissing = !!selected && needsTopic && !topic.trim();
 
   function play() {
-    if (!canPlay) return;
+    if (!selected) return;
+    // Blocked by a missing topic: take her TO the field instead of refusing. A
+    // click that appears to do nothing is what makes a button feel locked.
+    if (topicMissing) {
+      setTopicNudge(true);
+      topicRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      topicRef.current?.focus();
+      return;
+    }
     const t = topic.trim();
     const qs = takesTopic && t ? `?topic=${encodeURIComponent(t)}` : '';
     router.push(`/games/${selected.slug}${qs}`);
@@ -138,6 +156,9 @@ function GamesHubInner() {
           <span className="w-5 h-5 rounded-full grid place-items-center text-[11px]" style={{ background: 'var(--accent)', color: '#fff' }}>2</span>
           Your topic
           {selected?.topic === 'optional' && <span className="font-medium normal-case tracking-normal">— optional</span>}
+          {/* Required was the only state with NO annotation here, which is the state
+              that actually blocks you (#219). */}
+          {needsTopic && <span className="font-medium normal-case tracking-normal" style={{ color: 'var(--accent)' }}>— required for this game</span>}
         </p>
 
         <div className="cine-glass rounded-3xl p-6 sm:p-7">
@@ -149,11 +170,14 @@ function GamesHubInner() {
             <>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
+                  ref={topicRef}
                   value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
+                  onChange={(e) => { setTopic(e.target.value); setTopicNudge(false); }}
                   onKeyDown={(e) => { if (e.key === 'Enter' && canPlay) play(); }}
                   placeholder={`e.g., '${samples[0]}'`}
-                  className="flex-1 rounded-2xl px-4 py-3.5 text-ink dark:text-slate-100 outline-none focus:ring-2"
+                  className={`flex-1 rounded-2xl px-4 py-3.5 text-ink dark:text-slate-100 outline-none focus:ring-2 ${
+                    topicNudge ? 'ring-2 ring-amber-400' : ''
+                  }`}
                   style={{ background: 'var(--card)', border: '1px solid var(--line)' }}
                 />
                 <button
@@ -175,23 +199,32 @@ function GamesHubInner() {
       </div>
 
       <div className="mt-7 flex flex-col items-center gap-2">
+        {/* Only ever disabled before a game is picked, where the whole step-2 panel
+            is inert anyway. Once a game IS picked the button stays live and names
+            what's missing, because a dimmed button in this app means "locked". */}
         <button
           type="button"
           onClick={play}
-          disabled={!canPlay}
+          disabled={!selected}
           className="inline-flex items-center gap-2 px-8 py-3.5 rounded-pill bg-brand text-white font-bold shadow-sm hover:bg-brand-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Wand2 className="w-4 h-4" />
-          {selected ? `Play ${selected.title}` : 'Play'}
+          {!selected ? 'Play' : topicMissing ? 'Add a topic to play' : `Play ${selected.title}`}
           <ArrowRight className="w-4 h-4" />
         </button>
-        <p className="text-xs" style={{ color: 'var(--ink-dim)' }}>
-          {!selected
-            ? 'Pick a game to get started.'
-            : needsTopic && !topic.trim()
-              ? 'Give it a topic first — this one builds its round from what you name.'
-              : 'How to play comes up next, before anything starts.'}
-        </p>
+        {topicMissing ? (
+          // Amber + arrow, the same shape as the lesson player's "complete the
+          // activity above to continue" gate, which people already read as
+          // "something of yours is missing" rather than "this is off limits".
+          <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
+            <ArrowUp className="w-4 h-4" />
+            {selected.title} builds its round from your topic — type one above, or hit Surprise me.
+          </p>
+        ) : (
+          <p className="text-xs" style={{ color: 'var(--ink-dim)' }}>
+            {!selected ? 'Pick a game to get started.' : 'How to play comes up next, before anything starts.'}
+          </p>
+        )}
       </div>
     </main>
   );
