@@ -111,18 +111,21 @@ function GamesHubInner() {
   // Projects count alongside tasks and goals in what "Surprise me" offers.
   const samples = useMemo(() => buildGameTopics(profile, workProjects), [profile, workProjects]);
 
-  // Only fetched once a game is picked: step 2 is inert before that, and nobody
-  // should pay a generation for a panel they cannot use yet.
-  // Fetched only on the topic screen: nobody should pay a generation while they are
-  // still looking at the game grid.
-  const { topics: suggestedTopics, loading: suggestionsLoading, fallback: fallbackTopics } =
-    useSuggestedTopics({ enabled: step === 2 });
-
   // Two screens rather than one long scroll, matching the lesson wizard: pick a
   // game, then pick a topic. On one page the topic panel sat below the fold, which
   // is half of why the topic requirement kept surprising people (#219) — you had to
   // scroll past nine cards to discover the thing that was blocking Play.
+  //
+  // Declared BEFORE the suggestions hook, which reads it. `const` is not hoisted, so
+  // the other order threw "Cannot access 'step' before initialization" at render —
+  // and neither lint nor the build sees it, because the component body only runs in
+  // a browser.
   const [step, setStep] = useState(1);
+
+  // Fetched only on the topic screen: nobody should pay a generation while they are
+  // still looking at the game grid.
+  const { topics: suggestedTopics, loading: suggestionsLoading, fallback: fallbackTopics } =
+    useSuggestedTopics({ enabled: step === 2 });
   const [allStats, setAllStats] = useState({});
   const [selected, setSelected] = useState(null);
   const [topic, setTopic] = useState('');
