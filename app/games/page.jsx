@@ -16,6 +16,7 @@ import { useProfile } from '@/components/profile-provider';
 import { buildGameTopics } from '@/lib/game-topics';
 import GamePicker from '@/components/game-picker';
 import TopicCardGrid, { TopicGridSkeleton } from '@/components/topic-card-grid';
+import LadderRow from '@/components/wizard-ladder-row';
 import { useSuggestedTopics } from '@/components/use-suggested-topics';
 
 // One catalog for every game. This used to be two lists that drifted: a 4-card
@@ -112,9 +113,16 @@ function GamesHubInner() {
 
   // Only fetched once a game is picked: step 2 is inert before that, and nobody
   // should pay a generation for a panel they cannot use yet.
+  // Fetched only on the topic screen: nobody should pay a generation while they are
+  // still looking at the game grid.
   const { topics: suggestedTopics, loading: suggestionsLoading, fallback: fallbackTopics } =
-    useSuggestedTopics({ enabled: true });
+    useSuggestedTopics({ enabled: step === 2 });
 
+  // Two screens rather than one long scroll, matching the lesson wizard: pick a
+  // game, then pick a topic. On one page the topic panel sat below the fold, which
+  // is half of why the topic requirement kept surprising people (#219) — you had to
+  // scroll past nine cards to discover the thing that was blocking Play.
+  const [step, setStep] = useState(1);
   const [allStats, setAllStats] = useState({});
   const [selected, setSelected] = useState(null);
   const [topic, setTopic] = useState('');
@@ -140,7 +148,7 @@ function GamesHubInner() {
   useEffect(() => {
     if (!makeSlug) return;
     const match = CATALOG.find((g) => g.slug === makeSlug);
-    if (match) setSelected(match);
+    if (match) { setSelected(match); setStep(2); }
   }, [makeSlug]);
 
   // One rule: a game is generated from a topic, so step 2 needs one. Type it, or
@@ -204,31 +212,33 @@ function GamesHubInner() {
         Every round is built for the topic you give it, so the questions are new each time you play.
       </p>
 
-      {/* Switching games clears step 2. "Playing our built-in set" carried over from
-          Speed Round to Jeopardy would be a promise we can't keep — Jeopardy has no
-          set — and a topic typed for one game rarely suits the next. */}
-      <GamePicker
-        games={ORDERED}
-        selectedSlug={selected?.slug || null}
-        onSelect={(game) => {
-          setSelected(game);
-          setTopic('');
-          setTopicNudge(false);
-        }}
-        stats={allStats}
-      />
+      {/* Picking a game ADVANCES, the way the lesson format cards do (feedback batch
+          3). Switching games also clears the topic: one typed for Jeopardy rarely
+          suits Wheel of Fortune. */}
+      {step === 1 && (
+        <GamePicker
+          games={ORDERED}
+          selectedSlug={selected?.slug || null}
+          onSelect={(game) => {
+            setSelected(game);
+            setTopic('');
+            setTopicNudge(false);
+            setStep(2);
+          }}
+          stats={allStats}
+        />
+      )}
 
-      {/* Step 2 stays visible but inert until a game is picked, so the shape of the
-          flow is obvious before you've touched anything — and disappears entirely for
-          AI or Human, the one game that takes no topic. Showing it a disabled input
-          next to a Surprise me button that does nothing was worse than showing it
-          nothing: two dead controls to explain instead of one clear Play. */}
-      {(!selected || canGenerate) && (
-      <div className={`mt-8 transition-opacity ${selected ? '' : 'opacity-50 pointer-events-none'}`}>
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--ink-dim)' }}>
-          <span className="w-5 h-5 rounded-full grid place-items-center text-[11px]" style={{ background: 'var(--accent)', color: '#fff' }}>2</span>
+      {step === 2 && selected && (
+      <div>
+        {/* What you already chose, with a way back to it. Same row the lesson wizard
+            uses — see components/wizard-ladder-row.jsx. */}
+        <LadderRow label="Game" value={`${selected.title} · ${selected.time}`} onEdit={() => setStep(1)} />
+
+        {canGenerate && (
+        <>
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-3 mt-5" style={{ color: 'var(--ink-dim)' }}>
           Your topic
-          {/* Unconditional: this panel only renders for games built from a topic. */}
           <span className="font-medium normal-case tracking-normal" style={{ color: 'var(--accent)' }}>— required</span>
         </p>
 
@@ -278,43 +288,55 @@ function GamesHubInner() {
             </p>
           </div>
         </div>
+        </>
+        )}
       </div>
       )}
 
-      <div className="mt-7 flex flex-col items-center gap-2">
-        {/* Only ever disabled before a game is picked, where the whole step-2 panel
-            is inert anyway. Once a game IS picked the button stays live and names
-            what's missing, because a dimmed button in this app means "locked". */}
-        <button
-          type="button"
-          onClick={play}
-          disabled={!selected}
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-pill bg-brand text-white font-bold shadow-sm hover:bg-brand-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <Wand2 className="w-4 h-4" />
-          {!selected ? 'Play' : topicMissing ? 'Add a topic to play' : `Play ${selected.title}`}
-          <ArrowRight className="w-4 h-4" />
-        </button>
+      {step === 2 && selected && (
+      <div className="mt-7 flex flex-col items-center gap-3">
+        <div className="flex items-center justify-center gap-3">
+          {/* Back belongs here as a pill next to Play, the same pairing the lesson
+              wizard and the lesson player use. */}
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="inline-flex items-center gap-1.5 px-5 py-3 rounded-pill cine-glass text-slate-600 dark:text-slate-300 font-semibold text-sm hover:opacity-80 transition-all"
+          >
+            <ArrowRight className="w-4 h-4 rotate-180" />
+            Back
+          </button>
+          {/* Never disabled: once a game is picked the button stays live and names
+              what's missing, because a dimmed button in this app means "locked". */}
+          <button
+            type="button"
+            onClick={play}
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-pill bg-brand text-white font-bold shadow-sm hover:bg-brand-600 transition-all"
+          >
+            <Wand2 className="w-4 h-4" />
+            {topicMissing ? 'Add a topic to play' : `Play ${selected.title}`}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
         {topicMissing ? (
           // Amber + arrow, the same shape as the lesson player's "complete the
           // activity above to continue" gate, which people already read as
           // "something of yours is missing" rather than "this is off limits".
           <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
             <ArrowUp className="w-4 h-4" />
-            Type a topic above, or hit Surprise me.
+            Pick a topic above, type your own, or hit Surprise me.
           </p>
         ) : (
           <p className="text-xs max-w-md text-center" style={{ color: 'var(--ink-dim)' }}>
-            {!selected
-              ? 'Pick a game to get started.'
-              : !canGenerate
-                // The transparency that used to live in the step-2 panel has to land
-                // somewhere, so it sits with the button that starts the game.
-                ? `${selected.title} uses pre-set rounds instead of a topic. The examples are hand-written by us, and each play shuffles a fresh 10 from the pool.`
-                : 'How to play comes up next, before anything starts.'}
+            {!canGenerate
+              // The transparency that used to live in the topic panel has to land
+              // somewhere, so it sits with the button that starts the game.
+              ? `${selected.title} uses pre-set rounds instead of a topic. The examples are hand-written by us, and each play shuffles a fresh 10 from the pool.`
+              : 'How to play comes up next, before anything starts.'}
           </p>
         )}
       </div>
+      )}
     </main>
   );
 }
