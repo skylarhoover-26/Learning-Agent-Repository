@@ -87,21 +87,16 @@ export default function GamePicker({ games, selectedSlug, onSelect, stats = {} }
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${diff.badge}`}>
                   <BarChart3 className="w-3 h-3" /> {diff.label}
                 </span>
-                {/* All three topic states are labelled, including 'optional', which
-                    used to show nothing at all. An unlabelled card gave no way to
-                    tell "you may add a topic" from "you must" without selecting it
-                    and reading step 2 (feedback #208). */}
-                {game.topic === 'required' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: 'var(--accent)' }}>
-                    <Sparkles className="w-3 h-3 shrink-0" /> Needs a topic
-                  </span>
-                )}
-                {game.topic === 'optional' && (
-                  <span className="text-[11px]" style={{ color: 'var(--ink-dim)' }}>Topic optional</span>
-                )}
-                {game.topic === 'none' && (
-                  <span className="text-[11px]" style={{ color: 'var(--ink-dim)' }}>Uses its own set</span>
-                )}
+                {/* Every game needs an answer in step 2 now, so the badge no longer
+                    says whether a topic is required — it says what SURPRISE ME will
+                    give you, which is the only remaining difference between games and
+                    the thing worth knowing before you pick one. */}
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: 'var(--accent)' }}>
+                  <Sparkles className="w-3 h-3 shrink-0" />
+                  {game.generates === false
+                    ? 'Hand-written rounds'
+                    : game.bank ? 'Your topic or ours' : 'Built from your topic'}
+                </span>
                 {gameStats && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
                     <Trophy className="w-3 h-3" /> Best {gameStats.bestScore}
