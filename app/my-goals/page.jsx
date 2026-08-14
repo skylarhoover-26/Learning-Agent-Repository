@@ -8,10 +8,11 @@ import { Target, Check, Plus, Save, Loader2 } from 'lucide-react';
 import { GOALS } from '@/lib/onboarding-options';
 import { resolveTaskAdd, normalizeTaskText, taskNoticeText } from '@/lib/task-input';
 
-// Goals were editable in exactly one place — buried inside /my-role, next to
-// department and experience level — even though they're one of the four signals
+// Goals were editable in exactly one place — buried inside the role editor, next
+// to department and experience level — even though they're one of the four signals
 // every lesson is built from. Tools, tasks and projects each had their own
-// profile-menu page; goals did not. This is that page.
+// profile-menu page; goals did not. This is that page. (The role editor still
+// covers goals too, as the role-manager card on /profile.)
 function MyGoalsContent() {
   const { profile, updateProfile } = useProfile();
   const [goals, setGoals] = useState([]);

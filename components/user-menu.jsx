@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { Home, ChevronDown, User, UserCog, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, BarChart3, Crosshair, Target } from 'lucide-react';
+import { Home, ChevronDown, User, Briefcase, FolderKanban, LogOut, PanelsTopLeft, Eye, Shield, BarChart3, Crosshair, Target } from 'lucide-react';
 import { useProfile } from '@/components/profile-provider';
 import PausedLessonsBell from '@/components/paused-lessons-bell';
 import Avatar from '@/components/avatar';
@@ -24,7 +24,9 @@ const PROFILE_LINKS = [
   { href: '/my-impact', icon: BarChart3, label: 'My Impact' },
   { href: '/profile', icon: User, label: 'My Profile', tour: 'nav-profile' },
   { href: '/projects', icon: FolderKanban, label: 'My Projects', tour: 'nav-projects' },
-  { href: '/my-role', icon: UserCog, label: 'My Role', tour: 'nav-my-role' },
+  // No My Role entry — it merged into My Profile, whose card does the whole job
+  // (role, tasks, level, goals, scheduling, revert). Removing it here also drops
+  // its guided-tour step, which is built from this list.
   { href: '/my-tasks', icon: Briefcase, label: 'My Tasks', tour: 'nav-my-tasks' },
 ];
 
