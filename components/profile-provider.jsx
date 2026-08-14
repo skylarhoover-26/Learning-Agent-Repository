@@ -14,6 +14,13 @@ export function useProfile() {
 export function ProfileProvider({ children }) {
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState(null);
+  // Work projects are a SEPARATE user-data key, not part of the profile document.
+  // Kept separate in context too, deliberately: profile pages call
+  // updateProfile({ ...profile, ... }), so merging projects into `profile` would
+  // write a second copy of the list into the profile blob on the next save and
+  // then drift from the real one. Client surfaces that need both (Games, the
+  // Today's Pick fallback) merge them per call instead.
+  const [workProjects, setWorkProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -60,6 +67,27 @@ export function ProfileProvider({ children }) {
     fetchProfile();
   }, [fetchProfile]);
 
+  // Projects, fetched alongside the profile so every client surface can weight
+  // them next to tasks and goals. Best-effort: an empty list just means projects
+  // contribute nothing to personalization.
+  const fetchWorkProjects = useCallback(async () => {
+    if (status === 'loading') return;
+    try {
+      const res = await fetch('/api/user-data?type=work_projects', { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      const list = Array.isArray(json?.data) ? json.data
+        : Array.isArray(json?.data?.data) ? json.data.data : [];
+      setWorkProjects(list);
+    } catch {
+      /* leave the list empty */
+    }
+  }, [status]);
+
+  useEffect(() => {
+    fetchWorkProjects();
+  }, [fetchWorkProjects]);
+
   // Cache the resolved profile to localStorage so non-React modules can read
   // the learner id outside this provider — notably game XP (lib/game-store.js)
   // and analytics (lib/track.js), which read 'learner_profile'. Without this
@@ -98,8 +126,8 @@ export function ProfileProvider({ children }) {
   const refreshProfile = useCallback(async () => {
     hasFetched.current = false;
     hasRedirected.current = false;
-    await fetchProfile();
-  }, [fetchProfile]);
+    await Promise.all([fetchProfile(), fetchWorkProjects()]);
+  }, [fetchProfile, fetchWorkProjects]);
 
   // Lazily apply a scheduled role change once its effective date arrives — no
   // cron needed; it happens the next time the user loads the app.
@@ -158,7 +186,7 @@ export function ProfileProvider({ children }) {
     return () => { cancelled = true; };
   }, [profile, updateProfile]);
 
-  const value = { profile, isLoading, updateProfile, refreshProfile, session };
+  const value = { profile, workProjects, isLoading, updateProfile, refreshProfile, session };
 
   // While the profile is still resolving on a gated app route, show a splash
   // instead of the children. This prevents the "flash of stale dashboard" a

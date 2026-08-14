@@ -14,7 +14,7 @@ import { computeDailyPick } from '@/lib/daily-pick';
 // falls back to computing locally from the same signals if that's unavailable.
 export function useTodaysPick() {
   const prog = useProgression();
-  const { profile } = useProfile();
+  const { profile, workProjects } = useProfile();
   const [pick, setPick] = useState(null);
 
   useEffect(() => {
@@ -47,13 +47,17 @@ export function useTodaysPick() {
           calibrationSkills,
           tier: profile?.tier,
           levelOverrides,
+          // The heatmap still chooses the skill; the profile only rewords it into
+          // the learner's tasks, goals and projects. Projects are a separate key,
+          // so they're merged in here rather than living on `profile`.
+          profile: profile ? { ...profile, work_projects: workProjects || [] } : null,
         }));
       } catch {
         // leave pick null — the card just shows its loading state
       }
     })();
     return () => { cancelled = true; };
-  }, [prog?.isLoaded, prog?.lessonHistory, profile?.tier]);
+  }, [prog?.isLoaded, prog?.lessonHistory, profile, workProjects]);
 
   return pick;
 }

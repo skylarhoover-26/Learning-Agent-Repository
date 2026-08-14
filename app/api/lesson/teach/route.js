@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
+import { withProjects } from '@/lib/work-projects';
 import { generateTeachStep, generateLessonAnswer } from '@/lib/ai';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
@@ -17,7 +18,11 @@ export async function POST(request) {
     const body = await request.json();
     const { topic, objectives, tools, mode, format } = body;
     const profile = await getAuthenticatedProfile();
-    const profileForGen = tools ? { ...profile, preferred_tools: tools } : profile;
+    // Projects live outside the profile document, so attach them here — the
+    // generator weights tasks, goals AND projects (lib/learner-signals.js).
+    const profileForGen = await withProjects(
+      tools ? { ...profile, preferred_tools: tools } : profile,
+    );
 
     if (mode === 'answer') {
       const result = await generateLessonAnswer(topic, profileForGen, {

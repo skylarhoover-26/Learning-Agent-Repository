@@ -73,7 +73,12 @@ export function MenuVisibilityProvider({ children }) {
 
   function applyProfileVisibility(vis) {
     setProfileComingItems(Array.isArray(vis?.items) ? vis.items : []);
-    setProfileHiddenItems(Array.isArray(vis?.hiddenItems) ? vis.hiddenItems : []);
+    // `autoHiddenItems` are computed server-side from other settings (today: My
+    // Impact while the onboarding quiz is off) and are NOT stored, so the menu has
+    // to union them in rather than expecting them in hiddenItems.
+    const stored = Array.isArray(vis?.hiddenItems) ? vis.hiddenItems : [];
+    const auto = Array.isArray(vis?.autoHiddenItems) ? vis.autoHiddenItems : [];
+    setProfileHiddenItems([...new Set([...stored, ...auto])]);
   }
 
   // Re-pull the saved config so the live menu/route gating reflects a just-saved

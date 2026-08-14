@@ -71,8 +71,9 @@ export default function GamesHub() {
 function GamesHubInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profile } = useProfile();
-  const samples = useMemo(() => buildGameTopics(profile), [profile]);
+  const { profile, workProjects } = useProfile();
+  // Projects count alongside tasks and goals in what "Surprise me" offers.
+  const samples = useMemo(() => buildGameTopics(profile, workProjects), [profile, workProjects]);
 
   const [allStats, setAllStats] = useState({});
   const [selected, setSelected] = useState(null);

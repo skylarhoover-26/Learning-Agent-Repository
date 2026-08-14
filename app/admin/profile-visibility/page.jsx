@@ -42,6 +42,9 @@ export default function ProfileVisibilityAdminPage() {
   const [allowed, setAllowed] = useState(null); // null = checking
   const [catalog, setCatalog] = useState([]);
   const [itemState, setItemState] = useState({}); // href -> state
+  // Items hidden by another setting rather than by these toggles. Not editable
+  // here (and not saved), so they're labeled instead.
+  const [autoHidden, setAutoHidden] = useState(new Set());
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
 
@@ -61,6 +64,10 @@ export default function ProfileVisibilityAdminPage() {
         setCatalog(cat);
         const coming = new Set(d.items || []);
         const hidden = new Set(d.hiddenItems || []);
+        // Computed hides (My Impact while the quiz is off) are shown as a note
+        // rather than folded into the toggles — the toggles post back what they
+        // read, so treating one as "hidden" here would persist it.
+        setAutoHidden(new Set(d.autoHiddenItems || []));
         setItemState(
           Object.fromEntries(cat.map((i) => [i.href, hidden.has(i.href) ? 'hidden' : coming.has(i.href) ? 'coming_soon' : 'visible'])),
         );
@@ -159,7 +166,9 @@ export default function ProfileVisibilityAdminPage() {
 
           <ul className="divide-y divide-slate-100 dark:divide-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             {catalog.map((item) => {
-              const effective = itemState[item.href] || 'visible';
+              const stored = itemState[item.href] || 'visible';
+              const isAutoHidden = autoHidden.has(item.href);
+              const effective = isAutoHidden ? 'hidden' : stored;
               return (
                 <li key={item.href} className="flex items-center justify-between gap-4 px-4 py-2.5">
                   <span className="min-w-0">
@@ -167,8 +176,16 @@ export default function ProfileVisibilityAdminPage() {
                       {item.label}
                     </span>
                     <span className="block text-xs text-slate-400 dark:text-slate-500 truncate">{item.desc}</span>
+                    {isAutoHidden && (
+                      <span className="block text-xs font-medium text-amber-700 dark:text-amber-300">
+                        Hidden automatically while the onboarding quiz is off — there is no calibration for it to report on.
+                      </span>
+                    )}
                   </span>
-                  <TriToggle value={effective} onChange={(state) => setItem(item.href, state)} />
+                  {/* An auto-hidden item still shows its STORED choice, so an
+                      admin can see what it will return to when the quiz is
+                      switched back on. */}
+                  <TriToggle value={stored} onChange={(state) => setItem(item.href, state)} />
                 </li>
               );
             })}

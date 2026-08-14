@@ -6,7 +6,7 @@ import { trackOnboardingComplete } from '@/lib/track';
 import { useProfile } from '@/components/profile-provider';
 import {
   Sparkles, ChevronRight, ChevronLeft,
-  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Smile,
+  Building2, Zap, Target, Check, Briefcase, Plus, PanelsTopLeft, Smile, FolderKanban,
 } from 'lucide-react';
 import {
   DEPARTMENTS, SUBTEAMS, getTaskList,
@@ -22,11 +22,18 @@ import { DEFAULT_AVATAR } from '@/lib/avatar-catalog';
 
 const SUB_TEAMS = SUBTEAMS;
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 // Onboarding auto-save: partial progress is stored here so someone who leaves
 // mid-setup drops back exactly where they were. Cleared when onboarding finishes.
-const DRAFT_KEY = 'onboarding_draft_v1';
+//
+// v2: step 6 is now Projects and the avatar moved to 7, so a v1 draft's saved
+// step number no longer means what it used to. Bumping the key retires those
+// drafts instead of dropping someone onto the wrong screen — and it clears the
+// v1 leftovers that survived a profile reset and made an already-saved task
+// impossible to re-add.
+const DRAFT_KEY = 'onboarding_draft_v2';
+const LEGACY_DRAFT_KEYS = ['onboarding_draft_v1'];
 
 // During onboarding everyone is level 1, so only level-1 items are unlockable.
 const ONBOARDING_AVATAR_CTX = { level: 1, badgeIds: new Set() };
@@ -66,6 +73,12 @@ export default function OnboardingPage() {
   const [aiTools, setAiTools] = useState([]);
   const [customTool, setCustomTool] = useState('');
   const [addingTool, setAddingTool] = useState(false);
+  // Step 6, skippable: the real work someone is doing right now. Weighted next to
+  // tasks and goals by every generator (lib/learner-signals.js), so it's worth
+  // asking for up front rather than hoping people find /projects later.
+  const [projects, setProjects] = useState([]);
+  const [projectTitle, setProjectTitle] = useState('');
+  const [projectDesc, setProjectDesc] = useState('');
   // Whether the calibration gate is still ahead of this person, which decides
   // whether the last step reads "Continue setup" or "Finish setup" (#135).
   // Resolved in an effect, not during render: isCalibrationPending reads
@@ -100,6 +113,12 @@ export default function OnboardingPage() {
     if (prefillFetched.current) return;
     prefillFetched.current = true;
 
+    // Retire drafts from before the step numbering changed (and before a profile
+    // reset stopped leaving one behind).
+    try {
+      LEGACY_DRAFT_KEYS.forEach((k) => localStorage.removeItem(k));
+    } catch { /* storage unavailable */ }
+
     // Resume a saved draft if one exists for this user — restore everything and
     // skip the Snowflake lookup (they've already moved past step 1).
     try {
@@ -117,6 +136,7 @@ export default function OnboardingPage() {
           if (typeof d.tier === 'string') setTier(d.tier);
           if (Array.isArray(d.goals)) setGoals(d.goals);
           if (Array.isArray(d.aiTools)) setAiTools(d.aiTools);
+          if (Array.isArray(d.projects)) setProjects(d.projects);
           if (d.avatar) { setAvatar(d.avatar); draftHadAvatarRef.current = true; }
           if (d.prefill) setPrefill(d.prefill);
           setPhase(d.phase || (d.department ? 'confirm' : 'manual'));
@@ -173,10 +193,10 @@ export default function OnboardingPage() {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         email: session?.user?.email?.toLowerCase() || null,
-        step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, avatar, phase, prefill,
+        step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, projects, avatar, phase, prefill,
       }));
     } catch { /* storage unavailable */ }
-  }, [step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, avatar, phase, prefill, session]);
+  }, [step, department, subTeam, showSubTeams, topTasks, tier, goals, aiTools, projects, avatar, phase, prefill, session]);
 
   // Everyone's default avatar is their Slack profile photo. Fetch it once on
   // mount and switch the avatar into photo mode — UNLESS a restored draft
@@ -220,7 +240,8 @@ export default function OnboardingPage() {
     if (step === 3) return tier.length > 0;
     if (step === 4) return goals.length > 0;
     if (step === 5) return aiTools.length > 0;
-    if (step === 6) return true; // avatar always valid (starts on defaults)
+    if (step === 6) return true; // projects are optional — skippable by design
+    if (step === 7) return true; // avatar always valid (starts on defaults)
     return false;
   }, [step, department, subTeam, topTasks, tier, goals, aiTools]);
 
@@ -366,6 +387,16 @@ export default function OnboardingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'profile', data: profile }),
       });
+      // Projects are their own user-data key (the same one /projects writes), not
+      // a profile field. Only written when they actually added something, so
+      // skipping the step can never wipe projects added earlier.
+      if (projects.length > 0) {
+        await fetch('/api/user-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'work_projects', data: projects }),
+        });
+      }
       await refreshProfile();
       // First learning goal set → award the "Aim High" badge.
       if (profile.id && chosenGoals.length > 0) addBadgeEarned(profile.id, 'first_goal');
@@ -544,6 +575,35 @@ export default function OnboardingPage() {
             />
           )}
           {step === 6 && (
+            <StepProjects
+              projects={projects}
+              title={projectTitle}
+              description={projectDesc}
+              onTitleChange={setProjectTitle}
+              onDescriptionChange={setProjectDesc}
+              onAdd={() => {
+                const t = projectTitle.trim();
+                if (!t) return;
+                if (projects.some((p) => p.title.toLowerCase() === t.toLowerCase())) {
+                  setProjectTitle('');
+                  setProjectDesc('');
+                  return;
+                }
+                setProjects(prev => [...prev, {
+                  // No Date.now(): a stable id from the title keeps this
+                  // deterministic and is enough to key a list this small.
+                  id: `proj_${t.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}`,
+                  title: t,
+                  description: projectDesc.trim(),
+                  status: 'active',
+                }]);
+                setProjectTitle('');
+                setProjectDesc('');
+              }}
+              onRemove={(id) => setProjects(prev => prev.filter(p => p.id !== id))}
+            />
+          )}
+          {step === 7 && (
             <StepAvatar
               avatar={avatar}
               onChange={setAvatar}
@@ -551,17 +611,25 @@ export default function OnboardingPage() {
             />
           )}
 
-          {/* Shared bottom navigation: Back sits next to the primary action. */}
-          {step >= 2 && step <= 5 && (
+          {/* Shared bottom navigation: Back sits next to the primary action.
+              Step 6 (projects) is optional, so its button reads "Skip for now"
+              until they've added one — a disabled-looking Continue on a step you
+              are allowed to skip is what makes people think they're stuck. */}
+          {step >= 2 && step <= 6 && (
             <div className="mt-8">
-              <StepNav onBack={goBack} onNext={goNext} disabled={!canAdvance()} />
+              <StepNav
+                onBack={goBack}
+                onNext={goNext}
+                disabled={!canAdvance()}
+                label={step === 6 && projects.length === 0 ? 'Skip for now' : 'Continue'}
+              />
             </div>
           )}
           {/* "Finish setup" was a lie whenever calibration was still pending:
               the button handed you straight to the ~13-step calibration gate
               (feedback #135). Say "Continue setup" and name what's coming, so
               the last onboarding step doesn't read as the last step overall. */}
-          {step === 6 && (
+          {step === 7 && (
             <div className="mt-8">
               <StepNav
                 onBack={goBack}
@@ -1131,6 +1199,83 @@ function StepTool({ selected, onToggle, customTool, onCustomToolChange, onAddCus
       </div>
       <div className="text-center">
         {/* Continue moved to the shared bottom nav (StepNav). */}
+      </div>
+    </div>
+  );
+}
+
+// Step 6 — the real work in flight. Optional: plenty of people arrive without a
+// named project, and a required step here would be a wall in front of the app.
+// What they DO add carries the same weight as their tasks and goals in every
+// generated lesson, which is why it's asked for here rather than left to a page
+// most people never open.
+function StepProjects({ projects, title, description, onTitleChange, onDescriptionChange, onAdd, onRemove }) {
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-brand-50 mb-4">
+          <FolderKanban className="w-7 h-7 text-brand" />
+        </div>
+        <h2 className="text-2xl font-bold text-ink dark:text-slate-200 mb-1 tracking-tight">
+          What are you working on right now?
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
+          Add a project or two and your lessons will use them as the worked example
+          instead of a made-up scenario. Optional — you can add these later from My Projects.
+        </p>
+      </div>
+
+      <div className="max-w-lg mx-auto space-y-2 mb-6">
+        {projects.map(project => (
+          <div
+            key={project.id}
+            className="w-full flex items-start gap-3 px-5 py-3.5 rounded-xl border bg-brand text-white border-brand shadow-sm"
+          >
+            <Check className="w-4 h-4 mt-0.5 shrink-0" />
+            <span className="flex-1 min-w-0">
+              <span className="block font-medium text-sm">{project.title}</span>
+              {project.description && (
+                <span className="block text-xs text-white/80">{project.description}</span>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={() => onRemove(project.id)}
+              aria-label={`Remove ${project.title}`}
+              className="text-white/80 hover:text-white text-xs font-medium shrink-0"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+
+        <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-4 space-y-2">
+          <input
+            type="text"
+            value={title}
+            onChange={e => onTitleChange(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') onAdd(); }}
+            placeholder="Project name (e.g. Q3 onboarding revamp)"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm"
+          />
+          <input
+            type="text"
+            value={description}
+            onChange={e => onDescriptionChange(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') onAdd(); }}
+            placeholder="What it involves (optional)"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all text-sm"
+          />
+          <button
+            type="button"
+            onClick={onAdd}
+            disabled={!title.trim()}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-brand text-white font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:bg-brand/90"
+          >
+            <Plus className="w-4 h-4" />
+            Add project
+          </button>
+        </div>
       </div>
     </div>
   );

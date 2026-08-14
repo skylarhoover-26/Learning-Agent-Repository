@@ -4,6 +4,7 @@ import { MODELS } from '@/lib/models';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { logAuditEntry } from '@/lib/audit-log';
 import { AUDIENCE, playerRoleContext } from '@/lib/audience';
+import { withProjects } from '@/lib/work-projects';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 // LLM generation of a full custom round can take a while — give it room so the
@@ -273,9 +274,13 @@ export async function POST(request) {
     if (!gen) return NextResponse.json({ error: 'Unknown game type.' }, { status: 400 });
     if (!topic) return NextResponse.json({ error: 'A topic is required.' }, { status: 400 });
 
+    // Projects are part of the backdrop for role-anchored games, so load them
+    // alongside the profile (they live under their own user-data key).
+    const profileForGen = gen.roleAnchored ? await withProjects(profile) : profile;
+
     const system = [
       AUDIENCE,
-      gen.roleAnchored ? playerRoleContext(profile) : null,
+      gen.roleAnchored ? playerRoleContext(profileForGen) : null,
       gen.system,
     ].filter(Boolean).join('\n\n');
 

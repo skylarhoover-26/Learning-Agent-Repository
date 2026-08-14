@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { isAdmin } from '@/lib/admin';
 import { PROFILE_CATALOG } from '@/lib/profile-catalog';
-import { getProfileVisibility, setProfileVisibility } from '@/lib/profile-visibility';
+import { getProfileVisibility, setProfileVisibility, getAutoHiddenProfileItems } from '@/lib/profile-visibility';
 
 // Reads MUTABLE per-org config from the blob, so never statically cache it —
 // otherwise admin changes only apply on the next deploy. Force dynamic.
@@ -12,8 +12,14 @@ export const revalidate = 0;
 // GET is public to signed-in users: every profile-menu render needs the lists.
 // We also return the catalog so the admin page has the structure to render.
 export async function GET() {
-  const visibility = await getProfileVisibility();
-  return NextResponse.json({ catalog: PROFILE_CATALOG, ...visibility });
+  const [visibility, autoHiddenItems] = await Promise.all([
+    getProfileVisibility(),
+    getAutoHiddenProfileItems(),
+  ]);
+  // autoHiddenItems is kept OUT of hiddenItems on purpose — see
+  // getAutoHiddenProfileItems. The menu treats the union as hidden; the admin page
+  // keeps editing only the stored list, so a computed hide is never persisted.
+  return NextResponse.json({ catalog: PROFILE_CATALOG, ...visibility, autoHiddenItems });
 }
 
 // POST is admin-only: save which profile items are hidden/coming-soon.

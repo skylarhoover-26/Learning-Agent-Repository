@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
 import { readDailyPickLesson } from '@/lib/daily-pick-lesson';
+import { signalSignature } from '@/lib/learner-signals';
+import { withProjects } from '@/lib/work-projects';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +17,10 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const topic = searchParams.get('topic') || '';
     const format = searchParams.get('format') || 'standard';
-    const cached = await readDailyPickLesson(profile.email, topic, format);
+    // Signature-matched: a cached lesson built before the learner edited their
+    // tools, tasks, goals or projects is a miss, not a hit.
+    const sig = signalSignature(await withProjects(profile));
+    const cached = await readDailyPickLesson(profile.email, topic, format, sig);
     if (!cached) return NextResponse.json({ plan: null });
     return NextResponse.json({
       plan: cached.plan,

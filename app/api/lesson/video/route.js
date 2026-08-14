@@ -1,6 +1,7 @@
 import { MODELS } from '@/lib/models';
 import { NextResponse } from 'next/server';
 import { getAuthenticatedProfile } from '@/lib/auth-helpers';
+import { withProjects } from '@/lib/work-projects';
 import { generateVideoScript } from '@/lib/ai';
 import { QUESTS } from '@/lib/quest-data';
 import { logAuditEntry } from '@/lib/audit-log';
@@ -34,7 +35,11 @@ export async function POST(request) {
     }
 
     const profile = await getAuthenticatedProfile();
-    const profileForGen = tools ? { ...profile, preferred_tools: tools } : profile;
+    // Projects live outside the profile document, so attach them here — the
+    // generator weights tasks, goals AND projects (lib/learner-signals.js).
+    const profileForGen = await withProjects(
+      tools ? { ...profile, preferred_tools: tools } : profile,
+    );
 
     const start = Date.now();
     let response;
