@@ -19,7 +19,8 @@ import { saveGameResult } from '@/lib/game-store';
 // a game that only rewards deleting things teaches paranoia, not judgment, and the
 // person who redacts the actual question gets no help from the AI either.
 const HOW_TO_PLAY = [
-  'You are about to paste a real piece of work text into an AI tool.',
+  'Every message here is made up for practice. No real customer, colleague or account data is used.',
+  'Imagine you are about to paste it into an AI tool for help.',
   'Tap every word you should remove first — names, contact details, account numbers, anything internal.',
   'Leave the parts the AI actually needs, like the question and the error message.',
   'Check your work to see what you caught, what you missed, and anything you removed that was safe.',
@@ -207,6 +208,14 @@ function RedactIt() {
           {round.context}
         </h1>
       </div>
+
+      {/* Said at the passage, not only in the how-to: these read as real emails with
+          real names and card numbers, and someone should never have to wonder whether
+          we are showing them a colleague's actual data. */}
+      <p className="flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--ink-dim)' }}>
+        <ShieldAlert className="w-3 h-3" />
+        Simulated message · invented for practice, not real data
+      </p>
 
       {/* The passage. Every word is tappable, so nothing about the layout hints at
           which ones matter. */}

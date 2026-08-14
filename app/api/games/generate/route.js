@@ -146,7 +146,9 @@ Return ONLY valid JSON (no markdown fences):
     maxTokens: 2800,
     system: `You are writing "Redact It" rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${REDACT_ROUNDS} rounds.
 
-Each round is a REAL piece of work text someone might paste into an AI tool for help — a customer email, a support ticket, a spreadsheet row, a bug report, a call transcript. The player taps the parts they should remove before pasting.
+Each round is a SIMULATED piece of work text someone might paste into an AI tool for help — a customer email, a support ticket, a spreadsheet row, a bug report, a call transcript. The player taps the parts they should remove before pasting.
+
+INVENT every detail. Names, emails, phone numbers, addresses, account and card and invoice numbers must all be made up. Never use a real person, a real Housecall Pro customer, or a real-looking card number that could belong to someone (start card examples with 4111 or 4242, the standard test prefixes). The passage should READ as real — that is what makes the practice work — while containing nothing that is.
 
 Rules per round:
 - "context": one sentence saying what they are about to do with it (e.g. "You want AI to draft a reply to this customer email").
@@ -186,7 +188,9 @@ Return ONLY valid JSON (no markdown fences):
     maxTokens: 2200,
     system: `You are writing "Build the Flow" rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${FLOW_ROUNDS} rounds.
 
-Each round is a real sequence someone would carry out — setting up an automation, refining a prompt until it works, running an evaluation, handling an AI answer they do not trust. The player is shown the steps shuffled and taps them back into order.
+Each round is a SIMULATED sequence someone would carry out — setting up an automation, refining a prompt until it works, running an evaluation, handling an AI answer they do not trust. The player is shown the steps shuffled and puts them back into order.
+
+Write it as a plausible generic process, NOT as a description of how Housecall Pro actually does anything. Never name a real internal system, team or tool as though you know their real setup. Invent any specifics you need.
 
 Rules per round:
 - "goal": one sentence naming what they are trying to end up with.
