@@ -356,8 +356,14 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       //     plus setup is exactly the 8m25s a learner sat through before the
       //     error appeared. Light formats are quick enough that a second try is
       //     still cheaper than showing an error.
+      //  3. Every plan is now GROUNDED with a live web lookup (lib/ai.js), which
+      //     adds roughly 5-20s before a word is written. The light budget was 100s,
+      //     sized for an ungrounded plan — close enough to a grounded one's worst
+      //     case that we'd have started aborting runs the server was completing
+      //     fine, which is failure mode 1 all over again. 150s keeps the same
+      //     headroom it used to have and still sits under maxDuration.
       const heavyFormat = format === 'project_quest' || format === 'deep_dive';
-      const PLAN_TIMEOUT_MS = heavyFormat ? 280000 : 100000;
+      const PLAN_TIMEOUT_MS = heavyFormat ? 280000 : 150000;
       const maxPlanAttempts = heavyFormat ? 1 : 2;
       for (let attempt = 1; attempt <= maxPlanAttempts && active; attempt++) {
         const controller = new AbortController();
@@ -1871,6 +1877,36 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         )}
         </div>
       </div>
+
+      {/* Sources — the pages the lesson was actually built from, straight from the
+          web_search results on the plan (lib/ai.js extractSources). Never model
+          recall, so this is empty rather than invented when the search didn't run,
+          and the whole block disappears in that case. */}
+      {plan?.sources?.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+            Sources · what this lesson was built from
+          </p>
+          <ul className="space-y-1.5">
+            {plan.sources.map((s) => (
+              <li key={s.url}>
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group inline-flex items-start gap-1.5 text-sm text-brand hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5 opacity-70 group-hover:opacity-100" />
+                  <span className="min-w-0">
+                    {s.title}
+                    {s.host && <span className="text-slate-400 dark:text-slate-500"> · {s.host}</span>}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {step?.kind !== 'recap' && (
         <div className="flex items-center justify-between gap-3">

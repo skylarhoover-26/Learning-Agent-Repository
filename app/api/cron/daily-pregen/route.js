@@ -4,10 +4,16 @@
 // ~20 min BEFORE the daily-pick Slack send (which is 8:30 AM PT), so the cache
 // is warm by the time anyone clicks.
 //
-// Best-effort + bounded: generation is slow (~40-60s/user on Sonnet), so within
-// one function budget we can't warm a huge team. We run a few in parallel until
-// a soft deadline, then stop — anyone not reached falls back to warm-on-open
-// (when they land on home) or on-click generation. Never worse than today.
+// Best-effort + bounded: generation is slow (~40-60s/user on Sonnet, plus 5-20s
+// since every plan is grounded with a live web lookup), so within one function
+// budget we can't warm a huge team. We run a few in parallel until a soft deadline,
+// then stop — anyone not reached falls back to warm-on-open (when they land on home)
+// or on-click generation. Never worse than today.
+//
+// Grounding made each user slower, so this reaches FEWER people per run than it did.
+// If pre-generation coverage starts mattering (a big team, lots of Slack clicks),
+// raise CONCURRENCY before touching the deadline: the ceiling here is the 300s
+// function budget, not the per-user time.
 
 import { NextResponse } from 'next/server';
 import { getNotifyAllowlist } from '@/lib/notify-allowlist';
