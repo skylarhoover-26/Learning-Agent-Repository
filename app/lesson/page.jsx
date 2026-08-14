@@ -161,11 +161,15 @@ function LessonContent() {
   // Learning mode: 'read' = interactive chat-driven lesson; 'watch' = narrated
   // video. In watch mode, selecting a topic opens the VideoLessonPlayer instead.
   const [learnMode, setLearnMode] = useState(initialMode);
-  // Step in the 3-step picker wizard (1 = depth, 2 = format, 3 = topic). Depth
-  // and format both have defaults, so Next is never a dead end. On step 3 the
-  // learner selects a topic (which just highlights it) and then presses
-  // "Generate lesson" to actually build it — clicking a card no longer launches
-  // straight away, which was jarring.
+  // Step in the 3-step picker wizard (1 = depth, 2 = format, 3 = topic).
+  //
+  // Steps 1 and 2 ADVANCE on selection — picking is the answer, so a separate Next
+  // was a second click for nothing. Matches the Games grid. Clicking an
+  // already-selected card advances too, so a remembered choice is never a trap.
+  //
+  // Step 3 is deliberately different: selecting a topic only highlights it, and
+  // "Generate lesson" starts the build. Launching a 1-2 minute generation from a
+  // single card click was jarring.
   const [wizardStep, setWizardStep] = useState(1);
   // The suggested topic highlighted on step 3, and whether generation is firing.
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -344,6 +348,10 @@ function LessonContent() {
     } catch {
       // persistence is best-effort
     }
+    // Picking IS the answer, so it advances — no separate Next to press. Matches the
+    // Games grid. Clicking the already-selected card advances too, so someone happy
+    // with a remembered choice is never stuck without a Next button.
+    setWizardStep(2);
   }
 
   // Debounce-save lesson state when in lesson view
@@ -1106,16 +1114,8 @@ function LessonContent() {
               );
             })}
           </div>
-          <div className="flex justify-center mt-6">
-            <button
-              type="button"
-              onClick={() => setWizardStep(2)}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 shadow-sm transition-all active:scale-[0.98]"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          {/* No Next: picking a depth advances. Nothing else to press here, and no
+              step to go back to. */}
         </div>
         )}
 
@@ -1136,7 +1136,7 @@ function LessonContent() {
               return (
                 <button
                   key={m.key}
-                  onClick={() => setLearnMode(m.key)}
+                  onClick={() => { setLearnMode(m.key); setWizardStep(3); }}
                   aria-pressed={selected}
                   className={`group relative overflow-hidden p-4 rounded-2xl text-left transition-all cine-glass cine-tilt ${
                     selected ? `ring-2 ${tone.ring}` : ''
@@ -1187,14 +1187,7 @@ function LessonContent() {
               <ChevronRight className="w-4 h-4 rotate-180" />
               Back
             </button>
-            <button
-              type="button"
-              onClick={() => setWizardStep(3)}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-600 shadow-sm transition-all active:scale-[0.98]"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {/* No Next: picking a format advances. Back is the only control here. */}
           </div>
         </div>
         )}

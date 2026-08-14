@@ -304,7 +304,9 @@ function GamesHubInner() {
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="inline-flex items-center gap-1.5 px-5 py-3 rounded-pill cine-glass text-slate-600 dark:text-slate-300 font-semibold text-sm hover:opacity-80 transition-all"
+            // Same padding and weight as Play beside it, so the pair reads as one
+            // control rather than a button and a link.
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-pill cine-glass text-slate-600 dark:text-slate-300 font-bold hover:opacity-80 transition-all"
           >
             <ArrowRight className="w-4 h-4 rotate-180" />
             Back
