@@ -27,6 +27,7 @@ import { useTts } from '@/lib/use-tts';
 import { trackLessonComplete } from '@/lib/track';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { signalSignature } from '@/lib/learner-signals';
+import { FALLBACK_TOPICS } from '@/lib/fallback-topics';
 import VideoLessonPlayer from '@/components/video-lesson-player';
 import PausedLessonsBox from '@/components/paused-lessons-box';
 import { getPausedLesson, listPausedLessons, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
@@ -178,15 +179,7 @@ function readValidSuggestions() {
   }
 }
 
-// Fallback shown if personalized suggestions fail to load.
-const SUGGESTED_TOPICS = [
-  { emoji: '🎯', label: 'Prompt Basics', topic: 'How to write clear, specific prompts that get useful results' },
-  { emoji: '🧵', label: 'AI for Slack', topic: 'Using AI to draft, summarize, and respond to Slack messages and threads faster' },
-  { emoji: '📊', label: 'Data Summaries', topic: 'Turning raw data and notes into executive-ready summaries' },
-  { emoji: '🤖', label: 'What Are AI Agents?', topic: 'Understanding AI agents and how they can automate multi-step workflows' },
-  { emoji: '✅', label: 'Verifying AI Output', topic: 'How to fact-check and validate AI-generated content before using it' },
-  { emoji: '💬', label: 'Better Conversations', topic: 'How to have productive back-and-forth conversations with AI assistants' },
-];
+const SUGGESTED_TOPICS = FALLBACK_TOPICS;
 
 // Worked examples for the "type your own" box, mirroring Discovery's "Or start
 // from one of these examples" (feedback #60). The topic cards above show WHAT you
