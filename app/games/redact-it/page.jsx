@@ -12,7 +12,8 @@ import GameInstructions from '@/components/game-instructions';
 import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
 
-// Tap what you would strip out of a real message before pasting it into an AI tool.
+// Tap what you would strip out of a simulated work message before pasting it into an
+// AI tool. Every passage is invented — see the generator.
 //
 // Data Privacy is a skill on the heatmap with no game attached, and it is the one
 // where being wrong at work actually costs something. Over-redaction is scored too:
