@@ -20,6 +20,9 @@ function getClient() {
 // Per game-type: the system prompt and a normalizer that coerces the model
 // output into the exact shape that game expects (dropping malformed items).
 const SPEED_COUNT = 10;
+// Six jumps to reach the shore. Enough to feel like a journey, few enough that a
+// round stays under the 3-5 minutes the card promises.
+const LILY_COUNT = 6;
 const HALLUC_ROUNDS = 3;
 const PROMPT_COUNT = 4;
 const WHEEL_COUNT = 4;
@@ -70,6 +73,49 @@ Return ONLY valid JSON (no markdown fences):
         }))
         .slice(0, SPEED_COUNT);
       return clean.length >= 5 ? { questions: clean } : null;
+    },
+  },
+
+  // Lily Leap answers by TAPPING a pad, so its options live inside a circle about
+  // 120px across. Speed Round's generator was the obvious thing to reuse — same
+  // question/options/correct shape — but its options are written to be read in a
+  // list and routinely run a full line, which overflows a pad or shrinks to
+  // unreadable. Hence its own entry: identical JSON, much harder brevity rules.
+  lilyleap: {
+    maxTokens: 2000,
+    system: `You are writing a "Lily Leap" quiz for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${LILY_COUNT} multiple-choice questions that teach genuinely useful, practical knowledge about it.
+
+The player answers by jumping onto a lily pad, so each option is printed inside a small circle.
+
+Rules:
+- Each question has EXACTLY 3 options, with ONE clearly correct answer.
+- Every option is AT MOST 4 words, and short is better than clever. One or two words is ideal. They must fit inside a circle.
+- Never write an option as a sentence, and never start options with "The" just to pad them.
+- The question itself is at most 14 words. It sits in a single strip above the pond.
+- "correct" is the 0-based index (0-2) of the right option.
+- The three options must be genuinely different answers, not shades of the same one. No "all of the above", no "none of the above".
+- Accurate. No trick questions. Vary difficulty from foundational to nuanced.
+- "explanation" is ONE short sentence on why the answer is right, shown after the jump.
+
+Return ONLY valid JSON (no markdown fences):
+{ "questions": [ { "q": "<question>", "options": ["a","b","c"], "correct": <0-2>, "explanation": "<one sentence>" } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.questions) ? parsed.questions : null;
+      if (!arr) return null;
+      const clean = arr
+        .filter((x) => x && typeof x.q === 'string' && Array.isArray(x.options) && x.options.length === 3
+          && Number.isInteger(x.correct) && x.correct >= 0 && x.correct <= 2)
+        .map((x) => ({
+          q: String(x.q).trim(),
+          // Hard cap in code as well as in the prompt: a pad that has to render
+          // "Retrieval augmented generation pipeline" is a broken pad, and a brevity
+          // rule that only exists in the prompt is a request.
+          options: x.options.map((o) => String(o).trim().split(/\s+/).slice(0, 4).join(' ')),
+          correct: x.correct,
+          explanation: String(x.explanation || '').trim(),
+        }))
+        .slice(0, LILY_COUNT);
+      return clean.length >= 4 ? { questions: clean } : null;
     },
   },
 

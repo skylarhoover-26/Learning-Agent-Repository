@@ -6,7 +6,7 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
-  Gamepad2, Swords, Search, Timer, Eye, ArrowRight, Sparkles, Wand2,
+  Gamepad2, Swords, Search, Timer, Waves, ArrowRight, Sparkles, Wand2,
   Users, LayoutGrid, DollarSign, ScanSearch, Disc3, ArrowUp,
 } from 'lucide-react';
 import { getGameStats } from '@/lib/game-store';
@@ -31,10 +31,12 @@ import GamePicker from '@/components/game-picker';
 // One rule now: a game is built from a topic. Type one, or press Surprise me and we
 // suggest one from your tasks, goals and projects.
 //
-//   generates — false ONLY for AI or Human, whose premise is telling genuinely
-//               human-written text from AI-written text. Generating its rounds would
-//               destroy the thing being tested, so it keeps hand-written content and
-//               takes no topic. Every other game generates.
+// EVERY game in this list generates. AI or Human was the one that could not — its
+// premise is telling genuinely human-written text from AI-written text, so generating
+// its rounds would have destroyed the thing being tested — and it was retired in
+// favour of Lily Leap, which teaches at the same Easy tier and follows the same rule.
+// `generates` stays on each entry as the flag that enforces "no exceptions": add a
+// game that can't be built from a topic and the hub will tell you.
 //
 // The per-game files that remain (speed-round/questions.js, hallucination-hunt/
 // rounds.js, prompt-battle/scenarios.js) are now only reached by a direct URL with no
@@ -42,8 +44,8 @@ import GamePicker from '@/components/game-picker';
 const CATALOG = [
   { slug: 'speed-round', icon: Timer, title: 'Speed Round', time: '3-5 min', generates: true,
     description: 'Rapid-fire multiple choice. 10 questions, 15 seconds each.' },
-  { slug: 'ai-or-human', icon: Eye, title: 'AI or Human?', time: '3-5 min', generates: false,
-    description: 'Can you tell which text was written by AI and which by a human?' },
+  { slug: 'lily-leap', icon: Waves, title: 'Lily Leap', time: '3-5 min', generates: true,
+    description: 'Jump across the pond by landing on the right answers.' },
   { slug: 'two-truths', icon: ScanSearch, title: 'Two Truths & a Lie', time: '3-5 min', generates: true,
     description: 'Spot the false claim among three.' },
   { slug: 'wheel-of-fortune', icon: Disc3, title: 'Wheel of Fortune', time: '5-8 min', generates: true,
@@ -67,7 +69,7 @@ const ORDERED = sortByDifficulty(CATALOG);
 const MAKE_ID_TO_SLUG = {
   feud: 'family-feud', halluc: 'hallucination-hunt', jeopardy: 'jeopardy',
   millionaire: 'millionaire', prompt: 'prompt-battle', speed: 'speed-round',
-  twotruths: 'two-truths', wheel: 'wheel-of-fortune',
+  twotruths: 'two-truths', wheel: 'wheel-of-fortune', lilyleap: 'lily-leap',
 };
 
 export default function GamesHub() {
