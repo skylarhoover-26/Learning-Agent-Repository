@@ -29,6 +29,8 @@ const WHEEL_COUNT = 4;
 const FEUD_ROUNDS = 4;
 const TRUTHS_ROUNDS = 5;
 const MILLIONAIRE_COUNT = 10;
+const REDACT_ROUNDS = 3;
+const FLOW_ROUNDS = 3;
 
 // Audience framing (who's playing vs who HCP sells to) lives in
 // lib/audience.js and is prepended to every game's system prompt below.
@@ -127,6 +129,85 @@ Return ONLY valid JSON (no markdown fences):
         }))
         .slice(0, LILY_COUNT);
       return clean.length >= 4 ? { questions: clean } : null;
+    },
+  },
+
+  // "Redact It" — the player taps the parts of a real message they would strip out
+  // before pasting it into an AI tool. Data Privacy is a skill on the heatmap with no
+  // game attached, and it is the one where being wrong at work actually costs
+  // something.
+  //
+  // The model returns the passage as TEXT plus the exact sensitive substrings, rather
+  // than a pre-tokenised array with flags. Two reasons: models are far more reliable
+  // at quoting a span than at tokenising, and a parts array would have to be split at
+  // exactly the sensitive boundaries — which tells the player where the answers are
+  // before they touch anything.
+  redact: {
+    maxTokens: 2800,
+    system: `You are writing "Redact It" rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${REDACT_ROUNDS} rounds.
+
+Each round is a REAL piece of work text someone might paste into an AI tool for help — a customer email, a support ticket, a spreadsheet row, a bug report, a call transcript. The player taps the parts they should remove before pasting.
+
+Rules per round:
+- "context": one sentence saying what they are about to do with it (e.g. "You want AI to draft a reply to this customer email").
+- "text": the passage itself, 40 to 90 words. Realistic, with names and details, the way a real one reads.
+- "sensitive": an array of the exact substrings from "text" that should be removed before sharing with an AI tool. Copy them CHARACTER FOR CHARACTER from "text", including punctuation inside them. 3 to 6 of them.
+- Include a mix: a person's full name, contact details, an account or card or invoice number, an address, and anything internal (margins, unreleased plans, another customer's data).
+- The passage MUST also contain plenty that is perfectly safe to share — the actual question, the product behaviour, the error text. A passage where everything is sensitive teaches nothing.
+- "why": an object keyed by each sensitive substring, one short sentence on why it must go. Say what it identifies or exposes.
+
+Return ONLY valid JSON (no markdown fences):
+{ "rounds": [ { "context": "<...>", "text": "<the passage>", "sensitive": ["...","..."], "why": { "...": "<why it must go>" } } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.rounds) ? parsed.rounds : null;
+      if (!arr) return null;
+      const clean = arr.map((r) => {
+        const text = String(r?.text || '').trim();
+        // A "sensitive" string the model paraphrased instead of quoting cannot be
+        // highlighted, so drop it rather than mark a round unwinnable.
+        const sensitive = (Array.isArray(r?.sensitive) ? r.sensitive : [])
+          .map((s) => String(s).trim())
+          .filter((s) => s && text.includes(s));
+        const why = {};
+        for (const s of sensitive) {
+          const reason = r?.why?.[s];
+          if (reason) why[s] = String(reason).trim();
+        }
+        return { context: String(r?.context || '').trim(), text, sensitive, why };
+      }).filter((r) => r.text && r.sensitive.length >= 2);
+      return clean.length ? { rounds: clean.slice(0, REDACT_ROUNDS) } : null;
+    },
+  },
+
+  // "Build the Flow" — steps arrive scrambled and the player taps them into order.
+  // Every other game asks "which one is right?"; this is the only one that asks
+  // "what happens before what?", which is most of what using AI at work actually is.
+  flow: {
+    maxTokens: 2200,
+    system: `You are writing "Build the Flow" rounds for a corporate AI-learning platform. Given a TOPIC, write EXACTLY ${FLOW_ROUNDS} rounds.
+
+Each round is a real sequence someone would carry out — setting up an automation, refining a prompt until it works, running an evaluation, handling an AI answer they do not trust. The player is shown the steps shuffled and taps them back into order.
+
+Rules per round:
+- "goal": one sentence naming what they are trying to end up with.
+- "steps": 4 to 6 steps IN THE CORRECT ORDER. Each step is at most 12 words, written as an action ("Export the failing workflow as JSON").
+- The order must be genuinely forced — each step should depend on the one before it. If two steps could swap without consequence, rewrite one so they cannot.
+- "why": for each step, one short sentence on why it has to come at that point. This is the teaching, so make it about the dependency ("you cannot judge the change without a baseline to compare it to"), never a restatement of the step.
+- No step may name its own position ("first", "finally", "step 3") — that gives the answer away.
+
+Return ONLY valid JSON (no markdown fences):
+{ "rounds": [ { "goal": "<...>", "steps": [ { "text": "<action>", "why": "<why here>" } ] } ] }`,
+    normalize: (parsed) => {
+      const arr = Array.isArray(parsed?.rounds) ? parsed.rounds : null;
+      if (!arr) return null;
+      const clean = arr.map((r) => ({
+        goal: String(r?.goal || '').trim(),
+        steps: (Array.isArray(r?.steps) ? r.steps : [])
+          .map((s) => ({ text: String(s?.text || '').trim(), why: String(s?.why || '').trim() }))
+          .filter((s) => s.text)
+          .slice(0, 6),
+      })).filter((r) => r.steps.length >= 3);
+      return clean.length ? { rounds: clean.slice(0, FLOW_ROUNDS) } : null;
     },
   },
 

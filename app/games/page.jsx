@@ -7,7 +7,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
   Gamepad2, Swords, Search, Timer, Waves, Eye, ArrowRight, Sparkles, Wand2,
-  Users, LayoutGrid, DollarSign, ScanSearch, Disc3, ArrowUp,
+  Users, LayoutGrid, DollarSign, ScanSearch, Disc3, ArrowUp, Workflow, ShieldAlert,
 } from 'lucide-react';
 import { getGameStats } from '@/lib/game-store';
 import { gameDifficulty } from '@/lib/progression';
@@ -78,6 +78,12 @@ const CATALOG = [
   { slug: 'millionaire', icon: DollarSign, title: 'Millionaire', time: '5-10 min', generates: true,
     teaches: 'Depth, one step harder each time',
     description: 'Climb a 10-question ladder — how far can you get?' },
+  { slug: 'build-the-flow', icon: Workflow, title: 'Build the Flow', time: '4-7 min', generates: true,
+    teaches: 'What has to happen before what',
+    description: 'Put the steps of a real workflow back in order.' },
+  { slug: 'redact-it', icon: ShieldAlert, title: 'Redact It', time: '4-7 min', generates: true,
+    teaches: 'What is safe to paste into AI',
+    description: 'Strip the sensitive parts out of a real message before sharing it.' },
   { slug: 'hallucination-hunt', icon: Search, title: 'Hallucination Hunt', time: '5-8 min', generates: true,
     teaches: 'Catching factual errors in AI output',
     description: 'Spot the planted factual errors in an AI answer.' },
@@ -91,6 +97,7 @@ const MAKE_ID_TO_SLUG = {
   feud: 'family-feud', halluc: 'hallucination-hunt', jeopardy: 'jeopardy',
   millionaire: 'millionaire', prompt: 'prompt-battle', speed: 'speed-round',
   twotruths: 'two-truths', wheel: 'wheel-of-fortune', lilyleap: 'lily-leap',
+  flow: 'build-the-flow', redact: 'redact-it',
 };
 
 export default function GamesHub() {
