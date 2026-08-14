@@ -30,7 +30,15 @@ const WAYS = [
   { href: '/games', icon: Gamepad2, label: 'Games', desc: 'Learn by playing fast AI challenges.', tint: '#A06AFF' },
   { href: '/chat', icon: MessageCircle, label: 'Just Chat', desc: 'Ask the coach anything, anytime.', tint: '#3B94FF' },
   { href: '/lesson', icon: BookOpen, label: 'Lesson', desc: 'Guided, immersive deep dives.', tint: '#1AA06A' },
-  { href: '/discover', icon: PenTool, label: 'Practice', desc: 'Apply AI to your real work.', tint: '#FFB706' },
+  // Feedback #215 (Bridget): this tile was labelled "Practice" and pointed at
+  // /discover — the same place as the big "Find AI for your actual work" card
+  // further down this very page. Two entries, one destination, and a label that
+  // named something the page didn't have.
+  //
+  // Relabelled rather than repointed: "Practice" has no home of its own (practice
+  // happens INSIDE lessons and games, both already tiles here), while Prompts is a
+  // real, distinct surface that fits the same "apply AI to your work" intent.
+  { href: '/prompts', icon: PenTool, label: 'Prompts', desc: 'Ready-made prompts for your tasks.', tint: '#FFB706' },
 ];
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
