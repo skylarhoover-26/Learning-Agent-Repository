@@ -6,7 +6,7 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
-  Gamepad2, Swords, Search, Timer, Waves, ArrowRight, Sparkles, Wand2,
+  Gamepad2, Swords, Search, Timer, Waves, Eye, ArrowRight, Sparkles, Wand2,
   Users, LayoutGrid, DollarSign, ScanSearch, Disc3, ArrowUp,
 } from 'lucide-react';
 import { getGameStats } from '@/lib/game-store';
