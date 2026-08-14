@@ -1374,8 +1374,14 @@ function LessonContent() {
               generated: the fallback topics are real and clickable, so showing them
               mid-generation means offering choices that are about to be replaced. */}
           {suggestionsLoading && !suggested ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-busy="true" aria-live="polite">
-              <span className="sr-only">Building topic suggestions from your role, tasks, goals and projects…</span>
+            <>
+              {/* Say what's happening. Skeletons alone read as "broken" to plenty of
+                  people — this names the wait and why it's worth it. */}
+              <p aria-live="polite" className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                Building topics around your role, tasks, goals and projects — about 10 seconds.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-busy="true">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-start gap-3 p-4 cine-glass rounded-2xl animate-pulse">
                   <span className="shrink-0 w-11 h-11 rounded-xl bg-slate-200 dark:bg-slate-700" />
@@ -1386,7 +1392,8 @@ function LessonContent() {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            </>
           ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(suggested || SUGGESTED_TOPICS).map((s, i) => {

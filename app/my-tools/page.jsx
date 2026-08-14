@@ -5,7 +5,7 @@ import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProfile } from '@/components/profile-provider';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
-import { chosenTools, serializeTools, toolKey, normalizeTool } from '@/lib/ai-tools';
+import { chosenTools, serializeTools, toolKey, normalizeTool, TOOL_CATEGORIES } from '@/lib/ai-tools';
 import { PanelsTopLeft, Check, Plus, ExternalLink } from 'lucide-react';
 
 // Dedicated page to manage the AI tool(s) the learner works in. Multi-select —
@@ -74,7 +74,18 @@ function MyToolsPageInner() {
     setTimeout(() => setSaved(false), 2200);
   }
 
+  // Catalog split into the same categories onboarding uses, with anything
+  // uncategorised (an admin-added tool, say) falling into Specialist so it can
+  // never vanish from the page. Tools the learner typed themselves get their own
+  // group at the end, since they have no category to sort into.
   const customTools = set.filter((t) => t.id === 'other');
+  const toolGroups = [
+    ...TOOL_CATEGORIES.map((c) => ({
+      ...c,
+      items: catalog.filter((t) => (t.category || 'specialist') === c.id),
+    })),
+    { id: 'yours', label: 'Added by you', hint: '', items: customTools },
+  ].filter((g) => g.items.length);
 
   return (
     <div className="min-h-screen">
@@ -88,32 +99,32 @@ function MyToolsPageInner() {
             of your tools for that topic (and flags when a tool you don&rsquo;t have yet would fit even better).
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {catalog.map((t) => {
-              const selected = selectedKeys.has(toolKey(t));
-              return (
-                <ToolRow
-                  key={t.id}
-                  tool={t}
-                  selected={selected}
-                  onToggle={() => toggle(t.id)}
-                />
-              );
-            })}
+          {/* Grouped by category, matching onboarding step 5 (feedback from Andrea:
+              "I don't see multiple sets in my AI Tools section"). One flat list of a
+              dozen tools makes Claude, Claude Code and Claude Cowork look like near
+              duplicates, when the category is exactly what separates them — a chat
+              assistant from an agent from an automation platform. Same grouping data
+              (TOOL_CATEGORIES), so the two screens can't drift. */}
+          <div className="space-y-5">
+            {toolGroups.map((group) => (
+              <div key={group.id}>
+                <div className="px-1 mb-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{group.label}</p>
+                  {group.hint && <p className="text-xs text-slate-400 dark:text-slate-500">{group.hint}</p>}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {group.items.map((t) => (
+                    <ToolRow
+                      key={toolKey(t)}
+                      tool={t}
+                      selected={selectedKeys.has(toolKey(t))}
+                      onToggle={() => toggle(t.id === 'other' ? t : t.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-
-          {customTools.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-              {customTools.map((t) => (
-                <ToolRow
-                  key={toolKey(t)}
-                  tool={t}
-                  selected
-                  onToggle={() => toggle(t)}
-                />
-              ))}
-            </div>
-          )}
 
           <div className="flex items-center gap-2 mt-4">
             <Plus className="w-4 h-4 text-slate-400 shrink-0" />
