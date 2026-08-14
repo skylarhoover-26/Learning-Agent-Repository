@@ -612,17 +612,14 @@ export default function OnboardingPage() {
           )}
 
           {/* Shared bottom navigation: Back sits next to the primary action.
-              Step 6 (projects) is optional, so its button reads "Skip for now"
-              until they've added one — a disabled-looking Continue on a step you
-              are allowed to skip is what makes people think they're stuck. */}
+              Step 6 (projects) stays optional — canAdvance returns true with an
+              empty list — but the button reads "Continue" like every other step.
+              It said "Skip for now", which advertised skipping the step instead of
+              inviting people to fill it in. The step's own copy already tells them
+              it's optional and can be done later from My Projects. */}
           {step >= 2 && step <= 6 && (
             <div className="mt-8">
-              <StepNav
-                onBack={goBack}
-                onNext={goNext}
-                disabled={!canAdvance()}
-                label={step === 6 && projects.length === 0 ? 'Skip for now' : 'Continue'}
-              />
+              <StepNav onBack={goBack} onNext={goNext} disabled={!canAdvance()} />
             </div>
           )}
           {/* "Finish setup" was a lie whenever calibration was still pending:
