@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Zap, Award, Flame } from 'lucide-react';
 import EggCapybara from '@/components/egg-capybara';
+import Capybara from '@/components/capybara';
 
 const BADGE_META = {
   first_lesson: { name: 'First Steps', emoji: '🎓' },
@@ -78,6 +79,20 @@ export default function XpToast({ result, onDismiss }) {
             </div>
           </div>
         </div>
+
+        {/* A collect needs to say what it was and how far along they are, right
+            when they click — otherwise finding a capybara looks the same as any
+            other +5 XP and the hunt has no visible progress. */}
+        {result.capyFind && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-brand-50 dark:bg-brand-900/20 rounded-lg mb-2">
+            <Capybara variant="idle" size={22} />
+            <span className="text-sm font-medium text-brand-700 dark:text-brand-200">
+              {result.capyFind.completed
+                ? 'Every capybara found — sidekick unlocked!'
+                : `Capybara collected · ${result.capyFind.found} of ${result.capyFind.total}`}
+            </span>
+          </div>
+        )}
 
         {result.streak >= 2 && (
           <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-2">
