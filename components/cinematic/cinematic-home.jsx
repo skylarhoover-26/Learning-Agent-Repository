@@ -17,7 +17,8 @@ import { getLevelTitle } from '@/lib/level-titles';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
 import { getCalibrationSkills } from '@/lib/calibration-store';
-import { freshnessLabel, lessonHref, splitByApproval } from '@/lib/ai-news';
+import { freshnessLabel, lessonHref } from '@/lib/ai-news';
+import { rankableItems, topPersonalItems } from '@/lib/news-personal';
 import CinematicShell from '@/components/cinematic/cinematic-shell';
 import ImpactAssessmentCard from '@/components/impact-assessment-card';
 import ImpactAssessmentPrompt from '@/components/impact-assessment-prompt';
@@ -146,27 +147,61 @@ export default function CinematicHome() {
   // This used to read `/api/user-data?type=curriculum_findings`, a per-user path
   // nothing ever wrote — so the card could only render its empty state. See
   // app/api/ai-news/route.js.
+  //
+  // The card shows the top 3 of what /ai-news itself would show, using the SAME
+  // gates and the SAME personal ranking (lib/news-personal). It used to take
+  // `approved.slice(0, 3)` in feed order, which skipped the freshness gate, the
+  // research-source exclusion, the score floor and the personal sort — so the
+  // card regularly advertised items the page would not list at all.
+  //
+  // Ranking is a model call, but rankableItems() sends the identical set the page
+  // sends, so api/ai-news/why serves it from its per-learner per-day cache;
+  // whichever surface is opened first that day pays for it once.
   useEffect(() => {
     let active = true;
-    fetch('/api/ai-news', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
+    (async () => {
+      try {
+        const res = await fetch('/api/ai-news', { cache: 'no-store' });
+        const d = res.ok ? await res.json() : null;
         if (!active) return;
-        // Only categories that passed the relevance guardrail reach the home
-        // page — model/tool/practice news, never market commentary or security
-        // scares. See APPROVED_CATEGORIES in lib/ai-news.js.
-        const { approved } = splitByApproval(d?.items || []);
-        setNews(approved.slice(0, 3));
+
+        const items = d?.items || [];
         setNewsMeta({
-          count: d?.count ?? approved.length,
+          count: d?.count ?? items.length,
           // Total stored, used only to decide whether the browse page is worth a
-          // link — the guardrail can approve fewer than 3 while plenty sits
-          // behind the page's "show everything" toggle.
-          totalCount: d?.totalCount ?? (d?.items || []).length,
+          // link.
+          totalCount: d?.totalCount ?? items.length,
           scannedAt: d?.scannedAt || null,
         });
-      })
-      .catch(() => { if (active) setNews([]); });
+
+        const rankable = rankableItems(items);
+        if (!rankable.length) { setNews([]); return; }
+
+        // Deliberately no "render unranked now, re-sort when scores land": the
+        // page learned that lesson already — the first thing it showed was a wall
+        // of items that had nothing to do with you. The card stays on its skeleton
+        // until there is something worth showing.
+        let personal = {};
+        try {
+          const rankRes = await fetch('/api/ai-news/why', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: rankable.map((i) => ({ id: i.externalId, title: i.title, summary: i.summary })),
+            }),
+          });
+          if (rankRes.ok) personal = (await rankRes.json())?.personal || {};
+        } catch {
+          // Ranking is best-effort. Falling back to newest-first below still
+          // respects every gate the page applies, so the card can be less
+          // personal than the page but never disagree with it.
+        }
+        if (!active) return;
+        setNews(topPersonalItems(items, personal, 3));
+      } catch {
+        if (active) setNews([]);
+      }
+    })();
     return () => { active = false; };
   }, []);
 

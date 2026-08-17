@@ -10,11 +10,12 @@ import BookLoader from '@/components/book-loader';
 import MultiSelect from '@/components/multi-select';
 import { SECTION_COLORS } from '@/lib/section-colors';
 import {
-  freshnessLabel, isApproved, isResearchSource, lessonHref, CATEGORY_LABELS, SCAN_TIME_LABEL,
+  freshnessLabel, isResearchSource, lessonHref, CATEGORY_LABELS, SCAN_TIME_LABEL,
 } from '@/lib/ai-news';
 import {
   LANES, LANE_BY_ID, RANKED_LIMIT, attachPersonal, byBestMatch, publishedMs,
-  laneCounts, hasPersonalization, marksByItem, isDefaultVisible, isFresh, MAX_AGE_HOURS,
+  laneCounts, hasPersonalization, marksByItem, isDefaultVisible, MAX_AGE_HOURS,
+  rankableItems,
 } from '@/lib/news-personal';
 
 // What the daily scan found that affects the person reading it.
@@ -251,16 +252,11 @@ function AiNewsInner() {
   //
   // The score gate in isDefaultVisible can't apply here — it needs the score this
   // call produces — so it runs after the results land.
-  const rankable = useMemo(() => (
-    all
-      .filter((i) => (
-        i.externalId && i.title && !isResearchSource(i.sourceName)
-        && isApproved(i) && isFresh(i)
-      ))
-      .slice()
-      .sort((a, b) => publishedMs(b) - publishedMs(a))
-      .slice(0, RANKED_LIMIT)
-  ), [all]);
+  // Shared with the home page's news card via lib/news-personal, so both ask
+  // api/ai-news/why for the identical set and therefore share its per-day cache
+  // and its scores. When these two drifted apart, the card showed items this page
+  // would not.
+  const rankable = useMemo(() => rankableItems(all), [all]);
 
   // The effect depends on a STRING of ids, not on `rankable`. `rankable` is a
   // fresh array identity whenever data reloads, and depending on it would re-POST
