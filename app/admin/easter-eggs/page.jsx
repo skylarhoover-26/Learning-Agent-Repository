@@ -10,8 +10,8 @@ import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import Capybara from '@/components/capybara';
 import { CAPY_VARIANTS, CAPY_VARIANT_IDS } from '@/lib/capybara-variants';
-import { EASTER_EGGS, EGG_RARITY, collectionProgress } from '@/lib/easter-eggs';
-import { readFinds } from '@/lib/egg-finds';
+import { EASTER_EGGS, EGG_RARITY } from '@/lib/easter-eggs';
+import { findProgress } from '@/lib/egg-finds';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { useProfile } from '@/components/profile-provider';
 
@@ -49,6 +49,7 @@ function EasterEggsInner() {
   const [zoom, setZoom] = useState(96);
   // Read after mount: finds are in localStorage.
   const [myProgress, setMyProgress] = useState({ found: 0, total: 0, remaining: [], complete: false });
+  const [rollup, setRollup] = useState(null);
 
   useEffect(() => {
     if (loaded && !isAdmin) router.replace('/');
@@ -56,8 +57,25 @@ function EasterEggsInner() {
 
   useEffect(() => {
     const learnerId = profile ? resolveLearnerId(profile) : null;
-    setMyProgress(collectionProgress(readFinds(learnerId)));
+    setMyProgress(findProgress(learnerId));
   }, [profile]);
+
+  // Everyone's counts, straight from xp_events. Only fetched once admin access is
+  // confirmed so a non-admin never triggers the call.
+  useEffect(() => {
+    if (!loaded || !isAdmin) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/capy-finds', { cache: 'no-store' });
+        const data = await res.json();
+        if (!cancelled) setRollup(res.ok ? data : { error: data?.error || 'Could not load collection data.' });
+      } catch {
+        if (!cancelled) setRollup({ error: 'Could not load collection data.' });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loaded, isAdmin]);
 
   if (!loaded) {
     return (
@@ -86,19 +104,93 @@ function EasterEggsInner() {
           hint="Find every live egg and you earn the Capybara Whisperer badge, which is the only way to unlock the Capybara sidekick."
         >
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            You have found <strong className="tabular-nums">{myProgress.found}</strong> of{' '}
-            <strong className="tabular-nums">{myProgress.total}</strong> on this device.
+            You have collected <strong className="tabular-nums">{myProgress.found}</strong> of{' '}
+            <strong className="tabular-nums">{myProgress.total}</strong>.
             {myProgress.complete
               ? ' Collection complete — the sidekick is unlocked in your Avatar Locker.'
-              : ` Still hiding: ${myProgress.remaining.join(', ')}.`}
+              : ` Still to collect: ${myProgress.remaining.join(', ')}.`}
           </p>
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            The bar is derived from which eggs are <em>live</em>, so placing another one raises it
-            automatically. Progress is per-device; the reward is not — completing the set writes a
-            one-time XP event to the learner&apos;s ledger, so the badge and the sidekick follow them
-            everywhere. Admin-only view: this list names the remaining eggs, which is why it is not
-            shown to learners.
+            Seeing a capybara does not collect it — a learner has to <strong>click</strong> it, which
+            pays 5 XP the first time. Each collect is an XP event on their ledger, so the count is
+            durable, cross-device, and readable here and on the leaderboard. The target is derived
+            from which eggs are <em>live</em>, so placing another one raises it automatically.
+            Admin-only view: this names the ones you have left, which is why learners only ever see
+            a count.
           </p>
+        </Panel>
+
+        {/* ── Who's collecting ─────────────────────────────────────────── */}
+        <Panel
+          title="Who has collected what"
+          hint="Read from xp_events, so it is everyone's real count and not just this browser's."
+        >
+          {rollup === null ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
+          ) : rollup.error ? (
+            <p className="text-sm text-amber-700 dark:text-amber-300">{rollup.error}</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                <strong className="tabular-nums">{rollup.collectors}</strong>{' '}
+                {rollup.collectors === 1 ? 'person has' : 'people have'} collected at least one, out of{' '}
+                <strong className="tabular-nums">{rollup.total}</strong> collectable.
+              </p>
+
+              {rollup.people.length > 0 && (
+                <div className="overflow-x-auto mb-5">
+                  <table className="w-full text-sm min-w-[420px]">
+                    <thead>
+                      <tr className="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                        <th className="py-2 pr-3">Person</th>
+                        <th className="py-2 pr-3 text-right">Collected</th>
+                        <th className="py-2">Still to find</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rollup.people.map((p) => (
+                        <tr key={p.email} className="border-b border-slate-100 dark:border-slate-700/60">
+                          <td className="py-2 pr-3 font-semibold text-ink dark:text-slate-200">
+                            {p.name}
+                            {p.complete && <span className="ml-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">complete</span>}
+                          </td>
+                          <td className="py-2 pr-3 text-right tabular-nums font-bold text-brand-600 dark:text-brand-300">
+                            {p.found} / {p.total}
+                          </td>
+                          <td className="py-2 text-xs text-slate-500 dark:text-slate-400">
+                            {p.remaining.length ? p.remaining.join(', ') : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+                Per capybara
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                Rarest first. A zero here usually means the placement is unreachable, not that
+                nobody looked.
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {rollup.perEgg.map((e) => (
+                  <span
+                    key={e.id}
+                    title={e.name}
+                    className={`px-2 py-1 rounded-pill text-[11px] font-semibold ${
+                      e.collectedBy === 0
+                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {e.id} · {e.collectedBy}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </Panel>
 
         <Panel
@@ -250,6 +342,14 @@ function EggRow({ egg }) {
             {rarity?.label || egg.rarity}
           </span>
           <code className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{egg.capy}</code>
+          {egg.collectable === false && (
+            <span
+              className="px-2 py-0.5 rounded-pill text-[10px] font-bold bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+              title="Shows up, but does not count toward the sidekick — not everyone can reach it."
+            >
+              Doesn&apos;t count
+            </span>
+          )}
         </div>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           <strong className="text-slate-600 dark:text-slate-300">Where:</strong> {egg.where}

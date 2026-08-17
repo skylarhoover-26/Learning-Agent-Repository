@@ -57,7 +57,7 @@ export default function XpToast({ result, onDismiss }) {
             eggId="game-perfect-score"
             variant="shades"
             size={72}
-            className="absolute -right-2 -bottom-3 pointer-events-none"
+            className="absolute -right-2 -bottom-3 z-10"
           />
         )}
         <div className="flex items-center gap-3 mb-3">

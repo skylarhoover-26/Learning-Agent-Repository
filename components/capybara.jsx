@@ -259,6 +259,25 @@ const PROPS = {
       </g>
     ),
   },
+  scholar: {
+    front: (
+      <g>
+        {/* Reading glasses, not sunglasses: the lenses are translucent so the
+            eyes still read through them. This is the capybara that explains the
+            hunt, so it has to look like it knows something. */}
+        <path d="M25.5 22.5 L19.5 25.5" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M74.5 22.5 L80.5 25.5" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="33" cy="23" r="8" fill="#FFFFFF" opacity=".34" />
+        <circle cx="67" cy="23" r="8" fill="#FFFFFF" opacity=".34" />
+        <circle cx="33" cy="23" r="8" fill="none" stroke={INK} strokeWidth="1.9" />
+        <circle cx="67" cy="23" r="8" fill="none" stroke={INK} strokeWidth="1.9" />
+        <path d="M41 22.5 Q50 20.5 59 22.5" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />
+        {/* Glint, so the lenses read as glass rather than holes. */}
+        <path d="M29 19.5 L32 17.5" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round" opacity=".75" />
+        <path d="M63 19.5 L66 17.5" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round" opacity=".75" />
+      </g>
+    ),
+  },
   orange: {
     front: (
       <g>

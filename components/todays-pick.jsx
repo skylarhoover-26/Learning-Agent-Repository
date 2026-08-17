@@ -27,20 +27,25 @@ export default function TodaysPick() {
 
   if (!pick) return null;
 
+  // The capybara is a SIBLING of the link, not a child: it's a button now, and a
+  // button inside an anchor is invalid HTML that also swallows the card's own
+  // click target. The wrapper owns the rounding and the clipping so the capybara
+  // is still cropped by the card's corner.
   return (
-    <Link
-      href={pick.href}
-      data-tour="home-todays-pick"
-      className="group relative overflow-hidden block bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card-hover p-5 transition-all"
-    >
+    <div className="relative overflow-hidden rounded-2xl">
       {orangeDay && (
         <EggCapybara
           eggId="todays-pick-orange"
           variant="orange"
           size={74}
-          className="absolute -right-2 -bottom-3 pointer-events-none opacity-90"
+          className="absolute -right-2 -bottom-3 z-10 opacity-90"
         />
       )}
+    <Link
+      href={pick.href}
+      data-tour="home-todays-pick"
+      className="group block bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card-hover p-5 transition-all"
+    >
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 rounded-xl bg-cta-50 dark:bg-slate-700 ring-1 ring-cta-200 dark:ring-slate-600 flex items-center justify-center text-cta-600 shrink-0">
           <Sparkles className="w-5 h-5" />
@@ -58,5 +63,6 @@ export default function TodaysPick() {
         <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-cta-600 group-hover:translate-x-1 transition-all shrink-0 mt-1" />
       </div>
     </Link>
+    </div>
   );
 }

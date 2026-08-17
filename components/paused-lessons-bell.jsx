@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Play, ArrowRight, X, Sparkles } from 'lucide-react';
+import { Bell, Play, ArrowRight, X } from 'lucide-react';
 import { listPausedLessons, relativeAccessTime, absoluteAccessDate } from '@/lib/paused-lessons';
+import EggCapybara from '@/components/egg-capybara';
 import {
   listNotifications, markNotificationsRead, unreadNotificationCount,
   dismissNotification, clearNotifications,
@@ -149,9 +150,16 @@ export default function PausedLessonsBell() {
           <ul className="max-h-96 overflow-y-auto py-1">
             {feed.length === 0 && (
               <li className="px-4 py-8 text-center">
-                <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-brand-50 dark:bg-slate-700 text-brand mb-3">
-                  <Sparkles className="w-5 h-5" />
-                </span>
+                {/* The sleeping capybara lives on an empty bell rather than the
+                    empty admin Feedback queue it started on: the collection has to
+                    be completable by everyone, and most people will never open
+                    Admin. See lib/easter-eggs.js: notifications-clear. */}
+                <EggCapybara
+                  eggId="notifications-clear"
+                  variant="sleeping"
+                  size={72}
+                  className="mx-auto mb-1"
+                />
                 <p className="text-sm font-semibold text-ink dark:text-slate-200">You&rsquo;re all caught up</p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">XP, badges &amp; unfinished lessons will show up here.</p>
               </li>

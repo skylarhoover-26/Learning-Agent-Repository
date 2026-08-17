@@ -49,10 +49,12 @@ export function useCapybaraDrift() {
   return { onEmblemClick, drifting };
 }
 
-export default function CapybaraDrift() {
+// Clickable while it drifts — catching it is the point, and it's the only egg
+// where collecting is a small game rather than a click on a static thing.
+export default function CapybaraDrift({ onCaught }) {
   return (
-    <div className="capy-drift fixed bottom-3 left-0 z-40 pointer-events-none">
-      <EggCapybara eggId="emblem-click" variant="boba" size={86} />
+    <div className="capy-drift fixed bottom-3 left-0 z-40">
+      <EggCapybara eggId="emblem-click" variant="boba" size={86} onCollect={onCaught} />
     </div>
   );
 }

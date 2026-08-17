@@ -32,7 +32,7 @@ export default function LiveStreakCard() {
           eggId={egg.eggId}
           variant={egg.variant}
           size={78}
-          className="absolute -right-1 -bottom-2 pointer-events-none"
+          className="absolute -right-1 -bottom-2 z-10"
         />
       )}
       <div className="flex items-center gap-2 mb-3">

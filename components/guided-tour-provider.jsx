@@ -8,6 +8,7 @@ import { useSidebar } from '@/components/sidebar';
 import { GUIDED_TOUR_STEPS } from '@/lib/guided-tour';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { PROFILE_CATALOG } from '@/lib/profile-catalog';
+import TourCapybara from '@/components/tour-capybara';
 
 const TourContext = createContext(null);
 // The fallback must carry EVERY key a consumer reads. The drawer does
@@ -166,6 +167,10 @@ export function TourProvider({ children }) {
   // folded Settings away would otherwise have no "Send feedback" row in the DOM
   // for the final step to point at.
   const [tourActive, setTourActive] = useState(false);
+  // Set only when the tour runs off its last step, so the capybara pop-up greets
+  // people who finished rather than people who bailed out.
+  const completedRef = useRef(false);
+  const [showTourCapy, setShowTourCapy] = useState(false);
   const driverRef = useRef(null);
   // The menu's open/closed state before the tour began, restored on exit.
   const menuWasOpenRef = useRef(true);
@@ -268,7 +273,10 @@ export function TourProvider({ children }) {
     /* eslint-disable no-use-before-define */
     const advance = async () => {
       const next = idxRef.current + 1;
-      if (next >= steps.length) { d.destroy(); return; }
+      // Running off the end is the only path that means "finished" — closing the
+      // tour early also destroys the driver, and the capybara pop-up should only
+      // greet people who actually made it to the end.
+      if (next >= steps.length) { completedRef.current = true; d.destroy(); return; }
       idxRef.current = next;
       await prepareStep(next);
       if (!driverRef.current) return;
@@ -328,6 +336,12 @@ export function TourProvider({ children }) {
         hideClickShield();
         setTourActive(false);
         try { window.sessionStorage.removeItem('tourActive'); } catch {}
+        // A beat after the overlay tears down, so the pop-up doesn't appear
+        // underneath driver's own fading scrim.
+        if (completedRef.current) {
+          completedRef.current = false;
+          setTimeout(() => setShowTourCapy(true), 450);
+        }
       },
     });
 
@@ -347,6 +361,7 @@ export function TourProvider({ children }) {
   return (
     <TourContext.Provider value={{ startTour, tourActive }}>
       {children}
+      {showTourCapy && <TourCapybara onDismiss={() => setShowTourCapy(false)} />}
     </TourContext.Provider>
   );
 }

@@ -7,6 +7,8 @@ import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
 import EggCapybara from '@/components/egg-capybara';
+import Capybara from '@/components/capybara';
+import { FINDABLE_EGG_COUNT } from '@/lib/easter-eggs';
 import { getLevelTitle } from '@/lib/level-titles';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { Trophy, Users, Crown, Loader2, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -373,7 +375,7 @@ function PodiumSpot({ person, rank, tier, isMe }) {
             eggId="leaderboard-top"
             variant="trophy"
             size={58}
-            className="absolute right-0 -bottom-1 pointer-events-none"
+            className="absolute right-0 -bottom-1 z-10"
           />
         )}
       </div>
@@ -468,6 +470,18 @@ function PersonRow({ person, rank, crownTier = 0, isMe }) {
           {getLevelTitle(person.level)} · Level {person.level} · {person.department}
         </div>
       </div>
+      {/* Capybaras collected. Shown only once someone has any, so the column
+          doesn't advertise the hunt to people who haven't found one yet — and so
+          a board full of zeros doesn't look broken. Full count on hover. */}
+      {person.capyFinds > 0 && (
+        <div
+          className="flex items-center gap-1 shrink-0 text-xs font-bold text-brand-600 dark:text-brand-300 tabular-nums"
+          title={`${person.capyFinds} of ${FINDABLE_EGG_COUNT} capybaras collected`}
+        >
+          <Capybara variant="idle" size={20} />
+          {person.capyFinds}
+        </div>
+      )}
       <div className="text-sm font-bold text-ink dark:text-slate-200 shrink-0">
         {person.totalXp.toLocaleString()} XP
       </div>

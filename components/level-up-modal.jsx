@@ -9,7 +9,7 @@ import { badgeMeta } from '@/lib/badges';
 import { itemsUnlockedBetween, nextUnlockAfter, SLOT_LABELS } from '@/lib/avatar-catalog';
 import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
-import Capybara from '@/components/capybara';
+import EggCapybara from '@/components/egg-capybara';
 import ConfettiBurst from '@/components/confetti-burst';
 import XpBar from '@/components/xp-bar';
 
@@ -147,15 +147,11 @@ export default function LevelUpModal({ result, onDismiss }) {
         {/* The capybara leans into the top-left corner, which is dead space
             either side of the starburst. The card's overflow-hidden clips the
             part that hangs past the edge, so it reads as peeking in. Hidden from
-            screen readers: the reward list below already announces everything
-            this is celebrating, and "capybara graduating" in the middle of it is
-            noise. */}
+            screen readers once collected; while it's still collectable it is a
+            real button with its own label, because clicking it is what counts. */}
         {showCapy && (
-          <div
-            className="lu-capy absolute -left-3 top-1 w-[86px] pointer-events-none"
-            aria-hidden="true"
-          >
-            <Capybara variant={capyVariant} size={86} />
+          <div className="lu-capy absolute -left-3 top-1 w-[86px] z-10">
+            <EggCapybara eggId="levelup-badge-holder" variant={capyVariant} size={86} />
             {heldBadge && (
               <span
                 className="absolute right-0 bottom-3 w-7 h-7 rounded-full flex items-center justify-center text-sm"

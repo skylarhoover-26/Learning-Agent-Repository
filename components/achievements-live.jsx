@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useProgression } from './progression-provider';
 import { useProfile } from '@/components/profile-provider';
-import { collectionProgress } from '@/lib/easter-eggs';
-import { readFinds } from '@/lib/egg-finds';
+
+import { findProgress } from '@/lib/egg-finds';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { getLevelTitle } from '@/lib/level-titles';
 import { Award, Sparkles, TrendingUp } from 'lucide-react';
@@ -69,7 +69,7 @@ export default function AchievementsLive() {
   const [capyProgress, setCapyProgress] = useState({ found: 0, total: 0 });
   useEffect(() => {
     const learnerId = profile ? resolveLearnerId(profile) : null;
-    setCapyProgress(collectionProgress(readFinds(learnerId)));
+    setCapyProgress(findProgress(learnerId));
   }, [profile]);
 
   if (!prog?.isLoaded) {
@@ -139,15 +139,11 @@ export default function AchievementsLive() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {badgesWithStatus.map(badge => (
-            <Link
-              key={badge.id}
-              href={`${badge.href}?from=achievements`}
-              className={`relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl border p-5 text-center transition-all hover:scale-[1.03] hover:shadow-lg ${
-                badge.earned
-                  ? 'border-cta-200 shadow-card'
-                  : 'border-slate-200 dark:border-slate-700 opacity-50 grayscale'
-              }`}
-            >
+            /* The capybara is a SIBLING of the link: it's a button, and a button
+               inside an anchor is invalid HTML that also steals the card's click
+               target. The wrapper owns the rounding and the clipping so the
+               capybara is still cropped by the card's corner. */
+            <div key={badge.id} className="relative overflow-hidden rounded-2xl">
               {/* Earning Bookworm — ten lessons — puts the reading capybara on
                   the badge that already means "reader". Only once it's earned;
                   the locked card is greyscaled and a grey capybara is just a
@@ -157,9 +153,17 @@ export default function AchievementsLive() {
                   eggId="bookworm-badge"
                   variant="book"
                   size={62}
-                  className="absolute -left-2 -bottom-2 pointer-events-none"
+                  className="absolute -left-2 -bottom-2 z-10"
                 />
               )}
+            <Link
+              href={`${badge.href}?from=achievements`}
+              className={`block bg-white dark:bg-slate-800 rounded-2xl border p-5 text-center transition-all hover:scale-[1.03] hover:shadow-lg ${
+                badge.earned
+                  ? 'border-cta-200 shadow-card'
+                  : 'border-slate-200 dark:border-slate-700 opacity-50 grayscale'
+              }`}
+            >
               <div className="text-4xl mb-2">{badge.emoji}</div>
               <h4 className="font-bold text-ink dark:text-slate-200 text-sm mb-1">{badge.name}</h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">{badge.description}</p>
@@ -185,6 +189,7 @@ export default function AchievementsLive() {
                 </div>
               )}
             </Link>
+            </div>
           ))}
         </div>
 

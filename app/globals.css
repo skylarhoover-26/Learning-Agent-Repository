@@ -400,8 +400,37 @@ body {
 }
 .capy-drift { animation: capy-drift 5.2s linear both; }
 
+/* An uncollected capybara has to look clickable or the hunt is unwinnable, but a
+   loud badge would stop it being hidden. So: a slow breath and a lift on hover.
+   Noticeable once you know to look, ignorable until then — which is what the
+   tour capybara is for. */
+@keyframes capy-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+.capy-collectable {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  line-height: 0;
+  animation: capy-breathe 2.6s ease-in-out infinite;
+  transition: transform .18s ease, filter .18s ease;
+}
+.capy-collectable:hover {
+  animation: none;
+  transform: scale(1.12);
+  filter: drop-shadow(0 4px 10px rgba(0, 85, 255, .45));
+}
+.capy-collectable:focus-visible {
+  animation: none;
+  outline: 2px solid var(--accent, #0055FF);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .xp-sheen, .xp-bump, .lu-spin, .lu-halo, .capy-bob { animation: none; }
+  .xp-sheen, .xp-bump, .lu-spin, .lu-halo, .capy-bob, .capy-collectable { animation: none; }
   .lu-pop, .lu-row { animation-duration: .01s; }
   /* Keep the settled tilt, drop the travel. */
   .lu-capy { animation-duration: .01s; animation-delay: 0s; }
