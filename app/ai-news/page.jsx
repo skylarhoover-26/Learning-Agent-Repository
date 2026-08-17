@@ -307,6 +307,24 @@ function AiNewsInner() {
 
   const markMap = useMemo(() => marksByItem(enriched, marks), [enriched, marks]);
 
+  // The relevance gate, applied before every other filter so the pill counts, the
+  // lanes and the toggle's own label all describe the same list.
+  const { visible: passing, hidden: withheld } = useMemo(
+    () => splitByVisibility(enriched),
+    [enriched],
+  );
+
+  // The single list everything downstream is derived from — the filters, the
+  // lanes, the pill counts and the dropdown options all read from this, so the
+  // toggle can never leave one of them describing a different page.
+  //
+  // DECLARED BEFORE ITS CONSUMERS, and it has to stay that way. useMemo bodies run
+  // during render, so a memo above this line that reads `base` throws
+  // "Cannot access 'base' before initialization" and takes the whole page down —
+  // which is exactly what shipped in the previous commit. `next build` cannot see
+  // it, because nothing evaluates the component until a browser mounts it.
+  const base = showEverything ? enriched : passing;
+
   // Both dropdowns are built from the list currently in play, NOT from the whole
   // feed. Offering "Business & market" as a Type while business items are hidden
   // is offering a filter that can only ever return nothing; the options shift as
@@ -324,18 +342,6 @@ function AiNewsInner() {
       .map((c) => ({ value: c, label: CATEGORY_LABELS[c] || c }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [base]);
-
-  // The relevance gate, applied before every other filter so the pill counts, the
-  // lanes and the toggle's own label all describe the same list.
-  const { visible: passing, hidden: withheld } = useMemo(
-    () => splitByVisibility(enriched),
-    [enriched],
-  );
-
-  // The single list everything downstream is derived from — the filters, the
-  // lanes, the pill counts and the dropdown options all read from this, so the
-  // toggle can never leave one of them describing a different page.
-  const base = showEverything ? enriched : passing;
 
   const scoped = useMemo(() => {
     let list = base;
