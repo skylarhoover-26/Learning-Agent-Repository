@@ -10,7 +10,10 @@ import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import Capybara from '@/components/capybara';
 import { CAPY_VARIANTS, CAPY_VARIANT_IDS } from '@/lib/capybara-variants';
-import { EASTER_EGGS, EGG_RARITY } from '@/lib/easter-eggs';
+import { EASTER_EGGS, EGG_RARITY, collectionProgress } from '@/lib/easter-eggs';
+import { readFinds } from '@/lib/egg-finds';
+import { resolveLearnerId } from '@/lib/learner-id';
+import { useProfile } from '@/components/profile-provider';
 
 // The key. Two jobs:
 //
@@ -34,15 +37,27 @@ export default function EasterEggsPage() {
 
 function EasterEggsInner() {
   const router = useRouter();
-  // actingAsAdmin, NOT isAdmin: isAdmin stays true while previewing as a regular
-  // user, so gating on it leaves this admin page fully rendered in preview mode.
-  const { actingAsAdmin, loaded } = useMenuVisibility();
+  // isAdmin, matching every other /admin route. Gating this on actingAsAdmin
+  // instead looked more correct but broke the page: actingAsAdmin is false while
+  // previewing as a regular user, and since the Admin Dashboard that links here
+  // still renders in preview mode, clicking the card bounced you home.
+  // actingAsAdmin is for admin CONTROLS embedded in learner-facing UI — not for
+  // admin route gates.
+  const { isAdmin, loaded } = useMenuVisibility();
+  const { profile } = useProfile() || {};
   const [onDark, setOnDark] = useState(false);
   const [zoom, setZoom] = useState(96);
+  // Read after mount: finds are in localStorage.
+  const [myProgress, setMyProgress] = useState({ found: 0, total: 0, remaining: [], complete: false });
 
   useEffect(() => {
-    if (loaded && !actingAsAdmin) router.replace('/');
-  }, [loaded, actingAsAdmin, router]);
+    if (loaded && !isAdmin) router.replace('/');
+  }, [loaded, isAdmin, router]);
+
+  useEffect(() => {
+    const learnerId = profile ? resolveLearnerId(profile) : null;
+    setMyProgress(collectionProgress(readFinds(learnerId)));
+  }, [profile]);
 
   if (!loaded) {
     return (
@@ -51,7 +66,7 @@ function EasterEggsInner() {
       </div>
     );
   }
-  if (!actingAsAdmin) return null;
+  if (!isAdmin) return null;
 
   const liveEggs = EASTER_EGGS.filter((e) => e.status === 'live');
   const plannedEggs = EASTER_EGGS.filter((e) => e.status !== 'live');
@@ -66,6 +81,26 @@ function EasterEggsInner() {
       />
 
       <main className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+        <Panel
+          title="The collection"
+          hint="Find every live egg and you earn the Capybara Whisperer badge, which is the only way to unlock the Capybara sidekick."
+        >
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            You have found <strong className="tabular-nums">{myProgress.found}</strong> of{' '}
+            <strong className="tabular-nums">{myProgress.total}</strong> on this device.
+            {myProgress.complete
+              ? ' Collection complete — the sidekick is unlocked in your Avatar Locker.'
+              : ` Still hiding: ${myProgress.remaining.join(', ')}.`}
+          </p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            The bar is derived from which eggs are <em>live</em>, so placing another one raises it
+            automatically. Progress is per-device; the reward is not — completing the set writes a
+            one-time XP event to the learner&apos;s ledger, so the badge and the sidekick follow them
+            everywhere. Admin-only view: this list names the remaining eggs, which is why it is not
+            shown to learners.
+          </p>
+        </Panel>
+
         <Panel
           title="The rule"
           hint="Why these are eggs and not decoration."
@@ -113,7 +148,7 @@ function EasterEggsInner() {
         {/* ── Contact sheet ────────────────────────────────────────────── */}
         <Panel
           title="Every pose"
-          hint="One drawn component, twelve prop layers. Check them on both backgrounds — the level-up card is always dark navy."
+          hint={`One drawn component, ${CAPY_VARIANT_IDS.length} poses. Check them on both backgrounds — the level-up card is always dark navy.`}
         >
           <div className="flex flex-wrap items-center gap-4 mb-4">
             <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">

@@ -1,7 +1,12 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useProgression } from './progression-provider';
+import { useProfile } from '@/components/profile-provider';
+import { collectionProgress } from '@/lib/easter-eggs';
+import { readFinds } from '@/lib/egg-finds';
+import { resolveLearnerId } from '@/lib/learner-id';
 import { getLevelTitle } from '@/lib/level-titles';
 import { Award, Sparkles, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/page-header';
@@ -49,10 +54,23 @@ const ALL_BADGES = [
   { id: 'level_10', name: 'Double Digits', emoji: '🔟', description: 'Reach Level 10', href: '/lesson' },
   { id: 'level_25', name: 'Quarter Way', emoji: '🌟', description: 'Reach Level 25', href: '/lesson' },
   { id: 'level_50', name: 'Halfway Hero', emoji: '🏔️', description: 'Reach Level 50', href: '/lesson' },
+  // The description stays vague on purpose — naming the hiding places would
+  // stop them being hidden. The card shows a found/total count instead.
+  { id: 'capybara_collector', name: 'Capybara Whisperer', emoji: '🦫', description: 'Find every hidden capybara', href: '/profile' },
 ];
 
 export default function AchievementsLive() {
   const prog = useProgression();
+  const { profile } = useProfile() || {};
+
+  // Capybara finds live in localStorage, so they're read after mount — reading
+  // during render would hydrate to a different tree. Hooks stay above the
+  // early return below so their order never changes between renders.
+  const [capyProgress, setCapyProgress] = useState({ found: 0, total: 0 });
+  useEffect(() => {
+    const learnerId = profile ? resolveLearnerId(profile) : null;
+    setCapyProgress(collectionProgress(readFinds(learnerId)));
+  }, [profile]);
 
   if (!prog?.isLoaded) {
     return (
@@ -145,6 +163,14 @@ export default function AchievementsLive() {
               <div className="text-4xl mb-2">{badge.emoji}</div>
               <h4 className="font-bold text-ink dark:text-slate-200 text-sm mb-1">{badge.name}</h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">{badge.description}</p>
+              {/* A hunt with no scoreboard is indistinguishable from a hunt with
+                  nothing to find, so this one badge shows its progress. Where the
+                  capybaras hide stays unsaid. */}
+              {badge.id === 'capybara_collector' && !badge.earned && capyProgress.total > 0 && (
+                <p className="mt-1.5 text-xs font-bold text-brand-600 dark:text-brand-300 tabular-nums">
+                  {capyProgress.found} of {capyProgress.total} found
+                </p>
+              )}
               {badge.earned && (
                 <div className="mt-2">
                   <div className="inline-flex items-center gap-1 text-xs text-cta-700 dark:text-cta-300 font-medium">
