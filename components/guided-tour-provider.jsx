@@ -260,6 +260,12 @@ export function TourProvider({ children }) {
     // Use moveTo(index) rather than moveNext() and guard with drive() — if the
     // previously spotlighted element was removed (e.g. a form replaced by its
     // result), moveNext() can throw and strand the tour.
+    // `d` is referenced here and declared just below, because the reference is
+    // genuinely circular: the driver's config needs this callback, and this
+    // callback needs the driver. Reordering cannot resolve that, and it is safe —
+    // advance() only ever runs from a driver event, by which point `d` is
+    // assigned. The rule can't tell deferred use from use during evaluation.
+    /* eslint-disable no-use-before-define */
     const advance = async () => {
       const next = idxRef.current + 1;
       if (next >= steps.length) { d.destroy(); return; }
@@ -269,6 +275,7 @@ export function TourProvider({ children }) {
       try { d.moveTo(next); }
       catch { try { d.drive(next); } catch {} }
     };
+    /* eslint-enable no-use-before-define */
 
     const d = driver({
       showProgress: true,

@@ -57,6 +57,25 @@ const config = [
       // is actually on.
       'no-unreachable': 'error',
 
+      // Earns its place: /ai-news shipped to production reading a `const` that
+      // was declared further down the component. useMemo bodies run during
+      // render, so it threw "Cannot access 'base' before initialization" on
+      // first paint and the page rendered nothing but a stack trace.
+      //
+      // `next build` compiles that happily — nothing evaluates a client
+      // component until a browser mounts it — so lint is the only gate that can
+      // see it, and lint errors fail the Vercel build.
+      //
+      // Variables only. Functions are hoisted and are routinely defined below
+      // the component that calls them (every helper in this repo does), so
+      // flagging those would be noise with no bug behind it. Classes likewise.
+      'no-use-before-define': ['error', {
+        functions: false,
+        classes: false,
+        variables: true,
+        allowNamedExports: true,
+      }],
+
       // Unused code is worth seeing but must not fail the gate — a half-finished
       // import while iterating is normal and blocking on it trains people to
       // ignore the linter.

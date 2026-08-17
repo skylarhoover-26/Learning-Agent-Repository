@@ -1010,6 +1010,9 @@ function renderHat(id, crownTier) {
         </g>
       );
     case 'hat_crown': {
+      // CROWN_TIERS is a module const declared below. Safe: this switch only
+      // runs when the renderer is called, well after the module has evaluated.
+      // eslint-disable-next-line no-use-before-define
       const c = CROWN_TIERS[crownTier] || CROWN_TIERS[1];
       return (
         <g key="hat">

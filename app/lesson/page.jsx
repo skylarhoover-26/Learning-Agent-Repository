@@ -400,6 +400,9 @@ function LessonContent() {
       // (Quick Tip, Quick Lesson, Deep Dive, Project Quest) fall through: the
       // plan-driven step player mounts on view==='lesson' and handles its own start.
       if (initialMode === 'watch') {
+        // launchVideo is a useCallback defined below. Safe: this runs inside an
+        // effect, long after the component body has finished evaluating.
+        // eslint-disable-next-line no-use-before-define
         launchVideo(initialTopic);
       }
     }
@@ -485,6 +488,8 @@ function LessonContent() {
   // Entry point from the picker: watch a narrated video or start a read lesson.
   function chooseTopic(t) {
     if (learnMode === 'watch') {
+      // Defined below; safe because this only runs on a click.
+      // eslint-disable-next-line no-use-before-define
       launchVideo(t);
     } else {
       // Prefetch the plan for the reader (covers typed / surprise / clarified
