@@ -343,7 +343,7 @@ function PromptBattle() {
         loading={genLoading}
         ready={!topic || scenarios.length > 0}
         onStart={() => setStarted(true)}
-        loadingLabel={`Building a Prompt Battle on ${topic}…`}
+        loadingLabel="Building your prompts…"
         footnote={stats?.gamesPlayed > 0 ? `Best: ${stats.bestScore} · Played: ${stats.gamesPlayed}` : null}
         resume={showResume
           ? { label: 'Resume game', onResume: handleResume, onStartFresh: handleStartFresh }

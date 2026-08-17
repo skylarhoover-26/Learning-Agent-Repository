@@ -333,7 +333,7 @@ function SpeedRound() {
         loading={genLoading}
         ready={questions.length > 0}
         onStart={() => { setSecondsLeft(TIMER_SECONDS); setStarted(true); }}
-        loadingLabel={`Building a Speed Round on ${topic}…`}
+        loadingLabel="Building your questions…"
         footnote={stats?.gamesPlayed > 0 ? `Best: ${stats.bestScore}/${QUESTIONS_PER_GAME} · Played: ${stats.gamesPlayed}` : null}
       />
     );

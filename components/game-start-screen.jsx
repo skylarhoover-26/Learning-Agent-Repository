@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { gameGenEstimateLabel } from '@/lib/game-estimates';
+import { gameGenEstimateLabel, gameGenSeconds } from '@/lib/game-estimates';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import GameInstructions from '@/components/game-instructions';
+import GenProgressBar from '@/components/gen-progress-bar';
 
 // The pre-game gate for every game. The four hand-built games each hand-rolled
 // this same card and the five generated ones had nothing at all, dropping the
@@ -83,10 +84,15 @@ export default function GameStartScreen({
           </button>
         )}
 
+        {/* The named band tells you how long; the bar tells you where you are in it.
+            Both only exist while the round is still generating. */}
         {estimate && (
-          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-            This usually takes <span className="font-semibold">{estimate}</span>.
-          </p>
+          <>
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+              This usually takes <span className="font-semibold">{estimate}</span>.
+            </p>
+            <GenProgressBar estimateSeconds={gameGenSeconds(slug) || 18} className="mt-3" />
+          </>
         )}
 
         <div className="mt-6">

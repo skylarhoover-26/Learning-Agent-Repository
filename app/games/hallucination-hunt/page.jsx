@@ -290,7 +290,7 @@ function HallucinationHunt() {
         loading={genLoading}
         ready={!topic || rounds.length > 0}
         onStart={() => setStarted(true)}
-        loadingLabel={`Building a Hallucination Hunt on ${topic}…`}
+        loadingLabel="Writing your claims…"
         footnote={stats?.gamesPlayed > 0 ? `Best: ${stats.bestScore} · Played: ${stats.gamesPlayed}` : null}
         resume={resumeAvailable && savedProgress
           ? {
