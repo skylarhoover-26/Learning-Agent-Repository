@@ -14,7 +14,7 @@ import {
 } from '@/lib/ai-news';
 import {
   LANES, LANE_BY_ID, RANKED_LIMIT, attachPersonal, byBestMatch, publishedMs,
-  laneCounts, hasPersonalization, marksByItem, isDefaultVisible, MAX_AGE_HOURS,
+  laneCounts, hasPersonalization, marksByItem, isDefaultVisible, MAX_AGE_LABEL,
   rankableItems,
 } from '@/lib/news-personal';
 
@@ -442,7 +442,7 @@ function AiNewsInner() {
           // has to say so, because the alternative is a page that looks broken.
           <div className="cine-glass rounded-2xl p-6 text-sm space-y-2" style={{ color: 'var(--ink-dim)' }}>
             <p style={{ color: 'var(--ink)' }} className="font-semibold">
-              Nothing new for your work in the last {MAX_AGE_HOURS} hours.
+              Nothing new for your work in the last {MAX_AGE_LABEL}.
             </p>
             <p>
               We only show updates from the last two days that touch your role, tasks, goals or
