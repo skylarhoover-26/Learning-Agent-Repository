@@ -235,14 +235,22 @@ export async function POST(request) {
       await saveUserData(email, CACHE_TYPE, {
         v: CACHE_VERSION, day: dayKey, sig, items: known,
       }).catch(() => {});
+    }
 
+    // Logged whenever there was work to do, INCLUDING when none of it succeeded.
+    // This used to sit inside `if (judged)`, which meant a run where every batch
+    // came back empty wrote no record at all — so a total ranking failure looked
+    // exactly like a cache hit, and a page showing 22 of 23 items unranked left
+    // nothing behind to explain why. `failed` is the number that went to the
+    // model and came back unusable.
+    if (unjudged.length) {
       logAuditEntry({
         type: 'ai_news_why',
         endpoint: '/api/ai-news/why',
         user: { email, name: profile?.display_name || 'Unknown' },
         model: MODELS.haiku,
         input: { items: items.length, unjudged: unjudged.length, batches: batches.length },
-        output: { judged },
+        output: { judged, failed: unjudged.length - judged },
       }).catch(() => {});
     }
 

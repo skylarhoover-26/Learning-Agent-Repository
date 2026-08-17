@@ -200,6 +200,22 @@ function FilterPill({ label, count, active, onClick }) {
   );
 }
 
+// What to say above the unranked pile.
+//
+// The old note said "these few sat past that line or came back unjudged" no
+// matter how many there were, and read as reassurance. On a day when the ranking
+// mostly failed it sat above 22 of 23 items and quietly misdescribed a broken
+// feature as housekeeping. When most of the feed is unranked, say so — a reader
+// who can see the lane counts already knows something is off, and being told
+// "these few" when it is nearly all of them is worse than being told nothing.
+function unrankedNote(unrankedCount, practicalCount) {
+  const mostly = practicalCount > 0 && unrankedCount / practicalCount >= 0.5;
+  if (mostly) {
+    return `We could not rank most of today's items against your work — ${unrankedCount} of ${practicalCount} came back unjudged, so they are in date order instead of best-match. Nothing is lost, but the order below is not personal to you. It usually sorts itself out on the next check.`;
+  }
+  return `We rank the newest ${RANKED_LIMIT} items against your work each day, which is normally the whole feed. These sat past that line or came back unjudged, so they are here in date order so nothing is lost.`;
+}
+
 function AiNewsInner() {
   const [data, setData] = useState(null);
   const [personal, setPersonal] = useState({});
@@ -539,7 +555,7 @@ function AiNewsInner() {
                 <Section
                   label="Not ranked"
                   count={unrankedItems.length}
-                  note={`We rank the newest ${RANKED_LIMIT} items against your work each day, which is normally the whole feed. These few sat past that line or came back unjudged, so they are here in date order so nothing is lost.`}
+                  note={unrankedNote(unrankedItems.length, practical.length)}
                   items={unrankedItems}
                   marks={markMap}
                 />
