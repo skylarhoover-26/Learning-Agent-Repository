@@ -11,7 +11,7 @@ import { contentDayKey } from '@/lib/content-day';
 import { logAuditEntry } from '@/lib/audit-log';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
-// Ranks the AI-news feed against ONE learner, and explains the top of it.
+// Ranks the AI-news feed against ONE learner, and explains every item in it.
 //
 // The news list shows the publisher's own blurb, which summarises the ARTICLE.
 // Testers asked for the opposite: not what the article says, but what changed and
@@ -22,10 +22,18 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 //   match — the short reason, for the chip on the row ("Your project: X").
 //   why   — one sentence on what changed and what to do about it.
 //
-// Two passes, because they have different costs. Scoring is a few tokens per
-// item and covers the newest SCORE_LIMIT; the sentence is not, so only the top
-// WHY_LIMIT earn one. Both land in the same cached document, so the whole thing
-// is one visit's worth of work per learner per day.
+// All three in ONE pass, batched and run concurrently. It was two passes at
+// first — score everything cheaply, then write sentences for the top twelve —
+// which was the right shape while most of the feed went unexplained. Once every
+// ranked item earned a sentence, reading the same hundred headlines twice to
+// produce two halves of one judgement was pure waste.
+//
+// A low score still gets a real sentence: "this is aimed at engineers building
+// their own agents, not at your enablement work" is exactly what lets someone
+// skip an item with confidence, which is most of what a news feed owes a reader.
+//
+// The whole result is cached per learner per content-day, so this is one visit's
+// worth of work per person per day.
 //
 // The context is the four signals every other generator uses — tasks, goals,
 // projects and tools (lib/learner-signals.js). This route used to read
@@ -44,23 +52,23 @@ const CACHE_TYPE = 'ai_news_why';
 // Bump when the prompts or the stored shape change in a way that should discard
 // yesterday's judgements. Without this, a tuning change reaches only learners who
 // hadn't visited yet that day.
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 
-// KEEP IN SYNC with RANKED_LIMIT / WHY_LIMIT in lib/news-personal.js — the page
-// caps what it sends, and the page's "unranked" heading is drawn from the same
-// numbers.
+// KEEP IN SYNC with RANKED_LIMIT in lib/news-personal.js — the page caps what it
+// sends, and the page's "unranked" heading is drawn from the same number.
 //
 // This was 40, which left most of a 104-item feed sitting under a "Not ranked"
 // heading: a bucket nobody had judged, offered to the reader as if it were a
-// category. The whole practical feed now gets scored. It costs more batches, but
+// category. The whole practical feed now gets judged. It costs more batches, but
 // they run concurrently (see below) so the reader waits for the slowest one
 // rather than the sum, and the result is cached for the rest of the day.
 const SCORE_LIMIT = 120;
-const WHY_LIMIT = 12;
 
-// Batch size for the scoring pass. Small enough that the model stays accurate
-// across the list and the JSON can't outgrow max_tokens.
-const SCORE_BATCH = 20;
+// Batch size. Smaller than the old scoring batch of 20 because each row now
+// carries a sentence as well as a score, so the output per batch is several times
+// larger. Smaller batches also mean more of them running at once, which is what
+// keeps the wait flat as the item count grows.
+const JUDGE_BATCH = 10;
 
 function learnerContext(profile) {
   const bits = [];
@@ -85,7 +93,7 @@ function learnerContext(profile) {
 
 const NO_CONTEXT = 'No role, task or project details on file, so judge relevance for a general non-engineer employee at a home services software company and keep the scores middling rather than guessing high.';
 
-const SCORE_SYSTEM = [
+const JUDGE_SYSTEM = [
   'You rank AI news for ONE specific person at Housecall Pro, a home services software company.',
   'The audience is ordinary employees, marketers, support reps, ops and enablement people. They are NOT engineers or researchers.',
   '',
@@ -104,41 +112,32 @@ const SCORE_SYSTEM = [
   '  Bad: "Relevant", "Interesting development", "AI news"',
   'If the score is under 40, the match should say plainly why it is far from them.',
   '',
-  'RULES:',
-  '- Be honest and be willing to score low. A feed where everything is a 90 is a feed nobody trusts.',
-  '- Do not reward an item for sounding important. Score it for what it changes for this one person.',
-  '- Funding, valuations, chips, datacenters and hiring news score under 10 no matter how big the number.',
-  '- Judge on the headline and blurb only. Never assume a capability the blurb does not state.',
-  '',
-  QUARANTINE_NOTE,
-  '',
-  'Return ONLY a JSON array (no markdown fences): [{"i": <1-based index>, "s": <0-100>, "m": "<match>"}]',
-  'One object per item, same order.',
-].join('\n');
-
-const WHY_SYSTEM = [
-  'You explain AI news to one specific person at Housecall Pro, in one sentence per item.',
-  '',
-  'For each item you are given an id, a headline and the publisher blurb. Return ONE sentence per id',
-  'answering: what changed, and what it means for THIS person\'s work.',
-  '',
-  'RULES:',
-  '- Lead with the consequence for them, not with a restatement of the headline. They can already read the headline.',
+  'And give a WHY: ONE sentence answering what changed and what it means for THIS person\'s work.',
+  '- Lead with the consequence for them, not a restatement of the headline. They can already read the headline.',
   '- Be concrete. "You can now paste a whole spreadsheet into one prompt instead of splitting it" beats "this improves capability".',
   '- Tie it to their actual work where it honestly fits: a task they listed, a project in flight, or a tool they use. Name the thing.',
   '- If it changes how they should PROMPT or which tool they should reach for, say that plainly. That is the most useful thing you can tell them.',
-  '- If an item genuinely does not affect their work, say so in a short honest sentence. Do not invent relevance.',
+  '- A LOW score still gets a real sentence. "This is aimed at engineers building their own agents, not at your',
+  '  enablement work" is useful; it tells them why they can skip it. Do not invent relevance to fill the space.',
   '- Never promise a feature the blurb does not state. You have only the headline and blurb.',
   '- Some items have NO blurb. Judge those from the headline alone and still say something useful about',
   '  what it means for them. NEVER write that you lack information, cannot assess relevance, or have no',
   '  blurb. The reader can see the headline too; a sentence about your own missing input tells them nothing.',
   '- One sentence. Maximum 30 words. No preamble, no "this article".',
   '',
+  'RULES:',
+  '- Be honest and be willing to score low. A feed where everything is a 90 is a feed nobody trusts.',
+  '- Do not reward an item for sounding important. Score it for what it changes for this one person.',
+  '- Funding, valuations, chips, datacenters and hiring news score under 10 no matter how big the number.',
+  '- Judge on the headline and blurb only. Never assume a capability the blurb does not state.',
+  '',
   'STYLE: plain and warm. No em dashes or en dashes. No hype. Write "Housecall Pro" in full, never HCP.',
   '',
   QUARANTINE_NOTE,
   '',
-  'Return ONLY valid JSON (no markdown fences): {"<id>": "<one sentence>", ...}',
+  'Return ONLY a JSON array (no markdown fences):',
+  '[{"i": <1-based index>, "s": <0-100>, "m": "<match>", "w": "<one sentence>"}]',
+  'One object per item, same order.',
 ].join('\n');
 
 export async function POST(request) {
@@ -173,49 +172,43 @@ export async function POST(request) {
 
     const context = learnerContext(profile) || NO_CONTEXT;
 
-    // ---- pass 1: score + match, for anything not already judged today --------
-    // The list grows during the day as the scan adds items, so a strict
+    // Score, match and sentence in ONE pass over anything not already judged
+    // today. The list grows during the day as the scan adds items, so a strict
     // "same day, same answer" cache would leave new arrivals permanently
     // unranked and stuck at the bottom of the page.
-    const unscored = items.filter((i) => typeof known[i.id]?.score !== 'number');
+    //
+    // This used to be two passes: score everything cheaply, then write sentences
+    // for the top twelve only. That was the right shape when most of the feed
+    // went unexplained, but every ranked item now earns a sentence, and reading
+    // the same 100 headlines twice to produce two halves of one judgement is pure
+    // waste. One pass, one read, both halves.
+    // Keyed on the SCORE, not on the sentence. A score is set for every item the
+    // model judged, whereas the sentence can legitimately come back empty — the
+    // non-answer guard in cleanSentence drops hollow ones. Filtering on `why`
+    // would send those items back to the model on every single visit, paying for
+    // a fresh call all day to re-derive a line we are going to discard again.
+    const unjudged = items.filter((i) => typeof known[i.id]?.score !== 'number');
     const batches = [];
-    for (let i = 0; i < unscored.length; i += SCORE_BATCH) {
-      batches.push(unscored.slice(i, i + SCORE_BATCH));
+    for (let i = 0; i < unjudged.length; i += JUDGE_BATCH) {
+      batches.push(unjudged.slice(i, i + JUDGE_BATCH));
     }
 
-    // Concurrently, not in sequence. The batches are independent — each scores
+    // Concurrently, not in sequence. The batches are independent — each judges
     // its own slice against the same context — so running them one after another
-    // only made the reader wait longer. With the cap raised to cover the whole
-    // feed that difference is the gap between a few seconds and half a minute
-    // staring at the skeleton. scoreBatch never throws, so one bad batch leaves
-    // its items unscored without taking the others down.
-    let scored = 0;
-    const results = await Promise.all(batches.map((b) => scoreBatch(b, context)));
-    for (const judged of results) {
-      for (const [id, value] of Object.entries(judged)) {
+    // only made the reader wait longer. Covering the whole feed that way would be
+    // the difference between a few seconds and half a minute staring at the
+    // skeleton. judgeBatch never throws, so one bad batch leaves its items
+    // unjudged without taking the others down.
+    let judged = 0;
+    const results = await Promise.all(batches.map((b) => judgeBatch(b, context)));
+    for (const batchResult of results) {
+      for (const [id, value] of Object.entries(batchResult)) {
         known[id] = { ...known[id], ...value };
-        scored++;
+        judged++;
       }
     }
 
-    // ---- pass 2: the sentence, for the top of the ranked list ---------------
-    // Ranked across everything the learner asked about, not just what pass 1
-    // touched, so a high scorer from yesterday still gets its sentence today.
-    const top = items
-      .filter((i) => typeof known[i.id]?.score === 'number')
-      .sort((a, b) => known[b.id].score - known[a.id].score)
-      .slice(0, WHY_LIMIT);
-    const needWhy = top.filter((i) => !known[i.id]?.why);
-    let explained = 0;
-    if (needWhy.length) {
-      const lines = await explain(needWhy, context);
-      for (const [id, line] of Object.entries(lines)) {
-        known[id] = { ...known[id], why: line };
-        explained++;
-      }
-    }
-
-    if (scored || explained) {
+    if (judged) {
       await saveUserData(email, CACHE_TYPE, {
         v: CACHE_VERSION, day: dayKey, sig, items: known,
       }).catch(() => {});
@@ -225,14 +218,14 @@ export async function POST(request) {
         endpoint: '/api/ai-news/why',
         user: { email, name: profile?.display_name || 'Unknown' },
         model: MODELS.haiku,
-        input: { items: items.length, unscored: unscored.length, needWhy: needWhy.length },
-        output: { scored, explained },
+        input: { items: items.length, unjudged: unjudged.length, batches: batches.length },
+        output: { judged },
       }).catch(() => {});
     }
 
     return NextResponse.json({
       personal: pickFor(known, items),
-      cached: !scored && !explained,
+      cached: !judged,
     });
   } catch (error) {
     console.error('POST /api/ai-news/why error:', error);
@@ -242,22 +235,30 @@ export async function POST(request) {
   }
 }
 
-// One scoring batch. Never throws — a failed batch leaves those items unscored,
-// which the page shows as "not ranked" rather than as a confident zero.
-async function scoreBatch(batch, context) {
+// One judging batch: score, match and sentence for each item in the slice.
+// Never throws — a failed batch leaves those items unjudged, which the page shows
+// as "not ranked" rather than as a confident zero.
+async function judgeBatch(batch, context) {
   try {
+    // The blurb line is OMITTED when there isn't one, rather than sent empty.
+    // Sending `blurb: <untrusted></untrusted>` told the model a field existed and
+    // was blank, and it dutifully reported that back: rows from Hacker News and
+    // Hugging Face, which ship no description, all read "No blurb provided to
+    // assess relevance." A missing line just means judge from the headline.
     const list = batch
       .map((i, n) => {
-        const blurb = String(i.summary || '').slice(0, 200);
+        const blurb = String(i.summary || '').slice(0, 300).trim();
         return `${n + 1}. ${untrusted(i.title)}${blurb ? `\n   blurb: ${untrusted(blurb)}` : ''}`;
       })
       .join('\n');
 
     const response = await getClient().messages.create({
       model: MODELS.haiku,
-      max_tokens: 1200,
-      system: SCORE_SYSTEM,
-      messages: [{ role: 'user', content: `${context}\n\nScore these items:\n${list}` }],
+      // Room for a score, a chip and a 30-word sentence per item, with headroom
+      // so the JSON is never truncated mid-object.
+      max_tokens: 2000,
+      system: JUDGE_SYSTEM,
+      messages: [{ role: 'user', content: `${context}\n\nJudge these items:\n${list}` }],
     });
 
     const parsed = parseJson(response.content?.[0]?.text || '', '[');
@@ -276,57 +277,12 @@ async function scoreBatch(batch, context) {
       out[item.id] = {
         score: Math.max(0, Math.min(100, Math.round(score))),
         match: cleanMatch(row?.m),
+        why: cleanSentence(row?.w),
       };
     }
     return out;
   } catch (err) {
-    console.error('ai-news score batch failed:', err?.message || err);
-    return {};
-  }
-}
-
-// The "why this matters to you" sentences. Never throws — the rows simply carry
-// their score and chip without a sentence.
-async function explain(items, context) {
-  try {
-    // The blurb line is OMITTED when there isn't one, rather than sent empty.
-    // Sending `blurb: <untrusted></untrusted>` told the model a field existed and
-    // was blank, and it dutifully reported that back: rows from Hacker News and
-    // Hugging Face, which ship no description, all read "No blurb provided to
-    // assess relevance." A missing line just means judge from the headline.
-    const list = items
-      .map((i) => {
-        const blurb = String(i.summary || '').slice(0, 400).trim();
-        return [
-          `id: ${i.id}`,
-          `headline: ${untrusted(i.title)}`,
-          blurb ? `blurb: ${untrusted(blurb)}` : null,
-        ].filter(Boolean).join('\n');
-      })
-      .join('\n\n');
-
-    const response = await getClient().messages.create({
-      model: MODELS.haiku,
-      max_tokens: 1200,
-      system: WHY_SYSTEM,
-      messages: [{ role: 'user', content: `${context}\n\nItems:\n${list}` }],
-    });
-
-    const parsed = parseJson(response.content?.[0]?.text || '', '{');
-    if (!parsed || typeof parsed !== 'object') return {};
-
-    const allowed = new Set(items.map((i) => i.id));
-    const out = {};
-    for (const [id, value] of Object.entries(parsed)) {
-      // Only ids we asked about — the model must not invent keys, and the
-      // headlines it read are untrusted feed text.
-      if (!allowed.has(id)) continue;
-      const line = cleanSentence(value);
-      if (line) out[id] = line;
-    }
-    return out;
-  } catch (err) {
-    console.error('ai-news why pass failed:', err?.message || err);
+    console.error('ai-news judge batch failed:', err?.message || err);
     return {};
   }
 }
