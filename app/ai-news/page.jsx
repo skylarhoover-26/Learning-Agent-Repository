@@ -14,23 +14,28 @@ import {
 } from '@/lib/ai-news';
 import {
   LANES, LANE_BY_ID, RANKED_LIMIT, attachPersonal, byBestMatch, publishedMs,
-  laneCounts, hasPersonalization, marksByItem, splitByVisibility,
+  laneCounts, hasPersonalization, marksByItem, isDefaultVisible,
 } from '@/lib/news-personal';
 
-// Everything the daily scan found, ranked against the person reading it.
+// What the daily scan found that affects the person reading it.
 //
 // The page used to be organised by what KIND of news each item was — model
 // changes, tool features, product pitches — with the count pills showing raw
 // totals. That answered "what happened" and left "does any of this touch my
 // work" entirely to the reader (feedback #145).
 //
-// So the spine of the page is now impact on YOU. The lanes come from a per
-// learner score (api/ai-news/why, built from tasks, goals, projects and tools),
-// category and source drop to filters, and the items the news has actually moved
-// on your Knowledge Heatmap say so on the row.
+// So the spine of the page is impact on YOU. Lanes come from a per learner score
+// (api/ai-news/why, built from tasks, goals, projects and tools), category and
+// source drop to filters, and items the news has actually moved on your Knowledge
+// Heatmap say so on the row.
 //
-// Category is still here, just demoted: it is a useful way to slice the feed and
-// a poor way to lead it.
+// It is NOT a complete view of the feed, by decision. Two gates in
+// lib/news-personal.js decide what appears at all: the item has to be the kind of
+// thing we teach, and it has to touch this reader's work. On a 200-item scan that
+// routinely leaves ten. Nothing is destroyed — the scan stores everything and the
+// admin surfaces see all of it — but a learner opening this page should find only
+// what affects their role, with no count of what was left out and no toggle
+// tempting them into it.
 
 export default function AiNewsPage() {
   return <CinematicFrame><AiNewsInner /></CinematicFrame>;
@@ -212,9 +217,6 @@ function AiNewsInner() {
   const [view, setView] = useState(null);
   const [selectedSources, setSelectedSources] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
-  // The escape hatch. Off by default: the page promises "what changed for you",
-  // and an archive of everything the scan swept up is a different promise.
-  const [showEverything, setShowEverything] = useState(false);
   const [sortBy, setSortBy] = useState(null);
 
   useEffect(() => {
@@ -244,8 +246,7 @@ function AiNewsInner() {
   //
   //   arXiv, because the page files research in its own section outside the lanes.
   //   Unapproved categories, because vendor pitches, funding news and industry
-  //     commentary only ever appear behind "Show everything", where they are
-  //     presented as an unranked archive rather than as a judgement.
+  //     commentary never reach this page at all.
   //
   // The score gate in isDefaultVisible can't apply here — it needs the score this
   // call produces — so it runs after the results land.
@@ -307,28 +308,27 @@ function AiNewsInner() {
 
   const markMap = useMemo(() => marksByItem(enriched, marks), [enriched, marks]);
 
-  // The relevance gate, applied before every other filter so the pill counts, the
-  // lanes and the toggle's own label all describe the same list.
-  const { visible: passing, hidden: withheld } = useMemo(
-    () => splitByVisibility(enriched),
-    [enriched],
-  );
-
-  // The single list everything downstream is derived from — the filters, the
-  // lanes, the pill counts and the dropdown options all read from this, so the
-  // toggle can never leave one of them describing a different page.
+  // The relevance gate, and the only list this page has.
+  //
+  // There is no "show everything" any more. It existed for a day, announcing how
+  // many items had been held back, and on a 200-item scan that meant telling a
+  // learner about 190 things we had just decided were not worth their time. On a
+  // learning app that reads as an invitation to go and read the noise. The page
+  // promises what changed for YOU, so that is all it carries.
+  //
+  // The scan still stores everything — nothing is destroyed, and the admin
+  // surfaces still see the whole feed. It is this page that has an opinion.
   //
   // DECLARED BEFORE ITS CONSUMERS, and it has to stay that way. useMemo bodies run
   // during render, so a memo above this line that reads `base` throws
   // "Cannot access 'base' before initialization" and takes the whole page down —
-  // which is exactly what shipped in the previous commit. `next build` cannot see
-  // it, because nothing evaluates the component until a browser mounts it.
-  const base = showEverything ? enriched : passing;
+  // which is exactly what shipped once already. `next build` cannot see it,
+  // because nothing evaluates the component until a browser mounts it.
+  const base = useMemo(() => enriched.filter(isDefaultVisible), [enriched]);
 
-  // Both dropdowns are built from the list currently in play, NOT from the whole
-  // feed. Offering "Business & market" as a Type while business items are hidden
-  // is offering a filter that can only ever return nothing; the options shift as
-  // you toggle, which is the honest reflection of what is on the page.
+  // Both dropdowns are built from the list actually on the page, NOT from the
+  // whole feed. Offering "Business & market" as a Type when no business item can
+  // appear is offering a filter that can only ever return nothing.
   const sourceOptions = useMemo(
     () => [...new Set(base.map((i) => i.sourceName).filter(Boolean))]
       .sort()
@@ -385,8 +385,11 @@ function AiNewsInner() {
 
   // No "next check" here — it implied repeated scanning. The scan runs once a
   // day; "updated Nh ago" is the honest signal and still exposes a dead cron.
+  // Counts what is ON the page, not what the scan swept up. `all.length` was the
+  // raw stored total, which meant the hero advertised 200 items above a list of
+  // ten — a number that described our scraper rather than the reader's day.
   const subtitle = data?.scannedAt
-    ? `${all.length} items · updated ${freshnessLabel(data.scannedAt)}`
+    ? `${base.length} ${base.length === 1 ? 'update' : 'updates'} for your work · checked ${freshnessLabel(data.scannedAt)}`
     : 'Check out the latest in AI News and take a lesson if you\'d like to learn more.';
 
   return (
@@ -422,37 +425,6 @@ function AiNewsInner() {
         ) : (
           <>
             <RankNotice ranked={ranked} count={counts.act} />
-
-            {/* The escape hatch, stated as a fact rather than hidden in a menu:
-                the reader can always see exactly how much was held back and why,
-                and get to it in one click. Hiding things quietly is what makes a
-                filtered feed feel like it is keeping secrets. */}
-            {withheld.length > 0 && (
-              <div className="cine-glass rounded-2xl px-4 py-3 text-sm flex flex-wrap items-center gap-x-2 gap-y-1" style={{ color: 'var(--ink-dim)' }}>
-                {showEverything ? (
-                  <>
-                    Showing everything the scan found, including
-                    {' '}<strong style={{ color: 'var(--ink)' }}>{withheld.length}</strong>{' '}
-                    items we would normally hold back: product pitches, funding and market news,
-                    industry commentary, and anything that scored near zero against your work.
-                  </>
-                ) : (
-                  <>
-                    <strong style={{ color: 'var(--ink)' }}>{withheld.length}</strong> items are hidden:
-                    product pitches, funding and market news, industry commentary, and anything that
-                    scored near zero against your work.
-                  </>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setShowEverything((v) => !v)}
-                  className="underline font-medium"
-                  style={{ color: 'var(--accent2)' }}
-                >
-                  {showEverything ? 'Hide them again' : 'Show everything'}
-                </button>
-              </div>
-            )}
 
             {/* Filters on their own line so the dropdowns never collide with the
                 pill row, mirroring the admin feedback page's layout. Category
