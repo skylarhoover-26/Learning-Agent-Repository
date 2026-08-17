@@ -8,7 +8,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import {
   Shield, Activity, Users, Zap, FlaskConical, SlidersHorizontal,
   Wrench, Bell, UserCog, Sparkles, ClipboardCheck, ClipboardList, Eye, MessageSquarePlus,
-  MessagesSquare, PartyPopper, Gauge, ShieldCheck,
+  MessagesSquare, PartyPopper, Gauge, ShieldCheck, Egg,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 import { useMenuVisibility } from '@/components/menu-visibility-provider';
@@ -31,6 +31,7 @@ const ADMIN_TOOLS = [
   { href: '/admin/ai-tools', icon: Wrench, title: 'AI Tools', desc: 'Edit what each AI tool is good for' },
   { href: '/admin/avatar-preview', icon: Sparkles, title: 'Avatar Catalog', desc: 'Contact sheet of every avatar item to review how each looks' },
   { href: '/admin/levelup-preview', icon: PartyPopper, title: 'Level Up Preview', desc: 'Play the level-up celebration at any level to tune it without earning the XP' },
+  { href: '/admin/easter-eggs', icon: Egg, title: 'Easter Egg Key', desc: 'Every hidden capybara, where it lives, and exactly how to make it show up' },
   { href: '/admin/xp-rules', icon: Zap, title: 'XP & Levels', desc: 'Reference: what earns XP, daily caps, and the leveling curve' },
   { href: '/admin/notifications', icon: Bell, title: 'Notifications', desc: 'Who receives Slack notifications' },
   { href: '/admin/admins', icon: UserCog, title: 'Admins', desc: 'Manage who has admin access' },

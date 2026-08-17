@@ -9,6 +9,7 @@ import { badgeMeta } from '@/lib/badges';
 import { itemsUnlockedBetween, nextUnlockAfter, SLOT_LABELS } from '@/lib/avatar-catalog';
 import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
+import Capybara from '@/components/capybara';
 import ConfettiBurst from '@/components/confetti-burst';
 import XpBar from '@/components/xp-bar';
 
@@ -78,6 +79,16 @@ export default function LevelUpModal({ result, onDismiss }) {
   const shownItems = newItems.slice(0, MAX_ROWS);
   const hiddenCount = newItems.length - shownItems.length;
 
+  // ── Easter egg: levelup-badge-holder (see lib/easter-eggs.js) ──────────────
+  // Gated on the level having actually unlocked something. A level that unlocks
+  // nothing shows the "what's next" teaser instead, and putting a celebrating
+  // capybara on that would be celebrating nothing. The gate is also what keeps
+  // this earned rather than furniture on every level-up.
+  const showCapy = newItems.length > 0 || newBadges.length > 0;
+  // A badge is a bigger deal than an avatar item, so it gets the mortarboard.
+  const capyVariant = newBadges.length > 0 ? 'graduate' : 'happy';
+  const heldBadge = newBadges[0];
+
   function close() {
     setClosing(true);
     setTimeout(() => onDismiss?.(), 200);
@@ -132,6 +143,32 @@ export default function LevelUpModal({ result, onDismiss }) {
           className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(circle, rgba(59,148,255,.42), transparent 68%)' }}
         />
+
+        {/* The capybara leans into the top-left corner, which is dead space
+            either side of the starburst. The card's overflow-hidden clips the
+            part that hangs past the edge, so it reads as peeking in. Hidden from
+            screen readers: the reward list below already announces everything
+            this is celebrating, and "capybara graduating" in the middle of it is
+            noise. */}
+        {showCapy && (
+          <div
+            className="lu-capy absolute -left-3 top-1 w-[86px] pointer-events-none"
+            aria-hidden="true"
+          >
+            <Capybara variant={capyVariant} size={86} />
+            {heldBadge && (
+              <span
+                className="absolute right-0 bottom-3 w-7 h-7 rounded-full flex items-center justify-center text-sm"
+                style={{
+                  background: 'linear-gradient(180deg, #FFD666, #FFB706)',
+                  boxShadow: '0 4px 10px -3px rgba(0,0,0,.6)',
+                }}
+              >
+                {heldBadge.emoji}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* ── Starburst + level number ─────────────────────────────────── */}
         <div className="relative mx-auto w-[124px] h-[124px] flex items-center justify-center">

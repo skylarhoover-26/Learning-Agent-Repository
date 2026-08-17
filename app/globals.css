@@ -376,9 +376,20 @@ body {
 }
 .lu-halo { animation: lu-halo 2.8s ease-in-out infinite; }
 
+/* The capybara peeks in from the card's top-left, a beat after the card lands.
+   It settles at a slight inward tilt rather than square, so it reads as leaning
+   into frame instead of being pasted on. */
+@keyframes lu-capy {
+  from { opacity: 0; transform: translateY(18px) rotate(-16deg); }
+  to   { opacity: 1; transform: translateY(0) rotate(-9deg); }
+}
+.lu-capy { animation: lu-capy .55s cubic-bezier(.16, 1, .3, 1) .38s both; }
+
 @media (prefers-reduced-motion: reduce) {
   .xp-sheen, .xp-bump, .lu-spin, .lu-halo { animation: none; }
   .lu-pop, .lu-row { animation-duration: .01s; }
+  /* Keep the settled tilt, drop the travel. */
+  .lu-capy { animation-duration: .01s; animation-delay: 0s; }
 }
 
 /* The dark top bar is FIXED to the viewport so it stays put while scrolling and
