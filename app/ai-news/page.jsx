@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Rss, ArrowRight, ExternalLink, FlaskConical } from 'lucide-react';
+import { Rss, ArrowRight, ExternalLink, FlaskConical, Sparkles, Grid3x3 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
@@ -10,32 +10,71 @@ import BookLoader from '@/components/book-loader';
 import MultiSelect from '@/components/multi-select';
 import { SECTION_COLORS } from '@/lib/section-colors';
 import {
-  freshnessLabel, groupByCategory, isApproved, isResearchSource, lessonHref,
-  SCAN_TIME_LABEL,
+  freshnessLabel, isResearchSource, lessonHref, CATEGORY_LABELS, SCAN_TIME_LABEL,
 } from '@/lib/ai-news';
+import {
+  LANES, LANE_BY_ID, RANKED_LIMIT, attachPersonal, byBestMatch, publishedMs,
+  laneCounts, hasPersonalization, marksByItem,
+} from '@/lib/news-personal';
 
-// Everything the daily scan found. The home card shows the newest three that
-// passed the relevance guardrail; this page shows all of them grouped by what
-// kind of news they are, and can reveal what the guardrail rejected.
+// Everything the daily scan found, ranked against the person reading it.
 //
-// The "Show everything" toggle is the point of storing rejected items rather
-// than discarding them: if the rubric turns out too strict, you can see exactly
-// what it dropped and adjust, instead of wondering what you never saw.
-// How many of the newest items get a tailored line. Matches the server cap in
-// api/ai-news/why, and keeps the single generation call small.
-const WHY_LIMIT = 12;
+// The page used to be organised by what KIND of news each item was — model
+// changes, tool features, product pitches — with the count pills showing raw
+// totals. That answered "what happened" and left "does any of this touch my
+// work" entirely to the reader (feedback #145).
+//
+// So the spine of the page is now impact on YOU. The lanes come from a per
+// learner score (api/ai-news/why, built from tasks, goals, projects and tools),
+// category and source drop to filters, and the items the news has actually moved
+// on your Knowledge Heatmap say so on the row.
+//
+// Category is still here, just demoted: it is a useful way to slice the feed and
+// a poor way to lead it.
 
 export default function AiNewsPage() {
   return <CinematicFrame><AiNewsInner /></CinematicFrame>;
 }
 
-function NewsRow({ item, why }) {
+// The small pill that says why an item scored the way it did — the learner's own
+// vocabulary back at them ("Your project: Video Maker").
+function MatchChip({ text }) {
   return (
-    // The whole row is now the "Take a lesson" target via the stretched link
-    // below, so the hover lift/glow means something rather than decorating a
-    // container you can't click. A stretched <Link> (absolute inset-0) rather than
-    // wrapping the row, because "Read the source" is itself an <a> and nesting
-    // anchors is invalid HTML — the overlay sits under the real links instead.
+    // Tailwind colour pairs rather than a CSS var, so the chip keeps its
+    // contrast in both themes the same way the heatmap's badges do.
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/50">
+      <Sparkles className="w-3 h-3" />
+      {text}
+    </span>
+  );
+}
+
+// The heatmap tie-back. lib/skill-staleness.js has been marking skills "worth a
+// refresh" from this same feed since feedback #54, but the news page never said
+// so, which made the loop invisible from the side where it starts. Clickable, so
+// "this changed how you should prompt" leads straight to the square it changed.
+function HeatmapChip({ mark }) {
+  return (
+    // Orange, matching the "Stale" badge on /heatmap — the chip and the square
+    // it points at should read as the same signal.
+    <Link
+      href="/heatmap"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold relative pointer-events-auto text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/50"
+      title={mark.reason || 'This update makes that skill worth a refresh'}
+    >
+      <Grid3x3 className="w-3 h-3" />
+      Refreshes {mark.skill}
+    </Link>
+  );
+}
+
+function NewsRow({ item, mark }) {
+  return (
+    // The whole row is the "Take a lesson" target via the stretched link below,
+    // so the hover lift/glow means something rather than decorating a container
+    // you can't click. A stretched <Link> (absolute inset-0) rather than wrapping
+    // the row, because "Read the source" is itself an <a> and nesting anchors is
+    // invalid HTML — the overlay sits under the real links instead.
     <div
       className="cine-glass cine-tilt rounded-2xl px-4 py-3 relative"
       style={{ '--tilt-accent': SECTION_COLORS.aiNews }}
@@ -47,12 +86,16 @@ function NewsRow({ item, why }) {
       />
       <div className="flex items-start gap-3 relative pointer-events-none">
         <div className="min-w-0 flex-1">
-          <span
-            className="inline-block text-[10px] font-bold uppercase tracking-wide mb-1.5"
-            style={{ color: 'var(--accent2)' }}
-          >
-            {item.sourceName}
-          </span>
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span
+              className="text-[10px] font-bold uppercase tracking-wide"
+              style={{ color: 'var(--accent2)' }}
+            >
+              {item.sourceName}
+            </span>
+            {item.match && <MatchChip text={item.match} />}
+            {mark && <HeatmapChip mark={mark} />}
+          </div>
           <p className="font-semibold leading-snug">{item.title}</p>
           {/* Publisher's own blurb, so you can judge whether it's worth a lesson
               without opening the article. Missing for sources that ship no
@@ -62,14 +105,17 @@ function NewsRow({ item, why }) {
               {item.summary}
             </p>
           )}
-          {/* What it means for THIS reader, generated from their role and tasks.
-              The blurb above summarises the article; this says what changed and
-              why it lands on their desk (feedback #145). Absent until it loads,
-              and absent entirely if generation failed, so the row still reads
-              fine without it. */}
-          {why && (
-            <p className="text-sm leading-relaxed mt-2 pl-2.5" style={{ color: 'var(--ink)', borderLeft: '2px solid var(--accent)' }}>
-              <span className="font-semibold">Why this matters to you: </span>{why}
+          {/* What it means for THIS reader, generated from their role, tasks,
+              goals and projects. The blurb above summarises the article; this
+              says what changed and why it lands on their desk (feedback #145).
+              Only the top-ranked items get one, so the row must read fine
+              without it. */}
+          {item.why && (
+            <p
+              className="text-sm leading-relaxed mt-2 pl-2.5"
+              style={{ color: 'var(--ink)', borderLeft: '2px solid var(--accent)' }}
+            >
+              <span className="font-semibold">Why this matters to you: </span>{item.why}
             </p>
           )}
           <div className="flex items-center gap-3 mt-2">
@@ -102,24 +148,30 @@ function NewsRow({ item, why }) {
   );
 }
 
-function CategorySection({ label, count, items, note, why }) {
+function Section({ label, count, note, items, marks, icon: Icon }) {
+  if (!items.length) return null;
   return (
     <section>
       <div className="flex items-center gap-2 mb-1">
+        {Icon && <Icon className="w-4 h-4" style={{ color: 'var(--ink-dim)' }} />}
         <h3 className="font-display font-bold text-xl">{label}</h3>
         <span className="text-xs tabular-nums" style={{ color: 'var(--ink-dim)' }}>{count}</span>
       </div>
       {note && <p className="text-sm mb-3" style={{ color: 'var(--ink-dim)' }}>{note}</p>}
       <div className="space-y-2 mt-3">
         {items.map((item, i) => (
-          <NewsRow key={item.externalId || `${label}-${i}`} item={item} why={why?.[item.externalId]} />
+          <NewsRow
+            key={item.externalId || `${label}-${i}`}
+            item={item}
+            mark={marks.get(item.externalId)}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-// One pill in the filter row. Active is a solid fill, matching the admin feedback
+// One pill in the lane row. Active is a solid fill, matching the admin feedback
 // page's tabs — that's the pattern this page was asked to follow.
 function FilterPill({ label, count, active, onClick }) {
   return (
@@ -132,7 +184,10 @@ function FilterPill({ label, count, active, onClick }) {
       style={active ? undefined : { color: 'var(--ink-dim)' }}
     >
       {label}
-      <span className={`text-xs ${active ? 'text-white/80' : ''}`} style={active ? undefined : { color: 'var(--ink-dim)', opacity: 0.7 }}>
+      <span
+        className={`text-xs ${active ? 'text-white/80' : ''}`}
+        style={active ? undefined : { color: 'var(--ink-dim)', opacity: 0.7 }}
+      >
         {count}
       </span>
     </button>
@@ -141,13 +196,27 @@ function FilterPill({ label, count, active, onClick }) {
 
 function AiNewsInner() {
   const [data, setData] = useState(null);
-  // One selection drives the pill row: 'all' (default), 'skills' for the curated
-  // set, or a category slug. There's no "important vs not" toggle any more — every
-  // item is potentially worth someone's time, so the row just offers views rather
-  // than ranking them.
+  const [personal, setPersonal] = useState({});
+  // 'loading' until the ranking call settles, then 'ready' or 'failed'. Kept
+  // distinct from an empty map because "we ranked nothing for you" and "we
+  // couldn't rank" need different words on the page.
+  const [rankState, setRankState] = useState('loading');
+  const [marks, setMarks] = useState([]);
+
   const [view, setView] = useState('all');
   const [selectedSources, setSelectedSources] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [sortBy, setSortBy] = useState('newest');
+
+  // Whether the reader has driven any control yet. The page opens unranked
+  // (newest first, all items) because the ranking call takes a few seconds, and
+  // moves itself to the ranked view when the scores land — but only if the
+  // reader hasn't already made a choice. Nothing is more annoying than a page
+  // that overrides the filter you just set.
+  const touched = useRef(false);
+  function drive(fn) {
+    return (value) => { touched.current = true; fn(value); };
+  }
 
   useEffect(() => {
     let active = true;
@@ -155,110 +224,154 @@ function AiNewsInner() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (active) setData(d || { items: [], count: 0, totalCount: 0, scannedAt: null }); })
       .catch(() => { if (active) setData({ items: [], count: 0, totalCount: 0, scannedAt: null }); });
+
+    // Org-wide and read-only: which skills the news says are worth a refresh.
+    // Independent of the list, so it races it rather than waiting.
+    fetch('/api/skill-staleness')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (active && Array.isArray(d?.marks)) setMarks(d.marks); })
+      .catch(() => { /* the rows read fine without the heatmap chip */ });
+
     return () => { active = false; };
   }, []);
 
-  // Memoized: `data?.items || []` is a new array identity every render, which made
-  // every useMemo below re-run on each one — memoized in name only.
+  // Memoized: `data?.items || []` is a new array identity every render, which
+  // made every useMemo below re-run on each one — memoized in name only.
   const all = useMemo(() => data?.items || [], [data]);
 
-  // Per-learner "why this matters to you", one line per item. Fetched after the
-  // list lands, in a single request covering the newest items, and cached
-  // server-side per learner per content-day so revisits cost nothing.
-  //
-  // The effect depends on a STRING of ids, not on `all`. `all` is a fresh array
-  // identity whenever data reloads, and depending on it would re-POST on every
-  // such render; the joined ids only change when the actual set of items does.
-  const [why, setWhy] = useState({});
-  const whyItems = useMemo(
-    () => all.slice(0, WHY_LIMIT).filter((i) => i.externalId && i.title),
-    [all],
-  );
-  const whyKey = useMemo(() => whyItems.map((i) => i.externalId).join('|'), [whyItems]);
+  // What gets sent for ranking: the newest RANKED_LIMIT practical items. arXiv is
+  // excluded because the page files research in its own section outside the
+  // lanes, so scoring it would spend the day's budget on rows the lanes never
+  // show.
+  const rankable = useMemo(() => (
+    all
+      .filter((i) => i.externalId && i.title && !isResearchSource(i.sourceName))
+      .slice()
+      .sort((a, b) => publishedMs(b) - publishedMs(a))
+      .slice(0, RANKED_LIMIT)
+  ), [all]);
+
+  // The effect depends on a STRING of ids, not on `rankable`. `rankable` is a
+  // fresh array identity whenever data reloads, and depending on it would re-POST
+  // on every such render; the joined ids only change when the actual set does.
+  const rankKey = useMemo(() => rankable.map((i) => i.externalId).join('|'), [rankable]);
+  const listLoaded = data !== null;
 
   useEffect(() => {
-    if (!whyKey) return;
+    if (!listLoaded) return;
+    if (!rankKey) { setRankState('ready'); return; }
     let active = true;
+    setRankState('loading');
     fetch('/api/ai-news/why', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        items: whyItems.map((i) => ({ id: i.externalId, title: i.title, summary: i.summary })),
+        items: rankable.map((i) => ({ id: i.externalId, title: i.title, summary: i.summary })),
       }),
     })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (active && d?.why) setWhy(d.why); })
-      .catch(() => { /* the list reads fine without these lines */ });
+      .then((d) => {
+        if (!active) return;
+        const map = d?.personal || {};
+        setPersonal(map);
+        setRankState(Object.keys(map).length ? 'ready' : 'failed');
+      })
+      .catch(() => { if (active) setRankState('failed'); });
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [whyKey]);
+  }, [rankKey, listLoaded]);
 
-  // Source filter + sort apply to EVERYTHING, before the view pills, so the pill
-  // counts always describe what you'd actually get by clicking them.
+  const enriched = useMemo(() => attachPersonal(all, personal), [all, personal]);
+  const ranked = hasPersonalization(enriched);
+
+  // Move to the ranked view once, when the scores arrive and the reader hasn't
+  // taken over. Guarded on `ranked` so a failed ranking leaves the page exactly
+  // as it opened rather than dropping it into a lane that will never fill.
+  //
+  // Which lane it lands on depends on what the day actually produced. Opening on
+  // "Changes your work" when nothing scored that high is a page that greets you
+  // with an empty room, so it falls back to the first lane with anything in it.
+  const settled = useRef(false);
+  useEffect(() => {
+    if (settled.current || !ranked || touched.current) return;
+    settled.current = true;
+    const populated = LANES.find((lane) => enriched.some((i) => i.lane === lane.id));
+    setView(populated ? populated.id : 'all');
+    setSortBy('match');
+  }, [ranked, enriched]);
+
+  const markMap = useMemo(() => marksByItem(enriched, marks), [enriched, marks]);
+
+  // Source and category filters apply to EVERYTHING before the lane pills, so
+  // the pill counts always describe what you'd actually get by clicking them.
   const sourceOptions = useMemo(
     () => [...new Set(all.map((i) => i.sourceName).filter(Boolean))]
       .sort()
       .map((s) => ({ value: s, label: s })),
-    [all]
+    [all],
   );
 
+  const categoryOptions = useMemo(() => {
+    const present = [...new Set(all.map((i) => i.category || 'unclassified'))];
+    return present
+      .map((c) => ({ value: c, label: CATEGORY_LABELS[c] || c }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [all]);
+
   const scoped = useMemo(() => {
-    let list = selectedSources.length
-      ? all.filter((i) => selectedSources.includes(i.sourceName))
-      : all.slice();
-    if (sortBy === 'newest' || sortBy === 'oldest') {
-      // publishedAt is whatever the feed gave us (RFC-822 or ISO). Anything
-      // unparseable sorts last rather than poisoning the order with NaN.
-      const t = (i) => {
-        const ms = new Date(i.publishedAt || 0).getTime();
-        return Number.isNaN(ms) ? 0 : ms;
-      };
-      list.sort((a, b) => (sortBy === 'newest' ? t(b) - t(a) : t(a) - t(b)));
-    } else if (sortBy === 'source') {
+    let list = enriched;
+    if (selectedSources.length) list = list.filter((i) => selectedSources.includes(i.sourceName));
+    if (selectedCategories.length) {
+      list = list.filter((i) => selectedCategories.includes(i.category || 'unclassified'));
+    }
+    list = list.slice();
+    if (sortBy === 'match') list.sort(byBestMatch);
+    else if (sortBy === 'newest') list.sort((a, b) => publishedMs(b) - publishedMs(a));
+    else if (sortBy === 'oldest') list.sort((a, b) => publishedMs(a) - publishedMs(b));
+    else if (sortBy === 'source') {
       list.sort((a, b) => String(a.sourceName).localeCompare(String(b.sourceName)));
     }
     return list;
-  }, [all, selectedSources, sortBy]);
+  }, [enriched, selectedSources, selectedCategories, sortBy]);
 
-  const scopedApproved = scoped.filter(isApproved);
+  // arXiv is split out regardless of lane — raw paper titles get their own
+  // clearly-labelled home so nobody mistakes them for practical picks.
+  const practical = useMemo(() => scoped.filter((i) => !isResearchSource(i.sourceName)), [scoped]);
+  const research = useMemo(() => scoped.filter((i) => isResearchSource(i.sourceName)), [scoped]);
 
-  // Pill counts come from `scoped` (post source/sort, pre view) so every number is
-  // exactly what that pill would show.
-  const countsByCategory = useMemo(() => {
-    const m = new Map();
-    for (const i of scoped.filter((x) => !isResearchSource(x.sourceName))) {
-      const c = i.category || 'unclassified';
-      m.set(c, (m.get(c) || 0) + 1);
-    }
-    return m;
-  }, [scoped]);
+  const { counts, unranked } = useMemo(() => laneCounts(practical), [practical]);
 
-  const pillGroups = groupByCategory(scoped.filter((i) => !isResearchSource(i.sourceName)));
+  const inView = view === 'all'
+    ? practical
+    : view === 'unranked'
+      ? practical.filter((i) => !i.lane)
+      : practical.filter((i) => i.lane === view);
 
-  const shown = view === 'skills' ? scopedApproved : scoped;
-  const activeCategory = view !== 'all' && view !== 'skills' ? view : null;
+  const laneSections = view === 'all'
+    ? LANES.map((lane) => ({ lane, items: practical.filter((i) => i.lane === lane.id) }))
+      .filter((s) => s.items.length)
+    : view === 'unranked'
+      ? []
+      : [{ lane: LANE_BY_ID.get(view), items: inView }].filter((s) => s.lane && s.items.length);
 
-  const allGroups = groupByCategory(shown.filter((i) => !isResearchSource(i.sourceName)));
-  const groups = activeCategory ? allGroups.filter((g) => g.category === activeCategory) : allGroups;
-  // arXiv is split out regardless of category — raw paper titles get their own
-  // clearly-labelled home so nobody mistakes them for practical picks. Hidden
-  // while a category filter is on rather than sitting under an unrelated heading.
-  const research = activeCategory ? [] : shown.filter((i) => isResearchSource(i.sourceName));
+  const unrankedItems = (view === 'all' || view === 'unranked')
+    ? practical.filter((i) => !i.lane)
+    : [];
 
-  // No "next check" here either — it implied repeated scanning. The scan runs once
-  // a day; "updated Nh ago" is the honest signal and still exposes a dead cron.
+  // No "next check" here — it implied repeated scanning. The scan runs once a
+  // day; "updated Nh ago" is the honest signal and still exposes a dead cron.
   const subtitle = data?.scannedAt
     ? `${all.length} items · updated ${freshnessLabel(data.scannedAt)}`
     : 'Check out the latest in AI News and take a lesson if you\'d like to learn more.';
 
   return (
     <div className="min-h-screen">
-      <PageHeader icon={Rss} title="AI news" subtitle="Everything today's scan found" />
+      <PageHeader icon={Rss} title="AI news" subtitle="Ranked against your work" />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-12 space-y-10">
         <CinematicPageHero
           eyebrow="AI news"
-          title="Everything we found"
+          title="What changed for you"
           subtitle={subtitle}
           icon={Rss}
           gradient
@@ -274,22 +387,33 @@ function AiNewsInner() {
           </div>
         ) : (
           <>
+            <RankNotice state={rankState} ranked={ranked} count={counts.act} />
+
             {/* Filters on their own line so the dropdowns never collide with the
-                pill row, mirroring the admin feedback page's layout. */}
+                pill row, mirroring the admin feedback page's layout. Category
+                lives here now rather than in the pills: it is a way to slice the
+                feed, not the thing the page leads with. */}
             <div className="flex flex-wrap items-center gap-4">
               <MultiSelect
                 label="Source"
                 options={sourceOptions}
                 selected={selectedSources}
-                onChange={setSelectedSources}
+                onChange={drive(setSelectedSources)}
+              />
+              <MultiSelect
+                label="Type"
+                options={categoryOptions}
+                selected={selectedCategories}
+                onChange={drive(setSelectedCategories)}
               />
               <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--ink-dim)' }}>
                 Sort
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => { touched.current = true; setSortBy(e.target.value); }}
                   className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-2 py-1"
                 >
+                  <option value="match" disabled={!ranked}>Best match</option>
                   <option value="newest">Newest first</option>
                   <option value="oldest">Oldest first</option>
                   <option value="source">By source</option>
@@ -297,9 +421,8 @@ function AiNewsInner() {
               </div>
             </div>
 
-            {/* Total leading the pill row, then the views. "For your skills" is the
-                curated set — named as a suggestion, not a claim that the rest is
-                unimportant, since any of it could matter to someone. */}
+            {/* The pills are impact on YOU, not category totals. Every count is
+                what that pill would actually open. */}
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className="pr-3 mr-0.5 text-sm font-medium whitespace-nowrap"
@@ -307,62 +430,126 @@ function AiNewsInner() {
               >
                 Total
                 <span className="ml-1.5 text-xs" style={{ color: 'var(--ink-dim)', opacity: 0.7 }}>
-                  {scoped.length}
+                  {practical.length}
                 </span>
               </span>
-              <FilterPill label="All" count={scoped.length} active={view === 'all'} onClick={() => setView('all')} />
               <FilterPill
-                label="For your skills"
-                count={scopedApproved.length}
-                active={view === 'skills'}
-                onClick={() => setView('skills')}
+                label="All"
+                count={practical.length}
+                active={view === 'all'}
+                onClick={() => { touched.current = true; setView('all'); }}
               />
-              {pillGroups.map((g) => (
+              {ranked && LANES.map((lane) => (
                 <FilterPill
-                  key={g.category}
-                  label={g.label}
-                  count={countsByCategory.get(g.category) || g.items.length}
-                  active={view === g.category}
-                  onClick={() => setView(g.category)}
+                  key={lane.id}
+                  label={lane.label}
+                  count={counts[lane.id]}
+                  active={view === lane.id}
+                  onClick={() => { touched.current = true; setView(lane.id); }}
                 />
               ))}
+              {ranked && unranked > 0 && (
+                <FilterPill
+                  label="Not ranked"
+                  count={unranked}
+                  active={view === 'unranked'}
+                  onClick={() => { touched.current = true; setView('unranked'); }}
+                />
+              )}
             </div>
 
             <div className="space-y-10">
-              {groups.map((g) => (
-                <CategorySection
-                  key={g.category}
-                  label={g.label}
-                  count={g.items.length}
-                  items={g.items}
-                  why={why}
+              {laneSections.map(({ lane, items }) => (
+                <Section
+                  key={lane.id}
+                  label={lane.label}
+                  count={items.length}
+                  note={lane.note}
+                  items={items}
+                  marks={markMap}
                 />
               ))}
+
+              {/* When nothing is ranked yet (or ranking failed) the page still
+                  has to show the news, so it falls back to one flat list. */}
+              {!ranked && view === 'all' && (
+                <Section
+                  label="Latest"
+                  count={practical.length}
+                  items={practical}
+                  marks={markMap}
+                />
+              )}
+
+              {unrankedItems.length > 0 && (
+                <Section
+                  label="Not ranked"
+                  count={unrankedItems.length}
+                  note={`We rank the newest ${RANKED_LIMIT} items against your work each day. These sat past that line, so nobody has judged them for you — they are here so the feed stays complete.`}
+                  items={unrankedItems}
+                  marks={markMap}
+                />
+              )}
+
+              {/* A lane you have filtered down to nothing, or a lane the day
+                  simply didn't fill. Without this the page just ends after the
+                  pills, which reads as broken rather than as empty. */}
+              {inView.length === 0 && (
+                <div className="cine-glass rounded-2xl p-6 text-sm" style={{ color: 'var(--ink-dim)' }}>
+                  {selectedSources.length || selectedCategories.length
+                    ? 'Nothing here with those filters on. Clear Source or Type to widen it.'
+                    : 'Nothing landed in this group today. Try another one — the whole feed is under All.'}
+                </div>
+              )}
             </div>
 
-            {research.length > 0 && (
+            {research.length > 0 && view === 'all' && (
               <div className="pt-6" style={{ borderTop: '1px solid var(--line)' }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <FlaskConical className="w-4 h-4" style={{ color: 'var(--ink-dim)' }} />
-                  <h2 className="font-display font-bold text-xl">Research</h2>
-                  <span className="text-xs tabular-nums" style={{ color: 'var(--ink-dim)' }}>
-                    {research.length}
-                  </span>
-                </div>
-                <p className="text-sm mb-3" style={{ color: 'var(--ink-dim)' }}>
-                  Raw paper titles straight from arXiv. Heavier going than the news above — worth a
-                  look if you want the underlying work.
-                </p>
-                <div className="space-y-2 mt-3">
-                  {research.map((item, i) => (
-                    <NewsRow key={item.externalId || `research-${i}`} item={item} why={why?.[item.externalId]} />
-                  ))}
-                </div>
+                <Section
+                  label="Research"
+                  count={research.length}
+                  icon={FlaskConical}
+                  note="Raw paper titles straight from arXiv. Heavier going than the news above, and not ranked against your work — worth a look if you want the underlying work."
+                  items={research}
+                  marks={markMap}
+                />
               </div>
             )}
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+// The one line that tells the reader what the ordering means. It has three jobs:
+// warn that the page is about to re-sort itself, explain what the sort is once
+// it has, and admit it plainly when the ranking didn't happen.
+function RankNotice({ state, ranked, count }) {
+  if (state === 'loading') {
+    return (
+      <div className="cine-glass rounded-2xl px-4 py-3 text-sm flex items-center gap-2" style={{ color: 'var(--ink-dim)' }}>
+        <Sparkles className="w-4 h-4 animate-pulse" style={{ color: 'var(--accent2)' }} />
+        Ranking today&rsquo;s news against your role, tasks, goals and projects…
+      </div>
+    );
+  }
+  if (!ranked) {
+    return (
+      <div className="cine-glass rounded-2xl px-4 py-3 text-sm" style={{ color: 'var(--ink-dim)' }}>
+        We couldn&rsquo;t rank these against your work just now, so this is the plain feed, newest first.
+        Everything still works, and a refresh usually sorts it.
+      </div>
+    );
+  }
+  return (
+    <div className="cine-glass rounded-2xl px-4 py-3 text-sm" style={{ color: 'var(--ink-dim)' }}>
+      <Sparkles className="w-4 h-4 inline-block mr-1.5 -mt-0.5" style={{ color: 'var(--accent2)' }} />
+      Ranked against your role, tasks, goals and projects.{' '}
+      {count > 0
+        ? <><strong style={{ color: 'var(--ink)' }}>{count}</strong> {count === 1 ? 'item changes' : 'items change'} your work today.</>
+        : 'Nothing in today\'s scan changes your work directly, so this is what is worth watching.'}{' '}
+      <Link href="/my-goals" className="underline font-medium">Update what you&rsquo;re working on</Link> to change what rises to the top.
     </div>
   );
 }
