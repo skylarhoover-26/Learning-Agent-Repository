@@ -35,6 +35,17 @@ export default function EggCapybara({
   const { profile } = useProfile() || {};
   const learnerId = profile ? resolveLearnerId(profile) : null;
 
+  // A decorative egg is not clickable at all.
+  //
+  // Some placements are deliberately out of the collection — an admin-only
+  // surface, or a spot only one person can occupy (`collectable: false` in
+  // lib/easter-eggs.js). Without this check they still rendered as a pulsing
+  // button that paid 5 XP and reported "Capybara collected · 1 of 12", while the
+  // progress panel — which counts only roster eggs — stayed at 0 of 12. So it
+  // looked collectable, paid out, and advanced nothing. It also handed admins XP
+  // that nobody else could reach.
+  const isCollectable = FINDABLE_EGG_IDS.includes(eggId);
+
   // Resolved after mount: the ledger read touches localStorage, and branching on
   // it during render would hydrate to a different tree.
   const [collected, setCollected] = useState(true);
@@ -64,8 +75,8 @@ export default function EggCapybara({
 
   const art = <Capybara variant={variant} size={size} data-egg={eggId} />;
 
-  // Nothing to collect: no learner resolved, no id, or already got it.
-  if (!eggId || !learnerId || collected) {
+  // Nothing to collect: decorative, no learner resolved, no id, or already got it.
+  if (!eggId || !isCollectable || !learnerId || collected) {
     return (
       <span className={className} aria-hidden="true">
         {art}
