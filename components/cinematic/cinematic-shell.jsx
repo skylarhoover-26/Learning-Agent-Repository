@@ -14,6 +14,7 @@ import { MenuThemeToggle } from '@/components/theme-toggle';
 import VoicePicker from '@/components/voice-picker';
 import { NAV_SECTIONS, SKILL_SHOP_LINKS, ADMIN_ITEMS, useSidebar } from '@/components/sidebar';
 import { isCinematicRoute } from '@/lib/cinematic-routes';
+import CapybaraDrift, { useCapybaraDrift } from '@/components/capybara-drift';
 
 function initials(name) {
   if (!name) return 'YOU';
@@ -38,6 +39,12 @@ function TopNav({ onMenu }) {
   // A dark cinematic top bar (like prod's) so the real UserMenu — Home,
   // notifications, and the full profile dropdown (Profile, My Role, My AI Tools,
   // My Tasks, Projects, Back to admin view, Log out) — reads in both themes.
+  //
+  // The emblem also hides an easter egg — five quick clicks. All of its state
+  // lives in components/capybara-drift.jsx; this bar is permanently mounted, so
+  // it only takes the hook and one element. Navigation is untouched.
+  const { onEmblemClick, drifting } = useCapybaraDrift();
+
   return (
     <header
       className="sticky top-0 z-50 text-white"
@@ -66,7 +73,7 @@ function TopNav({ onMenu }) {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <Link href="/" className="group flex items-center gap-2.5 min-w-0">
+          <Link href="/" onClick={onEmblemClick} className="group flex items-center gap-2.5 min-w-0">
             <img src="/brand/ai-learning-coach.png" alt="AI Learning Coach" className="w-9 h-9 shrink-0 transition-transform group-hover:scale-105" />
             <span className="leading-tight min-w-0">
               <span className="block font-display font-bold text-[15px] text-white truncate tracking-tight">AI Learning Coach</span>
@@ -76,6 +83,7 @@ function TopNav({ onMenu }) {
         </div>
         <UserMenu />
       </div>
+      {drifting && <CapybaraDrift />}
     </header>
   );
 }

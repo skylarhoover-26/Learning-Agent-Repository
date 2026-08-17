@@ -1,9 +1,19 @@
 'use client';
 
+import EggCapybara from '@/components/egg-capybara';
+
 export default function GlobalError({ error, reset }) {
   return (
     <div style={{ padding: 40, fontFamily: 'system-ui', maxWidth: 600, margin: '0 auto' }}>
-      <h2 style={{ color: '#dc2626', marginBottom: 8 }}>Something went wrong</h2>
+      {/* Everything on this page is inline-styled, including the capybara's
+          wrapper: if the failure took the stylesheet with it, Tailwind classes
+          would render nothing. The capybara itself is self-contained SVG with no
+          CSS dependency, so it survives that case.
+          See lib/easter-eggs.js: error-boundary. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+        <EggCapybara eggId="error-boundary" variant="unplugged" size={72} />
+        <h2 style={{ color: '#dc2626', margin: 0 }}>Something went wrong</h2>
+      </div>
       <pre style={{
         background: '#fef2f2',
         border: '1px solid #fecaca',

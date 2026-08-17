@@ -1007,7 +1007,7 @@ function LessonContent() {
               </div>
             ) : (
               <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-10 max-w-xl mx-auto">
-                <BookLoader message={`Finding a surprise ${FORMAT_META[format].title} for you…`} size="lg" />
+                <BookLoader message={`Finding a surprise ${FORMAT_META[format].title} for you…`} size="lg" egg="lesson-gen-wait" />
               </div>
             )}
           </main>
@@ -1558,7 +1558,7 @@ function LessonContent() {
       {/* Loading state (initial) */}
       {isLoading && slides.length === 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
-          <BookLoader message={`Preparing your lesson on ${topic}...`} size="lg" />
+          <BookLoader message={`Preparing your lesson on ${topic}...`} size="lg" egg="lesson-gen-wait" />
         </div>
       )}
 

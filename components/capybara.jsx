@@ -259,6 +259,20 @@ const PROPS = {
       </g>
     ),
   },
+  orange: {
+    front: (
+      <g>
+        {/* The yuzu-on-the-head pose. Sits on the flat top of the skull and
+            overlaps it by a couple of units so it rests rather than floats. */}
+        <circle cx="49" cy="9" r="8" fill="#F5872E" />
+        <ellipse cx="45.8" cy="6.2" rx="2.8" ry="1.9" fill="#FFC58F" opacity=".7" />
+        {/* Leaf stays at y >= 0.4: an svg clips to its viewport, so anything
+            above the viewBox top would be shaved off. */}
+        <path d="M50.5 3 Q59 0.4 60.5 4.4 Q54 6.8 50.5 3 Z" fill="#2F9E52" />
+        <path d="M50.4 3.6 Q52.6 2.4 54.8 3" fill="none" stroke="#1F6F3A" strokeWidth="1.2" strokeLinecap="round" />
+      </g>
+    ),
+  },
   crown: {
     front: (
       <g>

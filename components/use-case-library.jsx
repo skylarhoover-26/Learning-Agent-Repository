@@ -6,6 +6,7 @@ import { Library, Search, Clock, ChevronRight, ChevronDown, Copy, Check, X, Tren
 import { trackUseCaseTry, trackUseCaseCopy, getMostUsedIds, getRecentlyUsedIds } from '@/lib/library-store';
 import { sortByDifficulty } from '@/lib/difficulty';
 import EmojiIcon from '@/components/emoji-icon';
+import EggCapybara from '@/components/egg-capybara';
 
 const USE_CASES = [
   { id: 1, icon: '📧', title: 'Draft customer emails', description: 'Generate professional email responses to common customer inquiries.', difficulty: 'easy', category: 'communication', roles: ['cs', 'sales'], timeSaved: '10 min/email', starterPrompt: 'You are a customer success professional at a home services software company. Draft a warm, professional response to this customer inquiry: [paste inquiry]' },
@@ -190,7 +191,16 @@ export default function UseCaseLibrary() {
       </div>
 
       {filtered.length === 0 ? (
+        /* Empty results earn a sleeping capybara — see lib/easter-eggs.js:
+           library-empty. An empty state is a dead end, which makes it the one
+           place a mascot costs the learner nothing. */
         <div className="cine-glass rounded-2xl border-dashed p-10 text-center">
+          <EggCapybara
+            eggId="library-empty"
+            variant="sleeping"
+            size={104}
+            className="mx-auto mb-2"
+          />
           <p className="text-slate-500 dark:text-slate-400">No use cases match your filters. Try clearing some.</p>
         </div>
       ) : (

@@ -6,6 +6,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import { useProfile } from '@/components/profile-provider';
 import Avatar from '@/components/avatar';
+import EggCapybara from '@/components/egg-capybara';
 import { getLevelTitle } from '@/lib/level-titles';
 import { resolveLearnerId } from '@/lib/learner-id';
 import { Trophy, Users, Crown, Loader2, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -362,6 +363,19 @@ function PodiumSpot({ person, rank, tier, isMe }) {
       {/* Pedestal: gradient block with a big rank numeral; #1 gets a sweeping sheen. */}
       <div className={`relative overflow-hidden mt-2 w-full ${s.ped} rounded-t-xl flex items-start justify-center pt-2 shadow-inner ${s.shine ? 'podium-shine' : ''}`}>
         <span className="text-2xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]">{rank}</span>
+        {/* Trophy capybara for YOUR first place, not for whoever happens to be
+            #1 — it's a reward, so it only shows on your own spot. It lives inside
+            the pedestal so the pedestal's overflow-hidden clips it and the podium
+            columns can't be knocked out of alignment.
+            See lib/easter-eggs.js: leaderboard-top. */}
+        {rank === 1 && isMe && tier > 0 && (
+          <EggCapybara
+            eggId="leaderboard-top"
+            variant="trophy"
+            size={58}
+            className="absolute right-0 -bottom-1 pointer-events-none"
+          />
+        )}
       </div>
     </div>
   );

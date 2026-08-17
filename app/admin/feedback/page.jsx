@@ -13,6 +13,7 @@ import MediaCapture from '@/components/media-capture';
 import { PRIORITY_LEVELS, PRIORITY_DEFINITIONS, WORK_STATUSES } from '@/lib/feedback-priority';
 import { FEATURE_AREAS } from '@/lib/feedback-features';
 import { mediaProxySrc } from '@/lib/media-url';
+import EggCapybara from '@/components/egg-capybara';
 
 // Category → pill color, so bugs/ideas/praise are scannable at a glance.
 const CATEGORY_STYLES = {
@@ -605,7 +606,16 @@ function AdminFeedbackInner() {
               </div>
 
               {shown.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400 py-10 text-center">
+                <div className="py-10 text-center">
+                  {/* Empty triage queue earns a sleeping capybara.
+                      See lib/easter-eggs.js: feedback-queue-clear. */}
+                  <EggCapybara
+                    eggId="feedback-queue-clear"
+                    variant="sleeping"
+                    size={92}
+                    className="mx-auto mb-1"
+                  />
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {q
                     ? `No feedback matches "${search.trim()}" in ${tab}.`
                     : (priorityFilter.length > 0 || featureFilter.length > 0 || statusFilter.length > 0) && base.length > 0
@@ -630,6 +640,7 @@ function AdminFeedbackInner() {
                     ? 'Nothing on watch — nothing waiting to be confirmed.'
                     : 'No in-progress feedback — all caught up!'}
                 </p>
+                </div>
               ) : (
                 <>
                   <div className="space-y-3">

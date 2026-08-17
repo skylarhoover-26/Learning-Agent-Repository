@@ -385,11 +385,29 @@ body {
 }
 .lu-capy { animation: lu-capy .55s cubic-bezier(.16, 1, .3, 1) .38s both; }
 
+/* A gentle idle bob, for a capybara that's meant to look busy during a wait. */
+@keyframes capy-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.capy-bob { animation: capy-bob 1.9s ease-in-out infinite; }
+
+/* The hidden emblem egg: one pass across the bottom of the viewport, then gone.
+   Travel is in vw so it clears any window width. */
+@keyframes capy-drift {
+  from { transform: translateX(-120px); }
+  to   { transform: translateX(calc(100vw + 120px)); }
+}
+.capy-drift { animation: capy-drift 5.2s linear both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .xp-sheen, .xp-bump, .lu-spin, .lu-halo { animation: none; }
+  .xp-sheen, .xp-bump, .lu-spin, .lu-halo, .capy-bob { animation: none; }
   .lu-pop, .lu-row { animation-duration: .01s; }
   /* Keep the settled tilt, drop the travel. */
   .lu-capy { animation-duration: .01s; animation-delay: 0s; }
+  /* The drift IS the whole egg — with the animation off it would sit parked
+     offscreen forever, so hide it rather than leave a stuck capybara. */
+  .capy-drift { display: none; }
 }
 
 /* The dark top bar is FIXED to the viewport so it stays put while scrolling and

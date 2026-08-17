@@ -34,13 +34,15 @@ export default function EasterEggsPage() {
 
 function EasterEggsInner() {
   const router = useRouter();
-  const { isAdmin, loaded } = useMenuVisibility();
+  // actingAsAdmin, NOT isAdmin: isAdmin stays true while previewing as a regular
+  // user, so gating on it leaves this admin page fully rendered in preview mode.
+  const { actingAsAdmin, loaded } = useMenuVisibility();
   const [onDark, setOnDark] = useState(false);
   const [zoom, setZoom] = useState(96);
 
   useEffect(() => {
-    if (loaded && !isAdmin) router.replace('/');
-  }, [loaded, isAdmin, router]);
+    if (loaded && !actingAsAdmin) router.replace('/');
+  }, [loaded, actingAsAdmin, router]);
 
   if (!loaded) {
     return (
@@ -49,7 +51,7 @@ function EasterEggsInner() {
       </div>
     );
   }
-  if (!isAdmin) return null;
+  if (!actingAsAdmin) return null;
 
   const liveEggs = EASTER_EGGS.filter((e) => e.status === 'live');
   const plannedEggs = EASTER_EGGS.filter((e) => e.status !== 'live');

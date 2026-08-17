@@ -1188,7 +1188,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       : 'Almost there — this one’s taking a little longer than usual…';
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
-        <BookLoader message={message} size="lg" />
+        <BookLoader message={message} size="lg" egg="lesson-gen-wait" />
         <div className="mt-6 max-w-md mx-auto">
           <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />

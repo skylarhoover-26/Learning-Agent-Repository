@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Zap, Award, Flame } from 'lucide-react';
+import EggCapybara from '@/components/egg-capybara';
 
 const BADGE_META = {
   first_lesson: { name: 'First Steps', emoji: '🎓' },
@@ -46,7 +47,19 @@ export default function XpToast({ result, onDismiss }) {
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 min-w-[280px] max-w-[340px]">
+      <div className="relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 min-w-[280px] max-w-[340px]">
+        {/* Perfect game: the sunglasses capybara leans in from the toast's
+            bottom-right, clipped by the card. Flagged upstream in
+            lib/game-store.js so all twelve games get it for free.
+            See lib/easter-eggs.js: game-perfect-score. */}
+        {result.perfectGame && (
+          <EggCapybara
+            eggId="game-perfect-score"
+            variant="shades"
+            size={72}
+            className="absolute -right-2 -bottom-3 pointer-events-none"
+          />
+        )}
         <div className="flex items-center gap-3 mb-3">
           <div className="w-11 h-11 rounded-xl bg-cta-50 dark:bg-cta-900/30 flex items-center justify-center">
             <Zap className="w-5 h-5 text-cta-600" />

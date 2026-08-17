@@ -1,14 +1,29 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, ChevronRight } from 'lucide-react';
 import { useTodaysPick } from '@/components/use-todays-pick';
-import { REFRESH_LABEL } from '@/lib/content-day';
+import { REFRESH_LABEL, dailySeed } from '@/lib/content-day';
+import EggCapybara from '@/components/egg-capybara';
+
+// Roughly one content day in five. Seeded off the day rather than Math.random so
+// it holds still all day and rotates at 8 AM PT with everything else — a mascot
+// that blinks in and out on every re-render reads as a bug, not a treat.
+function isOrangeDay() {
+  return dailySeed('capy-orange') % 5 === 0;
+}
 
 // The home-dashboard "Today's Pick" card. The recommendation logic lives in
 // useTodaysPick so this card and the sidebar "Today's Pick" redirect agree.
 export default function TodaysPick() {
   const pick = useTodaysPick();
+
+  // Resolved after mount: the card server-renders, and branching on the day
+  // seed during render would hydrate to a different tree.
+  // See lib/easter-eggs.js: todays-pick-orange.
+  const [orangeDay, setOrangeDay] = useState(false);
+  useEffect(() => { setOrangeDay(isOrangeDay()); }, []);
 
   if (!pick) return null;
 
@@ -16,8 +31,16 @@ export default function TodaysPick() {
     <Link
       href={pick.href}
       data-tour="home-todays-pick"
-      className="group block bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card-hover p-5 transition-all"
+      className="group relative overflow-hidden block bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 hover:border-cta-300 hover:shadow-card-hover p-5 transition-all"
     >
+      {orangeDay && (
+        <EggCapybara
+          eggId="todays-pick-orange"
+          variant="orange"
+          size={74}
+          className="absolute -right-2 -bottom-3 pointer-events-none opacity-90"
+        />
+      )}
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 rounded-xl bg-cta-50 dark:bg-slate-700 ring-1 ring-cta-200 dark:ring-slate-600 flex items-center justify-center text-cta-600 shrink-0">
           <Sparkles className="w-5 h-5" />

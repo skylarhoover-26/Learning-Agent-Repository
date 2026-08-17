@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import EggCapybara from '@/components/egg-capybara';
+
 const MESSAGES = [
   'Flipping through the pages...',
   'Finding the right chapter...',
@@ -8,8 +11,25 @@ const MESSAGES = [
   'Preparing your lesson...',
 ];
 
-export default function BookLoader({ message, size = 'md' }) {
+// How often the capybara takes over for a caller that opted in.
+const EGG_CHANCE = 0.25;
+
+const CAPY_SIZE = { sm: 56, md: 76, lg: 104 };
+
+// `egg` is opt-in per call site, NOT on by default: this loader also covers
+// "Checking admin access..." and other plumbing waits, and a mascot on those is
+// noise. Only the lesson-generation waits pass it — that's the longest wait in
+// the app, which makes it the best place to spend a smile.
+export default function BookLoader({ message, size = 'md', egg }) {
   const displayMessage = message || MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
+
+  // Rolled in an effect, not during render: this is a client component but it
+  // still server-renders, and a random branch taken at render time would
+  // hydrate to a different tree.
+  const [showCapy, setShowCapy] = useState(false);
+  useEffect(() => {
+    if (egg) setShowCapy(Math.random() < EGG_CHANCE);
+  }, [egg]);
 
   const sizeClasses = {
     sm: { book: 'w-10 h-12', text: 'text-xs mt-3' },
@@ -20,6 +40,14 @@ export default function BookLoader({ message, size = 'md' }) {
 
   return (
     <div className="flex flex-col items-center justify-center py-8">
+      {egg && showCapy ? (
+        <EggCapybara
+          eggId={egg}
+          variant="laptop"
+          size={CAPY_SIZE[size] || CAPY_SIZE.md}
+          className="capy-bob"
+        />
+      ) : (
       <div className={`${s.book} relative`}>
         <div className="book-loader">
           <div className="book-page book-page-1" />
@@ -28,6 +56,7 @@ export default function BookLoader({ message, size = 'md' }) {
           <div className="book-spine" />
         </div>
       </div>
+      )}
       {displayMessage && (
         <p className={`${s.text} text-slate-500 dark:text-slate-400 font-medium animate-pulse`}>
           {displayMessage}

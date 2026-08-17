@@ -5,6 +5,7 @@ import { useProgression } from './progression-provider';
 import { getLevelTitle } from '@/lib/level-titles';
 import { Award, Sparkles, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/page-header';
+import EggCapybara from '@/components/egg-capybara';
 
 const XP_SOURCE_LABELS = {
   first_login: 'Welcome bonus',
@@ -123,12 +124,24 @@ export default function AchievementsLive() {
             <Link
               key={badge.id}
               href={`${badge.href}?from=achievements`}
-              className={`bg-white dark:bg-slate-800 rounded-2xl border p-5 text-center transition-all hover:scale-[1.03] hover:shadow-lg ${
+              className={`relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl border p-5 text-center transition-all hover:scale-[1.03] hover:shadow-lg ${
                 badge.earned
                   ? 'border-cta-200 shadow-card'
                   : 'border-slate-200 dark:border-slate-700 opacity-50 grayscale'
               }`}
             >
+              {/* Earning Bookworm — ten lessons — puts the reading capybara on
+                  the badge that already means "reader". Only once it's earned;
+                  the locked card is greyscaled and a grey capybara is just a
+                  smudge. See lib/easter-eggs.js: bookworm-badge. */}
+              {badge.id === 'ten_lessons' && badge.earned && (
+                <EggCapybara
+                  eggId="bookworm-badge"
+                  variant="book"
+                  size={62}
+                  className="absolute -left-2 -bottom-2 pointer-events-none"
+                />
+              )}
               <div className="text-4xl mb-2">{badge.emoji}</div>
               <h4 className="font-bold text-ink dark:text-slate-200 text-sm mb-1">{badge.name}</h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">{badge.description}</p>
