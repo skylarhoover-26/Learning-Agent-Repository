@@ -10,11 +10,11 @@ import BookLoader from '@/components/book-loader';
 import MultiSelect from '@/components/multi-select';
 import { SECTION_COLORS } from '@/lib/section-colors';
 import {
-  freshnessLabel, isResearchSource, lessonHref, CATEGORY_LABELS, SCAN_TIME_LABEL,
+  freshnessLabel, isApproved, isResearchSource, lessonHref, CATEGORY_LABELS, SCAN_TIME_LABEL,
 } from '@/lib/ai-news';
 import {
   LANES, LANE_BY_ID, RANKED_LIMIT, attachPersonal, byBestMatch, publishedMs,
-  laneCounts, hasPersonalization, marksByItem,
+  laneCounts, hasPersonalization, marksByItem, splitByVisibility,
 } from '@/lib/news-personal';
 
 // Everything the daily scan found, ranked against the person reading it.
@@ -212,6 +212,9 @@ function AiNewsInner() {
   const [view, setView] = useState(null);
   const [selectedSources, setSelectedSources] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  // The escape hatch. Off by default: the page promises "what changed for you",
+  // and an archive of everything the scan swept up is a different promise.
+  const [showEverything, setShowEverything] = useState(false);
   const [sortBy, setSortBy] = useState(null);
 
   useEffect(() => {
@@ -235,13 +238,22 @@ function AiNewsInner() {
   // made every useMemo below re-run on each one — memoized in name only.
   const all = useMemo(() => data?.items || [], [data]);
 
-  // What gets sent for ranking: the newest RANKED_LIMIT practical items. arXiv is
-  // excluded because the page files research in its own section outside the
-  // lanes, so scoring it would spend the day's budget on rows the lanes never
-  // show.
+  // What gets sent for ranking: the newest RANKED_LIMIT items that could appear
+  // in the default view. Two exclusions, both for the same reason — never spend a
+  // learner's daily generation on rows the lanes will not show:
+  //
+  //   arXiv, because the page files research in its own section outside the lanes.
+  //   Unapproved categories, because vendor pitches, funding news and industry
+  //     commentary only ever appear behind "Show everything", where they are
+  //     presented as an unranked archive rather than as a judgement.
+  //
+  // The score gate in isDefaultVisible can't apply here — it needs the score this
+  // call produces — so it runs after the results land.
   const rankable = useMemo(() => (
     all
-      .filter((i) => i.externalId && i.title && !isResearchSource(i.sourceName))
+      .filter((i) => (
+        i.externalId && i.title && !isResearchSource(i.sourceName) && isApproved(i)
+      ))
       .slice()
       .sort((a, b) => publishedMs(b) - publishedMs(a))
       .slice(0, RANKED_LIMIT)
@@ -295,24 +307,38 @@ function AiNewsInner() {
 
   const markMap = useMemo(() => marksByItem(enriched, marks), [enriched, marks]);
 
-  // Source and category filters apply to EVERYTHING before the lane pills, so
-  // the pill counts always describe what you'd actually get by clicking them.
+  // Both dropdowns are built from the list currently in play, NOT from the whole
+  // feed. Offering "Business & market" as a Type while business items are hidden
+  // is offering a filter that can only ever return nothing; the options shift as
+  // you toggle, which is the honest reflection of what is on the page.
   const sourceOptions = useMemo(
-    () => [...new Set(all.map((i) => i.sourceName).filter(Boolean))]
+    () => [...new Set(base.map((i) => i.sourceName).filter(Boolean))]
       .sort()
       .map((s) => ({ value: s, label: s })),
-    [all],
+    [base],
   );
 
   const categoryOptions = useMemo(() => {
-    const present = [...new Set(all.map((i) => i.category || 'unclassified'))];
+    const present = [...new Set(base.map((i) => i.category || 'unclassified'))];
     return present
       .map((c) => ({ value: c, label: CATEGORY_LABELS[c] || c }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [all]);
+  }, [base]);
+
+  // The relevance gate, applied before every other filter so the pill counts, the
+  // lanes and the toggle's own label all describe the same list.
+  const { visible: passing, hidden: withheld } = useMemo(
+    () => splitByVisibility(enriched),
+    [enriched],
+  );
+
+  // The single list everything downstream is derived from — the filters, the
+  // lanes, the pill counts and the dropdown options all read from this, so the
+  // toggle can never leave one of them describing a different page.
+  const base = showEverything ? enriched : passing;
 
   const scoped = useMemo(() => {
-    let list = enriched;
+    let list = base;
     if (selectedSources.length) list = list.filter((i) => selectedSources.includes(i.sourceName));
     if (selectedCategories.length) {
       list = list.filter((i) => selectedCategories.includes(i.category || 'unclassified'));
@@ -325,7 +351,7 @@ function AiNewsInner() {
       list.sort((a, b) => String(a.sourceName).localeCompare(String(b.sourceName)));
     }
     return list;
-  }, [enriched, selectedSources, selectedCategories, activeSort]);
+  }, [base, selectedSources, selectedCategories, activeSort]);
 
   // arXiv is split out regardless of lane — raw paper titles get their own
   // clearly-labelled home so nobody mistakes them for practical picks.
@@ -390,6 +416,37 @@ function AiNewsInner() {
         ) : (
           <>
             <RankNotice ranked={ranked} count={counts.act} />
+
+            {/* The escape hatch, stated as a fact rather than hidden in a menu:
+                the reader can always see exactly how much was held back and why,
+                and get to it in one click. Hiding things quietly is what makes a
+                filtered feed feel like it is keeping secrets. */}
+            {withheld.length > 0 && (
+              <div className="cine-glass rounded-2xl px-4 py-3 text-sm flex flex-wrap items-center gap-x-2 gap-y-1" style={{ color: 'var(--ink-dim)' }}>
+                {showEverything ? (
+                  <>
+                    Showing everything the scan found, including
+                    {' '}<strong style={{ color: 'var(--ink)' }}>{withheld.length}</strong>{' '}
+                    items we would normally hold back: product pitches, funding and market news,
+                    industry commentary, and anything that scored near zero against your work.
+                  </>
+                ) : (
+                  <>
+                    <strong style={{ color: 'var(--ink)' }}>{withheld.length}</strong> items are hidden:
+                    product pitches, funding and market news, industry commentary, and anything that
+                    scored near zero against your work.
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowEverything((v) => !v)}
+                  className="underline font-medium"
+                  style={{ color: 'var(--accent2)' }}
+                >
+                  {showEverything ? 'Hide them again' : 'Show everything'}
+                </button>
+              </div>
+            )}
 
             {/* Filters on their own line so the dropdowns never collide with the
                 pill row, mirroring the admin feedback page's layout. Category
