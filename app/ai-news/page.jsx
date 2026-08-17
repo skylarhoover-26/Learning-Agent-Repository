@@ -13,7 +13,7 @@ import {
   freshnessLabel, isResearchSource, lessonHref, CATEGORY_LABELS, SCAN_TIME_LABEL,
 } from '@/lib/ai-news';
 import {
-  LANES, LANE_BY_ID, RANKED_LIMIT, attachPersonal, byBestMatch, publishedMs,
+  LANES, LANE_BY_ID, attachPersonal, byBestMatch, publishedMs,
   laneCounts, hasPersonalization, marksByItem, isDefaultVisible, MAX_AGE_LABEL,
   rankableItems,
 } from '@/lib/news-personal';
@@ -200,22 +200,6 @@ function FilterPill({ label, count, active, onClick }) {
   );
 }
 
-// What to say above the unranked pile.
-//
-// The old note said "these few sat past that line or came back unjudged" no
-// matter how many there were, and read as reassurance. On a day when the ranking
-// mostly failed it sat above 22 of 23 items and quietly misdescribed a broken
-// feature as housekeeping. When most of the feed is unranked, say so — a reader
-// who can see the lane counts already knows something is off, and being told
-// "these few" when it is nearly all of them is worse than being told nothing.
-function unrankedNote(unrankedCount, practicalCount) {
-  const mostly = practicalCount > 0 && unrankedCount / practicalCount >= 0.5;
-  if (mostly) {
-    return `We could not rank most of today's items against your work — ${unrankedCount} of ${practicalCount} came back unjudged, so they are in date order instead of best-match. Nothing is lost, but the order below is not personal to you. It usually sorts itself out on the next check.`;
-  }
-  return `We rank the newest ${RANKED_LIMIT} items against your work each day, which is normally the whole feed. These sat past that line or came back unjudged, so they are here in date order so nothing is lost.`;
-}
-
 function AiNewsInner() {
   const [data, setData] = useState(null);
   const [personal, setPersonal] = useState({});
@@ -378,24 +362,29 @@ function AiNewsInner() {
   const practical = useMemo(() => scoped.filter((i) => !isResearchSource(i.sourceName)), [scoped]);
   const research = useMemo(() => scoped.filter((i) => isResearchSource(i.sourceName)), [scoped]);
 
-  const { counts, unranked } = useMemo(() => laneCounts(practical), [practical]);
+  // An item with no lane does not appear. There is no "Not ranked" bucket.
+  //
+  // The page's entire promise is "ranked against your work". An item we could not
+  // rank has no claim on the reader's attention, and parking it in a labelled pile
+  // was worse than dropping it: on a day when ranking half-failed, the biggest
+  // section on the page was the one admitting it knew nothing about the reader.
+  //
+  // The cost is deliberate and worth naming: when ranking fails, this page gets
+  // thin or empty rather than padded. RankNotice says so plainly. A quiet page
+  // that only ever shows judged items is more trustworthy than a full one that
+  // cannot say why anything is there.
+  const laned = useMemo(() => practical.filter((i) => i.lane), [practical]);
+
+  const { counts } = useMemo(() => laneCounts(practical), [practical]);
 
   const inView = activeView === 'all'
-    ? practical
-    : activeView === 'unranked'
-      ? practical.filter((i) => !i.lane)
-      : practical.filter((i) => i.lane === activeView);
+    ? laned
+    : laned.filter((i) => i.lane === activeView);
 
   const laneSections = activeView === 'all'
-    ? LANES.map((lane) => ({ lane, items: practical.filter((i) => i.lane === lane.id) }))
+    ? LANES.map((lane) => ({ lane, items: laned.filter((i) => i.lane === lane.id) }))
       .filter((s) => s.items.length)
-    : activeView === 'unranked'
-      ? []
-      : [{ lane: LANE_BY_ID.get(activeView), items: inView }].filter((s) => s.lane && s.items.length);
-
-  const unrankedItems = (activeView === 'all' || activeView === 'unranked')
-    ? practical.filter((i) => !i.lane)
-    : [];
+    : [{ lane: LANE_BY_ID.get(activeView), items: inView }].filter((s) => s.lane && s.items.length);
 
   // No "next check" here — it implied repeated scanning. The scan runs once a
   // day; "updated Nh ago" is the honest signal and still exposes a dead cron.
@@ -518,14 +507,6 @@ function AiNewsInner() {
                   onClick={() => setView(lane.id)}
                 />
               ))}
-              {ranked && unranked > 0 && (
-                <FilterPill
-                  label="Not ranked"
-                  count={unranked}
-                  active={activeView === 'unranked'}
-                  onClick={() => setView('unranked')}
-                />
-              )}
             </div>
 
             <div className="space-y-10">
@@ -547,16 +528,6 @@ function AiNewsInner() {
                   label="Latest"
                   count={practical.length}
                   items={practical}
-                  marks={markMap}
-                />
-              )}
-
-              {unrankedItems.length > 0 && (
-                <Section
-                  label="Not ranked"
-                  count={unrankedItems.length}
-                  note={unrankedNote(unrankedItems.length, practical.length)}
-                  items={unrankedItems}
                   marks={markMap}
                 />
               )}

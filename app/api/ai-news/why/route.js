@@ -223,7 +223,8 @@ export async function POST(request) {
     // skeleton. judgeBatch never throws, so one bad batch leaves its items
     // unjudged without taking the others down.
     let judged = 0;
-    const results = await Promise.all(batches.map((b) => judgeBatch(b, context)));
+    const batchErrors = [];
+    const results = await Promise.all(batches.map((b) => judgeBatch(b, context, batchErrors)));
     for (const batchResult of results) {
       for (const [id, value] of Object.entries(batchResult)) {
         known[id] = { ...known[id], ...value };
@@ -250,7 +251,13 @@ export async function POST(request) {
         user: { email, name: profile?.display_name || 'Unknown' },
         model: MODELS.haiku,
         input: { items: items.length, unjudged: unjudged.length, batches: batches.length },
-        output: { judged, failed: unjudged.length - judged },
+        // The errors are the point: a run that judged nothing needs to say what
+        // the model actually did. Capped so one bad day can't bloat the log.
+        output: {
+          judged,
+          failed: unjudged.length - judged,
+          errors: batchErrors.slice(0, 3),
+        },
       }).catch(() => {});
     }
 
@@ -269,7 +276,11 @@ export async function POST(request) {
 // One judging batch: score, match and sentence for each item in the slice.
 // Never throws — a failed batch leaves those items unjudged, which the page shows
 // as "not ranked" rather than as a confident zero.
-async function judgeBatch(batch, context) {
+// `errors` collects the REASON a batch produced nothing, so the audit entry can
+// say why instead of just how many. Without it a failed batch was a silent `{}`
+// and the only trace was a server console line nobody can read after the fact —
+// which is why "15 of 17 unjudged" sat there undiagnosable.
+async function judgeBatch(batch, context, errors) {
   try {
     // The blurb line is OMITTED when there isn't one, rather than sent empty.
     // Sending `blurb: <untrusted></untrusted>` told the model a field existed and
@@ -298,7 +309,12 @@ async function judgeBatch(batch, context) {
     });
 
     const parsed = parseJson(response.content?.[0]?.text || '', '[');
-    if (!Array.isArray(parsed)) return {};
+    if (!Array.isArray(parsed)) {
+      // Truncation at max_tokens looks exactly like this, so record a slice of
+      // what came back rather than only that it failed.
+      errors?.push(`unparseable output: ${String(response.content?.[0]?.text || '').slice(0, 120)}`);
+      return {};
+    }
 
     const out = {};
     for (const row of parsed) {
@@ -323,7 +339,9 @@ async function judgeBatch(batch, context) {
     }
     return out;
   } catch (err) {
-    console.error('ai-news judge batch failed:', err?.message || err);
+    const message = err?.status ? `${err.status} ${err?.message || ''}`.trim() : (err?.message || String(err));
+    console.error('ai-news judge batch failed:', message);
+    errors?.push(message);
     return {};
   }
 }
