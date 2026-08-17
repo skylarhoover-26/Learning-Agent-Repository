@@ -10,6 +10,7 @@ import { requireCronSecret } from '@/lib/cron-auth';
 import { filterUnsafeContent } from '@/lib/content-safety';
 import { refreshStaleSkillMarks } from '@/lib/skill-staleness';
 import { APPROVED_CATEGORIES, dropExcluded } from '@/lib/ai-news';
+import { isFresh } from '@/lib/news-personal';
 import { writeDailyLessons, todayDateString } from '@/lib/daily-lessons';
 import { formatFindings, QUARANTINE_NOTE } from '@/lib/untrusted';
 
@@ -126,7 +127,7 @@ export async function GET(request) {
   if (denied) return denied;
 
   try {
-    const allFindings = [];
+    let allFindings = [];
     const errors = [];
     const results = await Promise.allSettled(
       FEEDS.map(async (feed) => {
@@ -152,6 +153,18 @@ export async function GET(request) {
     for (const result of results) {
       if (result.status === 'fulfilled') allFindings.push(...result.value);
     }
+
+    // Drop anything already too old to be news, BEFORE it costs a classification
+    // call or reaches storage.
+    //
+    // This is where the January problem started. VentureBeat's live feed still
+    // carries a January article among its newest ten, so every scan pulled it in
+    // again as though it were new, and the merge below evicted by POSITION rather
+    // than age, so it never aged out. Filtering on the way in means a stale item
+    // cannot enter the blob at all, however long its publisher keeps serving it.
+    const fetchedCount = allFindings.length;
+    allFindings = allFindings.filter((f) => isFresh(f));
+    const droppedStale = fetchedCount - allFindings.length;
 
     const existing = (await readBlob(BLOB_FINDINGS_KEY)) || [];
     const existingIds = new Set(existing.map(f => f.externalId));
@@ -200,7 +213,14 @@ export async function GET(request) {
     // /ai-news is a normal learner page with a "show everything" toggle, so
     // hidden-but-present was still reachable. Applied to the back-filled existing
     // findings too, so previously-stored ones get cleaned out on this run.
-    const merged = dropExcluded([...classified, ...existingTagged]).slice(0, 200);
+    // Freshness applied to the stored list too, not just to arrivals. Without
+    // this, everything already in the blob from before the cutoff existed would
+    // sit there until 200 newer items pushed it out — which, on feeds that mostly
+    // re-serve the same articles, takes months. The 200 cap stays as a backstop;
+    // the date is what actually governs the size now.
+    const merged = dropExcluded([...classified, ...existingTagged])
+      .filter((f) => isFresh(f))
+      .slice(0, 200);
     await writeBlob(BLOB_FINDINGS_KEY, merged);
 
     // Heatmap freshness (#54): if any of today's model/practice news actually
@@ -308,6 +328,11 @@ Output ONLY a JSON array. No prose. If no updates are warranted, return [].`,
       ok: true,
       scannedAt: new Date().toISOString(),
       newFindings: safeFindings.length,
+      // How many the feeds served that were already too old to be news. Worth
+      // reporting rather than discarding silently: a source that suddenly starts
+      // dumping months-old items shows up here as a number climbing, instead of
+      // as a learner noticing a January headline on the page in August.
+      droppedStale,
       totalFindings: merged.length,
       shownToLearners: merged.filter((f) => APPROVED_CATEGORIES.includes(f.category)).length,
       byCategory,

@@ -14,7 +14,7 @@ import {
 } from '@/lib/ai-news';
 import {
   LANES, LANE_BY_ID, RANKED_LIMIT, attachPersonal, byBestMatch, publishedMs,
-  laneCounts, hasPersonalization, marksByItem, isDefaultVisible,
+  laneCounts, hasPersonalization, marksByItem, isDefaultVisible, isFresh, MAX_AGE_HOURS,
 } from '@/lib/news-personal';
 
 // What the daily scan found that affects the person reading it.
@@ -29,13 +29,13 @@ import {
 // source drop to filters, and items the news has actually moved on your Knowledge
 // Heatmap say so on the row.
 //
-// It is NOT a complete view of the feed, by decision. Two gates in
-// lib/news-personal.js decide what appears at all: the item has to be the kind of
-// thing we teach, and it has to touch this reader's work. On a 200-item scan that
-// routinely leaves ten. Nothing is destroyed — the scan stores everything and the
-// admin surfaces see all of it — but a learner opening this page should find only
-// what affects their role, with no count of what was left out and no toggle
-// tempting them into it.
+// It is NOT a complete view of the feed, by decision. Three gates in
+// lib/news-personal.js decide what appears at all: the item has to be recent, it
+// has to be the kind of thing we teach, and it has to touch this reader's work.
+// On a 200-item scan that routinely leaves under ten. Nothing is destroyed — the
+// admin surfaces still see the whole feed — but a learner opening this page
+// should find only what affects their role, with no count of what was left out
+// and no toggle tempting them into it.
 
 export default function AiNewsPage() {
   return <CinematicFrame><AiNewsInner /></CinematicFrame>;
@@ -247,13 +247,15 @@ function AiNewsInner() {
   //   arXiv, because the page files research in its own section outside the lanes.
   //   Unapproved categories, because vendor pitches, funding news and industry
   //     commentary never reach this page at all.
+  //   Anything older than MAX_AGE_HOURS, because it is not news and will not show.
   //
   // The score gate in isDefaultVisible can't apply here — it needs the score this
   // call produces — so it runs after the results land.
   const rankable = useMemo(() => (
     all
       .filter((i) => (
-        i.externalId && i.title && !isResearchSource(i.sourceName) && isApproved(i)
+        i.externalId && i.title && !isResearchSource(i.sourceName)
+        && isApproved(i) && isFresh(i)
       ))
       .slice()
       .sort((a, b) => publishedMs(b) - publishedMs(a))
@@ -422,6 +424,25 @@ function AiNewsInner() {
           // problem this rebuild exists to fix. A few seconds of honest waiting
           // beats a few seconds of wrong answer.
           <RankingSkeleton />
+        ) : base.length === 0 ? (
+          // Items are stored, but none of them are both recent and relevant to
+          // this reader. A real outcome on a quiet Monday, not an error — and it
+          // has to say so, because the alternative is a page that looks broken.
+          <div className="cine-glass rounded-2xl p-6 text-sm space-y-2" style={{ color: 'var(--ink-dim)' }}>
+            <p style={{ color: 'var(--ink)' }} className="font-semibold">
+              Nothing new for your work in the last {MAX_AGE_HOURS} hours.
+            </p>
+            <p>
+              We only show updates from the last two days that touch your role, tasks, goals or
+              projects. Today&rsquo;s scan found nothing that clears that bar, which is a quiet news
+              day rather than a problem. The next scan runs at {SCAN_TIME_LABEL}.
+            </p>
+            <p>
+              <Link href="/my-goals" className="underline font-medium">Update what you&rsquo;re working on</Link>
+              {' '}if your focus has shifted, or take a lesson on anything from the{' '}
+              <Link href="/library" className="underline font-medium">Library</Link>.
+            </p>
+          </div>
         ) : (
           <>
             <RankNotice ranked={ranked} count={counts.act} />
