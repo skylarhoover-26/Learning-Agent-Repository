@@ -10,6 +10,7 @@ import { untrusted, QUARANTINE_NOTE } from '@/lib/untrusted';
 import { contentDayKey } from '@/lib/content-day';
 import { logAuditEntry } from '@/lib/audit-log';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { BAND_IDS, scoreForBand } from '@/lib/news-personal';
 
 // Ranks the AI-news feed against ONE learner, and explains every item in it.
 //
@@ -18,9 +19,16 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 // why it lands on their desk, and for the feed to LEAD with the items that do
 // (feedback #145). So this returns three things per item:
 //
-//   score — 0-100, how much this changes THIS person's work. Drives the lanes.
+//   band  — one of five verdicts, from changes_now down to irrelevant. Drives the
+//           lanes, via the score lib/news-personal.js maps it to.
 //   match — the short reason, for the chip on the row ("Your project: X").
 //   why   — one sentence on what changed and what to do about it.
+//
+// A band rather than a 0-100 number, because the number was never as precise as
+// it looked: an item scored 72 one run and 68 the next crossed a lane boundary
+// on a distinction the model cannot hold. Between that, temperature 0 and a
+// stable batch order, a re-run of the same feed against the same profile should
+// now land in the same place.
 //
 // All three in ONE pass, batched and run concurrently. It was two passes at
 // first — score everything cheaply, then write sentences for the top twelve —
@@ -52,7 +60,7 @@ const CACHE_TYPE = 'ai_news_why';
 // Bump when the prompts or the stored shape change in a way that should discard
 // yesterday's judgements. Without this, a tuning change reaches only learners who
 // hadn't visited yet that day.
-const CACHE_VERSION = 4;
+const CACHE_VERSION = 5;
 
 // KEEP IN SYNC with RANKED_LIMIT in lib/news-personal.js — the page caps what it
 // sends, and the page's "unranked" heading is drawn from the same number.
@@ -97,27 +105,32 @@ const JUDGE_SYSTEM = [
   'You rank AI news for ONE specific person at Housecall Pro, a home services software company.',
   'The audience is ordinary employees, marketers, support reps, ops and enablement people. They are NOT engineers or researchers.',
   '',
-  'For each item, score 0-100: how much does this change what THIS person does at work?',
+  'For each item, choose EXACTLY ONE band: how much does this change what THIS person does at work?',
   '',
-  'SCORING:',
-  '90-100 — changes something they do this week. Names a tool they use, a task they listed, or a project they have in flight.',
-  '70-89  — changes how they should work soon. A model or feature in their toolset that shifts how they prompt or which tool they reach for.',
-  '40-69  — adjacent. Real for their kind of role, but not for their specific tasks or projects yet.',
-  '10-39  — general AI news. True and mildly interesting, no action for them.',
-  '0-9    — irrelevant to them. Engineering-only, hardware, market and funding news, corporate PR.',
+  'BANDS:',
+  'changes_now — changes something they do this week. Names a tool they use, a task they listed, or a project they have in flight.',
+  'soon        — changes how they should work soon. A model or feature in their toolset that shifts how they prompt or which tool they reach for.',
+  'adjacent    — real for their kind of role, but not for their specific tasks or projects yet.',
+  'general     — true and mildly interesting, no action for them.',
+  'irrelevant  — no connection to them. Engineering-only, hardware, market and funding news, corporate PR.',
   '',
-  'Also give a MATCH: three to five words naming the single strongest reason for the score,',
+  'Judge each item ON ITS OWN against these bands. Do NOT grade on a curve, do NOT',
+  'compare the items in this list to each other, and do not spread them across the bands',
+  'to get a nice distribution. If all ten are irrelevant to this person, all ten are',
+  'irrelevant. The same headline must land in the same band whatever else it appears beside.',
+  '',
+  'Also give a MATCH: three to five words naming the single strongest reason for the band,',
   'in the learner\'s own vocabulary. Use their words for their tasks and projects, not paraphrases.',
   '  Good: "Your project: Video Maker", "Uses Claude daily", "Your goal: automation", "Not your toolset"',
   '  Bad: "Relevant", "Interesting development", "AI news"',
-  'If the score is under 40, the match should say plainly why it is far from them.',
+  'For general or irrelevant, the match should say plainly why it is far from them.',
   '',
   'And give a WHY: ONE sentence answering what changed and what it means for THIS person\'s work.',
   '- Lead with the consequence for them, not a restatement of the headline. They can already read the headline.',
   '- Be concrete. "You can now paste a whole spreadsheet into one prompt instead of splitting it" beats "this improves capability".',
   '- Tie it to their actual work where it honestly fits: a task they listed, a project in flight, or a tool they use. Name the thing.',
   '- If it changes how they should PROMPT or which tool they should reach for, say that plainly. That is the most useful thing you can tell them.',
-  '- A LOW score still gets a real sentence. "This is aimed at engineers building their own agents, not at your',
+  '- A LOW band still gets a real sentence. "This is aimed at engineers building their own agents, not at your',
   '  enablement work" is useful; it tells them why they can skip it. Do not invent relevance to fill the space.',
   '- Never promise a feature the blurb does not state. You have only the headline and blurb.',
   '- Some items have NO blurb. Judge those from the headline alone and still say something useful about',
@@ -126,9 +139,9 @@ const JUDGE_SYSTEM = [
   '- One sentence. Maximum 30 words. No preamble, no "this article".',
   '',
   'RULES:',
-  '- Be honest and be willing to score low. A feed where everything is a 90 is a feed nobody trusts.',
-  '- Do not reward an item for sounding important. Score it for what it changes for this one person.',
-  '- Funding, valuations, chips, datacenters and hiring news score under 10 no matter how big the number.',
+  '- Be honest and be willing to band low. A feed where everything is changes_now is a feed nobody trusts.',
+  '- Do not reward an item for sounding important. Band it for what it changes for this one person.',
+  '- Funding, valuations, chips, datacenters and hiring news are irrelevant no matter how big the number.',
   '- Judge on the headline and blurb only. Never assume a capability the blurb does not state.',
   '',
   'STYLE: plain and warm. No em dashes or en dashes. No hype. Write "Housecall Pro" in full, never HCP.',
@@ -136,8 +149,9 @@ const JUDGE_SYSTEM = [
   QUARANTINE_NOTE,
   '',
   'Return ONLY a JSON array (no markdown fences):',
-  '[{"i": <1-based index>, "s": <0-100>, "m": "<match>", "w": "<one sentence>"}]',
-  'One object per item, same order.',
+  '[{"i": <1-based index>, "b": "<band>", "m": "<match>", "w": "<one sentence>"}]',
+  'One object per item, same order. "b" must be exactly one of:',
+  `  ${BAND_IDS.join(', ')}`,
 ].join('\n');
 
 export async function POST(request) {
@@ -187,7 +201,16 @@ export async function POST(request) {
     // non-answer guard in cleanSentence drops hollow ones. Filtering on `why`
     // would send those items back to the model on every single visit, paying for
     // a fresh call all day to re-derive a line we are going to discard again.
-    const unjudged = items.filter((i) => typeof known[i.id]?.score !== 'number');
+    const unjudged = items
+      .filter((i) => typeof known[i.id]?.score !== 'number')
+      // Sorted by id, NOT left in the order the page happened to send them.
+      // Batch composition was drifting run to run as items got cached, so the
+      // same headline kept landing beside different neighbours. Even with the
+      // "judge each item on its own" instruction, identical inputs are the only
+      // way to expect identical outputs — a stable sort makes a re-run
+      // reproducible rather than merely similar.
+      .slice()
+      .sort((a, b) => String(a.id).localeCompare(String(b.id)));
     const batches = [];
     for (let i = 0; i < unjudged.length; i += JUDGE_BATCH) {
       batches.push(unjudged.slice(i, i + JUDGE_BATCH));
@@ -254,9 +277,14 @@ async function judgeBatch(batch, context) {
 
     const response = await getClient().messages.create({
       model: MODELS.haiku,
-      // Room for a score, a chip and a 30-word sentence per item, with headroom
+      // Room for a band, a chip and a 30-word sentence per item, with headroom
       // so the JSON is never truncated mid-object.
       max_tokens: 2000,
+      // The single biggest source of the drift this replaced: at the SDK default
+      // of 1.0 the same headline and the same profile could come back in
+      // different bands on consecutive runs. Nothing here benefits from
+      // creativity — it is a classification against a fixed rubric.
+      temperature: 0,
       system: JUDGE_SYSTEM,
       messages: [{ role: 'user', content: `${context}\n\nJudge these items:\n${list}` }],
     });
@@ -272,10 +300,15 @@ async function judgeBatch(batch, context) {
       // prompt-injection attempt would produce.
       if (!Number.isInteger(idx) || idx < 1 || idx > batch.length) continue;
       const item = batch[idx - 1];
-      const score = Number(row?.s);
-      if (!Number.isFinite(score)) continue;
+      // The band must be one we defined. A value off the list means the model
+      // invented a category — quite possibly because it was told to by the
+      // quarantined feed text — so the item stays unjudged rather than being
+      // filed under a guess.
+      const score = scoreForBand(row?.b);
+      if (score === null) continue;
       out[item.id] = {
-        score: Math.max(0, Math.min(100, Math.round(score))),
+        band: String(row.b).trim().toLowerCase(),
+        score,
         match: cleanMatch(row?.m),
         why: cleanSentence(row?.w),
       };
