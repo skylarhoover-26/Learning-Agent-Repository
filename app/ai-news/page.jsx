@@ -377,6 +377,18 @@ function AiNewsInner() {
 
   const { counts } = useMemo(() => laneCounts(practical), [practical]);
 
+  // Every count the reader sees comes from this, and it is the length of what
+  // actually renders — not of what passed the earlier gates.
+  //
+  // Dropping the "Not ranked" lane made those two numbers diverge: the page said
+  // "17 updates for your work", the Total pill said 17, and two items were on
+  // screen. A count that describes a list the reader cannot see is worse than no
+  // count, because it reads as things having gone missing.
+  //
+  // The degraded no-ranking path below is the one exception and uses `practical`
+  // deliberately: there, the flat list IS the page.
+  const shownCount = ranked ? laned.length : practical.length;
+
   const inView = activeView === 'all'
     ? laned
     : laned.filter((i) => i.lane === activeView);
@@ -392,7 +404,7 @@ function AiNewsInner() {
   // raw stored total, which meant the hero advertised 200 items above a list of
   // ten — a number that described our scraper rather than the reader's day.
   const subtitle = data?.scannedAt
-    ? `${base.length} ${base.length === 1 ? 'update' : 'updates'} for your work · checked ${freshnessLabel(data.scannedAt)}`
+    ? `${shownCount} ${shownCount === 1 ? 'update' : 'updates'} for your work · checked ${freshnessLabel(data.scannedAt)}`
     : 'Check out the latest in AI News and take a lesson if you\'d like to learn more.';
 
   return (
@@ -489,12 +501,12 @@ function AiNewsInner() {
               >
                 Total
                 <span className="ml-1.5 text-xs" style={{ color: 'var(--ink-dim)', opacity: 0.7 }}>
-                  {practical.length}
+                  {shownCount}
                 </span>
               </span>
               <FilterPill
                 label="All"
-                count={practical.length}
+                count={shownCount}
                 active={activeView === 'all'}
                 onClick={() => setView('all')}
               />

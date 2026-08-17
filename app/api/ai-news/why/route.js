@@ -158,10 +158,15 @@ export async function POST(request) {
   const limited = await enforceRateLimit('ai-news/why', 'ai', request);
   if (limited) return limited;
 
+  // Declared outside the try so the catch below can name who the failed request
+  // belonged to. `email` itself is block-scoped and invisible from there.
+  let emailForAudit = null;
+
   try {
     const base = await getAuthenticatedProfile();
     const email = base?.email;
     if (!email) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    emailForAudit = email;
 
     // Projects live under their own user-data key, so the profile alone never
     // carries them (lib/work-projects.js).
@@ -267,6 +272,19 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('POST /api/ai-news/why error:', error);
+    // Audit the throw as well as console-logging it. This was the last path that
+    // could fail and leave no record anywhere a human can read: the console line
+    // is gone by the time anyone asks, and a soft-failed request looks identical
+    // to a successful one from the page's side. A day of "nothing ranks" with an
+    // empty audit log is not a diagnosis, it is a guess.
+    logAuditEntry({
+      type: 'ai_news_why',
+      endpoint: '/api/ai-news/why',
+      user: { email: emailForAudit || 'unknown', name: 'Unknown' },
+      model: MODELS.haiku,
+      input: { threw: true },
+      output: { judged: 0, error: error?.message || String(error) },
+    }).catch(() => {});
     // Soft-fail: the news list is still perfectly usable unranked, and the page
     // falls back to newest-first when nothing comes back.
     return NextResponse.json({ personal: {} });
