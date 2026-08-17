@@ -60,7 +60,12 @@ const CACHE_TYPE = 'ai_news_why';
 // Bump when the prompts or the stored shape change in a way that should discard
 // yesterday's judgements. Without this, a tuning change reaches only learners who
 // hadn't visited yet that day.
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 6;
+
+// The ceiling for an item about a tool the learner does not have. Equal to the
+// `adjacent` band, which sits below the "Changes your work" lane threshold, so a
+// capped item lands in Worth watching rather than the headline slot.
+const ADJACENT_MAX = 55;
 
 // KEEP IN SYNC with RANKED_LIMIT in lib/news-personal.js — the page caps what it
 // sends, and the page's "unranked" heading is drawn from the same number.
@@ -114,6 +119,15 @@ const JUDGE_SYSTEM = [
   'general     — true and mildly interesting, no action for them.',
   'irrelevant  — no connection to them. Engineering-only, hardware, market and funding news, corporate PR.',
   '',
+  'HARD RULE ON TOOLS THEY DO NOT HAVE:',
+  'changes_now and soon are for things this person can ACT on with the tools they actually use.',
+  'If the item is about a tool, model or platform NOT on their list, it cannot be changes_now and',
+  'it cannot be soon, however important the news is in general. Band it adjacent at most.',
+  '"A faster OpenAI tier" is not something a Claude user can act on this week; telling them it',
+  'changes their work is telling them to go and use a tool they do not have.',
+  'Set "u" to false on any such item. Set "u" to true when the item is about a tool they DO use,',
+  'or about no particular tool (a general prompting practice, say).',
+  '',
   'Judge each item ON ITS OWN against these bands. Do NOT grade on a curve, do NOT',
   'compare the items in this list to each other, and do not spread them across the bands',
   'to get a nice distribution. If all ten are irrelevant to this person, all ten are',
@@ -149,7 +163,7 @@ const JUDGE_SYSTEM = [
   QUARANTINE_NOTE,
   '',
   'Return ONLY a JSON array (no markdown fences):',
-  '[{"i": <1-based index>, "b": "<band>", "m": "<match>", "w": "<one sentence>"}]',
+  '[{"i": <1-based index>, "b": "<band>", "u": <true|false>, "m": "<match>", "w": "<one sentence>"}]',
   'One object per item, same order. "b" must be exactly one of:',
   `  ${BAND_IDS.join(', ')}`,
 ].join('\n');
@@ -346,10 +360,18 @@ async function judgeBatch(batch, context, errors) {
       // invented a category — quite possibly because it was told to by the
       // quarantined feed text — so the item stays unjudged rather than being
       // filed under a guess.
-      const score = scoreForBand(row?.b);
-      if (score === null) continue;
+      const rawScore = scoreForBand(row?.b);
+      if (rawScore === null) continue;
+      // Enforce the tools rule here as well as asking for it. A prompt rule holds
+      // until the day it doesn't, and the failure is silent: the top lane fills
+      // with news about tools the reader cannot use, which is the one thing that
+      // lane promises not to do. ADJACENT_MAX keeps such an item visible in Worth
+      // watching, with its sentence intact, and out of the headline slot.
+      const usesTool = row?.u !== false;
+      const score = usesTool ? rawScore : Math.min(rawScore, ADJACENT_MAX);
       out[item.id] = {
         band: String(row.b).trim().toLowerCase(),
+        usesTool,
         score,
         match: cleanMatch(row?.m),
         why: cleanSentence(row?.w),

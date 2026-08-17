@@ -6,7 +6,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import { useProfile } from '@/components/profile-provider';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { chosenTools, serializeTools, toolKey, normalizeTool, TOOL_CATEGORIES } from '@/lib/ai-tools';
-import { PanelsTopLeft, Check, Plus, ExternalLink } from 'lucide-react';
+import { PanelsTopLeft, Check, Plus } from 'lucide-react';
 
 // Dedicated page to manage the AI tool(s) the learner works in. Multi-select —
 // pick every tool you have, and the coach picks the best one for each lesson's
@@ -158,17 +158,14 @@ function MyToolsPageInner() {
                 <Check className="w-4 h-4" /> Saved
               </span>
             )}
-            {set[0]?.url && (
-              <a
-                href={set[0].url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-brand dark:text-brand-200 hover:underline"
-              >
-                Open {set[0].label}
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
+            {/* There used to be an "Open <tool>" link here, pointing at set[0] —
+                whichever tool happened to come FIRST in the catalog, not one the
+                learner had chosen or ranked. Someone with five tools selected got
+                "Open Claude" for no reason they could see, next to Save, as though
+                it were part of saving.
+                Launching a tool is a job the lesson flow already does properly,
+                in context and for the tool the step is actually about
+                (components/open-tool-link.jsx). This page's job is choosing. */}
           </div>
         </div>
       </main>
