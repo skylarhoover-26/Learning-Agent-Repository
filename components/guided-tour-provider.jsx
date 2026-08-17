@@ -90,6 +90,24 @@ async function clickElement(selector) {
   if (el && !el.disabled) el.click();
 }
 
+// Put the menu drawer back at the top. Targets [data-tour="sidebar"], the
+// cinematic drawer's own scroll container — the same hook the tour spotlights, so
+// there is no second selector to keep in step. Also resets the legacy sidebar's
+// scrollable nav if that layout is the one mounted.
+function resetDrawerScroll() {
+  const apply = () => {
+    for (const sel of ['[data-tour="sidebar"]', '[data-tour="sidebar"] nav']) {
+      const el = document.querySelector(sel);
+      if (el) el.scrollTop = 0;
+    }
+  };
+  // Twice: now, and again next frame. driver.js does its own scrolling as it tears
+  // the stage down, so a single synchronous reset here can be undone immediately
+  // after by the library's own cleanup.
+  apply();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(apply);
+}
+
 // Tell the header name dropdown to open/close so the tour can highlight its items.
 function setProfileMenu(state) {
   window.dispatchEvent(new CustomEvent('tour:user-menu', { detail: state }));
@@ -333,6 +351,16 @@ export function TourProvider({ children }) {
         // Restore the menu exactly as the learner had it before the tour, without
         // persisting — their saved preference was never touched.
         setOpenTransient(menuWasOpenRef.current);
+        // ...and scroll it back to the top.
+        //
+        // The drawer is its own overflow-y-auto column, and driver scrolls each
+        // spotlighted element into view — so by the last step (Send feedback, at
+        // the bottom) the drawer is scrolled well down. Home is pinned sticky on an
+        // OPAQUE background precisely so items pass invisibly beneath it, which
+        // means a scrolled drawer doesn't look scrolled: it looks like the entire
+        // first section is missing. After a tour the menu appeared to have lost
+        // Learn and its five items, with Home still sitting at the top.
+        resetDrawerScroll();
         hideClickShield();
         setTourActive(false);
         try { window.sessionStorage.removeItem('tourActive'); } catch {}
