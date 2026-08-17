@@ -132,7 +132,12 @@ export default function CinematicHome() {
   const [skills, setSkills] = useState(null);
   const [news, setNews] = useState(null);
   // Total found + when the scan last ran, for the freshness line and "See all".
-  const [newsMeta, setNewsMeta] = useState({ count: 0, totalCount: 0, scannedAt: null });
+  // `showable` is how many /ai-news will actually list — the same gates and the
+  // same ranking that page applies, not the raw stored count. "See all 23" over a
+  // page showing three was the home card advertising a list that no longer exists:
+  // 23 was every approved-category item at ANY age, before freshness, the score
+  // floor, or the lane requirement.
+  const [newsMeta, setNewsMeta] = useState({ showable: 0, scannedAt: null });
 
   useEffect(() => {
     let active = true;
@@ -166,13 +171,9 @@ export default function CinematicHome() {
         if (!active) return;
 
         const items = d?.items || [];
-        setNewsMeta({
-          count: d?.count ?? items.length,
-          // Total stored, used only to decide whether the browse page is worth a
-          // link.
-          totalCount: d?.totalCount ?? items.length,
-          scannedAt: d?.scannedAt || null,
-        });
+        // scannedAt first, so the freshness line appears even if ranking below
+        // fails. `showable` is filled in once the ranking lands.
+        setNewsMeta({ showable: 0, scannedAt: d?.scannedAt || null });
 
         const rankable = rankableItems(items);
         if (!rankable.length) { setNews([]); return; }
@@ -197,7 +198,12 @@ export default function CinematicHome() {
           // personal than the page but never disagree with it.
         }
         if (!active) return;
-        setNews(topPersonalItems(items, personal, 3));
+        // One list, two uses: the three on the card, and how many the page has in
+        // total. Counting it here rather than trusting the API's `count` is what
+        // keeps "See all N" honest — N is now exactly what clicking through shows.
+        const showableItems = topPersonalItems(items, personal, Infinity);
+        setNewsMeta((m) => ({ ...m, showable: showableItems.length }));
+        setNews(showableItems.slice(0, 3));
       } catch {
         if (active) setNews([]);
       }
@@ -571,13 +577,13 @@ export default function CinematicHome() {
           <Rss className="w-5 h-5" style={{ color: 'var(--accent2)' }} />
           <h3 className="font-display font-bold text-3xl sm:text-4xl tracking-tight">AI news</h3>
           {/* "See all" only once we know there's more than the three shown. */}
-          {newsPageOpen && newsMeta.totalCount > 3 && (
+          {newsPageOpen && newsMeta.showable > 3 && (
             <Link
               href="/ai-news"
               className="ml-auto inline-flex items-center gap-1 text-sm font-bold shrink-0"
               style={{ color: 'var(--accent2)' }}
             >
-              See all {newsMeta.count}
+              See all {newsMeta.showable}
               <ArrowRight className="w-4 h-4" />
             </Link>
           )}
