@@ -44,12 +44,18 @@ const CACHE_TYPE = 'ai_news_why';
 // Bump when the prompts or the stored shape change in a way that should discard
 // yesterday's judgements. Without this, a tuning change reaches only learners who
 // hadn't visited yet that day.
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 
 // KEEP IN SYNC with RANKED_LIMIT / WHY_LIMIT in lib/news-personal.js — the page
 // caps what it sends, and the page's "unranked" heading is drawn from the same
 // numbers.
-const SCORE_LIMIT = 40;
+//
+// This was 40, which left most of a 104-item feed sitting under a "Not ranked"
+// heading: a bucket nobody had judged, offered to the reader as if it were a
+// category. The whole practical feed now gets scored. It costs more batches, but
+// they run concurrently (see below) so the reader waits for the slowest one
+// rather than the sum, and the result is cached for the rest of the day.
+const SCORE_LIMIT = 120;
 const WHY_LIMIT = 12;
 
 // Batch size for the scoring pass. Small enough that the model stays accurate
@@ -123,6 +129,9 @@ const WHY_SYSTEM = [
   '- If it changes how they should PROMPT or which tool they should reach for, say that plainly. That is the most useful thing you can tell them.',
   '- If an item genuinely does not affect their work, say so in a short honest sentence. Do not invent relevance.',
   '- Never promise a feature the blurb does not state. You have only the headline and blurb.',
+  '- Some items have NO blurb. Judge those from the headline alone and still say something useful about',
+  '  what it means for them. NEVER write that you lack information, cannot assess relevance, or have no',
+  '  blurb. The reader can see the headline too; a sentence about your own missing input tells them nothing.',
   '- One sentence. Maximum 30 words. No preamble, no "this article".',
   '',
   'STYLE: plain and warm. No em dashes or en dashes. No hype. Write "Housecall Pro" in full, never HCP.',
@@ -169,10 +178,20 @@ export async function POST(request) {
     // "same day, same answer" cache would leave new arrivals permanently
     // unranked and stuck at the bottom of the page.
     const unscored = items.filter((i) => typeof known[i.id]?.score !== 'number');
-    let scored = 0;
+    const batches = [];
     for (let i = 0; i < unscored.length; i += SCORE_BATCH) {
-      const batch = unscored.slice(i, i + SCORE_BATCH);
-      const judged = await scoreBatch(batch, context);
+      batches.push(unscored.slice(i, i + SCORE_BATCH));
+    }
+
+    // Concurrently, not in sequence. The batches are independent — each scores
+    // its own slice against the same context — so running them one after another
+    // only made the reader wait longer. With the cap raised to cover the whole
+    // feed that difference is the gap between a few seconds and half a minute
+    // staring at the skeleton. scoreBatch never throws, so one bad batch leaves
+    // its items unscored without taking the others down.
+    let scored = 0;
+    const results = await Promise.all(batches.map((b) => scoreBatch(b, context)));
+    for (const judged of results) {
       for (const [id, value] of Object.entries(judged)) {
         known[id] = { ...known[id], ...value };
         scored++;
@@ -270,12 +289,20 @@ async function scoreBatch(batch, context) {
 // their score and chip without a sentence.
 async function explain(items, context) {
   try {
+    // The blurb line is OMITTED when there isn't one, rather than sent empty.
+    // Sending `blurb: <untrusted></untrusted>` told the model a field existed and
+    // was blank, and it dutifully reported that back: rows from Hacker News and
+    // Hugging Face, which ship no description, all read "No blurb provided to
+    // assess relevance." A missing line just means judge from the headline.
     const list = items
-      .map((i) => [
-        `id: ${i.id}`,
-        `headline: ${untrusted(i.title)}`,
-        `blurb: ${untrusted(String(i.summary || '').slice(0, 400))}`,
-      ].join('\n'))
+      .map((i) => {
+        const blurb = String(i.summary || '').slice(0, 400).trim();
+        return [
+          `id: ${i.id}`,
+          `headline: ${untrusted(i.title)}`,
+          blurb ? `blurb: ${untrusted(blurb)}` : null,
+        ].filter(Boolean).join('\n');
+      })
       .join('\n\n');
 
     const response = await getClient().messages.create({
@@ -327,11 +354,31 @@ function pickFor(map, items) {
   return out;
 }
 
+// Sentences that are about the MODEL's missing input rather than the reader's
+// work. "No blurb provided to assess relevance" is not an explanation, it is an
+// apology for not having one, and it shipped on every row from a source that
+// publishes no description.
+//
+// The prompt now tells the model not to write these and the empty blurb line is
+// no longer sent, but this is the guarantee: a non-answer is dropped, and the row
+// renders cleanly with no "why" line at all. Better silent than hollow.
+// Deliberately narrow. It matches the apology's own shape — a negation sitting
+// directly on the missing input, or an explicit "cannot assess" — rather than
+// any sentence that happens to contain "no" near "context", which would have
+// eaten honest lines like "you keep the thread without missing context".
+const NON_ANSWER = new RegExp([
+  /\b(no|without|missing|insufficient|not enough)\s+(blurb|summary|description|information|details?)\b/.source,
+  /\b(blurb|summary|description)\b[^.]{0,20}\b(not provided|not available|is empty|was missing)\b/.source,
+  /\b(cannot|can't|unable to|not able to)\s+(\w+\s+){0,2}(assess|determine|evaluate|judge)\b/.source,
+].join('|'), 'i');
+
 // House style enforced in code, not merely requested in the prompt.
 function cleanSentence(value) {
   if (typeof value !== 'string') return null;
   const out = normalize(value);
-  return out ? out.slice(0, 240) : null;
+  if (!out) return null;
+  if (NON_ANSWER.test(out)) return null;
+  return out.slice(0, 240);
 }
 
 // The chip sits in a row of pills, so it has to stay short whatever the model

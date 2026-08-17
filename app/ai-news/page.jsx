@@ -487,7 +487,7 @@ function AiNewsInner() {
                 <Section
                   label="Not ranked"
                   count={unrankedItems.length}
-                  note={`We rank the newest ${RANKED_LIMIT} items against your work each day. These sat past that line, so nobody has judged them for you — they are here so the feed stays complete.`}
+                  note={`We rank the newest ${RANKED_LIMIT} items against your work each day, which is normally the whole feed. These few sat past that line or came back unjudged, so they are here in date order so nothing is lost.`}
                   items={unrankedItems}
                   marks={markMap}
                 />
