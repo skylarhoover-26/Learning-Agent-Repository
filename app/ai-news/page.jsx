@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Rss, ArrowRight, ExternalLink, FlaskConical, Sparkles, Grid3x3 } from 'lucide-react';
 import PageHeader from '@/components/page-header';
@@ -203,20 +203,16 @@ function AiNewsInner() {
   const [rankState, setRankState] = useState('loading');
   const [marks, setMarks] = useState([]);
 
-  const [view, setView] = useState('all');
+  // `null` means "the reader hasn't chosen yet", so the page can derive a sensible
+  // default from the ranking WITHOUT an effect that reaches in and overwrites
+  // state. The first version did exactly that — rendered the unranked feed, then
+  // re-sorted itself when the scores landed — and the first thing it showed was a
+  // wall of items that had nothing to do with you. A derived default has no such
+  // window: nothing renders until there is something worth rendering.
+  const [view, setView] = useState(null);
   const [selectedSources, setSelectedSources] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [sortBy, setSortBy] = useState('newest');
-
-  // Whether the reader has driven any control yet. The page opens unranked
-  // (newest first, all items) because the ranking call takes a few seconds, and
-  // moves itself to the ranked view when the scores land — but only if the
-  // reader hasn't already made a choice. Nothing is more annoying than a page
-  // that overrides the filter you just set.
-  const touched = useRef(false);
-  function drive(fn) {
-    return (value) => { touched.current = true; fn(value); };
-  }
+  const [sortBy, setSortBy] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -284,21 +280,18 @@ function AiNewsInner() {
   const enriched = useMemo(() => attachPersonal(all, personal), [all, personal]);
   const ranked = hasPersonalization(enriched);
 
-  // Move to the ranked view once, when the scores arrive and the reader hasn't
-  // taken over. Guarded on `ranked` so a failed ranking leaves the page exactly
-  // as it opened rather than dropping it into a lane that will never fill.
-  //
-  // Which lane it lands on depends on what the day actually produced. Opening on
-  // "Changes your work" when nothing scored that high is a page that greets you
-  // with an empty room, so it falls back to the first lane with anything in it.
-  const settled = useRef(false);
-  useEffect(() => {
-    if (settled.current || !ranked || touched.current) return;
-    settled.current = true;
+  // The view and sort the page opens on, derived rather than assigned. Which lane
+  // it lands on depends on what the day actually produced: opening on "Changes
+  // your work" when nothing scored that high greets you with an empty room, so it
+  // falls back to the first lane with anything in it.
+  const defaultView = useMemo(() => {
+    if (!ranked) return 'all';
     const populated = LANES.find((lane) => enriched.some((i) => i.lane === lane.id));
-    setView(populated ? populated.id : 'all');
-    setSortBy('match');
+    return populated ? populated.id : 'all';
   }, [ranked, enriched]);
+
+  const activeView = view ?? defaultView;
+  const activeSort = sortBy ?? (ranked ? 'match' : 'newest');
 
   const markMap = useMemo(() => marksByItem(enriched, marks), [enriched, marks]);
 
@@ -325,14 +318,14 @@ function AiNewsInner() {
       list = list.filter((i) => selectedCategories.includes(i.category || 'unclassified'));
     }
     list = list.slice();
-    if (sortBy === 'match') list.sort(byBestMatch);
-    else if (sortBy === 'newest') list.sort((a, b) => publishedMs(b) - publishedMs(a));
-    else if (sortBy === 'oldest') list.sort((a, b) => publishedMs(a) - publishedMs(b));
-    else if (sortBy === 'source') {
+    if (activeSort === 'match') list.sort(byBestMatch);
+    else if (activeSort === 'newest') list.sort((a, b) => publishedMs(b) - publishedMs(a));
+    else if (activeSort === 'oldest') list.sort((a, b) => publishedMs(a) - publishedMs(b));
+    else if (activeSort === 'source') {
       list.sort((a, b) => String(a.sourceName).localeCompare(String(b.sourceName)));
     }
     return list;
-  }, [enriched, selectedSources, selectedCategories, sortBy]);
+  }, [enriched, selectedSources, selectedCategories, activeSort]);
 
   // arXiv is split out regardless of lane — raw paper titles get their own
   // clearly-labelled home so nobody mistakes them for practical picks.
@@ -341,20 +334,20 @@ function AiNewsInner() {
 
   const { counts, unranked } = useMemo(() => laneCounts(practical), [practical]);
 
-  const inView = view === 'all'
+  const inView = activeView === 'all'
     ? practical
-    : view === 'unranked'
+    : activeView === 'unranked'
       ? practical.filter((i) => !i.lane)
-      : practical.filter((i) => i.lane === view);
+      : practical.filter((i) => i.lane === activeView);
 
-  const laneSections = view === 'all'
+  const laneSections = activeView === 'all'
     ? LANES.map((lane) => ({ lane, items: practical.filter((i) => i.lane === lane.id) }))
       .filter((s) => s.items.length)
-    : view === 'unranked'
+    : activeView === 'unranked'
       ? []
-      : [{ lane: LANE_BY_ID.get(view), items: inView }].filter((s) => s.lane && s.items.length);
+      : [{ lane: LANE_BY_ID.get(activeView), items: inView }].filter((s) => s.lane && s.items.length);
 
-  const unrankedItems = (view === 'all' || view === 'unranked')
+  const unrankedItems = (activeView === 'all' || activeView === 'unranked')
     ? practical.filter((i) => !i.lane)
     : [];
 
@@ -385,9 +378,18 @@ function AiNewsInner() {
           <div className="cine-glass rounded-2xl p-6 text-sm" style={{ color: 'var(--ink-dim)' }}>
             No updates stored yet — the scan runs every morning at {SCAN_TIME_LABEL}.
           </div>
+        ) : rankState === 'loading' ? (
+          // Nothing from the feed renders until it has been ranked.
+          //
+          // The first version showed the raw newest-first list during this window
+          // and re-sorted underneath you, which meant the page's first impression
+          // was a wall of items with nothing to do with your work — the exact
+          // problem this rebuild exists to fix. A few seconds of honest waiting
+          // beats a few seconds of wrong answer.
+          <RankingSkeleton />
         ) : (
           <>
-            <RankNotice state={rankState} ranked={ranked} count={counts.act} />
+            <RankNotice ranked={ranked} count={counts.act} />
 
             {/* Filters on their own line so the dropdowns never collide with the
                 pill row, mirroring the admin feedback page's layout. Category
@@ -398,19 +400,19 @@ function AiNewsInner() {
                 label="Source"
                 options={sourceOptions}
                 selected={selectedSources}
-                onChange={drive(setSelectedSources)}
+                onChange={setSelectedSources}
               />
               <MultiSelect
                 label="Type"
                 options={categoryOptions}
                 selected={selectedCategories}
-                onChange={drive(setSelectedCategories)}
+                onChange={setSelectedCategories}
               />
               <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--ink-dim)' }}>
                 Sort
                 <select
-                  value={sortBy}
-                  onChange={(e) => { touched.current = true; setSortBy(e.target.value); }}
+                  value={activeSort}
+                  onChange={(e) => setSortBy(e.target.value)}
                   className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-ink dark:text-slate-200 text-xs px-2 py-1"
                 >
                   <option value="match" disabled={!ranked}>Best match</option>
@@ -436,24 +438,24 @@ function AiNewsInner() {
               <FilterPill
                 label="All"
                 count={practical.length}
-                active={view === 'all'}
-                onClick={() => { touched.current = true; setView('all'); }}
+                active={activeView === 'all'}
+                onClick={() => setView('all')}
               />
               {ranked && LANES.map((lane) => (
                 <FilterPill
                   key={lane.id}
                   label={lane.label}
                   count={counts[lane.id]}
-                  active={view === lane.id}
-                  onClick={() => { touched.current = true; setView(lane.id); }}
+                  active={activeView === lane.id}
+                  onClick={() => setView(lane.id)}
                 />
               ))}
               {ranked && unranked > 0 && (
                 <FilterPill
                   label="Not ranked"
                   count={unranked}
-                  active={view === 'unranked'}
-                  onClick={() => { touched.current = true; setView('unranked'); }}
+                  active={activeView === 'unranked'}
+                  onClick={() => setView('unranked')}
                 />
               )}
             </div>
@@ -472,7 +474,7 @@ function AiNewsInner() {
 
               {/* When nothing is ranked yet (or ranking failed) the page still
                   has to show the news, so it falls back to one flat list. */}
-              {!ranked && view === 'all' && (
+              {!ranked && activeView === 'all' && (
                 <Section
                   label="Latest"
                   count={practical.length}
@@ -503,7 +505,7 @@ function AiNewsInner() {
               )}
             </div>
 
-            {research.length > 0 && view === 'all' && (
+            {research.length > 0 && activeView === 'all' && (
               <div className="pt-6" style={{ borderTop: '1px solid var(--line)' }}>
                 <Section
                   label="Research"
@@ -522,18 +524,35 @@ function AiNewsInner() {
   );
 }
 
-// The one line that tells the reader what the ordering means. It has three jobs:
-// warn that the page is about to re-sort itself, explain what the sort is once
-// it has, and admit it plainly when the ranking didn't happen.
-function RankNotice({ state, ranked, count }) {
-  if (state === 'loading') {
-    return (
+// What the page shows while the ranking call is out.
+//
+// Deliberately NOT the BookLoader used elsewhere: this wait is a few seconds of
+// real work on the reader's behalf, and saying what that work IS turns dead time
+// into an explanation of why the list below is ordered the way it is. The ghost
+// rows keep the layout still, so nothing jumps when the real ones arrive.
+function RankingSkeleton() {
+  return (
+    <div className="space-y-4">
       <div className="cine-glass rounded-2xl px-4 py-3 text-sm flex items-center gap-2" style={{ color: 'var(--ink-dim)' }}>
         <Sparkles className="w-4 h-4 animate-pulse" style={{ color: 'var(--accent2)' }} />
         Ranking today&rsquo;s news against your role, tasks, goals and projects…
       </div>
-    );
-  }
+      <div className="space-y-2" aria-hidden="true">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="cine-glass rounded-2xl px-4 py-4 animate-pulse">
+            <div className="h-2.5 w-24 rounded bg-slate-200 dark:bg-slate-700 mb-3" />
+            <div className="h-3.5 w-3/4 rounded bg-slate-200 dark:bg-slate-700 mb-2" />
+            <div className="h-3 w-full rounded bg-slate-100 dark:bg-slate-800" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// The one line that tells the reader what the ordering means: explain what the
+// sort is, and admit it plainly when the ranking didn't happen.
+function RankNotice({ ranked, count }) {
   if (!ranked) {
     return (
       <div className="cine-glass rounded-2xl px-4 py-3 text-sm" style={{ color: 'var(--ink-dim)' }}>
