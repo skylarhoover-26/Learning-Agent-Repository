@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GraduationCap, Zap, BookOpen, Bookmark, PenTool, PlayCircle, X } from 'lucide-react';
+import { formatLabel, formatDuration } from '@/lib/lesson-formats';
 
+// Labels and times come from lib/lesson-formats so this wizard and the daily
+// Slack message can't quote different durations for the same lesson.
 const DEPTHS = [
-  { key: 'quick_tip', icon: Zap, label: 'Quick Tip', time: '60 seconds', desc: 'A single insight.' },
-  { key: 'standard', icon: BookOpen, label: 'Quick Lesson', time: '3–5 min', desc: 'Hands-on, one exercise.' },
-  { key: 'deep_dive', icon: Bookmark, label: 'Deep Dive', time: '15–20 min', desc: 'Thorough, multiple exercises.' },
-];
+  { key: 'quick_tip', icon: Zap, desc: 'A single insight.' },
+  { key: 'standard', icon: BookOpen, desc: 'Hands-on, one exercise.' },
+  { key: 'deep_dive', icon: Bookmark, desc: 'Thorough, multiple exercises.' },
+].map((d) => ({ ...d, label: formatLabel(d.key), time: formatDuration(d.key) }));
 
 const MODES = [
   { key: 'read', icon: PenTool, label: 'Read & practice', desc: 'Work through it step by step.' },
