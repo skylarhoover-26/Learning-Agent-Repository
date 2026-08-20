@@ -424,7 +424,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
     <div className="cine-glass rounded-2xl p-6 overflow-x-auto">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-bold text-ink dark:text-slate-200">AI Impact Competencies</h2>
+          <h2 className="text-base font-bold text-ink dark:text-slate-200">AI Impact</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">P = Personal, T = Team, O = Org, D = AI Development &middot; S = Self, M = Manager</p>
         </div>
         <div className="flex items-center gap-2">
@@ -459,7 +459,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
       {rows.length === 0 ? (
         <div className="text-center py-8">
           <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No competency data yet</p>
+          <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No AI Impact data yet</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Scores will appear as team members complete the AI Impact Assessment.</p>
         </div>
       ) : (
