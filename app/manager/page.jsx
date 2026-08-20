@@ -614,8 +614,14 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                         <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${person.progress}%` }} />
                         </div>
+                        {/* Past the target the denominator has stopped saying
+                            anything, and "14 of 10" reads as a bug. The bar is
+                            full either way; the label just switches to the
+                            honest count. */}
                         <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                          {person.lessons} of {person.lessonTarget}
+                          {person.lessons >= person.lessonTarget
+                            ? `${person.lessons} passed`
+                            : `${person.lessons} of ${person.lessonTarget}`}
                         </span>
                       </div>
                     </td>
