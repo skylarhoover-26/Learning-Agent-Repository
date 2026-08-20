@@ -12,6 +12,8 @@ import {
   ChevronDown, Save, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
+import { useAssessmentConfig } from '@/lib/use-assessment-config';
+import { impactActive } from '@/lib/assessment-config';
 
 // The manual lookup. Now a fallback rather than the front door: the dashboard
 // auto-loads your own team from your signed-in identity (feedback #66), and this
@@ -150,15 +152,22 @@ function TeamTable({ reports }) {
 }
 
 function OverviewCards({ teamSize, overview }) {
+  const { config, loading } = useAssessmentConfig();
+  const impactOn = !loading && impactActive(config);
+
   const cards = [
     { label: 'Team Size', value: teamSize, detail: 'direct reports', icon: Users, color: 'bg-brand' },
     { label: 'Active This Week', value: overview?.activeThisWeek ?? '-', detail: 'logged in past 7 days', icon: Activity, color: 'bg-green-500' },
     { label: 'Lessons Passed', value: overview?.totalLessons ?? '-', detail: 'across the team', icon: BookOpen, color: 'bg-cta' },
-    { label: 'Avg AI Score', value: overview?.avgLevel ?? '-', detail: 'team average (1-5)', icon: TrendingUp, color: 'bg-brand-400' },
+    // Averaging a self-rating nobody is being asked for any more would just be a
+    // stale number with a confident label on it.
+    ...(impactOn
+      ? [{ label: 'Avg AI Score', value: overview?.avgLevel ?? '-', detail: 'team average (1-5)', icon: TrendingUp, color: 'bg-brand-400' }]
+      : []),
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${cards.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -371,11 +380,12 @@ const CAL_SKILLS = [
 // rubric, but the example boxes are gone, so it's a self-report and is labelled
 // that way. Runs from before the change still carry their "why", which is why
 // that block still renders when present.
-function WhyTrendPanel({ detail, history, calibration, selfScores, managerScores, rating, pending, onPendingChange }) {
+function WhyTrendPanel({ detail, history, calibration, selfScores, managerScores, rating, pending, onPendingChange, showImpact = true }) {
   const dims = ['personal', 'team', 'org', 'development'];
   const prev = Array.isArray(history) && history.length >= 2 ? history[history.length - 2]?.scores : null;
   return (
     <div className="space-y-4">
+    {showImpact && (
     <div>
       <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">
         AI Impact — their self-rating, and yours
@@ -426,6 +436,7 @@ function WhyTrendPanel({ detail, history, calibration, selfScores, managerScores
       })}
     </div>
     </div>
+    )}
 
     {calibration?.skills && (
       <div>
@@ -462,7 +473,14 @@ function WhyTrendPanel({ detail, history, calibration, selfScores, managerScores
   );
 }
 
-function CompetenciesTable({ members, reports, rating, setRating, managerEmail, onScoresSaved }) {
+function TeamProgressTable({ members, reports, rating, setRating, managerEmail, onScoresSaved }) {
+  // The AI Impact half of this card follows the same master switch the rest of
+  // the app reads. With impact off nobody is being asked for a self-rating, so a
+  // column of "No assessment" and a Rate Team button that scores it are both
+  // just furniture. Flip the switch back on and they return.
+  const { config, loading: configLoading } = useAssessmentConfig();
+  const impactOn = !configLoading && impactActive(config);
+
   const [pendingScores, setPendingScores] = useState({});
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState({}); // email -> bool
@@ -539,13 +557,17 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
     <div className="cine-glass rounded-2xl p-6 overflow-x-auto">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-bold text-ink dark:text-slate-200">AI Impact</h2>
+          <h2 className="text-base font-bold text-ink dark:text-slate-200">
+            {impactOn ? 'AI Impact' : 'Team Progress'}
+          </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Self-rated 1&ndash;5 across Personal, Team, Org, and AI Development. Expand a row to see each one, or to rate it yourself.
+            {impactOn
+              ? 'Self-rated 1\u20135 across Personal, Team, Org, and AI Development. Expand a row to see each one, or to rate it yourself.'
+              : 'Level, lessons passed, and how recently each report has done anything.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {rating && hasChanges && (
+          {impactOn && rating && hasChanges && (
             <button
               onClick={handleSaveAll}
               disabled={saving}
@@ -555,6 +577,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
               {saving ? 'Saving...' : 'Save Scores'}
             </button>
           )}
+          {impactOn && (
           <button
             onClick={() => {
               // The pickers live in the expand row now, so entering rate mode
@@ -576,14 +599,15 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
           >
             {rating ? 'Cancel' : 'Rate Team'}
           </button>
+          )}
         </div>
       </div>
 
       {rows.length === 0 ? (
         <div className="text-center py-8">
           <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No AI Impact data yet</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Scores will appear as team members complete the AI Impact Assessment.</p>
+          <p className="text-sm font-medium text-ink dark:text-slate-200 mb-1">No team data yet</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Rows appear as your reports start using the platform.</p>
         </div>
       ) : (
         <>
@@ -592,7 +616,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
               <tr className="text-left text-xs text-ink/50 dark:text-slate-400 uppercase tracking-wide border-b border-ink/10 dark:border-slate-700">
                 <th className="pb-3 pr-4 font-semibold">Name</th>
                 <th className="pb-3 pr-4 font-semibold">Level</th>
-                <th className="pb-3 pr-4 font-semibold">AI Impact</th>
+                {impactOn && <th className="pb-3 pr-4 font-semibold">AI Impact</th>}
                 <th className="pb-3 pr-4 font-semibold">Lessons passed</th>
                 <th className="pb-3 pr-4 font-semibold">Status</th>
                 <th className="pb-3 font-semibold">Last active</th>
@@ -602,6 +626,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
               {rows.map((person, i) => {
                 const pending = pendingScores[person.email] || {};
                 const isOpen = !!expanded[person.email];
+                const canExpand = impactOn || !!person.calibration;
                 return (
                   <Fragment key={person.email}>
                   <tr
@@ -609,13 +634,15 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                   >
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setExpanded(e => ({ ...e, [person.email]: !e[person.email] }))}
-                          className="text-slate-400 hover:text-brand transition-colors"
-                          aria-label={isOpen ? 'Hide details' : 'Show the four AI Impact dimensions'}
-                        >
-                          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                        </button>
+                        {canExpand ? (
+                          <button
+                            onClick={() => setExpanded(e => ({ ...e, [person.email]: !e[person.email] }))}
+                            className="text-slate-400 hover:text-brand transition-colors"
+                            aria-label={isOpen ? 'Hide details' : 'Show details'}
+                          >
+                            <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                        ) : <span className="w-4" />}
                         <div className="w-7 h-7 rounded-full bg-brand-50 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-brand">
                           {person.name.charAt(0)}
                         </div>
@@ -628,9 +655,11 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                     <td className="py-3 pr-4">
                       <LevelBadge tier={person.tier} />
                     </td>
-                    <td className="py-3 pr-4">
-                      <ImpactSummaryCell selfScores={person.selfScores} managerScores={person.managerScores} />
-                    </td>
+                    {impactOn && (
+                      <td className="py-3 pr-4">
+                        <ImpactSummaryCell selfScores={person.selfScores} managerScores={person.managerScores} />
+                      </td>
+                    )}
                     <td className="py-3 pr-4">
                       <LessonsCell passed={person.lessonsPassed} taken={person.lessonsTaken} />
                     </td>
@@ -645,9 +674,9 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                       </span>
                     </td>
                   </tr>
-                  {isOpen && (
+                  {isOpen && canExpand && (
                     <tr className="border-b border-ink/5 dark:border-slate-700 bg-brand-50/30 dark:bg-slate-900/50">
-                      <td colSpan={6} className="px-4 py-4">
+                      <td colSpan={impactOn ? 6 : 5} className="px-4 py-4">
                         <WhyTrendPanel
                           detail={person.detail}
                           history={person.history}
@@ -657,6 +686,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                           rating={rating}
                           pending={pending}
                           onPendingChange={(dim, val) => updatePending(person.email, dim, val)}
+                          showImpact={impactOn}
                         />
                       </td>
                     </tr>
@@ -667,6 +697,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
             </tbody>
           </table>
 
+          {impactOn && (
           <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-slate-400">
             {[1, 2, 3, 4, 5].map((n) => (
               <span key={n} className="flex items-center gap-1.5">
@@ -675,6 +706,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
               </span>
             ))}
           </div>
+          )}
         </>
       )}
     </div>
@@ -868,7 +900,7 @@ function ManagerDashboardInner() {
                 <BookLoader message="Loading competency scores..." size="sm" />
               </div>
             ) : (
-              <CompetenciesTable
+              <TeamProgressTable
                 members={scoreData?.members || []}
                 reports={teamData.directReports || []}
                 rating={rating}
