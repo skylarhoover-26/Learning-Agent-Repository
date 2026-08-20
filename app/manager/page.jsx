@@ -9,7 +9,7 @@ import CinematicPageHero from '@/components/cinematic/cinematic-page-hero';
 import {
   BarChart3, Users, BookOpen, TrendingUp, Activity,
   Search, Loader2, Mail, Building2, XCircle,
-  ChevronDown, Save,
+  ChevronDown, Save, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import BookLoader from '@/components/book-loader';
 
@@ -195,12 +195,58 @@ const STATUS_STYLES = {
   'Completed': 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300',
 };
 
-const LEVEL_STYLES = {
-  Beginner: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-  Practitioner: 'bg-brand-50 text-brand-700 ring-1 ring-brand-200',
-  'Power User': 'bg-cta-50 text-cta-700 ring-1 ring-cta-200',
-  'Not Started': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-600',
+// The learner-level ladder, same tiers and labels as /admin/levels. Keep these
+// two in step — a manager and an admin looking at the same person must see the
+// same level.
+const TIER_LABELS = {
+  beginner: 'Beginner',
+  practitioner: 'Practitioner',
+  power_user: 'Power User',
+  builder: 'Builder',
+  developer: 'Developer',
 };
+
+const TIER_STYLES = {
+  beginner: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+  practitioner: 'bg-brand-50 text-brand-700 ring-1 ring-brand-200',
+  power_user: 'bg-cta-50 text-cta-700 ring-1 ring-cta-200',
+  builder: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+  developer: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',
+};
+
+const NO_TIER_STYLE = 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-600';
+
+// Declared level, plus where performance has actually moved them. Mirrors the
+// admin view: no arrow at all when nothing has moved.
+function LevelBadge({ tier }) {
+  if (!tier?.declared) {
+    return (
+      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${NO_TIER_STYLE}`}>
+        Not Started
+      </span>
+    );
+  }
+  const label = (t) => TIER_LABELS[t] || t;
+  const style = (t) => TIER_STYLES[t] || NO_TIER_STYLE;
+  if (tier.drift === 'none') {
+    return (
+      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${style(tier.declared)}`}>
+        {label(tier.declared)}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-xs text-slate-400 dark:text-slate-500 line-through">{label(tier.declared)}</span>
+      {tier.drift === 'up'
+        ? <ArrowUp className="w-3 h-3 text-green-600 dark:text-green-400 shrink-0" />
+        : <ArrowDown className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />}
+      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${style(tier.earned)}`}>
+        {label(tier.earned)}
+      </span>
+    </span>
+  );
+}
 
 // A short, friendly "last active" label from an ISO timestamp, plus a colour
 // that cools off the longer it's been (green → amber → muted). null when never.
@@ -364,7 +410,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
       name: r.name,
       email: r.email,
       role: r.title || '-',
-      level: data.level || 'Not Started',
+      tier: data.tier || null,
       selfScores: data.selfScores || null,
       managerScores: data.managerScores || null,
       detail: data.detail || null,
@@ -521,9 +567,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                       </div>
                     </td>
                     <td className="py-3 pr-4">
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${LEVEL_STYLES[person.level] || LEVEL_STYLES['Not Started']}`}>
-                        {person.level}
-                      </span>
+                      <LevelBadge tier={person.tier} />
                     </td>
                     {['personal', 'team', 'org', 'development'].map(dim => (
                       <DimensionCells

@@ -1,5 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getUserData, saveUserData, listUserDataTypes } from '@/lib/blob-store';
+import { getLevelsForEmails } from '@/lib/supabase-store';
+import { FULL_LADDER } from '@/lib/adaptive-level';
+
+// Which way someone has moved from the level they declared at onboarding. Same
+// comparison /admin/levels makes, so the two views can never disagree.
+function levelDrift(declared, earned) {
+  const a = FULL_LADDER.indexOf(declared);
+  const b = FULL_LADDER.indexOf(earned);
+  if (a < 0 || b < 0 || a === b) return 'none';
+  return b > a ? 'up' : 'down';
+}
 
 export async function POST(request) {
   try {
@@ -20,6 +31,10 @@ async function handleFetchTeamScores(emails) {
   if (!Array.isArray(emails) || emails.length === 0) {
     return NextResponse.json({ error: 'Missing emails array' }, { status: 400 });
   }
+
+  // The real learner level — declared at onboarding, moved by performance —
+  // read once for the whole team. null means Supabase couldn't be reached.
+  const levelMap = await getLevelsForEmails(emails);
 
   const results = await Promise.all(
     emails.map(async (email) => {
@@ -72,14 +87,20 @@ async function handleFetchTeamScores(emails) {
       const selfScores = scoringData?.scores || null;
       const mgrScores = managerScores?.scores || null;
 
-      let level = 'Not Started';
+      // Level is the adaptive learner level (declared vs. earned), NOT a band
+      // derived from the AI Impact scores. Those scores are a 1-5 self-rating on
+      // four dimensions; bucketing their average into tier-shaped names made the
+      // column look like the level system while being a different number
+      // entirely — a Developer with no impact assessment read "Not Started".
+      const stored = levelMap?.get(String(email).toLowerCase()) || null;
+      const declared = stored?.declared || null;
+      const earned = stored?.earned || declared;
+      const tier = declared
+        ? { declared, earned, drift: levelDrift(declared, earned) }
+        : null;
+
       let progress = 0;
       if (selfScores) {
-        const values = [selfScores.personal, selfScores.team, selfScores.org, selfScores.development].filter(Boolean);
-        const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-        if (avg >= 4) level = 'Power User';
-        else if (avg >= 3) level = 'Practitioner';
-        else if (avg >= 1) level = 'Beginner';
         progress = Math.round((lessonCount / 10) * 100);
         if (progress > 100) progress = 100;
       }
@@ -119,7 +140,7 @@ async function handleFetchTeamScores(emails) {
         calibration: (calibrationData?.skills)
           ? { skills: calibrationData.skills, selfRating: calibrationData.selfRating || null }
           : null,
-        level,
+        tier,
         progress,
         status,
         lessonCount,
