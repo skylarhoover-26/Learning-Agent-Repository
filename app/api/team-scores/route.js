@@ -3,10 +3,6 @@ import { getUserData, saveUserData, listUserDataTypes } from '@/lib/blob-store';
 import { getLevelsForEmails } from '@/lib/supabase-store';
 import { FULL_LADDER } from '@/lib/adaptive-level';
 
-// Lessons that count as "done" for the manager progress bar. Surfaced with the
-// raw count next to it so the bar is never the only thing explaining itself.
-const LESSON_TARGET = 10;
-
 // Days of silence before a manager should hear about it.
 const IDLE_AFTER_DAYS = 7;
 const NUDGE_AFTER_DAYS = 14;
@@ -18,8 +14,13 @@ const NUDGE_AFTER_DAYS = 14;
 // `passed` is set on every graded lesson record. Rows old enough to predate it
 // fall back to the same 70% bar the field itself encodes, so history doesn't
 // silently vanish from the count.
+// A lesson someone actually sat down to. Daily quick tips are not lessons.
+function isLessonAttempt(l) {
+  return !!l && l.format !== 'quick_tip';
+}
+
 function isPassedLesson(l) {
-  if (!l || l.format === 'quick_tip') return false;
+  if (!isLessonAttempt(l)) return false;
   if (typeof l.passed === 'boolean') return l.passed;
   return typeof l.correctness === 'number' && l.correctness >= 0.7;
 }
@@ -75,7 +76,8 @@ async function handleFetchTeamScores(emails) {
       ]);
 
       const lessonBlob = dataTypes.find(d => d.name.startsWith('lp_lessons_'));
-      let lessonCount = 0;
+      let lessonsPassed = 0;
+      let lessonsTaken = 0;
       let lastLessonAt = null;
       if (lessonBlob) {
         try {
@@ -84,7 +86,11 @@ async function handleFetchTeamScores(emails) {
           {
             const lessons = await getUserData(email, lessonBlob.name);
             if (Array.isArray(lessons)) {
-              lessonCount = lessons.filter(isPassedLesson).length;
+              // Taken vs. passed, because "0 passed" on its own can't tell a
+              // manager whether someone is failing lessons or never opening one.
+              const attempts = lessons.filter(isLessonAttempt);
+              lessonsTaken = attempts.length;
+              lessonsPassed = attempts.filter(isPassedLesson).length;
               // Recency counts EVERY row, including tips and failed attempts —
               // those are activity even when they aren't progress.
               for (const l of lessons) {
@@ -130,14 +136,6 @@ async function handleFetchTeamScores(emails) {
         ? { declared, earned, drift: levelDrift(declared, earned) }
         : null;
 
-      // Progress is lessons PASSED against a 10-lesson target. It used to be
-      // gated on having an AI Impact self-assessment, which meant someone who
-      // had done lessons but skipped the assessment showed 0% — a number that
-      // contradicted their own Last Active. The lesson count is the lesson
-      // count; the assessment is reported separately.
-      let progress = Math.round((lessonCount / LESSON_TARGET) * 100);
-      if (progress > 100) progress = 100;
-
       // "Last active" = most recent signal across lessons, XP, and the AI Impact
       // self-assessment — not just the assessment's updated_at (most people never
       // re-open it). ISO timestamps sort chronologically.
@@ -175,10 +173,9 @@ async function handleFetchTeamScores(emails) {
           ? { skills: calibrationData.skills, selfRating: calibrationData.selfRating || null }
           : null,
         tier,
-        progress,
-        lessonTarget: LESSON_TARGET,
         status,
-        lessonCount,
+        lessonsPassed,
+        lessonsTaken,
         totalXp,
         lastActive,
       };
@@ -191,7 +188,7 @@ async function handleFetchTeamScores(emails) {
     const daysSince = (Date.now() - new Date(r.lastActive).getTime()) / (1000 * 60 * 60 * 24);
     return daysSince <= 7;
   });
-  const totalLessons = results.reduce((s, r) => s + r.lessonCount, 0);
+  const totalLessons = results.reduce((s, r) => s + r.lessonsPassed, 0);
 
   const levelValues = enrolled.map(r => {
     const s = r.selfScores;

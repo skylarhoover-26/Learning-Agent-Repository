@@ -271,6 +271,29 @@ function lastActiveInfo(iso) {
   return { label, tone };
 }
 
+// Lessons taken and lessons passed, with the bar showing the pass rate.
+//
+// There is no lesson target any more. The old "3 of 10" measured against a
+// constant nobody had chosen, and it couldn't tell apart the two rows a manager
+// most needs to tell apart: someone failing lessons and someone never opening
+// one. Both used to read "0 of 10".
+function LessonsCell({ passed, taken }) {
+  if (!taken) {
+    return <span className="text-xs text-slate-400 dark:text-slate-500">None taken</span>;
+  }
+  const rate = Math.round((passed / taken) * 100);
+  return (
+    <div className="flex items-center gap-2 w-36">
+      <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${rate}%` }} />
+      </div>
+      <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+        {passed} of {taken}
+      </span>
+    </div>
+  );
+}
+
 // Average of whichever of the four dimensions have a score, or null when none
 // do. Rounded to one decimal, and printed without a trailing .0 so a clean 4
 // reads as "4" rather than "4.0".
@@ -461,9 +484,8 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
       detail: data.detail || null,
       history: data.history || [],
       calibration: data.calibration || null,
-      progress: data.progress || 0,
-      lessons: data.lessonCount || 0,
-      lessonTarget: data.lessonTarget || 10,
+      lessonsPassed: data.lessonsPassed || 0,
+      lessonsTaken: data.lessonsTaken || 0,
       status: data.status || 'Never',
       lastActive: data.lastActive || null,
     };
@@ -610,20 +632,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                       <ImpactSummaryCell selfScores={person.selfScores} managerScores={person.managerScores} />
                     </td>
                     <td className="py-3 pr-4">
-                      <div className="flex items-center gap-2 w-32">
-                        <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${person.progress}%` }} />
-                        </div>
-                        {/* Past the target the denominator has stopped saying
-                            anything, and "14 of 10" reads as a bug. The bar is
-                            full either way; the label just switches to the
-                            honest count. */}
-                        <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                          {person.lessons >= person.lessonTarget
-                            ? `${person.lessons} passed`
-                            : `${person.lessons} of ${person.lessonTarget}`}
-                        </span>
-                      </div>
+                      <LessonsCell passed={person.lessonsPassed} taken={person.lessonsTaken} />
                     </td>
                     <td className="py-3 pr-4">
                       <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES['Never']}`}>
