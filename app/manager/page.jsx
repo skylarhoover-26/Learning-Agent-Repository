@@ -153,7 +153,7 @@ function OverviewCards({ teamSize, overview }) {
   const cards = [
     { label: 'Team Size', value: teamSize, detail: 'direct reports', icon: Users, color: 'bg-brand' },
     { label: 'Active This Week', value: overview?.activeThisWeek ?? '-', detail: 'logged in past 7 days', icon: Activity, color: 'bg-green-500' },
-    { label: 'Lessons Completed', value: overview?.totalLessons ?? '-', detail: 'across the team', icon: BookOpen, color: 'bg-cta' },
+    { label: 'Lessons Passed', value: overview?.totalLessons ?? '-', detail: 'across the team', icon: BookOpen, color: 'bg-cta' },
     { label: 'Avg AI Score', value: overview?.avgLevel ?? '-', detail: 'team average (1-5)', icon: TrendingUp, color: 'bg-brand-400' },
   ];
 
@@ -188,11 +188,13 @@ const SCORE_DOT_COLORS = {
   5: 'bg-purple-500',
 };
 
+// Status is engagement only — how recently this person did anything at all.
+// Escalating colour, because the point of the column is spotting the quiet ones.
 const STATUS_STYLES = {
-  'On Track': 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  'No assessment': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
-  'Needs Nudge': 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  'Completed': 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300',
+  'Active': 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  'Idle': 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  'Needs nudge': 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+  'Never': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
 };
 
 // The learner-level ladder, same tiers and labels as /admin/levels. Keep these
@@ -462,7 +464,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
       progress: data.progress || 0,
       lessons: data.lessonCount || 0,
       lessonTarget: data.lessonTarget || 10,
-      status: data.status || 'No assessment',
+      status: data.status || 'Never',
       lastActive: data.lastActive || null,
     };
   });
@@ -569,7 +571,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                 <th className="pb-3 pr-4 font-semibold">Name</th>
                 <th className="pb-3 pr-4 font-semibold">Level</th>
                 <th className="pb-3 pr-4 font-semibold">AI Impact</th>
-                <th className="pb-3 pr-4 font-semibold">Lessons</th>
+                <th className="pb-3 pr-4 font-semibold">Lessons passed</th>
                 <th className="pb-3 pr-4 font-semibold">Status</th>
                 <th className="pb-3 font-semibold">Last active</th>
               </tr>
@@ -618,7 +620,7 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                       </div>
                     </td>
                     <td className="py-3 pr-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES['No assessment']}`}>
+                      <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES['Never']}`}>
                         {person.status}
                       </span>
                     </td>

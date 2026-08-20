@@ -7,6 +7,31 @@ import { FULL_LADDER } from '@/lib/adaptive-level';
 // raw count next to it so the bar is never the only thing explaining itself.
 const LESSON_TARGET = 10;
 
+// Days of silence before a manager should hear about it.
+const IDLE_AFTER_DAYS = 7;
+const NUDGE_AFTER_DAYS = 14;
+
+// What counts toward "lessons". The ledger also collects daily quick tips and
+// lessons someone finished without reaching the pass bar; neither is a lesson
+// passed, and counting them made a padded number look like progress.
+//
+// `passed` is set on every graded lesson record. Rows old enough to predate it
+// fall back to the same 70% bar the field itself encodes, so history doesn't
+// silently vanish from the count.
+function isPassedLesson(l) {
+  if (!l || l.format === 'quick_tip') return false;
+  if (typeof l.passed === 'boolean') return l.passed;
+  return typeof l.correctness === 'number' && l.correctness >= 0.7;
+}
+
+// Days since an ISO timestamp, or null.
+function daysSince(iso) {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return (Date.now() - t) / 86400000;
+}
+
 // Which way someone has moved from the level they declared at onboarding. Same
 // comparison /admin/levels makes, so the two views can never disagree.
 function levelDrift(declared, earned) {
@@ -59,7 +84,9 @@ async function handleFetchTeamScores(emails) {
           {
             const lessons = await getUserData(email, lessonBlob.name);
             if (Array.isArray(lessons)) {
-              lessonCount = lessons.length;
+              lessonCount = lessons.filter(isPassedLesson).length;
+              // Recency counts EVERY row, including tips and failed attempts —
+              // those are activity even when they aren't progress.
               for (const l of lessons) {
                 const t = l.completed_at || l.started_at;
                 if (t && (!lastLessonAt || t > lastLessonAt)) lastLessonAt = t;
@@ -103,20 +130,13 @@ async function handleFetchTeamScores(emails) {
         ? { declared, earned, drift: levelDrift(declared, earned) }
         : null;
 
-      // Progress is lessons completed against a 10-lesson target. It used to be
+      // Progress is lessons PASSED against a 10-lesson target. It used to be
       // gated on having an AI Impact self-assessment, which meant someone who
       // had done lessons but skipped the assessment showed 0% — a number that
       // contradicted their own Last Active. The lesson count is the lesson
       // count; the assessment is reported separately.
       let progress = Math.round((lessonCount / LESSON_TARGET) * 100);
       if (progress > 100) progress = 100;
-
-      // "No assessment" rather than "Not Started": this says whether the AI
-      // Impact assessment has been taken, not whether the person is active.
-      let status = 'No assessment';
-      if (selfScores) {
-        status = progress >= 100 ? 'Completed' : 'On Track';
-      }
 
       // "Last active" = most recent signal across lessons, XP, and the AI Impact
       // self-assessment — not just the assessment's updated_at (most people never
@@ -125,9 +145,18 @@ async function handleFetchTeamScores(emails) {
         .filter(Boolean)
         .sort()
         .at(-1) || null;
-      if (status === 'On Track' && lastActive) {
-        const daysSince = (Date.now() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSince > 14) status = 'Needs Nudge';
+
+      // Status is engagement, full stop. It used to report whether the AI Impact
+      // assessment had been taken — which the AI Impact column already says — so
+      // the badge repeated its neighbour and left the manager with no read on who
+      // has gone quiet. "Completed" went with it: it fired at ten ledger rows and
+      // read as "finished the programme".
+      const idleDays = daysSince(lastActive);
+      let status = 'Never';
+      if (idleDays !== null) {
+        if (idleDays > NUDGE_AFTER_DAYS) status = 'Needs nudge';
+        else if (idleDays > IDLE_AFTER_DAYS) status = 'Idle';
+        else status = 'Active';
       }
 
       return {
