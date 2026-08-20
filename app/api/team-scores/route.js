@@ -3,6 +3,10 @@ import { getUserData, saveUserData, listUserDataTypes } from '@/lib/blob-store';
 import { getLevelsForEmails } from '@/lib/supabase-store';
 import { FULL_LADDER } from '@/lib/adaptive-level';
 
+// Lessons that count as "done" for the manager progress bar. Surfaced with the
+// raw count next to it so the bar is never the only thing explaining itself.
+const LESSON_TARGET = 10;
+
 // Which way someone has moved from the level they declared at onboarding. Same
 // comparison /admin/levels makes, so the two views can never disagree.
 function levelDrift(declared, earned) {
@@ -99,18 +103,19 @@ async function handleFetchTeamScores(emails) {
         ? { declared, earned, drift: levelDrift(declared, earned) }
         : null;
 
-      let progress = 0;
-      if (selfScores) {
-        progress = Math.round((lessonCount / 10) * 100);
-        if (progress > 100) progress = 100;
-      }
+      // Progress is lessons completed against a 10-lesson target. It used to be
+      // gated on having an AI Impact self-assessment, which meant someone who
+      // had done lessons but skipped the assessment showed 0% — a number that
+      // contradicted their own Last Active. The lesson count is the lesson
+      // count; the assessment is reported separately.
+      let progress = Math.round((lessonCount / LESSON_TARGET) * 100);
+      if (progress > 100) progress = 100;
 
-      let status = 'Not Started';
-      if (selfScores && lessonCount > 0) {
-        if (progress >= 100) status = 'Completed';
-        else if (lessonCount > 0) status = 'On Track';
-      } else if (selfScores) {
-        status = 'On Track';
+      // "No assessment" rather than "Not Started": this says whether the AI
+      // Impact assessment has been taken, not whether the person is active.
+      let status = 'No assessment';
+      if (selfScores) {
+        status = progress >= 100 ? 'Completed' : 'On Track';
       }
 
       // "Last active" = most recent signal across lessons, XP, and the AI Impact
@@ -142,6 +147,7 @@ async function handleFetchTeamScores(emails) {
           : null,
         tier,
         progress,
+        lessonTarget: LESSON_TARGET,
         status,
         lessonCount,
         totalXp,

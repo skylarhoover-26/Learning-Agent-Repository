@@ -190,7 +190,7 @@ const SCORE_DOT_COLORS = {
 
 const STATUS_STYLES = {
   'On Track': 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  'Not Started': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
+  'No assessment': 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
   'Needs Nudge': 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   'Completed': 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300',
 };
@@ -222,7 +222,7 @@ function LevelBadge({ tier }) {
   if (!tier?.declared) {
     return (
       <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${NO_TIER_STYLE}`}>
-        Not Started
+        No level yet
       </span>
     );
   }
@@ -269,15 +269,38 @@ function lastActiveInfo(iso) {
   return { label, tone };
 }
 
-function ScoreDot({ score, type }) {
-  if (score === null || score === undefined) {
-    return <span className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-600" title="Not assessed" />;
+// Average of whichever of the four dimensions have a score, or null when none
+// do. Rounded to one decimal, and printed without a trailing .0 so a clean 4
+// reads as "4" rather than "4.0".
+function dimensionAverage(scores) {
+  const values = ['personal', 'team', 'org', 'development']
+    .map((d) => scores?.[d])
+    .filter((v) => typeof v === 'number' && v > 0);
+  if (values.length === 0) return null;
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  return Math.round(avg * 10) / 10;
+}
+
+// The AI Impact column: their self-rating and yours, side by side, on the 1-5
+// scale spelled out in the legend under the table.
+//
+// This replaced eight columns (four dimensions x self/manager) of 12px dots.
+// The dots were unreadable at that size and unlabelled at any size — the
+// per-dimension breakdown lives in the expand row, by name.
+function ImpactSummaryCell({ selfScores, managerScores }) {
+  const self = dimensionAverage(selfScores);
+  const mgr = dimensionAverage(managerScores);
+  if (self === null && mgr === null) {
+    return <span className="text-xs text-slate-400 dark:text-slate-500">No assessment</span>;
   }
   return (
-    <span
-      className={`w-3 h-3 rounded-full ${SCORE_DOT_COLORS[score] || 'bg-slate-200'}`}
-      title={`${type}: ${score}/5`}
-    />
+    <span className="inline-flex items-center gap-1.5 text-xs whitespace-nowrap">
+      <span className="font-semibold text-ink dark:text-slate-200">{self ?? '—'}</span>
+      <span className="text-slate-400">self</span>
+      <span className="text-slate-300 dark:text-slate-600">·</span>
+      <span className="font-semibold text-ink dark:text-slate-200">{mgr ?? '—'}</span>
+      <span className="text-slate-400">you</span>
+    </span>
   );
 }
 
@@ -323,36 +346,56 @@ const CAL_SKILLS = [
 // rubric, but the example boxes are gone, so it's a self-report and is labelled
 // that way. Runs from before the change still carry their "why", which is why
 // that block still renders when present.
-function WhyTrendPanel({ detail, history, calibration }) {
+function WhyTrendPanel({ detail, history, calibration, selfScores, managerScores, rating, pending, onPendingChange }) {
   const dims = ['personal', 'team', 'org', 'development'];
   const prev = Array.isArray(history) && history.length >= 2 ? history[history.length - 2]?.scores : null;
   return (
     <div className="space-y-4">
     <div>
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">AI Impact — self-reported</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">
+        AI Impact — their self-rating, and yours
+      </p>
     <div className="grid sm:grid-cols-2 gap-3">
       {dims.map(dim => {
         const d = (detail && detail[dim]) || {};
-        const measured = d.measured || 0;
+        // The self number comes from the assessment detail when there is one,
+        // and falls back to the stored score so a run saved before `detail`
+        // existed still shows something.
+        const measured = d.measured || selfScores?.[dim] || 0;
+        const mgrScore = managerScores?.[dim] ?? null;
+        const pendingScore = pending?.[dim] ?? null;
+        const shownMgr = pendingScore ?? mgrScore;
         const prevScore = prev ? prev[dim] : null;
         const delta = (prevScore !== null && prevScore !== undefined && measured) ? measured - prevScore : null;
         return (
           <div key={dim} className="cine-glass rounded-xl p-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-ink dark:text-slate-200">{COMPETENCY_NAMES[dim]}</span>
-              <span className="flex items-center gap-1.5">
-                {delta !== null && delta !== 0 && (
-                  <span className={`text-[10px] font-bold ${delta > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    {delta > 0 ? '▲' : '▼'} {Math.abs(delta)}
-                  </span>
-                )}
-                <span className="text-xs font-bold text-brand">{measured || '—'}</span>
+              {delta !== null && delta !== 0 && (
+                <span className={`text-[10px] font-bold ${delta > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {delta > 0 ? '▲' : '▼'} {Math.abs(delta)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-baseline gap-1.5 mb-1">
+              <span className="text-xs font-bold text-brand">{measured || '—'}</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                {measured ? `${LEVEL_NAMES[measured]} · self-rated` : 'Not self-rated'}
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-              {measured ? LEVEL_NAMES[measured] : 'Not assessed'}
-            </p>
-            {d.why && <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{d.why}</p>}
+            {/* Your rating, kept visually distinct from theirs — the two numbers
+                answer different questions and shouldn't blur together. */}
+            <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-ink/5 dark:border-slate-700">
+              <span className="text-[10px] uppercase tracking-wide text-slate-400 shrink-0">You</span>
+              {rating ? (
+                <ScorePicker value={shownMgr} onChange={(val) => onPendingChange?.(dim, val)} />
+              ) : (
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {shownMgr ? `${shownMgr} · ${LEVEL_NAMES[shownMgr]}` : 'Not rated'}
+                </span>
+              )}
+            </div>
+            {d.why && <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mt-2">{d.why}</p>}
           </div>
         );
       })}
@@ -417,7 +460,9 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
       history: data.history || [],
       calibration: data.calibration || null,
       progress: data.progress || 0,
-      status: data.status || 'Not Started',
+      lessons: data.lessonCount || 0,
+      lessonTarget: data.lessonTarget || 10,
+      status: data.status || 'No assessment',
       lastActive: data.lastActive || null,
     };
   });
@@ -471,7 +516,9 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-bold text-ink dark:text-slate-200">AI Impact</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">P = Personal, T = Team, O = Org, D = AI Development &middot; S = Self, M = Manager</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Self-rated 1&ndash;5 across Personal, Team, Org, and AI Development. Expand a row to see each one, or to rate it yourself.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {rating && hasChanges && (
@@ -486,8 +533,14 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
           )}
           <button
             onClick={() => {
+              // The pickers live in the expand row now, so entering rate mode
+              // has to open the rows — otherwise the button appears to do
+              // nothing. Leaving it collapses them back.
               if (rating) {
                 setPendingScores({});
+                setExpanded({});
+              } else {
+                setExpanded(Object.fromEntries(rows.map((r) => [r.email, true])));
               }
               setRating(!rating);
             }}
@@ -515,31 +568,15 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
               <tr className="text-left text-xs text-ink/50 dark:text-slate-400 uppercase tracking-wide border-b border-ink/10 dark:border-slate-700">
                 <th className="pb-3 pr-4 font-semibold">Name</th>
                 <th className="pb-3 pr-4 font-semibold">Level</th>
-                <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>P</th>
-                <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>T</th>
-                <th className="pb-3 pr-2 font-semibold text-center" colSpan={2}>O</th>
-                <th className="pb-3 pr-4 font-semibold text-center" colSpan={2}>D</th>
-                <th className="pb-3 pr-4 font-semibold">Progress</th>
+                <th className="pb-3 pr-4 font-semibold">AI Impact</th>
+                <th className="pb-3 pr-4 font-semibold">Lessons</th>
                 <th className="pb-3 pr-4 font-semibold">Status</th>
                 <th className="pb-3 font-semibold">Last active</th>
-              </tr>
-              <tr className="text-[10px] text-slate-400 border-b border-slate-100 dark:border-slate-700">
-                <th colSpan={2} />
-                <th className="pb-2 text-center font-normal">S</th>
-                <th className="pb-2 text-center font-normal pr-2">M</th>
-                <th className="pb-2 text-center font-normal">S</th>
-                <th className="pb-2 text-center font-normal pr-2">M</th>
-                <th className="pb-2 text-center font-normal">S</th>
-                <th className="pb-2 text-center font-normal pr-4">M</th>
-                <th className="pb-2 text-center font-normal">S</th>
-                <th className="pb-2 text-center font-normal pr-4">M</th>
-                <th colSpan={3} />
               </tr>
             </thead>
             <tbody>
               {rows.map((person, i) => {
                 const pending = pendingScores[person.email] || {};
-                const hasWhy = (person.detail && Object.values(person.detail).some(d => d?.why)) || !!person.calibration;
                 const isOpen = !!expanded[person.email];
                 return (
                   <Fragment key={person.email}>
@@ -548,15 +585,13 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                   >
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-2">
-                        {hasWhy ? (
-                          <button
-                            onClick={() => setExpanded(e => ({ ...e, [person.email]: !e[person.email] }))}
-                            className="text-slate-400 hover:text-brand transition-colors"
-                            aria-label={isOpen ? 'Hide details' : 'Show why & trend'}
-                          >
-                            <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                        ) : <span className="w-4" />}
+                        <button
+                          onClick={() => setExpanded(e => ({ ...e, [person.email]: !e[person.email] }))}
+                          className="text-slate-400 hover:text-brand transition-colors"
+                          aria-label={isOpen ? 'Hide details' : 'Show the four AI Impact dimensions'}
+                        >
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
                         <div className="w-7 h-7 rounded-full bg-brand-50 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-brand">
                           {person.name.charAt(0)}
                         </div>
@@ -569,27 +604,21 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                     <td className="py-3 pr-4">
                       <LevelBadge tier={person.tier} />
                     </td>
-                    {['personal', 'team', 'org', 'development'].map(dim => (
-                      <DimensionCells
-                        key={dim}
-                        selfScore={person.selfScores?.[dim] ?? null}
-                        managerScore={person.managerScores?.[dim] ?? null}
-                        rating={rating}
-                        pendingValue={pending[dim] ?? null}
-                        onPendingChange={(val) => updatePending(person.email, dim, val)}
-                        isLast={dim === 'development'}
-                      />
-                    ))}
                     <td className="py-3 pr-4">
-                      <div className="flex items-center gap-2 w-24">
+                      <ImpactSummaryCell selfScores={person.selfScores} managerScores={person.managerScores} />
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center gap-2 w-32">
                         <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${person.progress}%` }} />
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 w-8 text-right">{person.progress}%</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                          {person.lessons} of {person.lessonTarget}
+                        </span>
                       </div>
                     </td>
                     <td className="py-3 pr-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES['Not Started']}`}>
+                      <span className={`inline-flex px-2.5 py-1 rounded-pill text-xs font-medium ${STATUS_STYLES[person.status] || STATUS_STYLES['No assessment']}`}>
                         {person.status}
                       </span>
                     </td>
@@ -601,8 +630,17 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
                   </tr>
                   {isOpen && (
                     <tr className="border-b border-ink/5 dark:border-slate-700 bg-brand-50/30 dark:bg-slate-900/50">
-                      <td colSpan={13} className="px-4 py-4">
-                        <WhyTrendPanel detail={person.detail} history={person.history} calibration={person.calibration} />
+                      <td colSpan={6} className="px-4 py-4">
+                        <WhyTrendPanel
+                          detail={person.detail}
+                          history={person.history}
+                          calibration={person.calibration}
+                          selfScores={person.selfScores}
+                          managerScores={person.managerScores}
+                          rating={rating}
+                          pending={pending}
+                          onPendingChange={(dim, val) => updatePending(person.email, dim, val)}
+                        />
                       </td>
                     </tr>
                   )}
@@ -612,14 +650,13 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
             </tbody>
           </table>
 
-          <div className="mt-4 flex gap-4 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> 1</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> 2</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> 3</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-400" /> 4</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> 5</span>
-            <span className="ml-2 text-slate-300 dark:text-slate-600">|</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-600" /> Not assessed</span>
+          <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-slate-400">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <span key={n} className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${SCORE_DOT_COLORS[n]}`} />
+                {n} {LEVEL_NAMES[n]}
+              </span>
+            ))}
           </div>
         </>
       )}
@@ -627,23 +664,6 @@ function CompetenciesTable({ members, reports, rating, setRating, managerEmail, 
   );
 }
 
-function DimensionCells({ selfScore, managerScore, rating, pendingValue, onPendingChange, isLast }) {
-  const prClass = isLast ? 'pr-4' : 'pr-2';
-  return (
-    <>
-      <td className="py-3 text-center">
-        <ScoreDot score={selfScore} type="Self" />
-      </td>
-      <td className={`py-3 text-center ${prClass}`}>
-        {rating ? (
-          <ScorePicker value={pendingValue ?? managerScore} onChange={onPendingChange} />
-        ) : (
-          <ScoreDot score={managerScore} type="Manager" />
-        )}
-      </td>
-    </>
-  );
-}
 
 export default function ManagerDashboard() {
   return <CinematicFrame><ManagerDashboardInner /></CinematicFrame>;
