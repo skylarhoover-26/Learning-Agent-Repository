@@ -10,6 +10,7 @@ import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
 import GameInstructions from '@/components/game-instructions';
 import GameStartScreen from '@/components/game-start-screen';
+import GameTopic from '@/components/game-topic';
 import { saveGameResult } from '@/lib/game-store';
 
 // Answer by jumping. Same content shape as Speed Round (question, options, one
@@ -220,11 +221,12 @@ function LilyLeap() {
         </div>
       </div>
 
-      <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+      <GameInstructions className="mb-3" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
+      <GameTopic topic={topic} className="mb-3" />
 
       {/* The question strip, above the water like the format it borrows from. */}
       <div className="rounded-2xl px-5 py-4 mb-3 text-center" style={{ background: 'var(--card, #fff)', border: '1px solid var(--line)' }}>
-        <div className="text-[11px] font-bold uppercase tracking-[.18em] mb-1" style={{ color: 'var(--accent)' }}>Lily Leap · {topic}</div>
         <h1 className="font-display font-bold tracking-tight text-ink dark:text-slate-100 max-w-xl mx-auto text-balance" style={{ fontSize: 'clamp(15px,2vw,19px)', lineHeight: 1.35 }}>{q.q}</h1>
       </div>
 
