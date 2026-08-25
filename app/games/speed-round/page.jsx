@@ -11,6 +11,7 @@ import {
 import ALL_QUESTIONS from './questions';
 import { saveGameResult, getGameStats } from '@/lib/game-store';
 import GameInstructions from '@/components/game-instructions';
+import GameTopic from '@/components/game-topic';
 import GameGenLoading from '@/components/game-gen-loading';
 import GameStartScreen from '@/components/game-start-screen';
 
@@ -348,7 +349,9 @@ function SpeedRound() {
       />
 
       <main className="max-w-2xl mx-auto px-6 pt-6 pb-8">
-        <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+        <GameInstructions className="mb-3" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
+        <GameTopic topic={topic} className="mb-3" />
 
         {/* Question counter — previously shown in the page header, which the
             cinematic frame hides, so surface it in-body. */}

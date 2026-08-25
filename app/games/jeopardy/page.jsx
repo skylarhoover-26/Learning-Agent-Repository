@@ -9,6 +9,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import BookLoader from '@/components/book-loader';
 import ConfettiBurst from '@/components/confetti-burst';
 import GameInstructions from '@/components/game-instructions';
+import GameTopic from '@/components/game-topic';
 import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
 
@@ -170,14 +171,13 @@ function JeopardyGame() {
         </div>
       </div>
 
-      <div className="text-center mb-6">
-        <div className="text-[11px] font-bold uppercase tracking-[.18em] mb-1" style={{ color: 'var(--accent)' }}>Jeopardy · custom round</div>
-        <h1 className="font-display font-extrabold tracking-tight text-ink dark:text-slate-100" style={{ fontSize: 'clamp(24px,4vw,40px)' }}>{topic}</h1>
-      </div>
-
       {/* Minimized while playing — same as the hand-built games, so the rules stay
           reachable without eating the board. */}
-      {!done && <GameInstructions className="mb-4 max-w-2xl mx-auto" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />}
+      {!done && <GameInstructions className="mb-3 max-w-2xl mx-auto" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />}
+
+      {/* Gated on !done so the results screen stays clean, the way every other
+          game's results screen is its own early return. */}
+      {!done && <GameTopic topic={topic} className="mb-5 max-w-2xl mx-auto" />}
 
       {done ? (
         <div className="cine-glass rounded-3xl p-8 text-center max-w-lg mx-auto">

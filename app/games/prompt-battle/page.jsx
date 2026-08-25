@@ -12,6 +12,7 @@ import {
   saveGameResult, getGameStats, getInProgress, saveInProgress, clearInProgress,
 } from '@/lib/game-store';
 import GameInstructions from '@/components/game-instructions';
+import GameTopic from '@/components/game-topic';
 import GameGenLoading from '@/components/game-gen-loading';
 import GameStartScreen from '@/components/game-start-screen';
 import SCENARIOS from './scenarios';
@@ -376,7 +377,9 @@ function PromptBattle() {
       />
 
       <main className="max-w-3xl mx-auto px-6 pt-6 pb-8">
-        <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+        <GameInstructions className="mb-3" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
+        <GameTopic topic={topic} className="mb-3" />
 
         {/* Progress indicator */}
         <div className="flex items-center gap-1 mb-6">

@@ -9,6 +9,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
 import GameInstructions from '@/components/game-instructions';
+import GameTopic from '@/components/game-topic';
 import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
 
@@ -140,12 +141,13 @@ function TwoTruths() {
         </div>
       </div>
 
-      <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+      <GameInstructions className="mb-3" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
+      <GameTopic topic={topic} className="mb-3" />
 
       <div className="text-center mb-6">
         <div className="text-[11px] font-bold uppercase tracking-[.18em] mb-1" style={{ color: 'var(--accent)' }}>Two Truths &amp; a Lie</div>
         <h1 className="font-display font-extrabold tracking-tight text-ink dark:text-slate-100" style={{ fontSize: 'clamp(20px,3vw,28px)' }}>Which one is the lie?</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--ink-dim)' }}>{topic}</p>
       </div>
 
       <div className="space-y-3">

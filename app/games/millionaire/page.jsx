@@ -9,6 +9,7 @@ import { CinematicFrame } from '@/components/cinematic/cinematic-shell';
 import GameGenLoading from '@/components/game-gen-loading';
 import ConfettiBurst from '@/components/confetti-burst';
 import GameInstructions from '@/components/game-instructions';
+import GameTopic from '@/components/game-topic';
 import GameStartScreen from '@/components/game-start-screen';
 import { saveGameResult } from '@/lib/game-store';
 
@@ -180,11 +181,13 @@ function Millionaire() {
         </div>
       </div>
 
-      <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+      <GameInstructions className="mb-3" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
+      <GameTopic topic={topic} className="mb-3" />
 
       <div className="text-center mb-2">
         <div className="text-[11px] font-bold uppercase tracking-[.18em]" style={{ color: 'var(--accent)' }}>Who Wants to Be an AI Millionaire</div>
-        <p className="text-xs mt-1" style={{ color: 'var(--ink-dim)' }}>Secured: ${banked.toLocaleString()} · {topic}</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--ink-dim)' }}>Secured: ${banked.toLocaleString()}</p>
       </div>
 
       {/* Lifelines */}

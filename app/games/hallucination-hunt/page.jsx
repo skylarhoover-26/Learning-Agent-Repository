@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import ROUNDS from './rounds';
 import GameInstructions from '@/components/game-instructions';
+import GameTopic from '@/components/game-topic';
 import GameGenLoading from '@/components/game-gen-loading';
 import GameStartScreen from '@/components/game-start-screen';
 import { dailyPick } from '@/lib/content-day';
@@ -411,7 +412,9 @@ function HallucinationHunt() {
       />
 
       <main className="max-w-3xl mx-auto px-6 pt-6 pb-8">
-        <GameInstructions className="mb-4" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+        <GameInstructions className="mb-3" steps={HOW_TO_PLAY} collapsible defaultOpen={false} />
+
+        <GameTopic topic={topic} className="mb-3" />
 
         {/* Round info */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 p-6 mb-6">
