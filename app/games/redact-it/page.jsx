@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Trophy, RotateCcw, Sparkles, ShieldAlert, Check, X, Eye } from 'lucide-react';
 import PageHeader from '@/components/page-header';
@@ -55,7 +55,6 @@ function tokenize(text, sensitive) {
 
 function RedactIt() {
   const params = useSearchParams();
-  const router = useRouter();
   const topic = params.get('topic') || '';
 
   const [rounds, setRounds] = useState(null);
@@ -68,6 +67,8 @@ function RedactIt() {
   const [revealed, setRevealed] = useState(false);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  // Bumped by "New round" to re-run the generator for the same topic.
+  const [nonce, setNonce] = useState(0);
   const savedRef = useRef(false);
 
   useEffect(() => {
@@ -82,7 +83,7 @@ function RedactIt() {
       .then((d) => { if (live) { setRounds(d.rounds); setLoading(false); } })
       .catch((e) => { if (live) { setError(e.message); setLoading(false); } });
     return () => { live = false; };
-  }, [topic]);
+  }, [topic, nonce]);
 
   const round = rounds?.[idx];
   const tokens = useMemo(
@@ -118,6 +119,23 @@ function RedactIt() {
     setScore((s) => s + perRound);
   }
 
+  // Reported as "clicking New round does nothing" (feedback #230). It pushed this
+  // same route with a cache-busting `r=` param — but a same-route push doesn't
+  // remount the page and nothing read `r`, so the fetch effect (keyed on topic
+  // alone) never re-ran and gameOver stayed true. Reset the round here and bump the
+  // nonce so fresh messages are actually generated.
+  function newRound() {
+    savedRef.current = false;
+    setLoading(true);
+    setRounds(null);
+    setIdx(0);
+    setTapped(new Set());
+    setRevealed(false);
+    setScore(0);
+    setGameOver(false);
+    setNonce((n) => n + 1);
+  }
+
   function next() {
     if (idx + 1 >= (rounds?.length || 0)) { setGameOver(true); return; }
     setIdx((i) => i + 1);
@@ -149,6 +167,13 @@ function RedactIt() {
       />
     );
   }
+  if (loading) {
+    return (
+      <main className="max-w-2xl mx-auto px-6 py-24">
+        <GameGenLoading label="Writing your messages…" />
+      </main>
+    );
+  }
   if (error || !round) {
     return (
       <main className="max-w-lg mx-auto px-6 py-20 text-center">
@@ -176,7 +201,7 @@ function RedactIt() {
         <div className="flex gap-3 justify-center mt-7">
           <Link href="/games" className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-6 font-semibold">Back to games</Link>
           <button
-            onClick={() => router.push(`/games/redact-it?topic=${encodeURIComponent(topic)}&r=${Date.now()}`)}
+            onClick={newRound}
             className="cine-glass cine-lift inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold"
             style={{ color: 'var(--ink)' }}
           >

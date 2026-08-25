@@ -98,7 +98,9 @@ BAD (too vague to teach anything): "Your n8n JSON is 400 lines. What should you 
 GOOD: "Your n8n workflow fails at the HTTP node with a 429 and the JSON export is 400 lines. You want AI's help fastest. What do you paste in?"
 
 OPTIONS:
-- EXACTLY 3, each a genuinely different course of action, at most 8 words.
+- EXACTLY 3, each a genuinely different course of action.
+- HARD LIMIT: at most 8 words AND at most 55 characters per option, because it has to fit on a lily pad. Count every word, including anything after a dash — "Yes - it looks right and a domain expert signed off" is eleven words, not four.
+- If a choice will not fit in 8 words, rewrite it shorter. Do not run over.
 - Never a reworded version of another option, and never "all of the above" or "none of the above".
 - Wrong options must be things a reasonable person would actually try, not straw men.
 - No option is right merely because it is longest or most detailed.
@@ -118,12 +120,13 @@ Return ONLY valid JSON (no markdown fences):
           && Number.isInteger(x.correct) && x.correct >= 0 && x.correct <= 2)
         .map((x) => ({
           q: String(x.q).trim(),
-          // 8 words, not 4. The first cut at this capped options at four words, which
-          // turned real choices into headlines ("Full JSON always" vs "Relevant node
-          // JSON") and left nothing to reason about. The pads are ovals now, so there
-          // is room for a phrase — but still a hard cap, because a pad that has to
-          // render a sentence is a broken pad.
-          options: x.options.map((o) => String(o).trim().split(/\s+/).slice(0, 8).join(' ')),
+          // NOT truncated. This used to slice options to the first 8 words, which
+          // shipped half-sentences to the pond — "Yes - it looks right and a domain"
+          // with the "expert signed off" that made it wrong quietly cut away. A
+          // truncated option is worse than a long one: the player is asked to choose
+          // between things they cannot read. Brevity is now the prompt's job (8 words,
+          // 55 chars, hard limit) and the pads grow to fit whatever arrives.
+          options: x.options.map((o) => String(o).trim().replace(/\s+/g, ' ')),
           correct: x.correct,
           explanation: String(x.explanation || '').trim(),
         }))

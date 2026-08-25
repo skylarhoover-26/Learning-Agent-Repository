@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Heart, Trophy, RotateCcw, Sparkles, Waves } from 'lucide-react';
 import PageHeader from '@/components/page-header';
@@ -56,7 +56,6 @@ function Frog({ mood = 'idle' }) {
 
 function LilyLeap() {
   const params = useSearchParams();
-  const router = useRouter();
   const topic = params.get('topic') || '';
 
   const [questions, setQuestions] = useState(null);
@@ -69,6 +68,8 @@ function LilyLeap() {
   const [lives, setLives] = useState(LIVES);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  // Bumped by "New round" to re-run the generator for the same topic.
+  const [nonce, setNonce] = useState(0);
   const savedRef = useRef(false);
 
   useEffect(() => {
@@ -83,7 +84,7 @@ function LilyLeap() {
       .then((d) => { if (live) { setQuestions(d.questions); setLoading(false); } })
       .catch((e) => { if (live) { setError(e.message); setLoading(false); } });
     return () => { live = false; };
-  }, [topic]);
+  }, [topic, nonce]);
 
   const q = questions?.[idx];
   const revealed = picked !== null;
@@ -104,6 +105,24 @@ function LilyLeap() {
     setPicked(i);
     if (i === q.correct) setScore((s) => s + 1);
     else setLives((l) => l - 1);
+  }
+
+  // Replaying used to push this same route with a cache-busting `r=` param. A
+  // same-route push doesn't remount the page and nothing ever read `r`, so the
+  // fetch effect never re-ran and every piece of state survived — the results
+  // screen just sat there looking broken (feedback #230, reported on Redact It;
+  // every generated game shipped the same dead button). Reset the round here and
+  // bump the nonce so the generator actually runs again.
+  function newRound() {
+    savedRef.current = false;
+    setLoading(true);
+    setQuestions(null);
+    setIdx(0);
+    setPicked(null);
+    setLives(LIVES);
+    setScore(0);
+    setGameOver(false);
+    setNonce((n) => n + 1);
   }
 
   function next() {
@@ -138,6 +157,13 @@ function LilyLeap() {
       />
     );
   }
+  if (loading) {
+    return (
+      <main className="max-w-2xl mx-auto px-6 py-24">
+        <GameGenLoading label="Filling the pond…" />
+      </main>
+    );
+  }
   if (error || !q) {
     return (
       <main className="max-w-lg mx-auto px-6 py-20 text-center">
@@ -165,7 +191,7 @@ function LilyLeap() {
         <div className="flex gap-3 justify-center mt-7">
           <Link href="/games" className="cine-pill cine-lift inline-flex items-center gap-2 h-12 px-6 font-semibold">Back to games</Link>
           <button
-            onClick={() => router.push(`/games/lily-leap?topic=${encodeURIComponent(topic)}&r=${Date.now()}`)}
+            onClick={newRound}
             className="cine-glass cine-lift inline-flex items-center gap-2 h-12 px-6 rounded-full font-semibold"
             style={{ color: 'var(--ink)' }}
           >
@@ -216,19 +242,28 @@ function LilyLeap() {
             let pad = 'radial-gradient(circle at 35% 30%, #4b9b52, #2f7a3c)';
             if (revealed && isRight) { ring = 'var(--good, #22C55E)'; pad = 'radial-gradient(circle at 35% 30%, #57b25f, #2f7a3c)'; }
             if (revealed && chosen && !isRight) { ring = '#E5484D'; pad = 'radial-gradient(circle at 35% 30%, #7a6a4a, #4a3f2f)'; }
+            // Long options step down a size rather than being cut short. The pads
+            // used to be a fixed 5:4 box, so anything that didn't fit was trimmed
+            // upstream to eight words — see feedback #229, where a pad read "Yes —
+            // it looks right and a domain" and stopped. Grid stretch keeps all
+            // three the same height, so the row grows to the wordiest pad and the
+            // pond still looks even.
+            const fontSize = opt.length > 62
+              ? 'clamp(10px,1.2vw,12px)'
+              : opt.length > 42 ? 'clamp(10px,1.35vw,13px)' : 'clamp(11px,1.5vw,14px)';
             return (
               <button
                 key={i}
                 onClick={() => pick(i)}
                 disabled={revealed}
                 aria-label={`Answer ${String.fromCharCode(65 + i)}: ${opt}`}
-                className="relative aspect-[5/4] rounded-[50%] grid place-items-center px-4 py-6 text-center transition-transform duration-200 disabled:cursor-default hover:scale-[1.03] active:scale-[0.98]"
+                className="relative min-h-[8.5rem] rounded-[50%] grid place-items-center px-5 sm:px-6 py-7 text-center transition-transform duration-200 disabled:cursor-default hover:scale-[1.03] active:scale-[0.98]"
                 style={{ background: pad, border: `3px solid ${ring}`, boxShadow: '0 6px 18px rgba(0,0,0,.18)' }}
               >
                 <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold" style={{ background: '#fff', color: '#2f7a3c' }}>
                   {String.fromCharCode(65 + i)}
                 </span>
-                <span className="font-bold text-white leading-snug" style={{ fontSize: 'clamp(11px,1.5vw,14px)', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>
+                <span className="font-bold text-white leading-snug text-balance" style={{ fontSize, textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>
                   {opt}
                 </span>
                 {/* The frog rides the chosen pad, so the jump is visible without
