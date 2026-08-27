@@ -3,6 +3,12 @@ import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { generateToolDescription } from '@/lib/ai';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
+// Without an explicit maxDuration a Vercel function takes the platform default,
+// which is far shorter than an LLM call needs — the request is killed mid-flight
+// and the audit entry that would have explained it is never written (feedback
+// #232 rediscovered this on the lesson path). Every AI route names its own limit.
+export const maxDuration = 60;
+
 // Any signed-in learner: when they add a custom tool, auto-fill what it's good
 // for and its URL so the catalog entry is useful right away.
 export async function POST(request) {

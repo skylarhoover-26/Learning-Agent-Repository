@@ -4,6 +4,12 @@ import { isAdmin } from '@/lib/admin';
 import { generateTeachStep } from '@/lib/ai';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
+// Without an explicit maxDuration a Vercel function takes the platform default,
+// which is far shorter than an LLM call needs — the request is killed mid-flight
+// and the audit entry that would have explained it is never written (feedback
+// #232 rediscovered this on the lesson path). Every AI route names its own limit.
+export const maxDuration = 300;
+
 // Admin tool: given a stored lesson plan, reconstruct the teaching text for each
 // teach step so an admin can read the full lesson exactly as a learner works
 // through it. Activities live in the plan already; only the teach narrative is

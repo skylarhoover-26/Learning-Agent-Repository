@@ -4,6 +4,12 @@ import { isAdmin } from '@/lib/admin';
 import { generateLessonResponse } from '@/lib/ai';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
+// Without an explicit maxDuration a Vercel function takes the platform default,
+// which is far shorter than an LLM call needs — the request is killed mid-flight
+// and the audit entry that would have explained it is never written (feedback
+// #232 rediscovered this on the lesson path). Every AI route names its own limit.
+export const maxDuration = 300;
+
 // Caps per format so a runaway lesson can't loop forever.
 const MAX_SLIDES = { quick_tip: 2, standard: 6, deep_dive: 12 };
 

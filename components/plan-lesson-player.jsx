@@ -13,6 +13,7 @@ import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
 import { resolveLearnerId } from '@/lib/learner-id';
+import { planClientTimeoutMs, isHeavyFormat } from '@/lib/lesson-timing';
 import { onLessonComplete, normalizeTopic, PASS_THRESHOLD, quickTipCapReached, DAILY_CAPS } from '@/lib/progression';
 import { useProgression } from '@/components/progression-provider';
 import { emitXp } from '@/lib/xp-bus';
@@ -292,11 +293,21 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
         : fetch(`/api/daily-pick/lesson?topic=${encodeURIComponent(topic)}&format=${encodeURIComponent(format)}`)
             .then((r) => (r.ok ? r.json() : null))
             .catch(() => null); // no cache / read failed — generate normally below
+      // The recommendation is best-effort, but it is AWAITED before planning
+      // starts — so without a timeout of its own, a slow one is pure dead time
+      // in front of every lesson, and the learner reads it as "the lesson is
+      // slow". Its route is capped at 30s; give up at 25 and plan without it.
+      const recController = new AbortController();
+      const recTimer = setTimeout(() => recController.abort(), 25000);
       const recPromise = fetch('/api/lesson/recommend-tool', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic, preferredTool }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, preferredTool }),
+        signal: recController.signal,
       })
         .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null); // recommendation is best-effort
+        .catch(() => null) // recommendation is best-effort
+        .finally(() => clearTimeout(recTimer));
 
       // Today's Pick fast-path: if this exact lesson was pre-generated (plan +
       // first teach step warmed by the daily cron or warm-on-open), hydrate it
@@ -360,24 +371,21 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
       // spinning on the browser default forever — it falls into the retry, then
       // the friendly error UI below.
       //
-      // Two constraints the earlier numbers violated, which is how a Project
-      // Quest ended up showing "taking longer than usual" at 8m25s:
-      //  1. The client budget must sit UNDER the route's maxDuration (300s).
-      //     At 240s we aborted plans the server was still successfully working
-      //     on, turning a slow-but-fine lesson into a hard failure.
-      //  2. Heavy formats get ONE attempt, not two. The server already retries
-      //     internally, so a client retry just doubled the wall clock — 2 x 240s
-      //     plus setup is exactly the 8m25s a learner sat through before the
-      //     error appeared. Light formats are quick enough that a second try is
-      //     still cheaper than showing an error.
-      //  3. Every plan is now GROUNDED with a live web lookup (lib/ai.js), which
-      //     adds roughly 5-20s before a word is written. The light budget was 100s,
-      //     sized for an ungrounded plan — close enough to a grounded one's worst
-      //     case that we'd have started aborting runs the server was completing
-      //     fine, which is failure mode 1 all over again. 150s keeps the same
-      //     headroom it used to have and still sits under maxDuration.
-      const heavyFormat = format === 'project_quest' || format === 'deep_dive';
-      const PLAN_TIMEOUT_MS = heavyFormat ? 280000 : 150000;
+      // The numbers themselves now live in lib/lesson-timing.js, shared with the
+      // server. They were hand-tuned here in isolation for three rounds of
+      // feedback (#135, #181, #232) and the recurring failure was always the
+      // same: this side had a time budget and the server side had an attempt
+      // COUNT, so the browser could abort a run the server was still completing
+      // — the learner sees "taking longer than usual" while the function works
+      // on for another minute. The server now holds a deadline derived from this
+      // budget and always answers first.
+      //
+      // Heavy formats still get ONE attempt: the server already retries
+      // internally, and a client retry on top just doubles the wall clock (that
+      // was the 8m25s Project Quest). Light formats are quick enough that a
+      // second try is cheaper than showing an error.
+      const heavyFormat = isHeavyFormat(format);
+      const PLAN_TIMEOUT_MS = planClientTimeoutMs(format);
       const maxPlanAttempts = heavyFormat ? 1 : 2;
       for (let attempt = 1; attempt <= maxPlanAttempts && active; attempt++) {
         const controller = new AbortController();
