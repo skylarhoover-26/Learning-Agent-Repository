@@ -69,8 +69,13 @@ export default function CinematicLeaderboard() {
                     <span className="w-12 h-12 rounded-full grid place-items-center font-display font-bold mb-2" style={{ background: 'linear-gradient(135deg,var(--accent),var(--gold))', color: '#0A2443', boxShadow: rank === 1 ? '0 0 26px -4px var(--gold)' : 'none' }}>
                       {initials(p.name)}
                     </span>
-                    <p className="text-sm font-semibold text-center truncate max-w-full flex items-center gap-1">
-                      {p.name?.split(' ')[0]}
+                    {/* Full name — same reason as the live podium in
+                        app/leaderboard/page.jsx (feedback #231): a first name
+                        alone doesn't identify anyone when the org has several
+                        Georges. Kept in step here so wiring this component up
+                        later can't quietly reintroduce the bug. */}
+                    <p className="text-sm font-semibold text-center max-w-full flex items-center gap-1" title={p.name}>
+                      {p.name}
                       {champ.has(p.learnerId) && <Crown className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />}
                     </p>
                     <p className="text-xs mb-2" style={{ color: 'var(--ink-dim)' }}>{(p.totalXp || 0).toLocaleString()} XP</p>

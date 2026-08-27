@@ -348,10 +348,22 @@ function PodiumSpot({ person, rank, tier, isMe }) {
         <Avatar avatar={person.avatar} size={s.avatar} crown={tier} title={person.name} />
       </div>
 
-      <div className="mt-2 text-center max-w-[130px]">
+      {/* FULL name, not just the first.
+          The podium showed `name.split(' ')[0]`, so the three people most worth
+          identifying were the only three you couldn't — and with several people
+          in the org sharing a first name, a podium reading "George" names nobody
+          (feedback #231). Ranks 4+ always showed the full name, so this was also
+          the one place the board contradicted itself.
+          Wrapping rather than truncating: a clipped "Rachel Zug…" would just be
+          the same problem with an ellipsis. The title attribute carries the whole
+          name for anything that still doesn't fit. */}
+      <div className="mt-2 text-center max-w-[150px]">
         <div className="flex items-center justify-center gap-1">
-          <span className={`font-bold text-ink dark:text-slate-200 truncate ${rank === 1 ? 'text-base' : 'text-sm'}`}>
-            {person.name?.split(' ')[0]}
+          <span
+            title={person.name}
+            className={`font-bold text-ink dark:text-slate-200 break-words leading-tight ${rank === 1 ? 'text-base' : 'text-sm'}`}
+          >
+            {person.name}
           </span>
           {isMe && (
             <span className="text-[9px] font-bold bg-brand text-white px-1 py-0.5 rounded-pill uppercase tracking-wide">You</span>
