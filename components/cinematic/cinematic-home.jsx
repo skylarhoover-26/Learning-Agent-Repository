@@ -13,6 +13,7 @@ import { useMenuVisibility } from '@/components/menu-visibility-provider';
 import { useProgression } from '@/components/progression-provider';
 import { useTodaysPick } from '@/components/use-todays-pick';
 import { resolveLearnerId } from '@/lib/learner-id';
+import { pacificDayKey, shiftDayKey } from '@/lib/progression-core';
 import { getLevelTitle } from '@/lib/level-titles';
 import { computeSkills } from '@/lib/heatmap-data';
 import { getAllModuleProgress } from '@/lib/module-store';
@@ -42,7 +43,13 @@ const WAYS = [
   { href: '/prompts', icon: PenTool, label: 'Prompts', desc: 'Ready-made prompts for your tasks.', tint: '#FFB706' },
 ];
 
+// Monday-first. The single letters are ambiguous on their own — two T's and two
+// S's — which is exactly how a Tuesday square got read as a second Thursday
+// (feedback #233). Each pill carries the date underneath and the full day in its
+// tooltip, so no square has to be identified by its letter alone.
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function initials(name) {
   if (!name) return 'YOU';
@@ -257,17 +264,38 @@ export default function CinematicHome() {
   }, [skills]);
 
   // Which days this week the learner was active (any XP or finished lesson).
+  //
+  // Bucketed with pacificDayKey — the SAME day definition calculateStreak uses.
+  // This used to bucket by the browser's `toDateString()`, so the pills and the
+  // streak number above them could name different days for one event, and a
+  // date-only timestamp (parsed as UTC midnight) lit the pill one square to the
+  // left of where it belonged (feedback #233).
   const week = useMemo(() => {
     const activeDays = new Set();
-    (prog?.xpEvents || []).forEach((e) => { if (e.created_at) activeDays.add(new Date(e.created_at).toDateString()); });
-    (prog?.lessonHistory || []).forEach((l) => { const d = l.completed_at || l.created_at; if (d) activeDays.add(new Date(d).toDateString()); });
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // rewind to Monday
+    const add = (ts) => {
+      if (!ts) return;
+      const d = new Date(ts);
+      if (!isNaN(d.getTime())) activeDays.add(pacificDayKey(d));
+    };
+    (prog?.xpEvents || []).forEach((e) => add(e.created_at));
+    (prog?.lessonHistory || []).forEach((l) => add(l.completed_at || l.created_at));
+    const todayKey = pacificDayKey(new Date());
+    // Rewind to Monday on the UTC calendar the day keys live on, so the week
+    // can't be shifted by the viewer's own timezone.
+    const [ty, tm, td] = todayKey.split('-').map(Number);
+    const weekday = new Date(Date.UTC(ty, tm - 1, td)).getUTCDay(); // 0 = Sunday
+    const mondayKey = shiftDayKey(todayKey, -((weekday + 6) % 7));
     return WEEKDAYS.map((lbl, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      return { lbl, active: activeDays.has(d.toDateString()), isToday: d.toDateString() === now.toDateString() };
+      const key = shiftDayKey(mondayKey, i);
+      const [, month, day] = key.split('-').map(Number);
+      return {
+        key,
+        lbl,
+        date: day,
+        label: `${WEEKDAY_NAMES[i]}, ${MONTH_ABBR[month - 1]} ${day}`,
+        active: activeDays.has(key),
+        isToday: key === todayKey,
+      };
     });
   }, [prog?.xpEvents, prog?.lessonHistory]);
 
@@ -491,15 +519,20 @@ export default function CinematicHome() {
             <p className="font-display font-bold inline-flex items-center gap-2"><Flame className="w-4 h-4" style={{ color: '#FF7A45' }} /> Current streak</p>
             <p className="font-display font-extrabold text-5xl mt-3">{streak}<span className="text-base font-semibold ml-2" style={{ color: 'var(--ink-dim)' }}>days in a row</span></p>
             <div className="flex items-center gap-1.5 mt-4">
-              {week.map((d, i) => (
+              {week.map((d) => (
                 <span
-                  key={i}
-                  className="w-9 h-9 rounded-xl grid place-items-center text-xs font-bold"
+                  key={d.key}
+                  // The letter alone can't identify the square, so the title and
+                  // the screen-reader label both spell the day out in full.
+                  title={`${d.label}${d.isToday ? ' (today)' : ''} — ${d.active ? 'active' : 'no activity'}`}
+                  aria-label={`${d.label}${d.isToday ? ', today' : ''}: ${d.active ? 'active' : 'no activity'}`}
+                  className="w-9 h-11 rounded-xl flex flex-col items-center justify-center leading-none"
                   style={d.active
                     ? { background: 'linear-gradient(135deg,var(--gold),#ffce4d)', color: '#0A2443' }
                     : { background: 'var(--glass)', color: 'var(--ink-dim)', border: d.isToday ? '1.5px dashed var(--gold)' : '1px solid var(--line)' }}
                 >
-                  {d.lbl}
+                  <span className="text-[9px] font-bold uppercase tracking-wide opacity-70">{d.lbl}</span>
+                  <span className="text-xs font-bold mt-0.5">{d.date}</span>
                 </span>
               ))}
             </div>
