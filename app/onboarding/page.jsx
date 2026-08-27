@@ -17,6 +17,7 @@ import { TIERS, GOALS } from '@/lib/onboarding-options';
 import { resolveTaskAdd, normalizeTaskText, taskNoticeText } from '@/lib/task-input';
 import { addBadgeEarned } from '@/lib/learner-store';
 import { isCalibrationPending } from '@/lib/calibration-local';
+import { useAssessmentConfig } from '@/lib/use-assessment-config';
 import AvatarLocker from '@/components/avatar-locker';
 import { DEFAULT_AVATAR } from '@/lib/avatar-catalog';
 
@@ -88,6 +89,12 @@ export default function OnboardingPage() {
   // Resolved in an effect, not during render: isCalibrationPending reads
   // localStorage, and reading it inline would hydrate-mismatch the button label.
   const [calibrationPending, setCalibrationPending] = useState(true);
+  // ...and whether the placement quiz is switched on at all. An admin can turn
+  // the whole gate off in /admin/onboarding-quiz, and then there IS no next step
+  // — promising "a short calibration" sends people looking for a screen that
+  // never comes (#234). Mounted here, at the top of the flow, so the answer has
+  // long arrived by the time anyone clicks through to step 7.
+  const { config: assessmentConfig, loading: assessmentLoading } = useAssessmentConfig();
   const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
   // A restored draft's avatar is an explicit prior choice — don't override it
   // with the Slack-photo default below.
@@ -232,6 +239,14 @@ export default function OnboardingPage() {
       isCalibrationPending(existingProfile, session?.user?.email)
     );
   }, [existingProfile, session?.user?.email]);
+
+  // "Is there actually another step after this one?" — both halves have to be
+  // true: the person still owes us a calibration AND the quiz is switched on.
+  // While the switches are still loading we answer no, so a disabled quiz can
+  // never flash a promise of a step that isn't coming.
+  const calibrationAhead = calibrationPending
+    && !assessmentLoading
+    && assessmentConfig.quiz_enabled;
 
   const availableTasks = department ? getTaskList(department, subTeam) : [];
 
@@ -645,16 +660,18 @@ export default function OnboardingPage() {
           {/* "Finish setup" was a lie whenever calibration was still pending:
               the button handed you straight to the ~13-step calibration gate
               (feedback #135). Say "Continue setup" and name what's coming, so
-              the last onboarding step doesn't read as the last step overall. */}
+              the last onboarding step doesn't read as the last step overall.
+              The reverse is just as wrong: with the placement quiz switched off
+              this IS the last step, so "Up next" pointed at nothing (#234). */}
           {step === 7 && (
             <div className="mt-8">
               <StepNav
                 onBack={goBack}
                 onNext={() => handleFinish(goals)}
-                label={calibrationPending ? 'Continue setup' : 'Finish setup'}
+                label={calibrationAhead ? 'Continue setup' : 'Finish setup'}
                 variant="finish"
               />
-              {calibrationPending && (
+              {calibrationAhead && (
                 <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-3">
                   Up next: a short calibration so your lessons start at the right level.
                 </p>
