@@ -9,6 +9,7 @@ import { useTts } from '@/lib/use-tts';
 import { useSidebar } from '@/components/sidebar';
 import BookLoader from '@/components/book-loader';
 import GenTips from '@/components/gen-tips';
+import { personalLine, statusLine } from '@/lib/loading-tips';
 import { useProfile } from '@/components/profile-provider';
 import LessonQuiz from '@/components/lesson-quiz';
 import { FormattedContent } from '@/components/lesson-slide';
@@ -550,18 +551,15 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
         {/* Loading the script — same look as the read-lesson loader. */}
         {!script && !loadError && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
-            <BookLoader message={`Designing your narrated lesson on ${topic}…`} size="lg" />
+            <BookLoader message={personalLine(profile, format)} size="lg" />
             <div className="mt-6 max-w-md mx-auto">
               <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${loadPct}%` }} />
               </div>
-              <p className="mt-2 text-center text-xs text-slate-400">
-                Writing the script and narration — this usually takes {load.estimate} in total.
+              <p className="mt-2.5 text-center text-xs leading-relaxed text-slate-400">
+                {statusLine(elapsed, format, `${load.estimate} in total`)}
               </p>
-              <p className="mt-3 text-center text-sm font-bold text-amber-500 dark:text-amber-400">
-                ⚠️ Keep this tab open while it builds — leaving pauses the progress.
-              </p>
-              <GenTips profile={profile} format={format} elapsed={elapsed} className="mt-7" />
+              <GenTips profile={profile} className="mt-7" />
             </div>
           </div>
         )}
@@ -588,14 +586,12 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div className="h-full bg-brand rounded-full transition-all duration-500 ease-out" style={{ width: `${prepPct}%` }} />
               </div>
-              <p className="mt-2 text-center text-xs text-slate-400">
-                Preparing the narration so playback never stops to load
-                {prepProgress.total ? ` · ${prepProgress.done}/${prepProgress.total} scenes` : '…'}
+              <p className="mt-2.5 text-center text-xs leading-relaxed text-slate-400">
+                Preparing the narration
+                {prepProgress.total ? ` · ${prepProgress.done}/${prepProgress.total} scenes` : ''}
+                {' · keep this tab open, leaving pauses it'}
               </p>
-              <p className="mt-3 text-center text-sm font-bold text-amber-500 dark:text-amber-400">
-                ⚠️ Keep this tab open while it builds — leaving pauses the progress.
-              </p>
-              <GenTips profile={profile} format={format} showSteps={false} className="mt-7" />
+              <GenTips profile={profile} className="mt-7" />
             </div>
           </div>
         )}

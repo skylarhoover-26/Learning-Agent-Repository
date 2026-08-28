@@ -8,6 +8,7 @@ import LessonActivity from '@/components/lesson-activity';
 import ConfettiBurst from '@/components/confetti-burst';
 import BookLoader from '@/components/book-loader';
 import GenTips from '@/components/gen-tips';
+import { personalLine } from '@/lib/loading-tips';
 import CompletionFeedback from '@/components/completion-feedback';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
@@ -288,16 +289,16 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
   if (loading) {
     // First "Designing…" while the plan is generated, then a live section count
     // while the full lesson is written (we hold the reader until it's complete).
-    const loaderMsg = teachTotal > 0
-      ? `Writing your lesson… (${teachDone} of ${teachTotal} sections)`
-      : `Designing your lesson on ${topic}…`;
     return (
       <div className="min-h-[70vh] grid place-items-center">
-        <div>
-          <BookLoader message={loaderMsg} size="lg" />
-          {/* No elapsed prop — this surface doesn't keep one, so GenTips runs its
-              own clock from mount, which is when the wait starts anyway. */}
-          <GenTips profile={profile} format={format} className="mt-7 px-6" />
+        <div className="px-6">
+          <BookLoader message={personalLine(profile, format)} size="lg" />
+          <p className="mt-1 text-center text-xs text-slate-400">
+            {teachTotal > 0
+              ? `Writing your lesson · ${teachDone} of ${teachTotal} sections · keep this tab open, leaving pauses it`
+              : 'Designing the steps and objectives · keep this tab open, leaving pauses it'}
+          </p>
+          <GenTips profile={profile} className="mt-7" />
         </div>
       </div>
     );

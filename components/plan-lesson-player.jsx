@@ -10,6 +10,7 @@ import ConfettiBurst from '@/components/confetti-burst';
 import { getPausedLesson, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import BookLoader from '@/components/book-loader';
 import GenTips from '@/components/gen-tips';
+import { personalLine, statusLine } from '@/lib/loading-tips';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
@@ -1190,25 +1191,17 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
     // progress for a single model call, so this just signals "still working").
     const load = FORMAT_LOAD[format] || FORMAT_LOAD.standard;
     const pct = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / (load.tau || 14)))));
-    const message =
-      elapsed < 8 ? `Designing your lesson on ${topic}…`
-      : elapsed < 20 ? 'Writing the steps and activities…'
-      : elapsed < load.slow ? 'Putting on the finishing touches…'
-      : 'Almost there — this one’s taking a little longer than usual…';
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-12">
-        <BookLoader message={message} size="lg" egg="lesson-gen-wait" />
+        <BookLoader message={personalLine(profile, format)} size="lg" egg="lesson-gen-wait" />
         <div className="mt-6 max-w-md mx-auto">
           <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-2 text-center text-xs text-slate-400">
-            This usually takes {load.estimate}{elapsed >= load.slow ? ' — hang tight, almost done.' : '.'}
+          <p className="mt-2.5 text-center text-xs leading-relaxed text-slate-400">
+            {statusLine(elapsed, format, load.estimate, { slow: load.slow })}
           </p>
-          <p className="mt-3 text-center text-sm font-bold text-amber-600 dark:text-amber-400">
-            ⚠️ Keep this tab open while it builds — leaving pauses the progress.
-          </p>
-          <GenTips profile={profile} format={format} elapsed={elapsed} className="mt-7" />
+          <GenTips profile={profile} className="mt-7" />
         </div>
       </div>
     );
