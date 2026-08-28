@@ -7,6 +7,7 @@ import LessonInteractive from '@/components/lesson-interactive';
 import LessonActivity from '@/components/lesson-activity';
 import ConfettiBurst from '@/components/confetti-burst';
 import BookLoader from '@/components/book-loader';
+import GenTips from '@/components/gen-tips';
 import CompletionFeedback from '@/components/completion-feedback';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
@@ -292,7 +293,12 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
       : `Designing your lesson on ${topic}…`;
     return (
       <div className="min-h-[70vh] grid place-items-center">
-        <BookLoader message={loaderMsg} size="lg" />
+        <div>
+          <BookLoader message={loaderMsg} size="lg" />
+          {/* No elapsed prop — this surface doesn't keep one, so GenTips runs its
+              own clock from mount, which is when the wait starts anyway. */}
+          <GenTips profile={profile} format={format} className="mt-7 px-6" />
+        </div>
       </div>
     );
   }

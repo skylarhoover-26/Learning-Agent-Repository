@@ -9,6 +9,7 @@ import OpenToolLink, { mentionsOpenTool } from '@/components/open-tool-link';
 import ConfettiBurst from '@/components/confetti-burst';
 import { getPausedLesson, upsertPausedLesson, removePausedLesson } from '@/lib/paused-lessons';
 import BookLoader from '@/components/book-loader';
+import GenTips from '@/components/gen-tips';
 import { useProfile } from '@/components/profile-provider';
 import { useActiveTool } from '@/components/active-tool-provider';
 import { useToolCatalog } from '@/components/tool-catalog-provider';
@@ -1207,6 +1208,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           <p className="mt-3 text-center text-sm font-bold text-amber-600 dark:text-amber-400">
             ⚠️ Keep this tab open while it builds — leaving pauses the progress.
           </p>
+          <GenTips profile={profile} format={format} elapsed={elapsed} className="mt-7" />
         </div>
       </div>
     );

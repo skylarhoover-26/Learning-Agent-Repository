@@ -8,6 +8,8 @@ import {
 import { useTts } from '@/lib/use-tts';
 import { useSidebar } from '@/components/sidebar';
 import BookLoader from '@/components/book-loader';
+import GenTips from '@/components/gen-tips';
+import { useProfile } from '@/components/profile-provider';
 import LessonQuiz from '@/components/lesson-quiz';
 import { FormattedContent } from '@/components/lesson-slide';
 
@@ -83,6 +85,9 @@ function estimateNarrationTime(script) {
  * completion; longer formats run a short checkpoint quiz that scales the XP.
  */
 export default function VideoLessonPlayer({ topic, format = 'standard', tools, questId, initialScript = null, initialScene = 0, initialTime = 0, onProgress, onComplete, onClose }) {
+  // Only read for the loading screen's tips — the script itself is personalized
+  // server-side from the profile the API loads, not from this one.
+  const { profile } = useProfile() || {};
   const [script, setScript] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [sceneIdx, setSceneIdx] = useState(initialScene || 0);
@@ -556,6 +561,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <p className="mt-3 text-center text-sm font-bold text-amber-500 dark:text-amber-400">
                 ⚠️ Keep this tab open while it builds — leaving pauses the progress.
               </p>
+              <GenTips profile={profile} format={format} elapsed={elapsed} className="mt-7" />
             </div>
           </div>
         )}
@@ -589,6 +595,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <p className="mt-3 text-center text-sm font-bold text-amber-500 dark:text-amber-400">
                 ⚠️ Keep this tab open while it builds — leaving pauses the progress.
               </p>
+              <GenTips profile={profile} format={format} showSteps={false} className="mt-7" />
             </div>
           </div>
         )}
