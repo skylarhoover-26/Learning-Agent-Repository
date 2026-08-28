@@ -556,7 +556,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${loadPct}%` }} />
               </div>
-              <p className="mt-2.5 text-center text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
+              <p className="mt-2.5 text-center text-xs font-semibold leading-relaxed text-brand dark:text-brand-300">
                 {statusLine(elapsed, format, `${load.estimate} in total`)}
               </p>
               <GenTips profile={profile} className="mt-7" />
@@ -586,7 +586,7 @@ export default function VideoLessonPlayer({ topic, format = 'standard', tools, q
               <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div className="h-full bg-brand rounded-full transition-all duration-500 ease-out" style={{ width: `${prepPct}%` }} />
               </div>
-              <p className="mt-2.5 text-center text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
+              <p className="mt-2.5 text-center text-xs font-semibold leading-relaxed text-brand dark:text-brand-300">
                 Preparing the narration
                 {prepProgress.total ? ` · ${prepProgress.done}/${prepProgress.total} scenes` : ''}
                 {' · keep this tab open, leaving pauses it'}
