@@ -1198,7 +1198,7 @@ export default function PlanLessonPlayer({ topic: topicProp, format = 'standard'
           <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <div className="h-full bg-brand rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-2.5 text-center text-xs leading-relaxed text-slate-400">
+          <p className="mt-2.5 text-center text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
             {statusLine(elapsed, format, load.estimate, { slow: load.slow })}
           </p>
           <GenTips profile={profile} className="mt-7" />

@@ -293,7 +293,7 @@ export default function CinematicCourse({ topic, format = 'standard', onExit, on
       <div className="min-h-[70vh] grid place-items-center">
         <div className="px-6">
           <BookLoader message={personalLine(profile, format)} size="lg" />
-          <p className="mt-1 text-center text-xs text-slate-400">
+          <p className="mt-1 text-center text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
             {teachTotal > 0
               ? `Writing your lesson · ${teachDone} of ${teachTotal} sections · keep this tab open, leaving pauses it`
               : 'Designing the steps and objectives · keep this tab open, leaving pauses it'}
